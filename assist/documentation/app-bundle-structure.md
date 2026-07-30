@@ -74,7 +74,7 @@ apps/{app}/api/src/modules/{module}/{module}.sync.ts
 apps/{app}/api/src/modules/{module}/{module}.types.ts
 ```
 
-If a package needs public subpath compatibility such as `@codexsun/billing/api` or `@codexsun/billing/migrations`, expose those package exports from the module index instead of recreating top-level source folders.
+If a package needs public subpath compatibility such as `@cxapp/billing/api` or `@cxapp/billing/migrations`, expose those package exports from the module index instead of recreating top-level source folders.
 
 ## Frontend Ownership
 

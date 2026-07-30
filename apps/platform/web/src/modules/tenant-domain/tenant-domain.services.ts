@@ -43,15 +43,6 @@ export function normalizeTenantDomain(value: string) {
     .replace(/:\d+$/, "");
 }
 
-export function defaultTenantDomain(value: string) {
-  const slug = tenantDomainSlug(value);
-  return slug ? `${slug}.localhost` : "localhost";
-}
-
-function tenantDomainSlug(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+export function defaultTenantDomain(_value: string) {
+  return normalizeTenantDomain(window.location.hostname);
 }

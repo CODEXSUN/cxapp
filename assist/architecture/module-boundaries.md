@@ -107,9 +107,17 @@ Each reduced Common module must own concrete migration SQL, repository queries, 
 
 ### Mandatory Boundary Audit For Every Application
 
-The same ownership discipline applies to Core, Platform, Billing, and every future application. Before an application change is finalized, audit its complete backend and frontend module tree for wrapper/alias roles, inherited or metadata-driven generic CRUD, private cross-module imports, centralized business implementations, stale exports and proxies, misplaced files, and business behavior stored in app-level shared folders. Composition roots contain registration and lifecycle composition only; leaf modules own executable behavior.
+The same ownership discipline applies to Core, Platform, Billing, DevKit, and every future application. DevKit
+Platform Registry behavior belongs under `apps/devkit/api` and `apps/devkit/web`; Platform may compose only
+the public `@cxapp/devkit-api` and `@cxapp/devkit-web` contracts. DevKit request databases and actors must always
+come from the authenticated Platform host adapter, its API remains namespaced under `/devkit`, and its master and
+tenant tables retain the `devkit_` owner prefix plus the standard identity, status, and audit columns. Before an
+application change is finalized, audit its complete backend and frontend module tree for wrapper/alias roles,
+inherited or metadata-driven generic CRUD, private cross-module imports, centralized business implementations,
+stale exports and proxies, misplaced files, and business behavior stored in app-level shared folders. Composition
+roots contain registration and lifecycle composition only; leaf modules own executable behavior.
 
-Allowed shared infrastructure is narrow: API transport/session context, environment readers, observability, and reusable `@codexsun/ui` controls. Shared code must not know a business module's fields, validation, tables, lifecycle, routes, forms, lists, workspaces, settings, or print behavior.
+Allowed shared infrastructure is narrow: API transport/session context, environment readers, observability, and reusable `@cxapp/ui` controls. Shared code must not know a business module's fields, validation, tables, lifecycle, routes, forms, lists, workspaces, settings, or print behavior.
 
 Run `node tools/check-module-boundaries.mjs <app>` for the changed application, followed by formatting, lint, TypeScript, production composition/build validation, and any configured database/E2E checks. A new application is incomplete until the boundary checker understands and enforces its approved full or reduced contract.
 
@@ -297,6 +305,8 @@ Do not put unstable business rules in the shared kernel.
 | `apps/billing/web`     | Billing frontend modules          | Billing entry workspaces, billing settings, billing forms, and billing reports                                                                             |
 | `apps/mail/api`        | Mail backend module               | Tenant mail settings, encrypted credentials, messages, attachments, delivery/sync events, SMTP/IMAP workers, and queue contracts                           |
 | `apps/mail/web`        | Mail frontend module              | Mailboxes, rich compose, provider settings, message reader, and public Billing document-mail integration                                                   |
+| `apps/devkit/api`      | DevKit backend module             | Master/tenant Platform Registry hierarchy, JSON registry seed, and registry audit activity                                                                 |
+| `apps/devkit/web`      | DevKit frontend module            | Super Admin and tenant Platform Registry workspace composed through the public DevKit web bundle                                                           |
 | `apps/platform/api`    | API gateway + platform routes     | Route registration, guard functions (session, tenant, feature, permission), migration runner, DB bootstrap                                                 |
 | `apps/platform/web`    | Platform shell and React composer | Login, SA desk, Admin desk, Tenant desk shell, design system pages, route/menu composition, API client integration                                         |
 
@@ -382,7 +392,7 @@ Billing industry fields must stay as billing settings/features. Examples: offset
 - **002_master_audit_sessions**: Creates audit_events, sessions. ✓ Applied.
 - **003_master_platform_catalog**: Creates platform_modules, tenant_module_activation. ✓ Applied.
 - **004_master_settings_files_notifications**: Creates settings, features, files, notifications, agents, activity, comments. ✓ Applied.
-- **Bootstrap tenant migration**: Creates tenant-local `access_*`, `module_settings`, and `schema_migrations` tables; master audit events remain in `tenant_audit_events`. ✓ Applied.
+- **Bootstrap tenant migration**: Creates tenant-local access, module-setting, and `migration_schema` tables; master audit events remain in `tenant_audit_events`. ✓ Applied.
 
 All 5 migration units pass initialization and run cleanly. Migration runner tracks state in `platform_migrations` table.
 

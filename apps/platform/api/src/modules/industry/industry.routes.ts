@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { fail, ok } from "@codexsun/framework/http";
+import { fail, ok } from "@cxapp/framework/http";
 import { verifyAuthToken } from "../../auth/jwt.js";
 import { IndustryService } from "./industry.service.js";
 import type { IndustrySavePayload } from "./industry.types.js";

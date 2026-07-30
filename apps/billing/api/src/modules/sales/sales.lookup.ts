@@ -1,10 +1,10 @@
-import { env } from "../../env.js";
+import { platformApiBaseUrl } from "../../env.js";
 import {
   coreLookupListSchema,
   coreLookupRecordSchema
 } from "../../shared/core-lookup.contracts.js";
 import type { ZodType } from "zod";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 
 export type SaleLookupHeaders = {
   authorization?: string | string[] | undefined;
@@ -157,7 +157,7 @@ export class SaleLookupService {
     );
   }
   private request(path: string, headers: SaleLookupHeaders, init?: RequestInit) {
-    return fetch(`${env.PLATFORM_API_URL}${path}`, {
+    return fetch(`${platformApiBaseUrl}${path}`, {
       ...init,
       headers: {
         Accept: "application/json",

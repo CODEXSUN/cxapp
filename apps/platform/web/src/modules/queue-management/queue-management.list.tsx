@@ -10,8 +10,8 @@ import {
   RotateCcwIcon,
   TriangleAlertIcon
 } from "lucide-react";
-import { StatusBadge } from "@codexsun/ui";
-import { Button } from "@codexsun/ui/components/button";
+import { StatusBadge } from "@cxapp/ui";
+import { Button } from "@cxapp/ui/components/button";
 import type { QueueJobRecord, QueueRuntimeSettings } from "./queue-management.types";
 
 export function QueueManagementList({

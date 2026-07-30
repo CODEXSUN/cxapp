@@ -11,13 +11,13 @@ import {
   UserRoundIcon
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApplicationLayout } from "@codexsun/ui/layouts/application-layout";
-import { Button } from "@codexsun/ui/components/button";
-import { Card } from "@codexsun/ui/components/card";
-import { GlobalLoader } from "@codexsun/ui/components/global-loader";
-import { Label } from "@codexsun/ui/components/label";
-import { RadioGroup, RadioGroupItem } from "@codexsun/ui/components/radio-group";
-import { StatusBadge } from "@codexsun/ui/components/StatusBadge";
+import { ApplicationLayout } from "@cxapp/ui/layouts/application-layout";
+import { Button } from "@cxapp/ui/components/button";
+import { Card } from "@cxapp/ui/components/card";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
+import { Label } from "@cxapp/ui/components/label";
+import { RadioGroup, RadioGroupItem } from "@cxapp/ui/components/radio-group";
+import { StatusBadge } from "@cxapp/ui/components/StatusBadge";
 import { toast } from "sonner";
 import { AuthGate } from "../../shared/auth/AuthGate";
 import {
@@ -28,250 +28,239 @@ import {
   type PlatformAppId
 } from "../../app/app-registry";
 import { getTenantRuntime } from "../../modules/tenant/tenant.services";
-import { useCompanyBranding } from "@codexsun/core-web/modules/organisation/company/branding";
-import { listCompanies } from "@codexsun/core-web/modules/organisation/company/services";
-import { defaultCompanyQueryKey } from "@codexsun/core-web/modules/organisation/default-company/hooks";
+import { useCompanyBranding } from "@cxapp/core-web/modules/organisation/company/branding";
+import { listCompanies } from "@cxapp/core-web/modules/organisation/company/services";
+import { defaultCompanyQueryKey } from "@cxapp/core-web/modules/organisation/default-company/hooks";
 import {
   getDefaultCompany,
   saveDefaultCompany
-} from "@codexsun/core-web/modules/organisation/default-company/services";
-import type { LandingAppOption } from "@codexsun/core-web/modules/organisation/default-company/types";
-import { listFinancialYears } from "@codexsun/core-web/modules/organisation/financial-year/services";
+} from "@cxapp/core-web/modules/organisation/default-company/services";
+import type { LandingAppOption } from "@cxapp/core-web/modules/organisation/default-company/types";
+import { listFinancialYears } from "@cxapp/core-web/modules/organisation/financial-year/services";
 import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
+import { DevkitWorkspaceHost, devkitWebBundle } from "@cxapp/devkit-web";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
 }
 
 const AddressTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/contacts/address-types").then(
+  import("@cxapp/core-web/modules/common/contacts/address-types").then(
     (module) => module.AddressTypesWorkspace
   )
 );
 const BankNamesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/contacts/bank-names").then(
+  import("@cxapp/core-web/modules/common/contacts/bank-names").then(
     (module) => module.BankNamesWorkspace
   )
 );
 const ContactGroupsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/contacts/contact-groups").then(
+  import("@cxapp/core-web/modules/common/contacts/contact-groups").then(
     (module) => module.ContactGroupsWorkspace
   )
 );
 const ContactTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/contacts/contact-types").then(
+  import("@cxapp/core-web/modules/common/contacts/contact-types").then(
     (module) => module.ContactTypesWorkspace
   )
 );
 const CityWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/location/city").then((module) => module.CityWorkspace)
+  import("@cxapp/core-web/modules/common/location/city").then((module) => module.CityWorkspace)
 );
 const CountryWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/location/country").then(
+  import("@cxapp/core-web/modules/common/location/country").then(
     (module) => module.CountryWorkspace
   )
 );
 const DistrictWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/location/district").then(
+  import("@cxapp/core-web/modules/common/location/district").then(
     (module) => module.DistrictWorkspace
   )
 );
 const PincodeWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/location/pincode").then(
+  import("@cxapp/core-web/modules/common/location/pincode").then(
     (module) => module.PincodeWorkspace
   )
 );
 const StateWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/location/state").then((module) => module.StateWorkspace)
+  import("@cxapp/core-web/modules/common/location/state").then((module) => module.StateWorkspace)
 );
 const LedgerGroupsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/accounts/ledger-groups").then(
+  import("@cxapp/core-web/modules/common/accounts/ledger-groups").then(
     (module) => module.LedgerGroupsWorkspace
   )
 );
 const LedgersWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/accounts/ledgers").then(
+  import("@cxapp/core-web/modules/common/accounts/ledgers").then(
     (module) => module.LedgersWorkspace
   )
 );
 const CurrenciesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/others/currencies").then(
+  import("@cxapp/core-web/modules/common/others/currencies").then(
     (module) => module.CurrenciesWorkspace
   )
 );
 const MonthsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/others/months").then((module) => module.MonthsWorkspace)
+  import("@cxapp/core-web/modules/common/others/months").then((module) => module.MonthsWorkspace)
 );
 const PaymentTermsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/others/payment-terms").then(
+  import("@cxapp/core-web/modules/common/others/payment-terms").then(
     (module) => module.PaymentTermsWorkspace
   )
 );
 const PrioritiesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/others/priorities").then(
+  import("@cxapp/core-web/modules/common/others/priorities").then(
     (module) => module.PrioritiesWorkspace
   )
 );
 const SalesTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/others/sales-types").then(
+  import("@cxapp/core-web/modules/common/others/sales-types").then(
     (module) => module.SalesTypesWorkspace
   )
 );
 const BrandsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/brands").then(
-    (module) => module.BrandsWorkspace
-  )
+  import("@cxapp/core-web/modules/common/products/brands").then((module) => module.BrandsWorkspace)
 );
 const ColoursWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/colours").then(
+  import("@cxapp/core-web/modules/common/products/colours").then(
     (module) => module.ColoursWorkspace
   )
 );
 const HsnCodesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/hsn-codes").then(
+  import("@cxapp/core-web/modules/common/products/hsn-codes").then(
     (module) => module.HsnCodesWorkspace
   )
 );
 const ProductCategoriesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/product-categories").then(
+  import("@cxapp/core-web/modules/common/products/product-categories").then(
     (module) => module.ProductCategoriesWorkspace
   )
 );
 const ProductGroupsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/product-groups").then(
+  import("@cxapp/core-web/modules/common/products/product-groups").then(
     (module) => module.ProductGroupsWorkspace
   )
 );
 const ProductTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/product-types").then(
+  import("@cxapp/core-web/modules/common/products/product-types").then(
     (module) => module.ProductTypesWorkspace
   )
 );
 const SizesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/sizes").then((module) => module.SizesWorkspace)
+  import("@cxapp/core-web/modules/common/products/sizes").then((module) => module.SizesWorkspace)
 );
 const StylesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/styles").then(
-    (module) => module.StylesWorkspace
-  )
+  import("@cxapp/core-web/modules/common/products/styles").then((module) => module.StylesWorkspace)
 );
 const TaxesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/taxes").then((module) => module.TaxesWorkspace)
+  import("@cxapp/core-web/modules/common/products/taxes").then((module) => module.TaxesWorkspace)
 );
 const UnitsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/products/units").then((module) => module.UnitsWorkspace)
+  import("@cxapp/core-web/modules/common/products/units").then((module) => module.UnitsWorkspace)
 );
 const DestinationsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/workorder/destinations").then(
+  import("@cxapp/core-web/modules/common/workorder/destinations").then(
     (module) => module.DestinationsWorkspace
   )
 );
 const StockRejectionTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/workorder/stock-rejection-types").then(
+  import("@cxapp/core-web/modules/common/workorder/stock-rejection-types").then(
     (module) => module.StockRejectionTypesWorkspace
   )
 );
 const TransportsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/workorder/transports").then(
+  import("@cxapp/core-web/modules/common/workorder/transports").then(
     (module) => module.TransportsWorkspace
   )
 );
 const WarehousesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/workorder/warehouses").then(
+  import("@cxapp/core-web/modules/common/workorder/warehouses").then(
     (module) => module.WarehousesWorkspace
   )
 );
 const WorkOrderTypesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/common/workorder/work-order-types").then(
+  import("@cxapp/core-web/modules/common/workorder/work-order-types").then(
     (module) => module.WorkOrderTypesWorkspace
   )
 );
 const ContactWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/master/contact").then((module) => module.ContactWorkspace)
+  import("@cxapp/core-web/modules/master/contact").then((module) => module.ContactWorkspace)
 );
 const ProductWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/master/product").then((module) => module.ProductWorkspace)
+  import("@cxapp/core-web/modules/master/product").then((module) => module.ProductWorkspace)
 );
 const WorkOrderWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/master/work-order").then((module) => module.WorkOrderWorkspace)
+  import("@cxapp/core-web/modules/master/work-order").then((module) => module.WorkOrderWorkspace)
 );
 const CompanyWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/organisation/company").then(
-    (module) => module.CompanyWorkspace
-  )
+  import("@cxapp/core-web/modules/organisation/company").then((module) => module.CompanyWorkspace)
 );
 const DefaultCompanyWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/organisation/default-company").then(
+  import("@cxapp/core-web/modules/organisation/default-company").then(
     (module) => module.DefaultCompanyWorkspace
   )
 );
 const FinancialYearWorkspace = lazyWorkspace(() =>
-  import("@codexsun/core-web/modules/organisation/financial-year").then(
+  import("@cxapp/core-web/modules/organisation/financial-year").then(
     (module) => module.FinancialYearWorkspace
   )
 );
 const QuotationWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/quotation").then((module) => module.QuotationWorkspace)
+  import("@cxapp/billing-web/modules/quotation").then((module) => module.QuotationWorkspace)
 );
 const QuotationPrintRoutePage = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/quotation").then((module) => module.QuotationPrintRoutePage)
+  import("@cxapp/billing-web/modules/quotation").then((module) => module.QuotationPrintRoutePage)
 );
 const SalesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/sales").then((module) => module.SalesWorkspace)
+  import("@cxapp/billing-web/modules/sales").then((module) => module.SalesWorkspace)
 );
 const SalesPrintRoutePage = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/sales").then((module) => module.SalesPrintRoutePage)
+  import("@cxapp/billing-web/modules/sales").then((module) => module.SalesPrintRoutePage)
 );
 const BillingDashboardWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/dashboard").then(
-    (module) => module.BillingDashboardWorkspace
-  )
+  import("@cxapp/billing-web/modules/dashboard").then((module) => module.BillingDashboardWorkspace)
 );
 const CustomerStatementWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/reports").then(
-    (module) => module.CustomerStatementWorkspace
-  )
+  import("@cxapp/billing-web/modules/reports").then((module) => module.CustomerStatementWorkspace)
 );
 const SupplierStatementWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/reports").then(
-    (module) => module.SupplierStatementWorkspace
-  )
+  import("@cxapp/billing-web/modules/reports").then((module) => module.SupplierStatementWorkspace)
 );
 const StockStatementWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/reports").then((module) => module.StockStatementWorkspace)
+  import("@cxapp/billing-web/modules/reports").then((module) => module.StockStatementWorkspace)
 );
 const GstStatementWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/reports").then((module) => module.GstStatementWorkspace)
+  import("@cxapp/billing-web/modules/reports").then((module) => module.GstStatementWorkspace)
 );
 const BillingSettingsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web").then((module) => module.BillingSettingsWorkspace)
+  import("@cxapp/billing-web").then((module) => module.BillingSettingsWorkspace)
 );
 const DocumentSettingsWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web").then((module) => module.DocumentSettingsWorkspace)
+  import("@cxapp/billing-web").then((module) => module.DocumentSettingsWorkspace)
 );
 const PurchaseWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/purchase").then((module) => module.PurchaseWorkspace)
+  import("@cxapp/billing-web/modules/purchase").then((module) => module.PurchaseWorkspace)
 );
 const PurchasePrintRoutePage = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/purchase").then((module) => module.PurchasePrintRoutePage)
+  import("@cxapp/billing-web/modules/purchase").then((module) => module.PurchasePrintRoutePage)
 );
 const ExportSalesWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/export-sales").then((module) => module.ExportSalesWorkspace)
+  import("@cxapp/billing-web/modules/export-sales").then((module) => module.ExportSalesWorkspace)
 );
 const ExportSalesPrintRoutePage = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/export-sales").then(
+  import("@cxapp/billing-web/modules/export-sales").then(
     (module) => module.ExportSalesPrintRoutePage
   )
 );
 const PaymentWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/payment").then((module) => module.PaymentWorkspace)
+  import("@cxapp/billing-web/modules/payment").then((module) => module.PaymentWorkspace)
 );
 const ReceiptWorkspace = lazyWorkspace(() =>
-  import("@codexsun/billing-web/modules/receipt").then((module) => module.ReceiptWorkspace)
+  import("@cxapp/billing-web/modules/receipt").then((module) => module.ReceiptWorkspace)
 );
 const MailWorkspace = lazyWorkspace(() =>
-  import("@codexsun/mail-web/modules/mail").then((module) => module.MailWorkspace)
+  import("@cxapp/mail-web/modules/mail").then((module) => module.MailWorkspace)
 );
 
 const TenantUserWorkspace = lazy(() =>
@@ -332,6 +321,7 @@ type AppPage =
   | "mail.trash"
   | "task-manager.overview"
   | "task-manager.todos"
+  | "devkit.registry"
   | "core.common.location.countries"
   | "core.common.location.states"
   | "core.common.location.districts"
@@ -344,8 +334,8 @@ type AppPage =
   | "core.master.product"
   | "core.master.work-order"
   | `core.common.${"accounts" | "contacts" | "others" | "products" | "workorder"}.${string}`;
-const COMPANY_CONTEXT_STORAGE_KEY = "codexsun.tenant.company-id";
-const ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY = "codexsun.tenant.financial-year-id";
+const COMPANY_CONTEXT_STORAGE_KEY = "cxapp.tenant.company-id";
+const ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY = "cxapp.tenant.financial-year-id";
 
 export function AppDesk() {
   const queryClient = useQueryClient();
@@ -402,7 +392,7 @@ export function AppDesk() {
     enabled:
       activeApp === "billing" && enabledApps.includes("billing") && Boolean(companyContextId),
     queryFn: async () => {
-      const module = await import("@codexsun/billing-web/modules/settings/services");
+      const module = await import("@cxapp/billing-web/modules/settings/services");
       return module.getBillingSettings();
     },
     queryKey: ["billing", "settings", companyContextId]
@@ -523,9 +513,11 @@ export function AppDesk() {
       ? "Billing"
       : activeApp === "mail"
         ? "Mail"
-        : activeApp === "task-manager"
-          ? "Task Manager"
-          : "Application";
+        : activeApp === "devkit"
+          ? "DevKit"
+          : activeApp === "task-manager"
+            ? "Task Manager"
+            : "Application";
   const menuItems = appMenuItemsFor(
     activeApp,
     safePage,
@@ -542,7 +534,9 @@ export function AppDesk() {
             ? "billing.overview"
             : item.title === "Mail"
               ? "mail.inbox"
-              : "task-manager.overview"
+              : item.title === "DevKit"
+                ? "devkit.registry"
+                : "task-manager.overview"
       ),
     url:
       item.title === "Application"
@@ -551,7 +545,9 @@ export function AppDesk() {
           ? "/app/billing/overview"
           : item.title === "Mail"
             ? "/app/mail/inbox"
-            : "/app/task-manager/overview"
+            : item.title === "DevKit"
+              ? "/app/devkit/registry"
+              : "/app/task-manager/overview"
   }));
 
   const contextError =
@@ -604,9 +600,11 @@ export function AppDesk() {
               ? "/app/billing/overview"
               : activeApp === "mail"
                 ? "/app/mail/inbox"
-                : activeApp === "task-manager"
-                  ? "/app/task-manager/overview"
-                  : "/app/application/overview",
+                : activeApp === "devkit"
+                  ? "/app/devkit/registry"
+                  : activeApp === "task-manager"
+                    ? "/app/task-manager/overview"
+                    : "/app/application/overview",
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
           ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
           logoAlt: `${selectedCompany?.name ?? "Company"} logo`,
@@ -705,6 +703,9 @@ export function AppDesk() {
           {safePage.startsWith("mail.") ? (
             <MailWorkspace mailbox={mailboxForPage(safePage)} />
           ) : null}
+          {safePage.startsWith("devkit.") ? (
+            <DevkitWorkspaceHost workspaceId={safePage.slice("devkit.".length)} />
+          ) : null}
           {safePage === "core.organisation.company" ? <CompanyWorkspace /> : null}
           {safePage === "core.organisation.financial-year" ? <FinancialYearWorkspace /> : null}
           {safePage === "core.organisation.default-company" ? (
@@ -742,11 +743,11 @@ function TenantBootstrapErrorScreen({ error }: { error: unknown }) {
 
 function publishCompanyContext(id: number) {
   window.localStorage.setItem(COMPANY_CONTEXT_STORAGE_KEY, String(id));
-  window.dispatchEvent(new CustomEvent("codexsun:company-change", { detail: { id } }));
+  window.dispatchEvent(new CustomEvent("cxapp:company-change", { detail: { id } }));
 }
 function publishAccountingYear(id: number) {
   window.localStorage.setItem(ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY, String(id));
-  window.dispatchEvent(new CustomEvent("codexsun:accounting-year-change", { detail: { id } }));
+  window.dispatchEvent(new CustomEvent("cxapp:accounting-year-change", { detail: { id } }));
 }
 
 function landingAppOptions(apps: PlatformAppId[]): LandingAppOption[] {
@@ -768,6 +769,11 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
   if (!app) return pageForApp(landingApp ?? "application");
 
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
+  const devkitWorkspace =
+    app === "devkit" ? devkitWebBundle.resolveWorkspace(window.location.pathname) : undefined;
+  if (devkitWorkspace) {
+    return `devkit.${devkitWorkspace.id}` as AppPage;
+  }
   if (
     key === "application.overview" ||
     key === "application.landing" ||
@@ -846,32 +852,40 @@ function LandingDesk({
         ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
         : appId === "mail"
           ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-          : "Shared workspace, company setup, roles, and cross-app launch desk.",
+          : appId === "devkit"
+            ? "Platform application and module registry."
+            : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
       appId === "billing"
         ? CreditCardIcon
         : appId === "mail"
           ? MailIcon
-          : appId === "task-manager"
-            ? ListChecksIcon
-            : LayoutDashboardIcon,
+          : appId === "devkit"
+            ? RocketIcon
+            : appId === "task-manager"
+              ? ListChecksIcon
+              : LayoutDashboardIcon,
     iconClass:
       appId === "billing"
         ? "bg-emerald-600 text-white"
         : appId === "mail"
           ? "bg-sky-600 text-white"
-          : appId === "task-manager"
-            ? "bg-violet-600 text-white"
-            : "bg-slate-950 text-white",
+          : appId === "devkit"
+            ? "bg-violet-700 text-white"
+            : appId === "task-manager"
+              ? "bg-violet-600 text-white"
+              : "bg-slate-950 text-white",
     id: appId,
     label:
       appId === "billing"
         ? "Billing"
         : appId === "mail"
           ? "Mail"
-          : appId === "task-manager"
-            ? "Task Manager"
-            : "Application"
+          : appId === "devkit"
+            ? "DevKit"
+            : appId === "task-manager"
+              ? "Task Manager"
+              : "Application"
   })) satisfies Array<{
     description: string;
     icon: typeof LayoutDashboardIcon;
@@ -1271,6 +1285,7 @@ function titleForPage(page: AppPage) {
     "mail.trash": "Trash",
     "task-manager.overview": "Task Manager",
     "task-manager.todos": "Todo",
+    "devkit.registry": "Platform Registry",
     "core.common.location.cities": "Cities",
     "core.common.location.countries": "Countries",
     "core.common.location.districts": "Districts",
@@ -1355,6 +1370,7 @@ function appFromPage(
     return enabledApps.includes("billing") ? "billing" : landingApp;
   if (page.startsWith("task-manager"))
     return enabledApps.includes("task-manager") ? "task-manager" : landingApp;
+  if (page.startsWith("devkit")) return enabledApps.includes("devkit") ? "devkit" : landingApp;
   if (page.startsWith("mail")) return enabledApps.includes("mail") ? "mail" : landingApp;
   return "application";
 }
@@ -1372,6 +1388,7 @@ function mailboxForPage(page: AppPage) {
 }
 
 function pageForApp(app: PlatformAppId): AppPage {
+  if (app === "devkit") return "devkit.registry";
   if (app === "task-manager") return "task-manager.overview";
   if (app === "mail") return "mail.inbox";
   return app === "billing" ? "billing.overview" : "application.overview";

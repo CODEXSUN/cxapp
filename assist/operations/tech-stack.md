@@ -9,7 +9,7 @@
 - TanStack Router for frontend routing.
 - Tailwind CSS for styling.
 - shadcn/ui for UI components.
-- `@codexsun/ui` as the internal UI framework and design system.
+- `@cxapp/ui` as the internal UI framework and design system.
 - Mantine-inspired UI styling and ergonomics without adopting Mantine as the application framework.
 - TanStack Query for server state.
 - TanStack Table for data tables.

@@ -18,12 +18,12 @@ import {
   X
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@codexsun/ui/components/card";
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { cn } from "@codexsun/ui/lib/utils";
-import { queueBillingDocumentEmail } from "@codexsun/mail-web/modules/mail";
+import { Button } from "@cxapp/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@cxapp/ui/components/card";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { cn } from "@cxapp/ui/lib/utils";
+import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
 import { getTenantUserLabel } from "../../shared/api/tenant-context";
 import { formatDate } from "./quotation.services";
 import { QuotationPrintDocument, type QuotationPrintCopy } from "./quotation.print";

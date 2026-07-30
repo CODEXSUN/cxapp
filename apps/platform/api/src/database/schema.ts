@@ -9,25 +9,25 @@ export type TimestampColumn = ColumnType<
 >;
 
 export type PlatformDatabase = {
-  app_access_permissions: AccessPermissionsTable;
-  app_access_roles: AccessRolesTable;
-  app_access_users: AccessUsersTable;
-  app_auth_sessions: AuthSessionsTable;
-  app_database_maintenance_runs: DatabaseMaintenanceRunsTable;
-  app_entitlements: EntitlementsTable;
-  app_industries: IndustriesTable;
-  app_plans: PlansTable;
-  app_platform_activity: PlatformActivityTable;
-  app_platform_apps: PlatformAppsTable;
-  app_platform_auth_users: PlatformAuthUsersTable;
-  app_queue_jobs: QueueJobsTable;
-  app_queue_runtime_settings: QueueRuntimeSettingsTable;
-  app_password_reset_requests: PasswordResetRequestsTable;
-  app_storage_objects: StorageObjectsTable;
-  app_subscriptions: SubscriptionsTable;
-  app_tenant_domains: TenantDomainsTable;
-  app_tenant_audit_events: TenantAuditEventsTable;
-  app_tenants: TenantsTable;
+  access_permissions: AccessPermissionsTable;
+  access_roles: AccessRolesTable;
+  access_users: AccessUsersTable;
+  auth_sessions: AuthSessionsTable;
+  database_maintenance_runs: DatabaseMaintenanceRunsTable;
+  entitlements: EntitlementsTable;
+  industries: IndustriesTable;
+  plans: PlansTable;
+  platform_activity: PlatformActivityTable;
+  platform_apps: PlatformAppsTable;
+  platform_auth_users: PlatformAuthUsersTable;
+  queue_jobs: QueueJobsTable;
+  queue_runtime_settings: QueueRuntimeSettingsTable;
+  password_reset_requests: PasswordResetRequestsTable;
+  storage_objects: StorageObjectsTable;
+  subscriptions: SubscriptionsTable;
+  tenant_domains: TenantDomainsTable;
+  tenant_audit_events: TenantAuditEventsTable;
+  tenants: TenantsTable;
 };
 
 export type TenantDatabase = {
@@ -48,7 +48,7 @@ export type PlatformAppsTable = {
   id: Generated<number>;
   label: string;
   module_key: string;
-  stack: "platform" | "billing" | "mail" | "platform-task-manager";
+  stack: "platform" | "billing" | "devkit" | "mail" | "platform-task-manager";
   updated_at: TimestampColumn;
   uuid: string;
 };
@@ -328,6 +328,7 @@ export type TenantModuleSettingsTable = {
   id: Generated<number>;
   module_key: string;
   settings_json: string;
+  status: "active" | "inactive";
   updated_at: TimestampColumn;
   uuid: string;
 };

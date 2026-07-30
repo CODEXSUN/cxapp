@@ -6,7 +6,7 @@ export type PlatformApp = {
   id: number;
   label: string;
   moduleKey: string;
-  stack: "platform" | "billing" | "mail" | "platform-task-manager";
+  stack: "platform" | "billing" | "devkit" | "mail" | "platform-task-manager";
   uuid: string;
 };
 export type PlatformAppSavePayload = Omit<PlatformApp, "id" | "uuid">;

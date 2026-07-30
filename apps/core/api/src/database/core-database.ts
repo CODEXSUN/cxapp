@@ -6,7 +6,7 @@ import {
   rollbackTablePrefixPolicy,
   runMigrationBatch,
   type MigrationBatch
-} from "@codexsun/framework/db";
+} from "@cxapp/framework/db";
 import { Kysely, MysqlDialect } from "kysely";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
@@ -96,6 +96,10 @@ export const coreTenantMigrations = [
   {
     description: "Backfill and validate standard Core table identity and audit columns.",
     name: "core.standard-columns-v1"
+  },
+  {
+    description: "Add database-generated UUID defaults for repeatable Core writes.",
+    name: "core.uuid-defaults-v2"
   }
 ] as const;
 
@@ -324,7 +328,7 @@ async function registeredTenantDatabaseNames() {
   });
   try {
     const [rows] = await connection.query(
-      "SELECT db_name FROM app_tenants WHERE db_name IS NOT NULL AND status <> 'deleted'"
+      "SELECT db_name FROM tenants WHERE db_name IS NOT NULL AND status <> 'deleted'"
     );
     return (rows as Array<{ db_name: string }>).map(({ db_name }) =>
       resolveCoreDatabaseName(db_name)

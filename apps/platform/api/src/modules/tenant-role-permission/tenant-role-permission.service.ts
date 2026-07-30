@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { recordTenantAccessAudit } from "../../database/tenant-access-audit.js";
 import { TenantRolePermissionRepository } from "./tenant-role-permission.repository.js";
 import type {

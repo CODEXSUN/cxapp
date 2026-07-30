@@ -1,6 +1,6 @@
-import { AppError } from "@codexsun/framework/errors";
-import { InMemoryEventPublisher, type EventPublisher } from "@codexsun/framework/events";
-import { InMemoryQueueAdapter, type QueueAdapter } from "@codexsun/framework/queue";
+import { AppError } from "@cxapp/framework/errors";
+import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
+import { InMemoryQueueAdapter, type QueueAdapter } from "@cxapp/framework/queue";
 import { billingDashboardProjection } from "../dashboard/index.js";
 import { formatBillingDocumentNumber, nextBillingDocumentNumber } from "../settings/index.js";
 import { BillingSettingsRepository } from "../settings/settings.repository.js";

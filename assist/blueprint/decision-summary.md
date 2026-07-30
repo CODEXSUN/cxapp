@@ -99,7 +99,7 @@ Modules expose shared typed API contracts from `contracts/` for backend, fronten
 Shared API client package:
 
 ```text
-@codexsun/api-client
+@cxapp/api-client
 ```
 
 Tenant context resolution is hybrid:
@@ -111,9 +111,9 @@ Tenant context resolution is hybrid:
 
 Tenant domain mapping is application-level. SSL/certs, DNS, Cloudflare, and Nginx are infrastructure responsibilities.
 
-UI system lives in `@codexsun/ui`.
+UI system lives in `@cxapp/ui`.
 
-`@codexsun/ui` uses Tailwind CSS, shadcn/ui style patterns, and Mantine-inspired styling/ergonomics while remaining CODEXSUN's own UI framework.
+`@cxapp/ui` uses Tailwind CSS, shadcn/ui style patterns, and Mantine-inspired styling/ergonomics while remaining CODEXSUN's own UI framework.
 
 ### Platform
 
@@ -150,9 +150,9 @@ Use one package per major area with subpath modules.
 
 Examples:
 
-- `@codexsun/framework/api`
-- `@codexsun/platform/tenant`
-- `@codexsun/core/company`
+- `@cxapp/framework/api`
+- `@cxapp/platform/tenant`
+- `@cxapp/core/company`
 
 Standard module folder structure:
 

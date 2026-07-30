@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateDatabaseMaintenanceModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_database_maintenance_runs")
+    .createTable("database_maintenance_runs")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -29,16 +29,16 @@ export async function migrateDatabaseMaintenanceModule(db: Kysely<PlatformDataba
   await reconcileLegacyDuplicateRuns(db);
 }
 
-async function reconcileLegacyDuplicateRuns(db: Kysely<PlatformDatabase>) {
+export async function reconcileLegacyDuplicateRuns(db: Kysely<PlatformDatabase>) {
   const runningRows = await db
-    .selectFrom("app_database_maintenance_runs")
+    .selectFrom("database_maintenance_runs")
     .select(["id", "created_at", "database_name", "database_scope", "operation", "target_key"])
     .where("status", "=", "running")
     .execute();
 
   for (const running of runningRows) {
     const terminal = await db
-      .selectFrom("app_database_maintenance_runs")
+      .selectFrom("database_maintenance_runs")
       .select(["id", "completed_at", "created_at", "status"])
       .where("id", ">", Number(running.id))
       .where("created_at", "=", running.created_at)
@@ -52,7 +52,7 @@ async function reconcileLegacyDuplicateRuns(db: Kysely<PlatformDatabase>) {
 
     if (!terminal) continue;
     await db
-      .updateTable("app_database_maintenance_runs")
+      .updateTable("database_maintenance_runs")
       .set({
         completed_at: terminal.completed_at ?? terminal.created_at,
         status: terminal.status
@@ -66,7 +66,7 @@ async function reconcileLegacyDuplicateRuns(db: Kysely<PlatformDatabase>) {
 
 async function removeExactTerminalDuplicates(db: Kysely<PlatformDatabase>) {
   const rows = await db
-    .selectFrom("app_database_maintenance_runs")
+    .selectFrom("database_maintenance_runs")
     .select([
       "id",
       "created_at",
@@ -97,6 +97,6 @@ async function removeExactTerminalDuplicates(db: Kysely<PlatformDatabase>) {
       retained.add(signature);
       continue;
     }
-    await db.deleteFrom("app_database_maintenance_runs").where("id", "=", Number(row.id)).execute();
+    await db.deleteFrom("database_maintenance_runs").where("id", "=", Number(row.id)).execute();
   }
 }

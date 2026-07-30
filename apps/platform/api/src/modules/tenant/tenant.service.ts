@@ -23,7 +23,7 @@ import {
 import {
   getDefaultCompanyForDatabase,
   setDefaultCompanyLandingAppForDatabase
-} from "@codexsun/core-api";
+} from "@cxapp/core-api";
 
 export class TenantService {
   constructor(

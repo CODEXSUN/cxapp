@@ -1,4 +1,4 @@
-import { WorkspaceDetailTable, WorkspaceShowCard } from "@codexsun/ui/workspace/show";
+import { WorkspaceDetailTable, WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import type { Tenant } from "./tenant.types";
 
 export function TenantSettings({ tenant }: { tenant: Tenant }) {

@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { SizesRepository } from "./sizes.repository.js";
 import type { SizesListFilters, SizesRecord, SizesSavePayload } from "./sizes.types.js";
 

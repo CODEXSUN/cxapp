@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { TenantDatabaseForm } from "./tenant-database.form";
 import {
   useTenantDatabaseDetailsQuery,

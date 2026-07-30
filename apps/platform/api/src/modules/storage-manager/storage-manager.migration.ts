@@ -4,25 +4,25 @@ import type { PlatformDatabase } from "../../database/schema.js";
 export async function migrateStorageManagerModule(database: Kysely<PlatformDatabase>) {
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_public_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_private_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
 
   await database.schema
-    .createTable("app_storage_objects")
+    .createTable("storage_objects")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -44,14 +44,14 @@ export async function migrateStorageManagerModule(database: Kysely<PlatformDatab
   await database.schema
     .createIndex("storage_objects_scope_idx")
     .ifNotExists()
-    .on("app_storage_objects")
+    .on("storage_objects")
     .columns(["scope", "tenant_id", "visibility"])
     .execute();
   await database.schema
     .createIndex("storage_objects_owner_path_idx")
     .ifNotExists()
     .unique()
-    .on("app_storage_objects")
+    .on("storage_objects")
     .columns(["scope", "tenant_id", "visibility", "relative_path"])
     .execute();
 }

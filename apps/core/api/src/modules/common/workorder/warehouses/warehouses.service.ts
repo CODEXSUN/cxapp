@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { WarehousesRepository } from "./warehouses.repository.js";
 import type {
   WarehousesListFilters,

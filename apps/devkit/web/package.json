@@ -1,0 +1,25 @@
+{
+  "name": "@cxapp/devkit-web",
+  "version": "1.0.44",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cxapp": "./src/cxapp.tsx",
+    "./modules/*": "./src/modules/*/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@cxapp/ui": "^1.0.44",
+    "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-table": "^8.21.3",
+    "lucide-react": "^1.22.0",
+    "react": "^19.0.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
+  }
+}

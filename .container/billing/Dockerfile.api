@@ -13,17 +13,17 @@ COPY apps/billing/api ./apps/billing/api
 COPY apps/mail/api ./apps/mail/api
 
 RUN npm ci \
-  && npm run build -w @codexsun/framework \
-  && npm run build -w @codexsun/core-api \
-  && npm run build -w @codexsun/billing-api \
-  && npm run build -w @codexsun/mail-api \
-  && npm run build -w @codexsun/platform-api \
+  && npm run build -w @cxapp/framework \
+  && npm run build -w @cxapp/core-api \
+  && npm run build -w @cxapp/billing-api \
+  && npm run build -w @cxapp/mail-api \
+  && npm run build -w @cxapp/platform-api \
   && npm run dependencies:check
 
 FROM build AS migrations
-ARG CODEXSUN_VERSION
+ARG CXAPP_VERSION
 LABEL org.opencontainers.image.title="CODEXSUN Billing Stack Migrations" \
-      org.opencontainers.image.version="$CODEXSUN_VERSION"
+      org.opencontainers.image.version="$CXAPP_VERSION"
 ENV NODE_ENV=production
 CMD ["npm", "run", "db:migrations:run"]
 
@@ -32,11 +32,11 @@ RUN npm prune --omit=dev
 
 FROM node:${NODE_RUNTIME_VERSION}-bookworm-slim AS runtime
 
-ARG CODEXSUN_VERSION
+ARG CXAPP_VERSION
 ARG NPM_RUNTIME_VERSION
 ARG PLATFORM_API_PORT
 LABEL org.opencontainers.image.title="CODEXSUN Billing Stack API" \
-      org.opencontainers.image.version="$CODEXSUN_VERSION"
+      org.opencontainers.image.version="$CXAPP_VERSION"
 
 WORKDIR /app
 RUN npm install --global npm@${NPM_RUNTIME_VERSION} \
@@ -58,16 +58,16 @@ COPY --from=build /app/dist/apps/core/api ./apps/core/api/dist
 COPY --from=build /app/dist/apps/billing/api ./apps/billing/api/dist
 COPY --from=build /app/dist/apps/mail/api ./apps/mail/api/dist
 COPY --from=build /app/dist ./dist
-COPY .container/scripts/api-entrypoint.sh /usr/local/bin/codexsun-api-entrypoint
+COPY .container/scripts/api-entrypoint.sh /usr/local/bin/cxapp-api-entrypoint
 
 RUN sed -i 's#\./src/index\.ts#./dist/index.js#g; s#\./src/modules/mail/index\.ts#./dist/modules/mail/index.js#g' \
       /app/apps/core/api/package.json \
       /app/apps/billing/api/package.json \
       /app/apps/mail/api/package.json \
-  && chmod +x /usr/local/bin/codexsun-api-entrypoint
+  && chmod +x /usr/local/bin/cxapp-api-entrypoint
 ENV NODE_ENV=production
 USER node
 EXPOSE ${PLATFORM_API_PORT}
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=10 \
   CMD node -e "fetch('http://127.0.0.1:'+process.env.PLATFORM_API_PORT+'/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
-ENTRYPOINT ["codexsun-api-entrypoint"]
+ENTRYPOINT ["cxapp-api-entrypoint"]

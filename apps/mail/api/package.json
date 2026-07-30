@@ -1,6 +1,6 @@
 {
-  "name": "@codexsun/mail-api",
-  "version": "1.0.43",
+  "name": "@cxapp/mail-api",
+  "version": "1.0.44",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,11 +10,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "tsx --test src/modules/mail/mail.spec.ts",
-    "typecheck": "npm run build -w @codexsun/framework && tsc -p tsconfig.json --noEmit",
+    "typecheck": "npm run build -w @cxapp/framework && tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@codexsun/framework": "^1.0.43",
+    "@cxapp/framework": "^1.0.44",
     "fastify": "^5.2.1",
     "imapflow": "^1.0.195",
     "kysely": "^0.29.0",

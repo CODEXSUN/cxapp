@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { PincodeRepository } from "./pincode.repository.js";
 import type {
   Pincode,

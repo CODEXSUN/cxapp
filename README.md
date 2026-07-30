@@ -48,30 +48,70 @@ Media services are installed once alongside the composed Platform API and web
 runtime.
 
 ```bash
-npm run env:configure
-npm run env:deployment:check
-bash .container/setup.sh billing
+bash prepare-env.sh
+bash setup.sh
 ```
 
-For a local source update:
+`prepare-env.sh` creates or updates the private `.container/deploy.env` from
+`.container/deploy.env.sample`. It never reads or copies the development
+`.env`. `setup.sh` only validates the prepared deployment file before applying
+the container installation.
+
+A Linux deployment host needs Docker and Compose, but does not need Node.js or
+npm installed: environment preparation runs through the declared Docker Node
+image when host Node.js is unavailable. Press Enter at a credential prompt to
+preserve its existing deployment value.
+
+For a non-interactive host where administrator credentials already exist in
+`.container/deploy.env`, run:
 
 ```bash
-bash .container/deploy.sh billing up
+bash prepare-env.sh --non-interactive
+bash setup.sh --yes
 ```
 
-For a registry-based release, publish on CI and upgrade the Platform stack on
-the deployment host:
+For repeated local deployments, open the cleanup menu before reinstalling:
 
 ```bash
-bash .container/deploy.sh billing publish
-bash .container/deploy.sh billing upgrade
+bash setup.sh --clean
 ```
 
-MariaDB is exposed at the host binding and port declared in `.env`. The root
-`.env` is the only application and deployment configuration source. Normal
+The menu offers application-only cleanup, complete runtime cleanup while
+preserving all data, or full local data cleanup including MariaDB, Redis, File
+Browser, application storage, named volumes, and the CODEXSUN network. Docker
+build-cache pruning is a separate optional choice.
+
+On Windows, use Git Bash explicitly when `bash` resolves to WSL but no Linux
+distribution is installed:
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" setup.sh
+```
+
+After pulling or copying an updated checkout, validate the existing deployment
+without changing it:
+
+```bash
+bash update.sh --check
+```
+
+Apply a guarded source update interactively, or use `--yes` on an automated
+deployment host:
+
+```bash
+bash update.sh
+bash update.sh --yes
+```
+
+MariaDB is exposed at the host binding and port declared in
+`.container/deploy.env`. Root `.env` is development-only; container setup,
+updates, migrations, and smoke checks read only `.container/deploy.env`. Normal
 updates preserve configuration, credentials, databases, uploads, and named
-volumes. See `.container/README.md` for interactive credential setup, the full
-port map, registry flow, persistence contract, and verification commands.
+volumes. The updater verifies Compose ownership before any build, creates a
+validated MariaDB backup before migration, replaces only `cxapp-api` and
+`cxapp-web`, runs the complete deployment smoke test, and restores the previous
+application images if replacement fails. See `.container/README.md` for the
+full port map, registry flow, persistence contract, and verification commands.
 
 ## Workspace
 

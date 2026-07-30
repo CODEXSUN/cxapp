@@ -174,11 +174,11 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
 
-  [data-design-system="codexsun"] {
-    --cx-design-marker: "codexsun";
+  [data-design-system="cxapp"] {
+    --cx-design-marker: "cxapp";
   }
 
-  [data-design-system="codexsun"][data-design-variant="default"] {
+  [data-design-system="cxapp"][data-design-variant="default"] {
     --radius: 0.5rem;
     --background: oklch(0.985 0.006 180);
     --foreground: oklch(0.19 0.024 248);
@@ -216,7 +216,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="compact"] {
+  [data-design-system="cxapp"][data-design-variant="compact"] {
     --radius: 0.375rem;
     --background: oklch(0.975 0.004 240);
     --foreground: oklch(0.18 0.034 255);
@@ -254,7 +254,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="clear"] {
+  [data-design-system="cxapp"][data-design-variant="clear"] {
     --radius: 0.625rem;
     --background: oklch(0.99 0.005 95);
     --foreground: oklch(0.2 0.042 260);
@@ -292,7 +292,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="shadcn"] {
+  [data-design-system="cxapp"][data-design-variant="shadcn"] {
     --radius: 0.45rem;
     --background: #fafafa;
     --foreground: #171717;
@@ -332,7 +332,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="neutral"] {
+  [data-design-system="cxapp"][data-design-variant="neutral"] {
     --radius: 0.5rem;
     --background: #f8fafc;
     --foreground: #0f172a;
@@ -372,7 +372,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="orange"] {
+  [data-design-system="cxapp"][data-design-variant="orange"] {
     --radius: 0.5rem;
     --background: #fff7ed;
     --foreground: #431407;
@@ -412,7 +412,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="green"] {
+  [data-design-system="cxapp"][data-design-variant="green"] {
     --radius: 0.5rem;
     --background: #f0fdf4;
     --foreground: #052e16;
@@ -452,7 +452,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="blue"] {
+  [data-design-system="cxapp"][data-design-variant="blue"] {
     --radius: 0.5rem;
     --background: #eff6ff;
     --foreground: #172554;
@@ -492,7 +492,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="purple"] {
+  [data-design-system="cxapp"][data-design-variant="purple"] {
     --radius: 0.5rem;
     --background: #faf5ff;
     --foreground: #3b0764;
@@ -532,7 +532,7 @@
     --sidebar-ring: var(--ring);
   }
 
-  [data-design-system="codexsun"][data-design-variant="graphite"] {
+  [data-design-system="cxapp"][data-design-variant="graphite"] {
     --radius: 0.5rem;
     --background: #f8fafc;
     --foreground: #111827;
@@ -719,6 +719,26 @@
     box-shadow: 0 24px 48px -30px color-mix(in oklab, var(--foreground) 58%, transparent);
     padding: 4px;
     width: 100%;
+  }
+
+  .auth-content {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .auth-session-badge {
+    background: #fffbeb;
+    border-radius: 999px;
+    color: #a16207;
+    font-size: 13px;
+    font-weight: 600;
+    justify-self: center;
+    line-height: 1.25;
+    margin: 0;
+    padding: 6px 12px;
+    text-align: center;
+    white-space: nowrap;
   }
 
   .auth-card-frame-sa {

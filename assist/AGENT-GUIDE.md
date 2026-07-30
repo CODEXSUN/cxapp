@@ -39,6 +39,14 @@ Do not read historical blueprints, product plans, or runbooks by default when th
 - Use root scripts for dependency checks, formatting, lint, TypeScript, boundaries, builds, versions, and releases.
 - Generated runtime logs, caches, IDE state, and agent run output do not belong in the repository.
 
+## CXApp Internal Naming Contract
+
+- CXApp is the repository and runtime identity. New environment variables must use the `CXAPP_` prefix, and workspace packages must use the `@cxapp/*` scope.
+- Internal cookies, browser storage, cache keys, JWT issuer/audience values, database defaults, Docker resources, image names, service names, queues, locks, events, test resources, and generated filenames must use `cxapp`.
+- Do not add compatibility reads for the retired environment prefix. Deployment configuration must be migrated atomically and fail closed when required `CXAPP_*` values are absent.
+- `CODEXSUN`, `Codexsun`, and `codexsun` may remain only where they are public identity: visible product branding, `codexsun.com` and branded email domains, the `CODEXSUN` GitHub organization, the branded default tenant/corporate identity, or the canonical local repository path recorded above.
+- Historical changelog entries remain historical evidence. Active source, examples, tests, and operational instructions must use the CXApp internal naming contract.
+
 ## Architecture Boundary
 
 - CODEXSUN is a modular monolith with explicit application and leaf-module ownership.
@@ -140,6 +148,8 @@ When a table row opens View, action/menu clicks must stop propagation so Edit or
 
 ## Database Pattern
 
+- Platform master tables are unprefixed. The `app_` prefix is only for tenant-database framework/runtime tables; Core, Billing, and Mail retain their owner prefixes.
+- Every database uses `migration_schema` as its migration ledger. Treat `app_migration_batches` only as a legacy name that the framework adopts in place.
 - Internal primary keys use `INT NOT NULL AUTO_INCREMENT PRIMARY KEY` in Core/Common tables unless a documented application rule requires another identity model.
 - Status fields use `VARCHAR(24) NOT NULL DEFAULT 'active'`.
 - Use `created_at` and `updated_at`; add `deleted_at` only where soft deletion is part of the module contract.
@@ -150,7 +160,7 @@ When a table row opens View, action/menu clicks must stop propagation so Edit or
 
 ## UI Pattern
 
-- Use `@codexsun/ui` controls and workspace primitives.
+- Use `@cxapp/ui` controls and workspace primitives.
 - Use `WorkspaceLookup` for persisted relationships.
 - Use shared table, filters, pagination, row actions, upsert dialog, banners, and status badges.
 - Required fields show required markers and useful validation messages.
@@ -232,7 +242,7 @@ Do not describe planned, inferred, or unexecuted verification as completed.
 
 - Production application traffic uses `app.codexsun.com` as the canonical shared host.
 - On that host, an exact, unique Corporate ID selects the tenant before user credentials are checked. Tenant code and slug are not Corporate ID aliases.
-- A custom host may select a tenant only after its domain mapping is active and DNS-verified. The canonical host can never be assigned to one tenant.
+- A custom host may narrow tenant resolution only after its domain mapping is active and DNS-verified, but tenant login must still require an exact matching Corporate ID before user credentials are checked. The canonical host can never be assigned to one tenant.
 - The server owns tenant routing. Never trust browser-supplied tenant ID, database name, company ID, or financial-year headers without replacing and validating them from signed session claims and the tenant registry.
 - Tenant database secrets are server-only references and resolution fails closed. Never fall back to a global password for an unknown tenant secret reference.
 - Browser authentication uses one encrypted, `HttpOnly`, `Secure`, host-only, `SameSite=Strict` cookie. Never persist JWTs, refresh tokens, or session IDs in localStorage or sessionStorage.

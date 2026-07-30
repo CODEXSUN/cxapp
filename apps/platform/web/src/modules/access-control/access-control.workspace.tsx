@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { AccessControlForm } from "./access-control.form";
 import { useAccessControlMutations, useAccessControlQuery } from "./access-control.hooks";
 import { AccessControlList } from "./access-control.list";

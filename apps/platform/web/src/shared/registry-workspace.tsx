@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Pencil, Plus, RefreshCw, Save } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
+import { Button } from "@cxapp/ui/components/button";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,21 +9,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle
-} from "@codexsun/ui/components/alert-dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceDetailTable, WorkspaceShowCard } from "@codexsun/ui/workspace/show";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/components/alert-dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceDetailTable, WorkspaceShowCard } from "@cxapp/ui/workspace/show";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableHeaderCell,
   WorkspaceTablePanel,
   WorkspaceTableLoadingState
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import {
   WorkspaceFormBanner,
   WorkspaceFormField,
@@ -31,8 +31,8 @@ import {
   WorkspaceFormGrid,
   WorkspaceFormPanel,
   WorkspaceUpsertPage
-} from "@codexsun/ui/workspace/upsert";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
+} from "@cxapp/ui/workspace/upsert";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 
 export type RegistryRecord = {
   id: number;

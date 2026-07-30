@@ -6,7 +6,7 @@ import {
   rollbackTablePrefixPolicy,
   runMigrationBatch,
   type MigrationBatch
-} from "@codexsun/framework/db";
+} from "@cxapp/framework/db";
 import type { PlatformDatabase, TenantDatabase } from "../../database/schema.js";
 import {
   migrateTenantPermissionModule,
@@ -67,6 +67,11 @@ export const tenantRuntimeMigrations = [
     description: "Backfill and validate standard tenant runtime identity and audit columns.",
     name: "platform.tenant-runtime.standard-columns-v1",
     statements: ["VALIDATE standard identity and audit columns"]
+  },
+  {
+    description: "Add database-generated UUID defaults for repeatable tenant runtime writes.",
+    name: "platform.tenant-runtime.uuid-defaults-v2",
+    statements: ["VALIDATE database-generated UUID defaults"]
   }
 ] as const;
 
@@ -171,7 +176,7 @@ export const tenantRuntimeMigrationBatch: MigrationBatch<TenantDatabase> = {
 
 export async function migrateTenantRegistryModule(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("app_tenants")
+    .createTable("tenants")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -196,7 +201,7 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
     .execute();
   await ensureTenantColumns(database);
   await database
-    .updateTable("app_tenants")
+    .updateTable("tenants")
     .set({ corporate_id: sql<string>`UPPER(tenant_code)` })
     .where("corporate_id", "is", null)
     .execute();
@@ -204,12 +209,12 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
     .createIndex("tenants_corporate_id_unique")
     .ifNotExists()
     .unique()
-    .on("app_tenants")
+    .on("tenants")
     .column("corporate_id")
     .execute();
 
   await database.schema
-    .createTable("app_tenant_audit_events")
+    .createTable("tenant_audit_events")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -218,9 +223,9 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
     .addColumn("actor_email", "varchar(180)", (col) => col.notNull())
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addForeignKeyConstraint(
-      "app_tenant_audit_events_tenant_fk",
+      "tenant_audit_events_tenant_fk",
       ["tenant_id"],
-      "app_tenants",
+      "tenants",
       ["id"],
       (constraint) => constraint.onDelete("cascade")
     )
@@ -237,7 +242,7 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
   await database.schema
     .createIndex("tenant_audit_events_tenant_id_idx")
     .ifNotExists()
-    .on("app_tenant_audit_events")
+    .on("tenant_audit_events")
     .column("tenant_id")
     .execute();
 }
@@ -268,77 +273,77 @@ async function migrateTenantModuleSettings(database: Kysely<TenantDatabase>) {
 }
 
 async function ensureTenantColumns(database: Kysely<PlatformDatabase>) {
-  await addColumnIfMissing(database, "app_tenants", "uuid", "VARCHAR(8) NULL UNIQUE");
-  await addColumnIfMissing(database, "app_tenants", "corporate_id", "VARCHAR(120) NULL");
-  await addColumnIfMissing(database, "app_tenants", "mobile", "VARCHAR(40) NULL");
-  await addColumnIfMissing(database, "app_tenants", "slug", "VARCHAR(120) NULL");
+  await addColumnIfMissing(database, "tenants", "uuid", "VARCHAR(8) NULL UNIQUE");
+  await addColumnIfMissing(database, "tenants", "corporate_id", "VARCHAR(120) NULL");
+  await addColumnIfMissing(database, "tenants", "mobile", "VARCHAR(40) NULL");
+  await addColumnIfMissing(database, "tenants", "slug", "VARCHAR(120) NULL");
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "status",
     "VARCHAR(32) NOT NULL DEFAULT 'active'"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "db_type",
     "VARCHAR(32) NOT NULL DEFAULT 'mariadb'"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "db_host",
     "VARCHAR(180) NOT NULL DEFAULT '127.0.0.1'"
   );
-  await addColumnIfMissing(database, "app_tenants", "db_port", "INT NOT NULL DEFAULT 3306");
-  await addColumnIfMissing(database, "app_tenants", "db_name", "VARCHAR(120) NULL");
+  await addColumnIfMissing(database, "tenants", "db_port", "INT NOT NULL DEFAULT 3306");
+  await addColumnIfMissing(database, "tenants", "db_name", "VARCHAR(120) NULL");
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "db_user",
     "VARCHAR(120) NOT NULL DEFAULT 'root'"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "db_secret_ref",
     "VARCHAR(180) NOT NULL DEFAULT 'DB_PASSWORD'"
   );
-  await addColumnIfMissing(database, "app_tenants", "enabled_module_keys", "LONGTEXT NULL");
+  await addColumnIfMissing(database, "tenants", "enabled_module_keys", "LONGTEXT NULL");
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "default_landing_app",
     "VARCHAR(64) NOT NULL DEFAULT 'application'"
   );
-  await addColumnIfMissing(database, "app_tenants", "payload_settings", "LONGTEXT NULL");
+  await addColumnIfMissing(database, "tenants", "payload_settings", "LONGTEXT NULL");
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_public_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "storage_private_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "created_at",
     "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
   );
   await addColumnIfMissing(
     database,
-    "app_tenants",
+    "tenants",
     "updated_at",
     "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
   );

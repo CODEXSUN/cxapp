@@ -1,4 +1,4 @@
-import { Button, Card, StatusBadge, WebLayout } from "@codexsun/ui";
+import { Button, Card, StatusBadge, WebLayout } from "@cxapp/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiGet } from "../../shared/api/platform-api";

@@ -3,17 +3,17 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { env } from "../env.js";
 
 const cookieVersion = "v1";
-const cookieAad = Buffer.from("codexsun.auth.session.v1", "utf8");
+const cookieAad = Buffer.from("cxapp.auth.session.v1", "utf8");
 const legacyCookieNames = [
-  "codexsun_session",
-  "codexsun_session_admin",
-  "codexsun_session_sa",
-  "codexsun_session_tenant",
-  "__Host-codexsun_session"
+  "cxapp_session",
+  "cxapp_session_admin",
+  "cxapp_session_sa",
+  "cxapp_session_tenant",
+  "__Host-cxapp_session"
 ] as const;
 
 export function authCookieName() {
-  return env.NODE_ENV === "production" ? "__Host-codexsun_session" : "codexsun_session";
+  return env.NODE_ENV === "production" ? "__Host-cxapp_session" : "cxapp_session";
 }
 
 export function readEncryptedSessionCookie(request: FastifyRequest) {
@@ -81,5 +81,5 @@ export function decryptSessionCookie(value: string) {
 }
 
 function cookieKey() {
-  return createHash("sha256").update(`codexsun:auth-cookie:${env.JWT_SECRET}`, "utf8").digest();
+  return createHash("sha256").update(`cxapp:auth-cookie:${env.JWT_SECRET}`, "utf8").digest();
 }

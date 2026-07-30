@@ -1,13 +1,13 @@
 import { Eye, Printer, RotateCcw, Trash2 } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableLoadingState,
   WorkspaceTablePanel
-} from "@codexsun/ui/workspace/table";
-import { cn } from "@codexsun/ui/lib/utils";
+} from "@cxapp/ui/workspace/table";
+import { cn } from "@cxapp/ui/lib/utils";
 import { formatDate, formatMoney, totalSaleQuantity } from "./sales.services";
 import type { Sale } from "./sales.types";
 

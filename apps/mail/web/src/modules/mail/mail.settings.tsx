@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@codexsun/ui/components/button";
+import { Button } from "@cxapp/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -7,17 +7,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from "@codexsun/ui/components/dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { Label } from "@codexsun/ui/components/label";
+} from "@cxapp/ui/components/dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { Label } from "@cxapp/ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "@codexsun/ui/components/select";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/components/select";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import { mailSettingsSchema } from "./mail.schema";
 import type { MailSettings, MailSettingsPayload } from "./mail.types";
 
@@ -273,7 +273,7 @@ function Field({ children, label }: { children: React.ReactNode; label: string }
 }
 function blankSettings(): MailSettingsPayload {
   return {
-    companyId: Number(localStorage.getItem("codexsun.tenant.company-id")) || 0,
+    companyId: Number(localStorage.getItem("cxapp.tenant.company-id")) || 0,
     enabled: false,
     fallbackEnabled: true,
     fromEmail: "",

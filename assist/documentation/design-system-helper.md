@@ -19,7 +19,7 @@ business logic or UI assumptions from an older CODEXSUN/CXSUN checkout.
 
 ## Non-Negotiable Rules
 
-- Use shared design-system and workspace components from `@codexsun/ui`.
+- Use shared design-system and workspace components from `@cxapp/ui`.
 - Do not create one-off list, table, form, select, autocomplete, badge, toast, tab, date picker, or pagination UI.
 - Do not use hardcoded business records, fake lookup rows, localStorage seeds, or frontend assumptions for module data.
 - Every module must be DB/API-backed before it is treated as complete.
@@ -195,7 +195,7 @@ Switch:
 
 Select:
 
-- Use `WorkspaceSelect` or the shadcn/Radix themed `Select` from `@codexsun/ui`.
+- Use `WorkspaceSelect` or the shadcn/Radix themed `Select` from `@cxapp/ui`.
 - Do not use native `<select>` on workspace screens.
 - Dropdown hover and selected states must use the current theme highlight, not browser blue.
 - Theming must work for shadcn, neutral, orange, green, blue, purple, and other approved palettes.

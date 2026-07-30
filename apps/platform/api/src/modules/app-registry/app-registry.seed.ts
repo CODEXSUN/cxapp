@@ -12,7 +12,7 @@ export async function seedAppRegistryModule(database: Kysely<PlatformDatabase>) 
   console.info(`[seeder] seeding app registry (${platformAppRegistry.length} apps)`);
   for (const app of platformAppRegistry) {
     await database
-      .insertInto("app_platform_apps")
+      .insertInto("platform_apps")
       .values({
         always_enabled: app.alwaysEnabled,
         app_id: app.appId,

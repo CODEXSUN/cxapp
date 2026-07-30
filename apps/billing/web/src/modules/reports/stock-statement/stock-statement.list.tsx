@@ -2,7 +2,7 @@ import {
   WorkspaceTableEmptyState,
   WorkspaceTableLoadingState,
   WorkspaceTablePanel
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import { formatStockQuantity, formatStockStatementMoney } from "./stock-statement.services";
 import type { StockStatementLine } from "./stock-statement.types";
 

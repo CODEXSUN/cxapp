@@ -1,10 +1,10 @@
 import { RefreshCwIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
-import { Label } from "@codexsun/ui/components/label";
-import { RadioGroup, RadioGroupItem } from "@codexsun/ui/components/radio-group";
-import { StatusBadge } from "@codexsun/ui";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
+import { Label } from "@cxapp/ui/components/label";
+import { RadioGroup, RadioGroupItem } from "@cxapp/ui/components/radio-group";
+import { StatusBadge } from "@cxapp/ui";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
 import { queueBackendSchema } from "./queue-management.schema";
 import type { QueueBackend, QueueJobFilters, QueueRuntimeSettings } from "./queue-management.types";
 
@@ -83,7 +83,7 @@ export function QueueManagementForm({
         </RadioGroup>
         {settings && !settings.redisConfigured ? (
           <p className="mt-2 text-xs text-amber-700">
-            Configure CODEXSUN_REDIS_URL to enable distributed BullMQ processing.
+            Configure CXAPP_REDIS_URL to enable distributed BullMQ processing.
           </p>
         ) : null}
       </div>

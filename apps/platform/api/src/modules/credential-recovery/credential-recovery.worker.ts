@@ -1,5 +1,5 @@
 import type { QueueJobPayload } from "../queue-manager/queue-manager.types.js";
-import { sealSystemMailPayload } from "@codexsun/mail-api";
+import { sealSystemMailPayload } from "@cxapp/mail-api";
 
 export function buildPasswordResetMailJob(input: {
   bodyHtml: string;

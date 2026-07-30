@@ -1,8 +1,8 @@
-const TENANT_TOKEN_KEY = "codexsun_session_tenant";
-const TENANT_ID_KEY = "codexsun_tenant_id";
-const TENANT_DB_NAME_KEY = "codexsun_tenant_db_name";
-const COMPANY_ID_KEY = "codexsun.tenant.company-id";
-const FINANCIAL_YEAR_ID_KEY = "codexsun.tenant.financial-year-id";
+const TENANT_TOKEN_KEY = "cxapp_session_tenant";
+const TENANT_ID_KEY = "cxapp_tenant_id";
+const TENANT_DB_NAME_KEY = "cxapp_tenant_db_name";
+const COMPANY_ID_KEY = "cxapp.tenant.company-id";
+const FINANCIAL_YEAR_ID_KEY = "cxapp.tenant.financial-year-id";
 
 export function getToken(_desk?: "tenant"): string | null {
   try {
@@ -51,7 +51,7 @@ export function getTenantUserLabel(): string {
 
 export function getTenantUserIdentity(): { email: string; name: string } {
   try {
-    const value = sessionStorage.getItem("codexsun.auth.identity");
+    const value = sessionStorage.getItem("cxapp.auth.identity");
     const identity = value ? (JSON.parse(value) as { email?: unknown; name?: unknown }) : null;
     const email = typeof identity?.email === "string" ? identity.email.trim() : "";
     const name = typeof identity?.name === "string" ? identity.name.trim() : "";

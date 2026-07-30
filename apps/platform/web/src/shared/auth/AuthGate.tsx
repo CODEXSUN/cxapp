@@ -1,7 +1,7 @@
-import { Button } from "@codexsun/ui/components/button";
-import { Card } from "@codexsun/ui/components/card";
-import { GlobalLoader } from "@codexsun/ui/components/global-loader";
-import { StatusBadge } from "@codexsun/ui/components/StatusBadge";
+import { Button } from "@cxapp/ui/components/button";
+import { Card } from "@cxapp/ui/components/card";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
+import { StatusBadge } from "@cxapp/ui/components/StatusBadge";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { restoreSession, type Desk } from "../api/platform-api";

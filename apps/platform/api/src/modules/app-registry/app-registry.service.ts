@@ -5,9 +5,25 @@ import type {
 } from "./app-registry.types.js";
 import { AppRegistryRepository } from "./app-registry.repository.js";
 
-export const defaultTenantModuleKeys = ["platform.application", "billing.sales", "mail"] as const;
+export const defaultTenantModuleKeys = [
+  "platform.application",
+  "billing.sales",
+  "devkit",
+  "mail"
+] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Platform application and module registry.",
+    appId: "devkit",
+    id: 0,
+    label: "DevKit",
+    moduleKey: "devkit",
+    stack: "devkit",
+    uuid: ""
+  },
   {
     alwaysEnabled: true,
     defaultLanding: true,

@@ -1,7 +1,7 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { billingDashboardProjection } from "../dashboard/index.js";
-import { InMemoryEventPublisher, type EventPublisher } from "@codexsun/framework/events";
-import { InMemoryQueueAdapter, type QueueAdapter } from "@codexsun/framework/queue";
+import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
+import { InMemoryQueueAdapter, type QueueAdapter } from "@cxapp/framework/queue";
 import { SalesService } from "../sales/index.js";
 import type { SaleLineItemInput } from "../sales/index.js";
 import { BillingSettingsRepository } from "../settings/settings.repository.js";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
 import { usePlansQuery } from "../plan/plan.hooks";
 import { usePlanAccessMutation, usePlanAccessQuery } from "./plan-access.hooks";
 import { PlanAccessForm } from "./plan-access.form";

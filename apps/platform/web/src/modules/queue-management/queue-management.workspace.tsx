@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { RadioTowerIcon, RotateCcwIcon } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { QueueManagementForm } from "./queue-management.form";
 import {
   useQueueJobMutations,

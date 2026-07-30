@@ -205,7 +205,7 @@ export class StorageManagerRepository {
     roots: { privateRoot: string; publicRoot: string; root: string }
   ) {
     await getPlatformDatabase()
-      .updateTable("app_tenants")
+      .updateTable("tenants")
       .set({
         storage_private_root: roots.privateRoot,
         storage_public_root: roots.publicRoot,
@@ -261,7 +261,7 @@ export class StorageManagerRepository {
     visibility: "private" | "public";
   }) {
     await getPlatformDatabase()
-      .insertInto("app_storage_objects")
+      .insertInto("storage_objects")
       .values({
         checksum: input.checksum ?? null,
         disk_path: input.diskPath,

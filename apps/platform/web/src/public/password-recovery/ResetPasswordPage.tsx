@@ -1,4 +1,4 @@
-import { AuthLayout, Button, Field } from "@codexsun/ui";
+import { AuthLayout, Button, Field } from "@cxapp/ui";
 import { KeyRound } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { resetPassword, type Desk } from "../../shared/api/platform-api";

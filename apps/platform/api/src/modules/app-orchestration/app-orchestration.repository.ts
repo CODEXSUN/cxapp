@@ -1,8 +1,8 @@
 import { createConnection } from "node:net";
-import { env } from "../../env.js";
+import { env, platformRuntime } from "../../env.js";
 import type { OrchestratedApp, OrchestratedService } from "./app-orchestration.types.js";
 
-const apiUrl = new URL(env.PLATFORM_API_URL);
+const apiUrl = new URL(platformRuntime.apiUrl);
 const webUrl = new URL(env.PLATFORM_WEB_ORIGIN);
 const platformDefinition = {
   id: "platform",

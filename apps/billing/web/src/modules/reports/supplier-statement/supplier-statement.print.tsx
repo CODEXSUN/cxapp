@@ -1,4 +1,4 @@
-import { WorkspacePrintSheet } from "@codexsun/ui/workspace/print";
+import { WorkspacePrintSheet } from "@cxapp/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import {
   formatSupplierStatementDate,

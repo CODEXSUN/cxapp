@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "@codexsun/framework/http";
+import { ok } from "@cxapp/framework/http";
 import { PlanService } from "./plan.service.js";
 import type { PlanSavePayload } from "./plan.types.js";
 const service = new PlanService();

@@ -93,8 +93,8 @@ npm run test:e2e:composed-runtime
 For a faster first pass during active development:
 
 ```bash
-npm run typecheck -w @codexsun/platform-web
-npm run lint -w @codexsun/platform-web
+npm run typecheck -w @cxapp/platform-web
+npm run lint -w @cxapp/platform-web
 ```
 
 Complete browser verification against the root `npm run dev` runtime when the

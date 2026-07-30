@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { StockRejectionTypesRepository } from "./stock-rejection-types.repository.js";
 import type {
   StockRejectionTypesListFilters,

@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migratePlatformActivityModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_platform_activity")
+    .createTable("platform_activity")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())

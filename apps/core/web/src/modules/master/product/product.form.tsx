@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { ArrowLeft, Plus, Save, X } from "lucide-react";
-import type { WorkspaceLookupOption } from "@codexsun/ui/workspace/lookup";
-import { Button } from "@codexsun/ui/components/button";
+import type { WorkspaceLookupOption } from "@cxapp/ui/workspace/lookup";
+import { Button } from "@cxapp/ui/components/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from "@codexsun/ui/components/dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
+} from "@cxapp/ui/components/dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
 import {
   WorkspaceFormActions,
   WorkspaceFormBanner,
@@ -18,7 +18,7 @@ import {
   WorkspaceFormField,
   WorkspaceFormGrid,
   WorkspaceFormSurface
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { productSchema } from "./product.schema";
 import type {
   ProductLookupCreate,

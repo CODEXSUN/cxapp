@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { ok } from "@codexsun/framework/http";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { ok } from "@cxapp/framework/http";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { DatabaseMaintenanceService } from "./database-maintenance.service.js";
 import type { DatabaseActionPayload } from "./database-maintenance.types.js";

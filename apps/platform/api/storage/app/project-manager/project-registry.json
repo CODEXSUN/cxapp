@@ -1,0 +1,23 @@
+[
+  {
+    "active": true,
+    "assignee": "CODEXSUN Engineering",
+    "createdAt": "2026-07-25T00:00:00.000Z",
+    "description": "<p>Plan and deliver the DevKit project lifecycle from roadmap through review.</p>",
+    "dueDate": "",
+    "id": "project-devkit-roadmap",
+    "key": "PRJ-0001",
+    "kind": "project",
+    "lane": "planning",
+    "moduleKey": "project-manager",
+    "priority": "high",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 1,
+    "startDate": "2026-07-25",
+    "status": "planning",
+    "title": "DevKit product roadmap",
+    "type": "product",
+    "updatedAt": "2026-07-25T00:00:00.000Z"
+  }
+]

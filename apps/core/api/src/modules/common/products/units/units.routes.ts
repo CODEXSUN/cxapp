@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { UnitsService } from "./units.service.js";
 export const UNITS_COLLECTION_PATH = "/core/common/products/units";
 const service = new UnitsService();

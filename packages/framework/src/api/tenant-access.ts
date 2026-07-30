@@ -73,8 +73,8 @@ function verify(token: string, secret: string): PlatformAccessClaims | null {
       Buffer.from(body, "base64url").toString("utf8")
     ) as PlatformAccessClaims;
     if (
-      claims.iss !== "codexsun-platform-api" ||
-      claims.aud !== "codexsun-platform" ||
+      claims.iss !== "cxapp-platform-api" ||
+      claims.aud !== "cxapp-platform" ||
       typeof claims.exp !== "number" ||
       claims.exp <= Math.floor(Date.now() / 1000)
     ) {

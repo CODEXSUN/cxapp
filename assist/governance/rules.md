@@ -3,6 +3,8 @@
 ## Package Manager And Generated Output Rules
 
 - CODEXSUN uses npm only. Agents and developers must run dependency commands with `npm` from the repository root; pnpm, Yarn, workspace-local installs, and alternative lockfiles are prohibited.
+- The internal application identity is CXApp: environment keys use `CXAPP_*`, npm workspaces use `@cxapp/*`, and machine-facing runtime identifiers use `cxapp`. The public CODEXSUN brand, `codexsun.com` domains, branded email domains, GitHub organization, default branded tenant identity, canonical repository path, and historical changelog are the only allowed CODEXSUN/Codexsun/codexsun exceptions.
+- Never reintroduce aliases for the retired environment prefix. A deployment must migrate its complete environment contract before the new release starts.
 - The repository must contain exactly one dependency installation tree at `/node_modules`. Never create or retain `node_modules` inside `apps/`, `packages/`, `tools/`, or any other subfolder.
 - The root `package-lock.json` is the only dependency lockfile. Do not create `pnpm-lock.yaml`, `yarn.lock`, `.pnpm-store`, or a `node_modules/.pnpm` store.
 - All workspaces must resolve dependencies from the root installation through npm workspaces. A workspace must not carry installation configuration that creates its own dependency tree.
@@ -157,8 +159,8 @@ Passing TypeScript or lint alone does not prove module ownership. The ownership 
 
 - Use the centralized design system and follow `assist/documentation/design-system-helper.md` before creating or changing workspace modules.
 - Keep layouts clear, dense, and work-focused for business users.
-- Use the shared workspace list, table, pagination, show, upsert, banner, autocomplete, select, date, tab, toast, and status components from `@codexsun/ui`.
-- Use the shadcn/Radix themed design-system select (`WorkspaceSelect` or `Select` from `@codexsun/ui`) for all form selects; do not use raw native `<select>` in workspace/list/upsert screens.
+- Use the shared workspace list, table, pagination, show, upsert, banner, autocomplete, select, date, tab, toast, and status components from `@cxapp/ui`.
+- Use the shadcn/Radix themed design-system select (`WorkspaceSelect` or `Select` from `@cxapp/ui`) for all form selects; do not use raw native `<select>` in workspace/list/upsert screens.
 - Use the workspace lookup (`WorkspaceLookup`) for master/reference autocomplete fields. Use inline create for small common masters such as colour/label, and popup create for heavier masters such as contact/tenant.
 - Lookup/autocomplete options must come from API/database data and must refresh after creating a new option.
 - Foreign/reference fields in CRUD modules must use the shared reference autocomplete pattern, not raw ID inputs. Inline create is allowed only for lightweight references with safe defaults, such as Plans and Apps; heavyweight references such as Tenants must stay in their owning module and be selected by autocomplete.
@@ -174,6 +176,7 @@ Passing TypeScript or lint alone does not prove module ownership. The ownership 
 ## Data Rules
 
 - Tenant data is never global data.
+- Platform master tables are unprefixed. Tenant runtime tables use `app_`; Core, Billing, and Mail tables use their owner prefixes. All databases use the unprefixed `migration_schema` ledger.
 - Application tables must use `id` only as an internal integer auto-increment primary key. Every application table that can be referenced outside its owning database must also include a unique 8-character lowercase hex `uuid` column for public APIs, external integrations, URLs, logs, and cross-boundary references. Do not use names such as `public_id`; the public key column name is always `uuid`.
 - Super Admin modules must be DB/API-backed; do not use hardcoded business records, frontend seed rows, localStorage module data, or assumptions as final behavior.
 - Backend validation is required for required fields, duplicate records, status values, relationship references, safe delete blockers, and tenant/platform boundaries.
@@ -215,7 +218,7 @@ Passing TypeScript or lint alone does not prove module ownership. The ownership 
 ## Authentication And Domain Rules
 
 - `app.codexsun.com` is the shared application domain; Corporate ID is mandatory there for tenant login.
-- Custom tenant domains require ownership verification and an active mapping before they may resolve a tenant.
+- Custom tenant domains require ownership verification and an active mapping before they may resolve a tenant, and Corporate ID remains mandatory and must match that mapped tenant.
 - Host, Corporate ID, tenant status, tenant user, and tenant database secret must be verified in that order.
 - Browser sessions are encrypted, HttpOnly, Secure, SameSite Strict, host-only, and revocable. Browser-readable JWT storage is forbidden.
 - A new login replaces the current browser principal and clears old tokens, cookies, tenant context, and query caches.

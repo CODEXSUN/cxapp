@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { env } from "../../env.js";
 import { hashPassword } from "../../auth/password-hash.js";
 import { getTenantDatabase } from "../../database/tenant-database.js";

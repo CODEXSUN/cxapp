@@ -4,7 +4,12 @@ import { defineConfig, loadEnv } from "vite";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { requireEnvNumber, requireEnvValue } from "@codexsun/framework/env";
+import {
+  platformWebAllowedHosts,
+  requireEnvNumber,
+  requireEnvValue,
+  resolvePlatformRuntime
+} from "@cxapp/framework/env";
 
 const configDir = fileURLToPath(new URL(".", import.meta.url));
 const rootPackage = JSON.parse(
@@ -26,44 +31,47 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(rootPackage.version)
     },
     plugins: [tailwindcss(), react()],
-    ...(command === "serve"
-      ? {
-          server: {
-            allowedHosts: requireEnvValue(
-              runtimeEnv.PLATFORM_WEB_ALLOWED_HOSTS,
-              "PLATFORM_WEB_ALLOWED_HOSTS"
-            )
-              .split(",")
-              .map((host) => host.trim())
-              .filter(Boolean),
-            headers: {
-              "Permissions-Policy": "unload=*"
-            },
-            host: requireEnvValue(runtimeEnv.PLATFORM_WEB_HOST, "PLATFORM_WEB_HOST"),
-            port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
-            proxy: {
-              "/api/billing": {
-                changeOrigin: false,
-                rewrite: (path) => path.replace(/^\/api\/billing/u, "") || "/",
-                target: platformApiTarget(runtimeEnv)
-              },
-              "/api/core": {
-                changeOrigin: false,
-                rewrite: (path) => path.replace(/^\/api\/core/u, "") || "/",
-                target: platformApiTarget(runtimeEnv)
-              },
-              "/api/platform": {
-                changeOrigin: false,
-                rewrite: (path) => path.replace(/^\/api\/platform/u, "") || "/",
-                target: platformApiTarget(runtimeEnv)
-              }
-            }
-          }
-        }
-      : {})
+    ...(command === "serve" ? { server: platformDevelopmentServer(runtimeEnv) } : {})
   };
 });
 
-function platformApiTarget(runtimeEnv: Record<string, string | undefined>) {
-  return requireEnvValue(runtimeEnv.PLATFORM_API_URL, "PLATFORM_API_URL");
+function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined>) {
+  const platformRuntime = resolvePlatformRuntime({
+    NODE_ENV: requireEnvValue(runtimeEnv.NODE_ENV, "NODE_ENV"),
+    PLATFORM_API_PORT: requireEnvNumber(runtimeEnv.PLATFORM_API_PORT, "PLATFORM_API_PORT")
+  });
+  const proxy = {
+    changeOrigin: false,
+    target: platformRuntime.apiUrl
+  };
+
+  return {
+    allowedHosts: platformWebAllowedHosts(
+      requireEnvValue(runtimeEnv.PLATFORM_WEB_ORIGIN, "PLATFORM_WEB_ORIGIN")
+    ),
+    headers: {
+      "Permissions-Policy": "unload=*"
+    },
+    host: platformRuntime.webBindHost,
+    port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
+    proxy: {
+      "/api/billing": {
+        ...proxy,
+        rewrite: (path: string) => path.replace(/^\/api\/billing/u, "") || "/"
+      },
+      "/api/core": {
+        ...proxy,
+        rewrite: (path: string) => path.replace(/^\/api\/core/u, "") || "/"
+      },
+      "/api/devkit": {
+        ...proxy,
+        rewrite: (path: string) =>
+          `/devkit${path.replace(/^\/api\/devkit/u, "") || "/"}`
+      },
+      "/api/platform": {
+        ...proxy,
+        rewrite: (path: string) => path.replace(/^\/api\/platform/u, "") || "/"
+      }
+    }
+  };
 }

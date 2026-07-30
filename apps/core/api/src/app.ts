@@ -1,4 +1,4 @@
-import { requireTenantAccess } from "@codexsun/framework/api";
+import { requireTenantAccess } from "@cxapp/framework/api";
 import type { FastifyInstance } from "fastify";
 import { authorizeCoreRequest } from "./auth/tenant-permission.js";
 import {

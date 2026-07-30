@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from "react";
 import { Plus, Save, Sparkles, Trash2, X } from "lucide-react";
-import type { WorkspaceLookupOption } from "@codexsun/ui/workspace/lookup";
-import { Button } from "@codexsun/ui/components/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@codexsun/ui/components/dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { Textarea } from "@codexsun/ui/components/textarea";
-import { WorkspaceAnimatedTabs } from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+import type { WorkspaceLookupOption } from "@cxapp/ui/workspace/lookup";
+import { Button } from "@cxapp/ui/components/button";
+import { DialogDescription, DialogHeader, DialogTitle } from "@cxapp/ui/components/dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { Textarea } from "@cxapp/ui/components/textarea";
+import { WorkspaceAnimatedTabs } from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceFormActions,
   WorkspaceFormBanner,
@@ -19,7 +19,7 @@ import {
   WorkspaceFormSurface,
   WorkspaceFormTabbedBody,
   WorkspaceUpsertPage
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { contactSchema } from "./contact.schema";
 import type {
   ContactAddress,

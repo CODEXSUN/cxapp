@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "@codexsun/framework/http";
+import { ok } from "@cxapp/framework/http";
 import { z } from "zod";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { TenantDomainService } from "./tenant-domain.service.js";

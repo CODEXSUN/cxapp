@@ -8,7 +8,7 @@ import type {
   QueueJobPayload,
   QueueJobRecord
 } from "./queue-manager.types.js";
-import { processMailJob } from "@codexsun/mail-api";
+import { processMailJob } from "@cxapp/mail-api";
 import { getTenantDatabaseByName } from "../../database/tenant-database.js";
 import {
   enqueueMemoryJob,
@@ -132,10 +132,10 @@ export class QueueManagerService {
 
   async cleanupRetainedJobs() {
     const completedBefore = new Date(
-      Date.now() - env.CODEXSUN_QUEUE_COMPLETED_RETENTION_DAYS * 24 * 60 * 60 * 1000
+      Date.now() - env.CXAPP_QUEUE_COMPLETED_RETENTION_DAYS * 24 * 60 * 60 * 1000
     );
     const failedBefore = new Date(
-      Date.now() - env.CODEXSUN_QUEUE_FAILED_RETENTION_DAYS * 24 * 60 * 60 * 1000
+      Date.now() - env.CXAPP_QUEUE_FAILED_RETENTION_DAYS * 24 * 60 * 60 * 1000
     );
     return this.repository.cleanup({ completedBefore, failedBefore });
   }

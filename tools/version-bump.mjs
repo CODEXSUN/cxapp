@@ -26,6 +26,7 @@ export function bumpNextVersion(rootDir, title = "version update", options = {})
     nextVersion
   );
   updateChangelog(rootDir, nextVersion, title, databaseUpdate);
+  updateDeploymentSample(rootDir, currentVersion, nextVersion);
 
   return {
     currentVersion,
@@ -34,6 +35,22 @@ export function bumpNextVersion(rootDir, title = "version update", options = {})
     reference: Number.parseInt(nextVersion.split(".")[2] ?? "0", 10),
     title
   };
+}
+
+function updateDeploymentSample(rootDir, currentVersion, nextVersion) {
+  const file = resolve(rootDir, ".container", "deploy.env.sample");
+  if (!existsSync(file)) return;
+  const content = readFileSync(file, "utf8")
+    .replace(/^CXAPP_VERSION=.*$/mu, `CXAPP_VERSION=${nextVersion}`)
+    .replace(/^MARIADB_IMAGE_TAG=.*$/mu, `MARIADB_IMAGE_TAG=11.8-cxapp-${nextVersion}`)
+    .replace(/^MEDIA_IMAGE_TAG=.*$/mu, `MEDIA_IMAGE_TAG=${nextVersion}-filebrowser2.63.5`)
+    .replace(/^BILLING_STACK_API_IMAGE_TAG=.*$/mu, `BILLING_STACK_API_IMAGE_TAG=${nextVersion}`)
+    .replace(/^BILLING_STACK_WEB_IMAGE_TAG=.*$/mu, `BILLING_STACK_WEB_IMAGE_TAG=${nextVersion}`)
+    .replace(
+      /^BILLING_STACK_MIGRATIONS_IMAGE_TAG=.*$/mu,
+      `BILLING_STACK_MIGRATIONS_IMAGE_TAG=${nextVersion}`
+    );
+  writeFileSync(file, content.replaceAll(currentVersion, nextVersion), "utf8");
 }
 
 export function findWorkspacePackageFiles(rootDir) {
@@ -128,7 +145,7 @@ function updateInternalDependencyRanges(pkg, currentVersion, nextVersion) {
     }
 
     for (const [name, version] of Object.entries(deps)) {
-      if (name.startsWith("@codexsun/") && version === `^${currentVersion}`) {
+      if (name.startsWith("@cxapp/") && version === `^${currentVersion}`) {
         deps[name] = `^${nextVersion}`;
       }
     }

@@ -85,7 +85,7 @@ Database models should not be exposed directly as API contracts.
 
 ## Shared API Client
 
-Frontend, desktop, mobile, CLI, and internal tools should use `@codexsun/api-client` where practical.
+Frontend, desktop, mobile, CLI, and internal tools should use `@cxapp/api-client` where practical.
 
 The API client should handle:
 
@@ -168,7 +168,7 @@ All protected routes use shared guard helpers from `apps/platform/api/src/auth/g
 
 | Guard                                         | Purpose                                                                | Throws                                                        |
 | --------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `requireSession(app, request)`                | Resolves active session from Bearer token or `codexsun_session` cookie | `AppError.unauthorized()` if missing or invalid               |
+| `requireSession(app, request)`                | Resolves active session from Bearer token or `cxapp_session` cookie | `AppError.unauthorized()` if missing or invalid               |
 | `requireUserType(session, allowedTypes)`      | Checks user type against allowed list                                  | `AppError.forbidden()` if type not allowed                    |
 | `requireSuperAdmin(app, request)`             | Wrapper for super-admin-only routes                                    | `AppError.unauthorized()` or `AppError.forbidden()`           |
 | `requireTenantMatch(request, session)`        | Verifies `x-tenant-id` header matches authenticated session tenant     | `AppError.validation()` or `AppError.forbidden()` on mismatch |
@@ -180,12 +180,12 @@ All protected routes use shared guard helpers from `apps/platform/api/src/auth/g
 
 | Route module                  | File                                     | Owner                    |
 | ----------------------------- | ---------------------------------------- | ------------------------ |
-| Auth (login, session, logout) | `apps/platform/api/src/auth/routes.ts`   | `@codexsun/platform-api` |
-| Tenant management CRUD        | `apps/platform/api/src/tenant/routes.ts` | `@codexsun/platform-api` |
+| Auth (login, session, logout) | `apps/platform/api/src/auth/routes.ts`   | `@cxapp/platform-api` |
+| Tenant management CRUD        | `apps/platform/api/src/tenant/routes.ts` | `@cxapp/platform-api` |
 
 ### Audit Events
 
-Auth and tenant mutations write audit events through `AuditService` (`@codexsun/platform/audit`).
+Auth and tenant mutations write audit events through `AuditService` (`@cxapp/platform/audit`).
 
 | Event Name           | Trigger                       | Fields                                     |
 | -------------------- | ----------------------------- | ------------------------------------------ |

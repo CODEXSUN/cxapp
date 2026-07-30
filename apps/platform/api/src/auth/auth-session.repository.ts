@@ -49,7 +49,7 @@ export class AuthSessionRepository {
     const now = new Date();
     const uuid = randomBytes(4).toString("hex");
     await getPlatformDatabase()
-      .insertInto("app_auth_sessions")
+      .insertInto("auth_sessions")
       .values({
         context_json: JSON.stringify(input.context),
         expires_at: input.expiresAt,
@@ -73,7 +73,7 @@ export class AuthSessionRepository {
 
   async findActive(jti: string) {
     const row = await getPlatformDatabase()
-      .selectFrom("app_auth_sessions")
+      .selectFrom("auth_sessions")
       .selectAll()
       .where("jti", "=", jti)
       .where("revoked_at", "is", null)
@@ -84,7 +84,7 @@ export class AuthSessionRepository {
 
   async revoke(jti: string) {
     await getPlatformDatabase()
-      .updateTable("app_auth_sessions")
+      .updateTable("auth_sessions")
       .set({ revoked_at: new Date(), updated_at: new Date() })
       .where("jti", "=", jti)
       .where("revoked_at", "is", null)
@@ -93,7 +93,7 @@ export class AuthSessionRepository {
 
   async touch(jti: string) {
     await getPlatformDatabase()
-      .updateTable("app_auth_sessions")
+      .updateTable("auth_sessions")
       .set({ last_seen_at: new Date(), updated_at: new Date() })
       .where("jti", "=", jti)
       .where("revoked_at", "is", null)
@@ -102,7 +102,7 @@ export class AuthSessionRepository {
 
   async purgeExpired() {
     await getPlatformDatabase()
-      .deleteFrom("app_auth_sessions")
+      .deleteFrom("auth_sessions")
       .where("expires_at", "<", new Date(Date.now() - 24 * 60 * 60 * 1000))
       .execute();
   }

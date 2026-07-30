@@ -1,0 +1,22 @@
+[
+  {
+    "active": true,
+    "assignee": "",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "release-seed-1",
+    "key": "release.project-manager.json",
+    "kind": "release",
+    "lane": "",
+    "moduleKey": "project-manager",
+    "priority": "medium",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 10,
+    "status": "planned",
+    "title": "Project Manager JSON foundation",
+    "type": "release",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  }
+]

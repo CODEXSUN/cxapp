@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AppError } from "@codexsun/framework/errors";
-import { registerCoreTenantDatabaseConnection } from "@codexsun/core-api";
-import { registerBillingTenantDatabaseConnection } from "@codexsun/billing-api";
+import { AppError } from "@cxapp/framework/errors";
+import { registerCoreTenantDatabaseConnection } from "@cxapp/core-api";
+import { registerBillingTenantDatabaseConnection } from "@cxapp/billing-api";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import {
-  canonicalAppHost,
+  isSharedApplicationHost,
   normalizeTenantDomain
 } from "../modules/tenant-domain/tenant-domain.repository.js";
 import { getTenantDatabase, resolveTenantDatabasePassword } from "../database/tenant-database.js";
@@ -40,13 +40,14 @@ export function registerAuthRequestContext(app: FastifyInstance) {
     const payload = verifyAuthToken(token);
     const session = payload ? await sessions.findActive(payload.jti) : null;
     if (!payload || (source === "cookie" && !session) || !claimsMatchSession(payload, session)) {
-      if (publicAuthPaths.has(request.routeOptions.url ?? request.url.split("?")[0] ?? "")) return;
+      if (isPublicAuthenticationPath(request.routeOptions.url ?? request.url.split("?")[0] ?? ""))
+        return;
       throw AppError.unauthorized("Session expired. Please sign in again.");
     }
 
     const host = requestHost(request);
     if (!hostMatchesClaims(host, payload)) {
-      if (publicAuthPaths.has(request.routeOptions.url ?? "")) return;
+      if (isPublicAuthenticationPath(request.routeOptions.url ?? "")) return;
       throw AppError.unauthorized("This session is not valid for the requested domain.");
     }
     if (source === "cookie") enforceBrowserRequestOrigin(request, host);
@@ -97,6 +98,10 @@ export function registerAuthRequestContext(app: FastifyInstance) {
   });
 }
 
+function isPublicAuthenticationPath(path: string) {
+  return publicAuthPaths.has(path);
+}
+
 export function requestHost(request: FastifyRequest) {
   return normalizeTenantDomain(request.headers.host ?? "");
 }
@@ -122,7 +127,11 @@ function claimsMatchSession(payload: AuthTokenPayload, session: AuthSessionRecor
 function hostMatchesClaims(host: string, payload: AuthTokenPayload) {
   if (!payload.loginHost) return true;
   if (payload.tenantAccessMode === "shared_domain" || payload.tenantAccessMode === "platform") {
-    return host === canonicalAppHost() && payload.loginHost === canonicalAppHost();
+    return (
+      host === payload.loginHost &&
+      isSharedApplicationHost(host) &&
+      isSharedApplicationHost(payload.loginHost)
+    );
   }
   return host === payload.loginHost;
 }

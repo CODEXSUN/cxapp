@@ -1,8 +1,8 @@
 import { Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
-import { WorkspaceTable } from "@codexsun/ui/workspace/table";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
+import { WorkspaceTable } from "@cxapp/ui/workspace/table";
 import type { MonthsRecord } from "./months.types";
 
 export function MonthsList({

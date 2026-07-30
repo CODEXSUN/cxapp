@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Printer, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { GlobalLoader } from "@codexsun/ui/components/global-loader";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { WorkspaceShowCard } from "@codexsun/ui/workspace/show";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { Button } from "@cxapp/ui/components/button";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { WorkspaceShowCard } from "@cxapp/ui/workspace/show";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   receiptQueryKey,
   useReceiptActivity,

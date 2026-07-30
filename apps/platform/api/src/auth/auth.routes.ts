@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { fail, ok } from "@codexsun/framework/http";
+import { fail, ok } from "@cxapp/framework/http";
 import { z } from "zod";
 import { AuthService } from "./auth.service.js";
 import { AuthSessionRepository } from "./auth-session.repository.js";
 import { clearAllSessionCookies, writeEncryptedSessionCookie } from "./session-cookie.js";
 import { enforceBrowserRequestOrigin, requestHost } from "./auth-request-context.js";
-import { canonicalAppHost } from "../modules/tenant-domain/tenant-domain.repository.js";
+import { isSharedApplicationHost } from "../modules/tenant-domain/tenant-domain.repository.js";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import { env } from "../env.js";
 
@@ -17,7 +17,7 @@ const attempts = new Map<string, { count: number; resetAt: number }>();
 export async function registerAuthRoutes(app: FastifyInstance) {
   app.get("/auth/tenant-context", async (request) => {
     const host = requestHost(request);
-    if (host === canonicalAppHost()) {
+    if (isSharedApplicationHost(host)) {
       return ok(
         { corporateIdRequired: true, host, mode: "shared_domain", tenantName: null },
         { requestId: request.id }
@@ -26,8 +26,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     const tenant = await tenants.findByDomain(host);
     return ok(
       tenant
-        ? { corporateIdRequired: false, host, mode: "custom_domain", tenantName: tenant.tenantName }
-        : { corporateIdRequired: false, host, mode: "unknown", tenantName: null },
+        ? { corporateIdRequired: true, host, mode: "custom_domain", tenantName: tenant.tenantName }
+        : { corporateIdRequired: true, host, mode: "unknown", tenantName: null },
       { requestId: request.id }
     );
   });
@@ -96,6 +96,17 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       password: body.password
     };
     const corporateId = body.corporateId ?? body.tenantCode;
+    if (body.desk === "tenant" && !corporateId) {
+      return reply.code(400).send(
+        fail(
+          {
+            code: "AUTH_CORPORATE_ID_REQUIRED",
+            message: "Corporate ID is required to select your workspace."
+          },
+          { requestId: request.id }
+        )
+      );
+    }
     if (corporateId) loginInput.corporateId = corporateId;
     const result = await authService.login(loginInput);
     if (!result) {

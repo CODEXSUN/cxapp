@@ -21,7 +21,7 @@ deployment styles, customizations, and online/offline business workflows.
 
 Agents should inspect this reference before changing authentication screens, global loading states, workspace shell
 behavior, super-admin flows, tenant desk flows, and shared design-system primitives. Copy the intent and interaction
-rhythm into CODEXSUN through `@codexsun/ui`; do not paste unrelated business logic or old module boundaries blindly.
+rhythm into CODEXSUN through `@cxapp/ui`; do not paste unrelated business logic or old module boundaries blindly.
 
 ## Development Standards
 

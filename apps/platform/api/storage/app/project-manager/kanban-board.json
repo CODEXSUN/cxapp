@@ -1,0 +1,22 @@
+[
+  {
+    "active": true,
+    "assignee": "",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "kanban-seed-1",
+    "key": "kanban.project-manager.current",
+    "kind": "kanban",
+    "lane": "In Progress",
+    "moduleKey": "project-manager",
+    "priority": "medium",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 10,
+    "status": "active",
+    "title": "Project Manager current work",
+    "type": "workflow",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  }
+]

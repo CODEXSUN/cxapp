@@ -1,4 +1,4 @@
-import { WorkspacePrintSheet } from "@codexsun/ui/workspace/print";
+import { WorkspacePrintSheet } from "@cxapp/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import { formatStockQuantity, formatStockStatementMoney } from "./stock-statement.services";
 import type { StockStatement } from "./stock-statement.types";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3 } from "lucide-react";
-import { cn } from "@codexsun/ui/lib/utils";
+import { cn } from "@cxapp/ui/lib/utils";
 import type {
   DashboardKind,
   DashboardMetric,

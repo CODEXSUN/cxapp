@@ -87,6 +87,25 @@ Configuration should include:
 
 Secrets must not be committed to source control.
 
-CODEXSUN should use one active `.env` file per running environment to avoid confusion. `.env.example` documents required variables without secrets. Environment variables must be validated with Zod at startup.
+CODEXSUN keeps development and container deployment inputs separate so both
+can run in parallel. Root `.env` is local development configuration documented
+by `.env.example`. `.container/deploy.env` is the private production/container
+configuration built from `.container/deploy.env.sample`. Container Compose,
+migrations, updates, cleanup metadata, and smoke tests must read only the
+deployment file. Environment variables must be validated before startup.
+Cloud operators prepare that file with `bash prepare-env.sh`; `bash setup.sh`
+only checks and consumes it. Setup must never create deployment configuration
+or offer to copy values or credentials from development `.env`.
 
-All API applications use the shared `API_HOST` bind address while retaining their app-specific API ports. Container bundles override the shared bind address to `0.0.0.0` inside the API environment anchor.
+All application-owned environment variables use the `CXAPP_*` prefix. The
+retired prefix has no runtime alias: root and deployment environment files must
+be migrated together before startup. Public branding values such as the
+CODEXSUN display name and `app.codexsun.com` remain values, not configuration
+names or internal namespaces.
+
+Platform runtime configuration keeps only the API port, Web port, and canonical
+Web origin as developer inputs. Platform derives loopback bind addresses for
+development/test, all-interface bind addresses for staging/production, the
+server-to-server API URL from the API port, and local host/CORS aliases from
+the canonical Web origin. Product packages consume those derived Platform
+runtime contracts instead of defining duplicate host or URL variables.

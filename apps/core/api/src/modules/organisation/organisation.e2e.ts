@@ -14,7 +14,7 @@ import {
 } from "./default-company/index.js";
 
 export async function runOrganisationE2e() {
-  const databaseName = `codexsun_organisation_e2e_${Date.now()}`;
+  const databaseName = `cxapp_organisation_e2e_${Date.now()}`;
   const admin = await createConnection({
     host: env.DB_HOST,
     password: env.DB_PASSWORD,
@@ -32,7 +32,7 @@ export async function runOrganisationE2e() {
     const initial = await loadSeedState(admin);
     assert.equal(initial.companies.length, 1);
     assert.equal(initial.companies[0]?.code, "CODEXSUN");
-    assert.equal(initial.companies[0]?.name, "codexsun");
+    assert.equal(initial.companies[0]?.name, "cxapp");
     assert.equal(initial.companies[0]?.status, "active");
     assert.equal(initial.companies[0]?.legal_name, null);
     assert.equal(Number(initial.companies[0]?.tds_available), 0);

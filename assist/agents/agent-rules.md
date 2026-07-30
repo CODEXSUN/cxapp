@@ -73,7 +73,7 @@ The audit must detect and reject:
 - Dummy, placeholder, scaffold-only, empty, reserved, wrapper, simplified, or borrowed role files.
 - Composition roots containing business CRUD logic. Composition roots may register, migrate, seed, and publicly export owned leaf modules only.
 
-Legitimate infrastructure must be distinguished from business logic. `shared/api` transport/session context, environment readers, observability, and reusable controls from `@codexsun/ui` may be shared only when they contain no module-specific fields, validation, persistence, lifecycle, routes, or workflows. Moving business logic into `shared`, `common`, `foundation`, `helpers`, or `utils` does not make it infrastructure.
+Legitimate infrastructure must be distinguished from business logic. `shared/api` transport/session context, environment readers, observability, and reusable controls from `@cxapp/ui` may be shared only when they contain no module-specific fields, validation, persistence, lifecycle, routes, or workflows. Moving business logic into `shared`, `common`, `foundation`, `helpers`, or `utils` does not make it infrastructure.
 
 The task is not complete until the agent has:
 

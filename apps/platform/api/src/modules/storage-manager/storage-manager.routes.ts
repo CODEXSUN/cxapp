@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { fail, ok } from "@codexsun/framework/http";
+import { fail, ok } from "@cxapp/framework/http";
 import { verifyAuthToken } from "../../auth/jwt.js";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { StorageManagerService } from "./storage-manager.service.js";

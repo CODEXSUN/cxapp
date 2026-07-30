@@ -1,5 +1,5 @@
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceFormField, WorkspaceFormGrid } from "@codexsun/ui/workspace/upsert";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceFormField, WorkspaceFormGrid } from "@cxapp/ui/workspace/upsert";
 
 export function TenantIdentityFields({
   code,

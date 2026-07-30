@@ -15,10 +15,10 @@ import type { DesignSystemVariant, DesignSystemVariantId } from "./types";
 export type { DesignSystemVariant, DesignSystemVariantId };
 export * from "./component-defaults";
 
-export const DESIGN_SYSTEM_NAME = "codexsun";
+export const DESIGN_SYSTEM_NAME = "cxapp";
 export const DESIGN_SYSTEM_MARKER = "data-design-system";
 export const DESIGN_SYSTEM_VARIANT_MARKER = "data-design-variant";
-export const DESIGN_SYSTEM_DEFAULT_STORAGE_KEY = "codexsun.design-system.default-variant";
+export const DESIGN_SYSTEM_DEFAULT_STORAGE_KEY = "cxapp.design-system.default-variant";
 
 export const designSystemVariants = [
   defaultVariant,

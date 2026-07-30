@@ -1,13 +1,13 @@
 import { Trash2 } from "lucide-react";
-import { WorkspaceProtectedIndicator } from "@codexsun/ui/workspace/protected-indicator";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { WorkspaceProtectedIndicator } from "@cxapp/ui/workspace/protected-indicator";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableHeaderCell,
   WorkspaceTablePanel,
   WorkspaceTableLoadingState
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import type { WorkOrderRecord } from "./work-order.types";
 
 export function WorkOrderList({

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "@codexsun/framework/http";
+import { ok } from "@cxapp/framework/http";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { AppOrchestrationService } from "./app-orchestration.service.js";
 const service = new AppOrchestrationService();

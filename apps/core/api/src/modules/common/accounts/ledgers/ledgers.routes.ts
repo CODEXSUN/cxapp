@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { LedgersService } from "./ledgers.service.js";
 export const LEDGERS_PATH = "/core/common/accounts/ledgers";
 const service = new LedgersService();

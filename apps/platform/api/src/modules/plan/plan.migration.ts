@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 import type { PlatformDatabase } from "../../database/schema.js";
 export async function migratePlanModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_plans")
+    .createTable("plans")
     .ifNotExists()
     .addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (c) => c.notNull().unique())

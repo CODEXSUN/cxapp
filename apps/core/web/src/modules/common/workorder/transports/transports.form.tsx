@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceFormBanner,
   WorkspaceFormField,
   WorkspaceFormFooter,
   WorkspaceFormGrid,
   WorkspaceUpsertDialog
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { transportsSchema } from "./transports.schema";
 import type { TransportsRecord, TransportsSavePayload } from "./transports.types";
 

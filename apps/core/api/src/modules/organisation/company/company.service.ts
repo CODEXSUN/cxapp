@@ -1,5 +1,5 @@
-import { AppError } from "@codexsun/framework/errors";
-import { env } from "../../../env.js";
+import { AppError } from "@cxapp/framework/errors";
+import { platformApiBaseUrl } from "../../../env.js";
 import { CompanyRepository } from "./company.repository.js";
 import type { CompanyAddress, CompanyBankAccount, CompanySaveInput } from "./company.types.js";
 
@@ -50,7 +50,7 @@ export class CompanyService {
       throw AppError.unauthorized("Industry validation requires a tenant session.");
     let response: Response;
     try {
-      response = await fetch(`${env.PLATFORM_API_URL}/tenant/industries`, {
+      response = await fetch(`${platformApiBaseUrl}/tenant/industries`, {
         headers: { Accept: "application/json", Authorization: authorization }
       });
     } catch {

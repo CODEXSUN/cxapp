@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { AppRegistryService } from "./app-registry.service.js";
 import {
   numericIdParamsSchema,

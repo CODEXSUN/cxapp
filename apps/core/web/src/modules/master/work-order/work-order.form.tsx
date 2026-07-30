@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceFormActions,
   WorkspaceFormBanner,
@@ -10,7 +10,7 @@ import {
   WorkspaceFormField,
   WorkspaceFormGrid,
   WorkspaceFormSurface
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { workOrderSchema } from "./work-order.schema";
 import type { WorkOrderRecord, WorkOrderSavePayload } from "./work-order.types";
 export function WorkOrderForm({

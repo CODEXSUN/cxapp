@@ -1,4 +1,4 @@
-import { loadEnv } from "@codexsun/framework/env";
+import { loadEnv, resolvePlatformRuntime } from "@cxapp/framework/env";
 import { z } from "zod";
 
 const envSchema = z
@@ -7,30 +7,25 @@ const envSchema = z
     AUTH_MODE: z.enum(["cookie", "jwt", "hybrid"]),
     AUTH_SESSION_RENEWAL_HOURS: z.coerce.number().int().positive(),
     AUTH_SESSION_TTL_HOURS: z.coerce.number().int().positive().max(720),
-    PLATFORM_API_HOST: z.string().min(1),
     PLATFORM_API_PORT: z.coerce.number().int().positive(),
-    PLATFORM_API_URL: z.string().url("PLATFORM_API_URL must be a valid URL"),
-    PLATFORM_WEB_HOST: z.string().min(1),
-    PLATFORM_WEB_ALLOWED_HOSTS: z.string().min(1),
     PLATFORM_WEB_PORT: z.coerce.number().int().positive(),
     PLATFORM_WEB_ORIGIN: z.string().url("PLATFORM_WEB_ORIGIN must be a valid URL"),
-    PLATFORM_WEB_ORIGINS: z.string(),
     DB_HOST: z.string().min(1),
     DB_PORT: z.coerce.number().int().positive(),
     DB_USER: z.string().min(1, "DB_USER is required"),
     DB_PASSWORD: z.string().min(1, "DB_PASSWORD is required"),
     DB_DRIVER: z.enum(["mariadb", "mysql2"]),
     DB_MASTER_NAME: z.string().min(1, "DB_MASTER_NAME is required"),
-    CODEXSUN_DB_FRESH_ON_START: z.enum(["0", "1"]),
-    CODEXSUN_DB_RESET_CONFIRM: z.string(),
-    CODEXSUN_ALLOW_PRODUCTION_DB_RESET: z.enum(["0", "1"]),
-    CODEXSUN_BACKUP_DIR: z.string().min(1),
-    CODEXSUN_QUEUE_BACKEND: z.enum(["memory", "database", "bullmq-redis"]),
-    CODEXSUN_QUEUE_COMPLETED_RETENTION_DAYS: z.coerce.number().int().positive(),
-    CODEXSUN_QUEUE_FAILED_RETENTION_DAYS: z.coerce.number().int().positive(),
-    CODEXSUN_QUEUE_WORKER_ENABLED: z.enum(["0", "1"]),
-    CODEXSUN_QUEUE_WORKER_INTERVAL_MS: z.coerce.number().int().positive(),
-    CODEXSUN_REDIS_URL: z.string().min(1, "CODEXSUN_REDIS_URL is required"),
+    CXAPP_DB_FRESH_ON_START: z.enum(["0", "1"]),
+    CXAPP_DB_RESET_CONFIRM: z.string(),
+    CXAPP_ALLOW_PRODUCTION_DB_RESET: z.enum(["0", "1"]),
+    CXAPP_BACKUP_DIR: z.string().min(1),
+    CXAPP_QUEUE_BACKEND: z.enum(["memory", "database", "bullmq-redis"]),
+    CXAPP_QUEUE_COMPLETED_RETENTION_DAYS: z.coerce.number().int().positive(),
+    CXAPP_QUEUE_FAILED_RETENTION_DAYS: z.coerce.number().int().positive(),
+    CXAPP_QUEUE_WORKER_ENABLED: z.enum(["0", "1"]),
+    CXAPP_QUEUE_WORKER_INTERVAL_MS: z.coerce.number().int().positive(),
+    CXAPP_REDIS_URL: z.string().min(1, "CXAPP_REDIS_URL is required"),
     MAIL_ENABLED: z.enum(["0", "1"]),
     MAIL_SMTP_HOST: z.string(),
     MAIL_SMTP_PORT: z.coerce.number().int().positive(),
@@ -41,10 +36,10 @@ const envSchema = z
     MAIL_FROM_NAME: z.string(),
     MAIL_REPLY_TO: z.string(),
     PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().positive().max(1440),
-    CODEXSUN_ALLOW_LIVE_RESTORE: z.enum(["0", "1"]),
-    CODEXSUN_LIVE_RESTORE_CONFIRM: z.string(),
-    CODEXSUN_RESTORE_TEST_DB_NAME: z.string(),
-    CODEXSUN_VERIFIED_BACKUP_ID: z.string(),
+    CXAPP_ALLOW_LIVE_RESTORE: z.enum(["0", "1"]),
+    CXAPP_LIVE_RESTORE_CONFIRM: z.string(),
+    CXAPP_RESTORE_TEST_DB_NAME: z.string(),
+    CXAPP_VERIFIED_BACKUP_ID: z.string(),
     ENABLE_DEFAULT_TENANT_SEED: z.enum(["0", "1"]),
     DEV_AUTO_TENANT_LOGIN: z.enum(["0", "1"]),
     TENANT_DOMAIN_BASE: z.string().min(1),
@@ -105,3 +100,4 @@ const envSchema = z
   });
 
 export const env = loadEnv(envSchema);
+export const platformRuntime = resolvePlatformRuntime(env);

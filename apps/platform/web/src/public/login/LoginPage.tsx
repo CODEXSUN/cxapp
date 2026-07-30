@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { AuthLayout, Button, Field } from "@codexsun/ui";
-import { Alert, AlertDescription, AlertTitle } from "@codexsun/ui/components/alert";
-import { Clock3, LogIn } from "lucide-react";
+import { AuthLayout, Button, Field } from "@cxapp/ui";
+import { LogIn } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   developmentTenantLogin,
@@ -77,16 +76,26 @@ export function LoginPage({ desk, title }: LoginPageProps) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (desk === "tenant" && tenantContext?.mode === "unknown") {
-      setMessage("This domain is not mapped to an active tenant.");
-      return;
+    if (desk === "tenant") {
+      if (!tenantContext) {
+        setMessage("Unable to verify this application domain.");
+        return;
+      }
+      if (tenantContext.mode === "unknown") {
+        setMessage("This domain is not mapped to an active tenant.");
+        return;
+      }
+      if (!corporateId.trim()) {
+        setMessage("Corporate ID is required to select your workspace.");
+        return;
+      }
     }
     setLoading(true);
     setMessage("");
 
     try {
       const result = await login({
-        ...(desk === "tenant" && tenantContext?.corporateIdRequired ? { corporateId } : {}),
+        ...(desk === "tenant" ? { corporateId: corporateId.trim() } : {}),
         desk,
         email,
         password
@@ -113,21 +122,22 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   }
 
   return (
-    <AuthLayout surface={desk} title={title}>
+    <AuthLayout
+      afterCard={
+        sessionExpired ? (
+          <p className="auth-session-badge" role="status">
+            Session expired. Please sign in again.
+          </p>
+        ) : null
+      }
+      surface={desk}
+      title={title}
+    >
       <form className="auth-form" onSubmit={submit}>
-        {sessionExpired ? (
-          <Alert>
-            <Clock3 className="size-4" />
-            <AlertTitle>Session expired</AlertTitle>
-            <AlertDescription>
-              Your session timed out. Please sign in again to continue.
-            </AlertDescription>
-          </Alert>
-        ) : null}
         {desk === "tenant" && tenantContext?.tenantName ? (
           <p className="auth-workspace">{tenantContext.tenantName}</p>
         ) : null}
-        {desk === "tenant" && tenantContext?.corporateIdRequired !== false ? (
+        {desk === "tenant" ? (
           <Field
             autoComplete="organization"
             className="auth-field"
@@ -135,6 +145,7 @@ export function LoginPage({ desk, title }: LoginPageProps) {
             name="corporateId"
             disabled={loading}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setCorporateId(event.target.value)}
+            required
             value={corporateId}
           />
         ) : null}
@@ -168,7 +179,9 @@ export function LoginPage({ desk, title }: LoginPageProps) {
         </Button>
         {message ? <p className="form-error">{message}</p> : null}
         <Button
-          disabled={loading || (desk === "tenant" && tenantContext?.mode === "unknown")}
+          disabled={
+            loading || (desk === "tenant" && (!tenantContext || tenantContext.mode === "unknown"))
+          }
           icon={<LogIn size={16} />}
           type="submit"
         >

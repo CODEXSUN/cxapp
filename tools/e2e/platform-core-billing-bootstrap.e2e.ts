@@ -4,10 +4,10 @@ import { resolve } from "node:path";
 import { createConnection, type RowDataPacket } from "mysql2/promise";
 
 const runId = Date.now();
-const masterDatabaseName = `codexsun_platform_e2e_${runId}`;
-const tenantDatabaseName = `codexsun_tenant_e2e_${runId}`;
+const masterDatabaseName = `cxapp_platform_e2e_${runId}`;
+const tenantDatabaseName = `cxapp_tenant_e2e_${runId}`;
 const tenantCode = `E2E${runId}`;
-const tenantSlug = `codexsun-e2e-${runId}`;
+const tenantSlug = `cxapp-e2e-${runId}`;
 
 Object.assign(process.env, {
   DB_MASTER_NAME: masterDatabaseName,
@@ -87,7 +87,7 @@ try {
   assert.equal(initial.tenant.moduleSettings, 3);
   assert.equal(initial.tenant.enabledBillingModules, 1);
   assert.equal(initial.tenant.companies, 1);
-  assert.equal(initial.tenant.codexsunCompanies, 1);
+  assert.equal(initial.tenant.cxappCompanies, 1);
   assert.equal(initial.tenant.currentFinancialYears, 1);
   assert.equal(initial.tenant.defaultCompanies, 1);
   assert.equal(initial.tenant.defaultLandingApp, "billing");
@@ -156,13 +156,13 @@ try {
 async function loadState() {
   await admin.changeUser({ database: masterDatabaseName });
   const platform = {
-    apps: await count("app_platform_apps"),
-    completedRuns: await countWhere("app_database_maintenance_runs", "status = 'completed'"),
-    plans: await count("app_plans"),
-    runningRuns: await countWhere("app_database_maintenance_runs", "status = 'running'"),
-    subscriptions: await count("app_subscriptions"),
-    tenantDomains: await count("app_tenant_domains"),
-    tenants: await count("app_tenants")
+    apps: await count("platform_apps"),
+    completedRuns: await countWhere("database_maintenance_runs", "status = 'completed'"),
+    plans: await count("plans"),
+    runningRuns: await countWhere("database_maintenance_runs", "status = 'running'"),
+    subscriptions: await count("subscriptions"),
+    tenantDomains: await count("tenant_domains"),
+    tenants: await count("tenants")
   };
 
   await admin.changeUser({ database: tenantDatabaseName });
@@ -172,7 +172,7 @@ async function loadState() {
       "settings_key = 'billing' AND company_id = (SELECT company_id FROM core_default_company_settings WHERE singleton_key = 1)"
     ),
     billingTables: await countBillingRootTables(),
-    codexsunCompanies: await countWhere("core_companies", "name = 'codexsun'"),
+    cxappCompanies: await countWhere("core_companies", "name = 'cxapp'"),
     companies: await count("core_companies"),
     currentFinancialYears: await countWhere("core_financial_years", "is_current = 1"),
     defaultCompanies: await count("core_default_company_settings"),
@@ -193,7 +193,7 @@ async function loadState() {
       "mail_attachments",
       "mail_events"
     ]),
-    migrationCount: await count("app_migration_batches"),
+    migrationCount: await count("migration_schema"),
     moduleSettings: await count("app_module_settings")
   };
   return { platform, tenant };
@@ -243,7 +243,7 @@ async function insertLegacyDuplicateRun(tenantId: number) {
   ] as const;
   for (const [uuid, status, completedAt] of values) {
     await admin.query(
-      "INSERT INTO app_database_maintenance_runs (uuid, database_scope, target_key, database_name, operation, status, details_json, created_at, completed_at) VALUES (?, 'tenant', ?, ?, 'migrate', ?, '{}', ?, ?)",
+      "INSERT INTO database_maintenance_runs (uuid, database_scope, target_key, database_name, operation, status, details_json, created_at, completed_at) VALUES (?, 'tenant', ?, ?, 'migrate', ?, '{}', ?, ?)",
       [uuid, String(tenantId), tenantDatabaseName, status, createdAt, completedAt]
     );
   }

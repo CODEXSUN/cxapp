@@ -1,4 +1,4 @@
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { PlatformActivityForm } from "./platform-activity.form";
 import { usePlatformActivityQuery } from "./platform-activity.hooks";
 import { PlatformActivityList } from "./platform-activity.list";

@@ -15,9 +15,9 @@ import {
   WorkspaceFilters,
   WorkspacePage,
   WorkspacePagination
-} from "@codexsun/ui";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
-import { cn } from "@codexsun/ui/lib/utils";
+} from "@cxapp/ui";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
+import { cn } from "@cxapp/ui/lib/utils";
 import { FinancialYearForm } from "./financial-year.form";
 import { financialYearsQueryKey, useFinancialYears } from "./financial-year.hooks";
 import { FinancialYearList } from "./financial-year.list";

@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { ContactGroupsRepository } from "./contact-groups.repository.js";
 import type {
   ContactGroupsListFilters,

@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { DistrictRepository } from "./district.repository.js";
 import type {
   District,

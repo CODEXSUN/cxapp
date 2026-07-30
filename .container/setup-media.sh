@@ -35,7 +35,7 @@ media_data=$(env_value MEDIA_DATA_VOLUME)
 media_db=$(env_value MEDIA_DB_VOLUME)
 media_user=$(env_value MEDIA_ADMIN_USER)
 media_password=$(env_value MEDIA_ADMIN_PASSWORD)
-registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
+registry=$(env_value CXAPP_IMAGE_REGISTRY)
 media_tag=$(env_value MEDIA_IMAGE_TAG)
 media_image="${registry}/media:${media_tag}"
 
@@ -76,7 +76,7 @@ stack_compose media build
 if [ "$REINSTALL" = "true" ]; then
   if [ "$WIPE_MEDIA" = "true" ]; then
     users=$(docker ps -a --filter "volume=$media_data" --format '{{.Names}}' \
-      | grep -Ev '^codexsun-media$' || true)
+      | grep -Ev '^cxapp-media$' || true)
     [ -z "$users" ] || {
       echo "Cannot wipe media while these containers use it:" >&2
       printf '%s\n' "$users" >&2

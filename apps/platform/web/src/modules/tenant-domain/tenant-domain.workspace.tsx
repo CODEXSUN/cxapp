@@ -2,25 +2,25 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Globe2, Pencil, Plus, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
-import { cn } from "@codexsun/ui/lib/utils";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
+import { cn } from "@cxapp/ui/lib/utils";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
 import {
   WorkspaceDetailTable,
   WorkspaceShowCard,
   WorkspaceShowLayout
-} from "@codexsun/ui/workspace/show";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/workspace/show";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableHeaderCell,
   WorkspaceTablePanel,
   WorkspaceTableLoadingState
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import {
   WorkspaceFormBanner,
   WorkspaceFormField,
@@ -28,8 +28,8 @@ import {
   WorkspaceFormGrid,
   WorkspaceFormPanel,
   WorkspaceUpsertPage
-} from "@codexsun/ui/workspace/upsert";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
+} from "@cxapp/ui/workspace/upsert";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 import { listTenants } from "../tenant/tenant.services";
 import type { Tenant } from "../tenant/tenant.types";
 import {
@@ -416,7 +416,7 @@ function DomainShowPage({
                 ? [
                     [
                       "DNS TXT",
-                      `_codexsun-verification.${domain.domain} = codexsun-domain-verification=${domain.verificationToken}`
+                      `_cxapp-verification.${domain.domain} = cxapp-domain-verification=${domain.verificationToken}`
                     ] as [string, string]
                   ]
                 : [])

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Building2Icon, ClipboardCheckIcon, LifeBuoyIcon, PanelsTopLeftIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { AdminLayout, Button, Card, GlobalLoader, StatusBadge } from "@codexsun/ui";
+import { AdminLayout, Button, Card, GlobalLoader, StatusBadge } from "@cxapp/ui";
 import { AuthGate } from "../../shared/auth/AuthGate";
 import { apiGet, logout } from "../../shared/api/platform-api";
 import type { PlatformAppDefinition } from "../../app/app-registry";

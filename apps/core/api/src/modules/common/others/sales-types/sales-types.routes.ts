@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { SalesTypesService } from "./sales-types.service.js";
 export const SALES_TYPES_COLLECTION_PATH = "/core/common/others/sales-types";
 const service = new SalesTypesService();

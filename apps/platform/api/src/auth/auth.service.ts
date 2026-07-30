@@ -3,7 +3,7 @@ import { sql } from "kysely";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import type { Tenant } from "../modules/tenant/tenant.types.js";
 import {
-  canonicalAppHost,
+  isSharedApplicationHost,
   normalizeTenantDomain
 } from "../modules/tenant-domain/tenant-domain.repository.js";
 import { getTenantDatabase } from "../database/tenant-database.js";
@@ -29,24 +29,23 @@ export class AuthService {
     const loginHost = normalizeTenantDomain(input.domain ?? "");
     if (!email || !password || !loginHost) return null;
     if (desk === "tenant") return this.loginTenant({ ...input, email, loginHost, password });
-    if (loginHost !== canonicalAppHost()) return null;
+    if (!isSharedApplicationHost(loginHost)) return null;
     return this.loginPlatformUser({ desk, email, loginHost, password });
   }
 
   private async loginTenant(
     input: Required<Pick<LoginInput, "email" | "password">> & LoginInput & { loginHost: string }
   ) {
-    const shared = input.loginHost === canonicalAppHost();
+    const shared = isSharedApplicationHost(input.loginHost);
     const corporateId = input.corporateId?.trim().toUpperCase() ?? "";
+    if (!corporateId) return null;
     const tenant = shared
-      ? corporateId
-        ? await tenantRepository.findByCorporateId(corporateId)
-        : null
+      ? await tenantRepository.findByCorporateId(corporateId)
       : await tenantRepository.findByDomain(input.loginHost);
     if (
       !tenant ||
       tenant.status !== "active" ||
-      (corporateId && tenant.corporateId?.trim().toUpperCase() !== corporateId)
+      tenant.corporateId?.trim().toUpperCase() !== corporateId
     ) {
       return null;
     }

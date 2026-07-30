@@ -8,7 +8,7 @@ export const authSessionMigration = {
 
 export async function migrateAuthSession(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("app_auth_sessions")
+    .createTable("auth_sessions")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -35,19 +35,19 @@ export async function migrateAuthSession(database: Kysely<PlatformDatabase>) {
   await database.schema
     .createIndex("auth_sessions_user_idx")
     .ifNotExists()
-    .on("app_auth_sessions")
+    .on("auth_sessions")
     .columns(["user_type", "user_uuid"])
     .execute();
   await database.schema
     .createIndex("auth_sessions_tenant_idx")
     .ifNotExists()
-    .on("app_auth_sessions")
+    .on("auth_sessions")
     .column("tenant_id")
     .execute();
   await database.schema
     .createIndex("auth_sessions_expiry_idx")
     .ifNotExists()
-    .on("app_auth_sessions")
+    .on("auth_sessions")
     .column("expires_at")
     .execute();
 }

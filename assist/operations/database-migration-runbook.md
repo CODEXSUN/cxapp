@@ -17,7 +17,7 @@ Use this runbook for CODEXSUN database changes that affect platform or tenant sc
 2. Restore it into local platform and tenant databases.
 3. Set the local `.env` database names to the restored databases.
 4. Run `npm run db:migrations:preflight`.
-5. Run `CODEXSUN_RESTORED_DUMP_TEST=1 npm run db:migrations:test-local`.
+5. Run `CXAPP_RESTORED_DUMP_TEST=1 npm run db:migrations:test-local`.
 6. Run affected API and app tests.
 7. Compare row counts, important totals, and schema snapshots.
 
@@ -26,7 +26,7 @@ Use this runbook for CODEXSUN database changes that affect platform or tenant sc
 Production migration preflight requires a verified pre-migration backup:
 
 ```text
-CODEXSUN_VERIFIED_BACKUP_ID=<backup-run-id>
+CXAPP_VERIFIED_BACKUP_ID=<backup-run-id>
 npm run db:migrations:preflight
 ```
 
@@ -41,7 +41,7 @@ npm run db:migrations:run
 ```
 
 All Platform, tenant-runtime, Core, Billing, and Mail migrations in this
-baseline are release batch `1`. The shared `app_migration_batches` ledger
+baseline are release batch `1`. The shared `migration_schema` ledger
 records the scope, batch, integer step version, SHA-256 checksum, status,
 operator, timestamps, and failure text. Applied checksums are immutable:
 change the schema through a new versioned step instead of editing an applied
@@ -52,16 +52,20 @@ steps at a time. Reruns skip only checksum-validated applied steps. A failed
 step remains visible in the ledger, and automatically reversible steps from
 the current attempt are rolled back in reverse order.
 
-Fresh tables use owner prefixes:
+Database naming is part of the ownership boundary:
 
-- `app_` for Platform and tenant framework/runtime tables.
+- Platform master tables are unprefixed. Never add `app_` to master tables.
+- `app_` is reserved for tenant-database framework/runtime tables.
 - `core_` for Core-owned tables.
 - `billing_` for Billing-owned tables.
 - `mail_` for Mail-owned tables.
 
-Legacy unprefixed tables are renamed in place before the owning module runs.
-Migration fails closed when both the legacy and target table exist; reconcile
-the rows explicitly instead of allowing an implicit merge.
+The migration ledger is always `migration_schema`, regardless of database
+owner. The runner adopts the legacy `app_migration_batches` ledger by an
+in-place rename. Platform master tables that were incorrectly given `app_`
+are also restored by in-place rename. Migration fails closed when both a
+legacy and target name exist; reconcile the rows explicitly instead of
+allowing an implicit merge.
 
 List the checksum ledger with:
 
@@ -76,7 +80,7 @@ npm run db:migrations:rollback
 ```
 
 Production also requires
-`CODEXSUN_MIGRATION_ROLLBACK_CONFIRM=ROLLBACK`. A baseline step without a
+`CXAPP_MIGRATION_ROLLBACK_CONFIRM=ROLLBACK`. A baseline step without a
 declared safe `down` refuses rollback and requires the verified backup or a
 new corrective forward migration. The command never silently drops a table or
 column.

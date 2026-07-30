@@ -1,4 +1,4 @@
-name: codexsun-mariadb
+name: cxapp-mariadb
 
 services:
   mariadb:
@@ -6,24 +6,24 @@ services:
       context: ../../..
       dockerfile: .container/database/mariadb/Dockerfile
       args:
-        CODEXSUN_VERSION: ${CODEXSUN_VERSION:?CODEXSUN_VERSION is required}
+        CXAPP_VERSION: ${CXAPP_VERSION:?CXAPP_VERSION is required}
         MARIADB_BASE_IMAGE: ${MARIADB_BASE_IMAGE:?MARIADB_BASE_IMAGE is required}
-    image: ${CODEXSUN_IMAGE_REGISTRY:?CODEXSUN_IMAGE_REGISTRY is required}/mariadb:${MARIADB_IMAGE_TAG:?MARIADB_IMAGE_TAG is required}
-    container_name: codexsun-mariadb
+    image: ${CXAPP_IMAGE_REGISTRY:?CXAPP_IMAGE_REGISTRY is required}/mariadb:${MARIADB_IMAGE_TAG:?MARIADB_IMAGE_TAG is required}
+    container_name: cxapp-mariadb
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}
       MARIADB_ROOT_HOST: "%"
       MARIADB_DATABASE: ${DB_MASTER_NAME:?DB_MASTER_NAME is required}
-      CODEXSUN_DB_USER: ${DB_USER:?DB_USER is required}
-      CODEXSUN_DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      CXAPP_DB_USER: ${DB_USER:?DB_USER is required}
+      CXAPP_DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
       - "${MARIADB_BIND_ADDRESS:?MARIADB_BIND_ADDRESS is required}:${MARIADB_HOST_PORT:?MARIADB_HOST_PORT is required}:3306"
     volumes:
       - mariadb-data:/var/lib/mysql
       - mariadb-backups:/backups
     networks:
-      - codexsun-network
+      - cxapp-network
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -38,6 +38,6 @@ volumes:
     name: ${MARIADB_BACKUP_VOLUME:?MARIADB_BACKUP_VOLUME is required}
 
 networks:
-  codexsun-network:
-    name: ${CODEXSUN_DOCKER_NETWORK:?CODEXSUN_DOCKER_NETWORK is required}
+  cxapp-network:
+    name: ${CXAPP_DOCKER_NETWORK:?CXAPP_DOCKER_NETWORK is required}
     external: true

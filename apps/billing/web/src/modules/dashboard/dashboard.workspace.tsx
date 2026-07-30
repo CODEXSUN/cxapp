@@ -7,8 +7,8 @@ import {
   ShoppingBag,
   UserRound
 } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { GlobalLoader } from "@codexsun/ui/components/global-loader";
+import { Button } from "@cxapp/ui/components/button";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
 import { getTenantUserIdentity } from "../../shared/api/tenant-context";
 import { useBillingDashboard } from "./dashboard.hooks";
 import type { DashboardRecent } from "./dashboard.types";

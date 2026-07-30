@@ -1,0 +1,22 @@
+[
+  {
+    "active": true,
+    "assignee": "",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "todo-seed-1",
+    "key": "todo.project-manager.refine",
+    "kind": "todo",
+    "lane": "",
+    "moduleKey": "project-manager",
+    "priority": "medium",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 10,
+    "status": "open",
+    "title": "Refine project manager views after first use",
+    "type": "todo",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  }
+]

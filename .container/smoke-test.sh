@@ -20,16 +20,16 @@ http_ok() {
   echo "ok $label: $url"
 }
 
-bind=$(env_value CODEXSUN_BIND_ADDRESS)
+bind=$(env_value CXAPP_BIND_ADDRESS)
 
 http_ok "http://${bind}:$(env_value PLATFORM_API_PORT)/health" platform-api
 http_ok "http://${bind}:$(env_value PLATFORM_WEB_PORT)/health" platform-web
 http_ok "http://${bind}:$(env_value MEDIA_HOST_PORT)/" media
 
-docker exec codexsun-redis sh -ec 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping' | grep -qx PONG
+docker exec cxapp-redis sh -ec 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping' | grep -qx PONG
 echo "ok Redis authenticated connection"
 
-published_port=$(docker port codexsun-mariadb 3306/tcp)
+published_port=$(docker port cxapp-mariadb 3306/tcp)
 case "$published_port" in
   *":$(env_value MARIADB_HOST_PORT)") ;;
   *) echo "MariaDB is not published on the configured host port: $published_port" >&2; exit 69 ;;
@@ -42,7 +42,7 @@ master_db=$(env_value DB_MASTER_NAME)
 case "$master_db" in
   *[!A-Za-z0-9_]*) echo "Unsafe DB_MASTER_NAME: $master_db" >&2; exit 78 ;;
 esac
-docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
+docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
   mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
   --batch --skip-column-names \
   -e "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$master_db';" \
@@ -54,12 +54,12 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
   case "$tenant_db" in
     ""|*[!A-Za-z0-9_]*) echo "Unsafe DEFAULT_TENANT_DB_NAME: $tenant_db" >&2; exit 78 ;;
   esac
-  docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
+  docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
     mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
     --batch --skip-column-names \
     -e "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$tenant_db';" \
     | grep -qx 1
-  enabled_product_apps=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
+  enabled_product_apps=$(docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
     mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
     --batch --skip-column-names \
     -e "SELECT COUNT(*) FROM \`$tenant_db\`.app_module_settings WHERE module_key IN ('billing.sales','mail') AND enabled=1;")
@@ -69,8 +69,8 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
   }
   echo "ok default tenant database with Billing and Mail enabled"
 
-  if [ "$(env_value CODEXSUN_SINGLE_TENANT)" = "1" ]; then
-    tenant_count=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
+  if [ "$(env_value CXAPP_SINGLE_TENANT)" = "1" ]; then
+    tenant_count=$(docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
       -e "SELECT COUNT(*) FROM app_tenants;")
@@ -78,15 +78,15 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
       echo "Single-tenant deployment expected exactly one tenant; found: $tenant_count" >&2
       exit 69
     }
-    default_tenant=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
+    default_tenant=$(docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
       -e "SELECT CONCAT(corporate_id, ':', db_name) FROM app_tenants LIMIT 1;")
-    [ "$default_tenant" = "CODEXSUN:codexsun_db" ] || {
+    [ "$default_tenant" = "CODEXSUN:cxapp_db" ] || {
       echo "Unexpected default tenant mapping: $default_tenant" >&2
       exit 69
     }
-    echo "ok single default tenant mapping: CODEXSUN -> codexsun_db"
+    echo "ok single default tenant mapping: CODEXSUN -> cxapp_db"
   fi
 fi
 

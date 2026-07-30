@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_queue_runtime_settings")
+    .createTable("queue_runtime_settings")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("singleton_key", "integer", (column) => column.notNull().unique())
@@ -23,7 +23,7 @@ export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
   await db.schema
-    .createTable("app_queue_jobs")
+    .createTable("queue_jobs")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -58,13 +58,13 @@ export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
   await db.schema
     .createIndex("queue_jobs_status_idx")
     .ifNotExists()
-    .on("app_queue_jobs")
+    .on("queue_jobs")
     .column("status")
     .execute();
   await db.schema
     .createIndex("queue_jobs_queue_status_idx")
     .ifNotExists()
-    .on("app_queue_jobs")
+    .on("queue_jobs")
     .columns(["queue_name", "status"])
     .execute();
 }

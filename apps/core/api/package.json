@@ -1,6 +1,6 @@
 {
-  "name": "@codexsun/core-api",
-  "version": "1.0.43",
+  "name": "@cxapp/core-api",
+  "version": "1.0.44",
   "private": true,
   "type": "module",
   "exports": {
@@ -8,11 +8,11 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "npm run build -w @codexsun/framework && tsc -p tsconfig.json --noEmit",
+    "typecheck": "npm run build -w @cxapp/framework && tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@codexsun/framework": "^1.0.43",
+    "@cxapp/framework": "^1.0.44",
     "fastify": "^5.2.1",
     "kysely": "^0.29.0",
     "mysql2": "^3.22.3",

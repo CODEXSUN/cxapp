@@ -1,6 +1,6 @@
 {
-  "name": "codexsun",
-  "version": "1.0.43",
+  "name": "cxapp",
+  "version": "1.0.44",
   "private": true,
   "packageManager": "npm@12.0.1",
   "description": "CODEXSUN",
@@ -15,7 +15,9 @@
     "dev:api": "node tools/preflight.mjs platform-api",
     "dev:web": "node tools/preflight.mjs platform-web",
     "test:product-stacks": "node --test tools/product-stack-contract.test.mjs",
-    "test:migration-contract": "npm run build -w @codexsun/framework && node --test tools/migration-contract.test.mjs",
+    "test:platform-runtime": "npm run build -w @cxapp/framework && node --test tools/platform-runtime-contract.test.mjs",
+    "test:deployment-env": "node --test tools/deployment-env-contract.test.mjs",
+    "test:migration-contract": "npm run build -w @cxapp/framework && node --test tools/migration-contract.test.mjs",
     "stack:impact": "node tools/stack-impact.mjs",
     "stack:plan": "node tools/stack-release-plan.mjs",
     "preinstall": "node tools/enforce-root-install.mjs",
@@ -47,6 +49,7 @@
     "test:e2e:organisation": "tsx apps/core/api/src/modules/organisation/organisation.e2e.ts",
     "test:e2e:bootstrap": "tsx tools/e2e/platform-core-billing-bootstrap.e2e.ts",
     "test:e2e:composed-runtime": "tsx tools/e2e/composed-platform-runtime.e2e.ts",
+    "test:e2e:devkit": "tsx tools/e2e/devkit-isolation.e2e.ts",
     "test:e2e:persistence": "tsx tools/e2e/organisation-billing-persistence.e2e.ts",
     "test:e2e:live-mass": "tsx tools/e2e/live-five-tenant-mass.e2e.ts",
     "test:e2e:tenant-access": "tsx tools/e2e/tenant-access.e2e.ts",
@@ -59,7 +62,9 @@
     "github:ssh-key": "node tools/github-ssh-key.mjs",
     "env:jwt-secret": "node tools/env-jwt-secret.mjs",
     "env:configure": "node tools/configure-env.mjs",
-    "env:deployment:check": "node tools/configure-env.mjs --check",
+    "env:check": "node tools/configure-env.mjs --check",
+    "env:deploy:configure": "node tools/configure-env.mjs --deployment",
+    "env:deployment:check": "node tools/configure-env.mjs --deployment --check",
     "env:smoke": "tsx tools/env-startup-smoke.ts"
   },
   "devDependencies": {

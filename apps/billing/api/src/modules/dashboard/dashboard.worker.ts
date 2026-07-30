@@ -1,4 +1,4 @@
-import type { DomainEvent } from "@codexsun/framework/events";
+import type { DomainEvent } from "@cxapp/framework/events";
 import { DashboardRepository } from "./dashboard.repository.js";
 import { shouldSyncDashboardProjection } from "./dashboard.sync.js";
 import type { DashboardProjectionRequest } from "./dashboard.types.js";

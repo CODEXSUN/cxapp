@@ -49,11 +49,11 @@ const randomSeed = Number.parseInt(
 const minimumRecordsPerTenant = 8;
 const maximumRecordsPerTenant = 16;
 const tenantDefinitions = [
-  { code: "CODEXSUN", databaseName: "codexsun_db", name: "Codexsun" },
-  { code: "LOAD01", databaseName: "codexsun_load_01", name: "Load Tenant 01" },
-  { code: "LOAD02", databaseName: "codexsun_load_02", name: "Load Tenant 02" },
-  { code: "LOAD03", databaseName: "codexsun_load_03", name: "Load Tenant 03" },
-  { code: "LOAD04", databaseName: "codexsun_load_04", name: "Load Tenant 04" }
+  { code: "CODEXSUN", databaseName: "cxapp_db", name: "Codexsun" },
+  { code: "LOAD01", databaseName: "cxapp_load_01", name: "Load Tenant 01" },
+  { code: "LOAD02", databaseName: "cxapp_load_02", name: "Load Tenant 02" },
+  { code: "LOAD03", databaseName: "cxapp_load_03", name: "Load Tenant 03" },
+  { code: "LOAD04", databaseName: "cxapp_load_04", name: "Load Tenant 04" }
 ] as const;
 
 const admin = await createConnection({
@@ -94,11 +94,11 @@ try {
   await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
   const [masterCounts] = await admin.query<Array<RowDataPacket & MasterCounts>>(`
     SELECT
-      (SELECT COUNT(*) FROM app_tenants WHERE status='active') AS app_tenants,
-      (SELECT COUNT(*) FROM app_tenant_domains domain
-        INNER JOIN app_tenants tenant ON tenant.id=domain.tenant_id
+      (SELECT COUNT(*) FROM tenants WHERE status='active') AS tenants,
+      (SELECT COUNT(*) FROM tenant_domains domain
+        INNER JOIN tenants tenant ON tenant.id=domain.tenant_id
         WHERE tenant.status='active') AS domains,
-      (SELECT COUNT(*) FROM app_subscriptions WHERE status IN ('active','trial')) AS app_subscriptions
+      (SELECT COUNT(*) FROM subscriptions WHERE status IN ('active','trial')) AS subscriptions
   `);
   assert.equal(Number(masterCounts[0]?.tenants), 5);
   assert.equal(Number(masterCounts[0]?.domains), 5);
@@ -155,7 +155,7 @@ async function provisionTenants() {
   const tenants: Tenant[] = [];
   await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
   const [plans] = await admin.query<Array<RowDataPacket & { id: number }>>(
-    "SELECT id FROM app_plans WHERE code='starter' AND status='active' LIMIT 1"
+    "SELECT id FROM plans WHERE code='starter' AND status='active' LIMIT 1"
   );
   const planId = Number(plans[0]?.id);
   assert.ok(planId, "Starter plan was not seeded.");
@@ -188,7 +188,7 @@ async function provisionTenants() {
     }
     await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
     const [subscriptions] = await admin.query<Array<RowDataPacket & { id: number }>>(
-      "SELECT id FROM app_subscriptions WHERE tenant_id=? AND status IN ('active','trial') LIMIT 1",
+      "SELECT id FROM subscriptions WHERE tenant_id=? AND status IN ('active','trial') LIMIT 1",
       [tenant.id]
     );
     if (!subscriptions.length) {
@@ -991,7 +991,7 @@ async function auditDatabase(connection: Connection, databaseName: string): Prom
       .filter(([, count]) => count === 0)
       .map(([tableName]) => tableName),
     foreignKeys: foreignKeys.length,
-    migrationCount: rowCounts.app_migration_batches ?? 0,
+    migrationCount: rowCounts.migration_schema ?? 0,
     rowCounts,
     schema,
     tables: tableRows.length

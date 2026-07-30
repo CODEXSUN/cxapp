@@ -11,13 +11,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle
-} from "@codexsun/ui/components/alert-dialog";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
-import { cn } from "@codexsun/ui/lib/utils";
+} from "@cxapp/ui/components/alert-dialog";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
+import { cn } from "@cxapp/ui/lib/utils";
 import { PincodeForm } from "./pincode.form";
 import { pincodeQueryKey, usePincodes, usePincodeCityOptions } from "./pincode.hooks";
 import { PincodeList } from "./pincode.list";

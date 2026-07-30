@@ -1,11 +1,11 @@
 import { Eye, Pencil, Send, Trash2, XCircle } from "lucide-react";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableLoadingState,
   WorkspaceTablePanel
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import { formatReceiptDate, formatReceiptMoney } from "./receipt.services";
 import type { Receipt } from "./receipt.types";
 

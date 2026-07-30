@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { WorkspacePrintSheet } from "@codexsun/ui/workspace/print";
+import { WorkspacePrintSheet } from "@cxapp/ui/workspace/print";
 import { ArrowLeft, Printer, RefreshCw } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { GlobalLoader } from "@codexsun/ui/components/global-loader";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { Button } from "@cxapp/ui/components/button";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { PageTitle } from "../../shared/document/PageTitle";
 import { BillingCompanyName, BillingDocumentHeader, useBillingSettings } from "../settings";
 import { usePurchaseRecord } from "./purchase.hooks";

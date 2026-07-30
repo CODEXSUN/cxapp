@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@codexsun/ui/components/dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { Label } from "@codexsun/ui/components/label";
+import { Button } from "@cxapp/ui/components/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@cxapp/ui/components/dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { Label } from "@cxapp/ui/components/label";
 import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
-} from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
-import { WorkspaceFormBanner } from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import {
   createPaymentAddressType,
   createPaymentLocation,

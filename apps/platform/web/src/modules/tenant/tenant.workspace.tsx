@@ -2,33 +2,33 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Pencil, Plus, RefreshCw, Save, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
 import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
-} from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceStatusBadge, WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceStatusBadge, WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableHeaderCell,
   WorkspaceTablePanel,
   WorkspaceTableLoadingState
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import {
   WorkspaceFormBanner,
   WorkspaceFormField,
   WorkspaceFormGrid,
   WorkspaceFormPanel,
   WorkspaceUpsertPage
-} from "@codexsun/ui/workspace/upsert";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
-import { cn } from "@codexsun/ui/lib/utils";
+} from "@cxapp/ui/workspace/upsert";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
+import { cn } from "@cxapp/ui/lib/utils";
 import { TenantPrimaryDomainField } from "../tenant-domain/tenant-domain.form";
 import {
   defaultTenantDomain,

@@ -91,7 +91,7 @@ export async function rollbackTenantDatabase(tenant: Tenant) {
 export async function provisionTenantStorage(tenant: Tenant) {
   const roots = await ensureTenantStorage(tenant.slug || tenant.tenantCode);
   await getPlatformDatabase()
-    .updateTable("app_tenants")
+    .updateTable("tenants")
     .set({
       storage_private_root: roots.privateRoot,
       storage_public_root: roots.publicRoot,
@@ -114,12 +114,19 @@ export async function seedDefaultTenant() {
   console.info(`[seeder] default tenant seed started for "${input.tenantCode}"`);
   const repository = new TenantRepository();
   const existing = await repository.findByIdOrCode(input.tenantCode);
-  const tenant = existing
+  const reconciledTenant = existing
     ? await reconcileDefaultTenantModules(repository, existing)
     : await repository.create(input);
-  if (!tenant) {
+  if (!reconciledTenant) {
     throw new Error("Default tenant seed failed.");
   }
+  const tenant = {
+    ...reconciledTenant,
+    primaryDomain: await repository.ensurePrimaryDomain(
+      reconciledTenant.id,
+      input.primaryDomain ?? defaultTenantDomain()
+    )
+  };
   console.info(
     `[seeder] default tenant ${existing ? "configuration preserved" : "created"}: ${tenant.tenantCode}`
   );
@@ -152,6 +159,7 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
         enabled: enabledKeys.has(moduleKey),
         module_key: moduleKey,
         settings_json: settingsJson,
+        status: "active",
         uuid: stableUuid(`${tenant.uuid}:${moduleKey}`)
       })
       .onDuplicateKeyUpdate({
@@ -252,7 +260,7 @@ function stringArray(value: unknown) {
 async function seedDefaultTenantSubscription(tenant: Tenant) {
   const database = getPlatformDatabase();
   const existing = await database
-    .selectFrom("app_subscriptions")
+    .selectFrom("subscriptions")
     .select("id")
     .where("tenant_id", "=", tenant.id)
     .where("status", "in", ["active", "trial"])
@@ -263,7 +271,7 @@ async function seedDefaultTenantSubscription(tenant: Tenant) {
   }
 
   const starterPlan = await database
-    .selectFrom("app_plans")
+    .selectFrom("plans")
     .select(["id", "code"])
     .where("code", "=", "starter")
     .executeTakeFirst();
@@ -275,7 +283,7 @@ async function seedDefaultTenantSubscription(tenant: Tenant) {
   }
 
   await database
-    .insertInto("app_subscriptions")
+    .insertInto("subscriptions")
     .values({
       billing_cycle: "monthly",
       ends_on: null,

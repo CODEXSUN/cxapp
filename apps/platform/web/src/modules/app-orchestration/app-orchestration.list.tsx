@@ -1,5 +1,5 @@
 import { ServerCogIcon } from "lucide-react";
-import { StatusBadge } from "@codexsun/ui";
+import { StatusBadge } from "@cxapp/ui";
 import type { OrchestratedApp, OrchestratedAppId } from "./app-orchestration.types";
 const icons = {
   platform: ServerCogIcon

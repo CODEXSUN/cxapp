@@ -7,7 +7,7 @@ export async function seedIndustryModule(db: Kysely<PlatformDatabase>) {
     { code: "retail", name: "Retail" }
   ])
     await db
-      .insertInto("app_industries")
+      .insertInto("industries")
       .values({
         code: item.code,
         description: `${item.name} defaults`,

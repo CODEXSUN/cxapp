@@ -193,8 +193,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
   Tree
-} from "@codexsun/ui";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   AlertCircleIcon,
   BoxesIcon,

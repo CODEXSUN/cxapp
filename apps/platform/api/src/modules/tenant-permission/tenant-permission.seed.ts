@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { Kysely } from "kysely";
 import type { TenantDatabase } from "../../database/schema.js";
 const seeds = [
+  "devkit.access",
   "user.view",
   "user.create",
   "user.update",
@@ -26,7 +27,7 @@ const seeds = [
   "role-permission.update",
   "role-permission.remove"
 ].map((key) => ({
-  key: `platform.application.${key}`,
+  key: key === "devkit.access" ? key : `platform.application.${key}`,
   label: key
     .split(".")
     .map((x) => x.replace("-", " "))

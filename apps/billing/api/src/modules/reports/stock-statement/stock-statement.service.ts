@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { StockStatementRepository } from "./stock-statement.repository.js";
 import type { StockStatementQuery, StockStatementResult } from "./stock-statement.types.js";
 

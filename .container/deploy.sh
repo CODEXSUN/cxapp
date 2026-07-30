@@ -17,7 +17,7 @@ Actions:
   --reinstall  Replace only the selected stack's containers/images, rebuild
                without cache, migrate, and start. Named volumes are preserved.
   build        Build the selected stack images locally.
-  publish      Build and push versioned images to CODEXSUN_IMAGE_REGISTRY.
+  publish      Build and push versioned images to CXAPP_IMAGE_REGISTRY.
   upgrade      Pull versioned images, migrate, and recreate only app containers.
   migrate      Run safe forward migrations and print migration state.
   ps           Show the selected stack containers.
@@ -54,28 +54,28 @@ compose_all() {
 }
 
 require_stack_dependencies() {
-  network=$(env_value CODEXSUN_DOCKER_NETWORK)
+  network=$(env_value CXAPP_DOCKER_NETWORK)
   docker network inspect "$network" >/dev/null 2>&1 || {
     echo "Required Docker network is missing: $network" >&2
-    echo "Run: bash .container/setup.sh $STACK" >&2
+    echo "Run: bash setup.sh $STACK" >&2
     exit 69
   }
 
   media_data=$(env_value MEDIA_DATA_VOLUME)
   docker volume inspect "$media_data" >/dev/null 2>&1 || {
     echo "Required Media volume is missing: $media_data" >&2
-    echo "Run: bash .container/setup.sh $STACK" >&2
+    echo "Run: bash setup.sh $STACK" >&2
     exit 69
   }
 
-  for container in codexsun-mariadb codexsun-redis; do
+  for container in cxapp-mariadb cxapp-redis; do
     state=$(docker inspect "$container" --format '{{.State.Status}}' 2>/dev/null || true)
     health=$(docker inspect "$container" \
       --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
       2>/dev/null || true)
     [ "$state" = "running" ] && [ "$health" = "healthy" ] || {
       echo "Required dependency is not healthy: $container (state=${state:-missing}, health=${health:-missing})" >&2
-      echo "deploy.sh will not modify infrastructure. Run: bash .container/setup.sh $STACK" >&2
+      echo "deploy.sh will not modify infrastructure. Run: bash setup.sh $STACK" >&2
       exit 69
     }
   done
@@ -83,7 +83,7 @@ require_stack_dependencies() {
 
 stack_image() {
   suffix="$1"
-  registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
+  registry=$(env_value CXAPP_IMAGE_REGISTRY)
   upper_stack=$(printf '%s' "$STACK" | tr '[:lower:]' '[:upper:]')
   case "$suffix" in
     api) tag_key="${upper_stack}_STACK_API_IMAGE_TAG" ;;
@@ -158,7 +158,7 @@ reinstall_stack() {
 
 upgrade_stack() {
   require_stack_dependencies
-  registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
+  registry=$(env_value CXAPP_IMAGE_REGISTRY)
   echo "Pulling the versioned $STACK release from $registry."
   compose_all pull
   migrate_stack

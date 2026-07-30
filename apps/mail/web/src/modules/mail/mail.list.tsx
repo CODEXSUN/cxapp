@@ -1,5 +1,5 @@
 import { AlertCircle, Clock3, Paperclip } from "lucide-react";
-import { cn } from "@codexsun/ui/lib/utils";
+import { cn } from "@cxapp/ui/lib/utils";
 import type { MailMessage } from "./mail.types";
 
 export function MailList({

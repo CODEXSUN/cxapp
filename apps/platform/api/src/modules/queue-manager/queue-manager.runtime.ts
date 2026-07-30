@@ -6,7 +6,7 @@ import { QueueManagerService } from "./queue-manager.service.js";
 let queueWorkerTimer: NodeJS.Timeout | null = null;
 
 export function startQueueManagerWorker(app: FastifyInstance, service = new QueueManagerService()) {
-  if (env.CODEXSUN_QUEUE_WORKER_ENABLED !== "1" || queueWorkerTimer) {
+  if (env.CXAPP_QUEUE_WORKER_ENABLED !== "1" || queueWorkerTimer) {
     return;
   }
   let running = false;
@@ -43,7 +43,7 @@ export function startQueueManagerWorker(app: FastifyInstance, service = new Queu
       .finally(() => {
         running = false;
       });
-  }, env.CODEXSUN_QUEUE_WORKER_INTERVAL_MS);
+  }, env.CXAPP_QUEUE_WORKER_INTERVAL_MS);
   queueWorkerTimer.unref();
   app.addHook("onClose", async () => {
     if (queueWorkerTimer) {

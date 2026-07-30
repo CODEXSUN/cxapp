@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceFormBanner,
   WorkspaceFormField,
   WorkspaceFormFooter,
   WorkspaceFormGrid,
   WorkspaceUpsertDialog
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { tenantRolePermissionSchema } from "./tenant-role-permission.schema";
 import type {
   TenantRolePermission,

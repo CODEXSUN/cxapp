@@ -13,7 +13,7 @@ import type {
 
 export class QueueManagerRepository {
   async list(filters: QueueJobFilters = {}) {
-    let query = getPlatformDatabase().selectFrom("app_queue_jobs").selectAll();
+    let query = getPlatformDatabase().selectFrom("queue_jobs").selectAll();
     if (filters.status) query = query.where("status", "=", filters.status);
     if (filters.queueName) query = query.where("queue_name", "=", filters.queueName);
     if (filters.tenantId) query = query.where("tenant_id", "=", filters.tenantId);
@@ -29,11 +29,11 @@ export class QueueManagerRepository {
   async settings(): Promise<QueueRuntimeSettings> {
     const jobs = await this.list();
     const selected = await getPlatformDatabase()
-      .selectFrom("app_queue_runtime_settings")
+      .selectFrom("queue_runtime_settings")
       .selectAll()
       .where("singleton_key", "=", 1)
       .executeTakeFirst();
-    const backend = normalizeBackend(selected?.backend ?? env.CODEXSUN_QUEUE_BACKEND);
+    const backend = normalizeBackend(selected?.backend ?? env.CXAPP_QUEUE_BACKEND);
     return {
       availableBackends: ["memory", "database", "bullmq-redis"],
       backend,
@@ -47,7 +47,7 @@ export class QueueManagerRepository {
       completed: jobs.filter((job) => job.status === "completed").length,
       failed: jobs.filter((job) => job.status === "failed").length,
       pending: jobs.filter((job) => job.status === "pending").length,
-      redisConfigured: Boolean(env.CODEXSUN_REDIS_URL.trim()),
+      redisConfigured: Boolean(env.CXAPP_REDIS_URL.trim()),
       running: jobs.filter((job) => job.status === "running").length,
       updatedAt: selected?.updated_at ? new Date(selected.updated_at).toISOString() : null,
       updatedBy: selected?.updated_by ?? "environment"
@@ -60,7 +60,7 @@ export class QueueManagerRepository {
 
   async setBackend(backend: QueueBackend, actorEmail: string) {
     await getPlatformDatabase()
-      .insertInto("app_queue_runtime_settings")
+      .insertInto("queue_runtime_settings")
       .values({
         backend,
         singleton_key: 1,
@@ -80,7 +80,7 @@ export class QueueManagerRepository {
     const payloadJson = JSON.stringify(input.payload);
     if (input.idempotencyKey) {
       const existing = await getPlatformDatabase()
-        .selectFrom("app_queue_jobs")
+        .selectFrom("queue_jobs")
         .selectAll()
         .where("idempotency_key", "=", input.idempotencyKey)
         .where("status", "in", ["pending", "running", "completed"])
@@ -89,7 +89,7 @@ export class QueueManagerRepository {
     }
 
     const result = await getPlatformDatabase()
-      .insertInto("app_queue_jobs")
+      .insertInto("queue_jobs")
       .values({
         actor_email: input.actorEmail ?? null,
         attempts: 0,
@@ -114,7 +114,7 @@ export class QueueManagerRepository {
 
   async find(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("app_queue_jobs")
+      .selectFrom("queue_jobs")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
@@ -123,7 +123,7 @@ export class QueueManagerRepository {
 
   async nextRunnable() {
     const row = await getPlatformDatabase()
-      .selectFrom("app_queue_jobs")
+      .selectFrom("queue_jobs")
       .selectAll()
       .where("status", "=", "pending")
       .where("available_at", "<=", new Date())
@@ -136,7 +136,7 @@ export class QueueManagerRepository {
 
   async markRunning(id: number) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({
         attempts: sql`attempts + 1`,
         error_message: null,
@@ -151,7 +151,7 @@ export class QueueManagerRepository {
 
   async markCompleted(id: number, result: Record<string, unknown>) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({
         completed_at: new Date(),
         result_json: JSON.stringify(result),
@@ -165,7 +165,7 @@ export class QueueManagerRepository {
 
   async markFailed(id: number, errorMessage: string, result: Record<string, unknown> = {}) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({
         completed_at: new Date(),
         error_message: errorMessage,
@@ -180,7 +180,7 @@ export class QueueManagerRepository {
 
   async retry(id: number) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({
         available_at: new Date(),
         completed_at: null,
@@ -197,7 +197,7 @@ export class QueueManagerRepository {
 
   async retryAfter(id: number, delayMs: number) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({
         available_at: new Date(Date.now() + Math.max(1000, delayMs)),
         completed_at: null,
@@ -213,7 +213,7 @@ export class QueueManagerRepository {
 
   async cancel(id: number) {
     await getPlatformDatabase()
-      .updateTable("app_queue_jobs")
+      .updateTable("queue_jobs")
       .set({ completed_at: new Date(), status: "cancelled", updated_at: new Date() })
       .where("id", "=", id)
       .where("status", "in", ["pending", "failed"])
@@ -223,12 +223,12 @@ export class QueueManagerRepository {
 
   async cleanup(input: { completedBefore: Date; failedBefore: Date }) {
     const completed = await getPlatformDatabase()
-      .deleteFrom("app_queue_jobs")
+      .deleteFrom("queue_jobs")
       .where("status", "in", ["completed", "cancelled"])
       .where("completed_at", "<", input.completedBefore)
       .executeTakeFirst();
     const failed = await getPlatformDatabase()
-      .deleteFrom("app_queue_jobs")
+      .deleteFrom("queue_jobs")
       .where("status", "=", "failed")
       .where("completed_at", "<", input.failedBefore)
       .executeTakeFirst();

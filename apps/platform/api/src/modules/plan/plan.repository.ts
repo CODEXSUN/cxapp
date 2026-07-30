@@ -6,12 +6,12 @@ import type { Plan, PlanSavePayload } from "./plan.types.js";
 export class PlanRepository {
   async list() {
     return (
-      await getPlatformDatabase().selectFrom("app_plans").selectAll().orderBy("name").execute()
+      await getPlatformDatabase().selectFrom("plans").selectAll().orderBy("name").execute()
     ).map(toPlan);
   }
   async create(input: PlanSavePayload) {
     const result = await getPlatformDatabase()
-      .insertInto("app_plans")
+      .insertInto("plans")
       .values({ ...toRow(input), uuid: randomBytes(4).toString("hex") })
       .executeTakeFirst();
     return {
@@ -22,7 +22,7 @@ export class PlanRepository {
   }
   async update(id: number, input: PlanSavePayload) {
     const result = await getPlatformDatabase()
-      .updateTable("app_plans")
+      .updateTable("plans")
       .set(toRow(input))
       .where("id", "=", id)
       .executeTakeFirst();
@@ -30,7 +30,7 @@ export class PlanRepository {
   }
   async find(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("app_plans")
+      .selectFrom("plans")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();

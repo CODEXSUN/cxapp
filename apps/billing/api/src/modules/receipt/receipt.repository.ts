@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { sql, type Kysely, type Transaction } from "kysely";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { getBillingDatabase } from "../../database/billing-database.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
 import type {

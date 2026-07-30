@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button, WorkspacePage } from "@codexsun/ui";
+import { Button, WorkspacePage } from "@cxapp/ui";
 import { DefaultCompanyForm } from "./default-company.form";
 import {
   defaultCompanyQueryKey,

@@ -60,8 +60,8 @@ export class TenantDomainService {
     }
     const tokens = records
       .map((parts) => parts.join("").trim())
-      .filter((value) => value.startsWith("codexsun-domain-verification="))
-      .map((value) => value.slice("codexsun-domain-verification=".length));
+      .filter((value) => value.startsWith("cxapp-domain-verification="))
+      .map((value) => value.slice("cxapp-domain-verification=".length));
     const verified = await this.domains.verify(domainId, tokens);
     if (!verified) {
       throw AppError.conflict(
@@ -72,4 +72,4 @@ export class TenantDomainService {
   }
 }
 import { resolveTxt } from "node:dns/promises";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";

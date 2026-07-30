@@ -5,8 +5,8 @@ import { env } from "./env.js";
 export async function verifyStartupConnectivity() {
   await verifyDatabase();
 
-  if (env.CODEXSUN_QUEUE_BACKEND === "bullmq-redis") {
-    const redisUrl = new URL(env.CODEXSUN_REDIS_URL);
+  if (env.CXAPP_QUEUE_BACKEND === "bullmq-redis") {
+    const redisUrl = new URL(env.CXAPP_REDIS_URL);
     await verifyTcpConnection(
       redisUrl.hostname,
       Number(redisUrl.port || (redisUrl.protocol === "rediss:" ? 6380 : 6379)),

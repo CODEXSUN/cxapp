@@ -9,7 +9,7 @@ import type {
 export class AppRegistryRepository {
   async list() {
     const rows = await getPlatformDatabase()
-      .selectFrom("app_platform_apps")
+      .selectFrom("platform_apps")
       .select([
         "id",
         "uuid",
@@ -30,7 +30,7 @@ export class AppRegistryRepository {
 
   async create(input: PlatformAppSavePayload) {
     const result = await getPlatformDatabase()
-      .insertInto("app_platform_apps")
+      .insertInto("platform_apps")
       .values({ ...toRow(input), uuid: randomBytes(4).toString("hex") })
       .executeTakeFirst();
     return this.find(Number(result.insertId));
@@ -38,7 +38,7 @@ export class AppRegistryRepository {
 
   async update(id: number, input: PlatformAppSavePayload) {
     await getPlatformDatabase()
-      .updateTable("app_platform_apps")
+      .updateTable("platform_apps")
       .set(toRow(input))
       .where("id", "=", id)
       .execute();
@@ -47,7 +47,7 @@ export class AppRegistryRepository {
 
   private async find(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("app_platform_apps")
+      .selectFrom("platform_apps")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();

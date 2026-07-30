@@ -1,28 +1,34 @@
 #!/usr/bin/env node
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { stdin, stdout } from "node:process";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 const root = resolve(import.meta.dirname, "..");
-const envPath = resolve(root, ".env");
-const examplePath = resolve(root, ".env.example");
+const deployment = process.argv.includes("--deployment");
+const envPath = deployment ? resolve(root, ".container", "deploy.env") : resolve(root, ".env");
+const examplePath = deployment
+  ? resolve(root, ".container", "deploy.env.sample")
+  : resolve(root, ".env.example");
 const checkOnly = process.argv.includes("--check");
 const nonInteractive = process.argv.includes("--non-interactive");
 const assignments = process.argv
   .filter((argument) => argument.startsWith("--set="))
   .map((argument) => argument.slice("--set=".length));
-const template = parseEnv(readFileSync(examplePath, "utf8"));
+const templateText = readFileSync(examplePath, "utf8");
+const template = parseEnv(templateText);
+const deploymentTemplate = deployment
+  ? template
+  : parseEnv(readFileSync(resolve(root, ".container", "deploy.env.sample"), "utf8"));
 const currentText = existsSync(envPath) ? readFileSync(envPath, "utf8") : "";
 const current = parseEnv(currentText);
 
 const optionalEmpty = new Set([
-  "PLATFORM_WEB_ORIGINS",
-  "CODEXSUN_DB_RESET_CONFIRM",
-  "CODEXSUN_RESTORE_TEST_DB_NAME",
-  "CODEXSUN_LIVE_RESTORE_CONFIRM",
+  "CXAPP_DB_RESET_CONFIRM",
+  "CXAPP_RESTORE_TEST_DB_NAME",
+  "CXAPP_LIVE_RESTORE_CONFIRM",
   "MAIL_SMTP_HOST",
   "MAIL_USERNAME",
   "MAIL_PASSWORD",
@@ -34,11 +40,19 @@ const optionalEmpty = new Set([
   "GSP_CLIENT_ID",
   "GSP_CLIENT_SECRET",
   "GSP_GSTIN",
-  "CODEXSUN_BACKUP_VERIFY_ID"
+  "CXAPP_BACKUP_VERIFY_ID"
+]);
+const retiredKeys = new Set([
+  "PLATFORM_API_HOST",
+  "PLATFORM_API_URL",
+  "PLATFORM_WEB_HOST",
+  "PLATFORM_WEB_ALLOWED_HOSTS",
+  "PLATFORM_WEB_ORIGINS"
 ]);
 const interactiveKeys = [
   ["DB_USER", "MariaDB application user", false],
   ["DB_PASSWORD", "MariaDB application password", true],
+  ["CXAPP_VERIFIED_BACKUP_ID", "Verified pre-migration backup ID", false],
   ["MARIADB_ADMIN_USER", "MariaDB administrative user", false],
   ["MARIADB_ROOT_PASSWORD", "MariaDB administrative password", true],
   ["REDIS_PASSWORD", "Redis password", true],
@@ -58,13 +72,21 @@ const interactiveKeys = [
   ["DEFAULT_TENANT_ADMIN_PASSWORD", "Default tenant administrator password", true]
 ];
 const generatedInfrastructureSecrets = new Set([
+  "DB_PASSWORD",
   "MARIADB_ROOT_PASSWORD",
   "REDIS_PASSWORD",
   "MEDIA_ADMIN_PASSWORD",
   "JWT_SECRET"
 ]);
-
 if (!checkOnly) {
+  for (const key of retiredKeys) {
+    current.delete(key);
+  }
+  if (!deployment) {
+    for (const key of deploymentTemplate.keys()) {
+      if (!template.has(key)) current.delete(key);
+    }
+  }
   for (const [key, value] of template) {
     if (!current.has(key)) {
       current.set(key, value);
@@ -80,22 +102,40 @@ if (!checkOnly) {
     current.set(key, value);
   }
 
+  if (deployment) {
+    current.set("NODE_ENV", "production");
+    current.set("DB_HOST", "cxapp-mariadb");
+    current.set("DB_PORT", "3306");
+    current.set("CXAPP_QUEUE_BACKEND", "bullmq-redis");
+    if (current.get("CXAPP_SINGLE_TENANT") === "1") {
+      current.set("ENABLE_DEFAULT_TENANT_SEED", "1");
+    }
+  }
+
   if (nonInteractive) {
     for (const key of generatedInfrastructureSecrets) {
-      if (isMissing(current.get(key))) {
+      if (template.has(key) && isMissing(current.get(key))) {
         current.set(key, randomBytes(32).toString("hex"));
       }
     }
   } else {
+    if (isMissing(current.get("JWT_SECRET"))) {
+      current.set("JWT_SECRET", randomBytes(32).toString("hex"));
+    }
     if (!stdin.isTTY || !stdout.isTTY) {
       fail(
         "Interactive configuration requires a terminal. Use --non-interactive only when application administrator credentials already exist."
       );
     }
-    stdout.write("Press Enter to preserve an existing value. Passwords are never printed.\n\n");
+    stdout.write(
+      `\n${deployment ? "Deployment" : "Development"} configuration\n` +
+        `File: ${envPath}\n` +
+        "Press Enter to keep the displayed value. Secret values are never printed.\n\n"
+    );
     for (const [key, label, secret] of interactiveKeys) {
+      if (!template.has(key)) continue;
       const existing = current.get(key);
-      const suffix = isMissing(existing) ? "" : ` [keep ${fingerprint(existing)}]`;
+      const suffix = isMissing(existing) ? "" : secret ? " [configured]" : ` [${existing}]`;
       const answer = secret
         ? await hiddenQuestion(`${label}${suffix}: `)
         : await visibleQuestion(`${label}${suffix}: `);
@@ -108,57 +148,61 @@ if (!checkOnly) {
   const redisPassword = current.get("REDIS_PASSWORD");
   if (!isMissing(redisPassword)) {
     current.set(
-      "CODEXSUN_REDIS_URL",
-      `redis://:${encodeURIComponent(redisPassword)}@codexsun-redis:6379/0`
+      "CXAPP_REDIS_URL",
+      deployment
+        ? `redis://:${encodeURIComponent(redisPassword)}@cxapp-redis:6379/0`
+        : `redis://:${encodeURIComponent(redisPassword)}@127.0.0.1:6379/0`
     );
   }
 
-  validate(current);
+  validate(current, deployment);
   const temporaryPath = `${envPath}.tmp`;
-  writeFileSync(temporaryPath, renderEnv(template, current), { mode: 0o600 });
+  writeFileSync(temporaryPath, renderEnv(templateText, current), { mode: 0o600 });
   renameSync(temporaryPath, envPath);
-  stdout.write(`Environment configuration saved to ${envPath}.\n`);
+  stdout.write(`${deployment ? "Deployment" : "Development"} environment saved to ${envPath}.\n`);
 } else {
-  validate(current);
-  stdout.write(`Deployment environment is complete and valid: ${envPath}\n`);
+  validate(current, deployment);
+  stdout.write(
+    `${deployment ? "Deployment" : "Development"} environment is complete and valid: ${envPath}\n`
+  );
 }
 
-function validate(values) {
+function validate(values, validateDeployment) {
   const problems = [];
+  for (const key of retiredKeys) {
+    if (values.has(key)) {
+      problems.push(`${key} is retired and must be removed`);
+    }
+  }
   for (const [key] of template) {
     if (!values.has(key)) {
       problems.push(`${key} is missing`);
-    } else if (!optionalEmpty.has(key) && isMissing(values.get(key))) {
+    } else if (!isOptionalKey(key, validateDeployment) && isMissing(values.get(key))) {
       problems.push(`${key} must have a real value`);
     }
   }
   for (const [key, value] of values) {
-    if (!optionalEmpty.has(key) && /^change_this/u.test(value.trim())) {
+    if (!isOptionalKey(key, validateDeployment) && /^change_this/u.test(value.trim())) {
       problems.push(`${key} still contains a placeholder`);
     }
   }
-  if (values.get("CODEXSUN_DB_FRESH_ON_START") !== "0") {
-    problems.push("CODEXSUN_DB_FRESH_ON_START must be 0 for deployment");
+  if (validateDeployment && values.get("CXAPP_DB_FRESH_ON_START") !== "0") {
+    problems.push("CXAPP_DB_FRESH_ON_START must be 0 for deployment");
   }
-  if (values.get("NODE_ENV") !== "production") {
+  if (validateDeployment && values.get("NODE_ENV") !== "production") {
     problems.push("NODE_ENV must be production for deployment");
   }
-  if (values.get("DB_HOST") !== "codexsun-mariadb" || values.get("DB_PORT") !== "3306") {
-    problems.push("container deployment requires DB_HOST=codexsun-mariadb and DB_PORT=3306");
-  }
   if (
-    values.get("PLATFORM_API_HOST") !== "0.0.0.0" ||
-    values.get("PLATFORM_WEB_HOST") !== "0.0.0.0"
+    validateDeployment &&
+    (values.get("DB_HOST") !== "cxapp-mariadb" || values.get("DB_PORT") !== "3306")
   ) {
-    problems.push(
-      "container deployment requires PLATFORM_API_HOST and PLATFORM_WEB_HOST to be 0.0.0.0"
-    );
+    problems.push("container deployment requires DB_HOST=cxapp-mariadb and DB_PORT=3306");
   }
-  if (values.get("CODEXSUN_QUEUE_BACKEND") !== "bullmq-redis") {
-    problems.push("container deployment requires CODEXSUN_QUEUE_BACKEND=bullmq-redis");
+  if (validateDeployment && values.get("CXAPP_QUEUE_BACKEND") !== "bullmq-redis") {
+    problems.push("container deployment requires CXAPP_QUEUE_BACKEND=bullmq-redis");
   }
-  if (values.get("CODEXSUN_ALLOW_PRODUCTION_DB_RESET") !== "0") {
-    problems.push("CODEXSUN_ALLOW_PRODUCTION_DB_RESET must be 0 for deployment");
+  if (validateDeployment && values.get("CXAPP_ALLOW_PRODUCTION_DB_RESET") !== "0") {
+    problems.push("CXAPP_ALLOW_PRODUCTION_DB_RESET must be 0 for deployment");
   }
   if (values.get("DB_MASTER_NAME") === values.get("DEFAULT_TENANT_DB_NAME")) {
     problems.push("DB_MASTER_NAME and DEFAULT_TENANT_DB_NAME must differ");
@@ -171,6 +215,10 @@ function validate(values) {
   if (problems.length) {
     fail(`Deployment environment validation failed:\n- ${problems.join("\n- ")}`);
   }
+}
+
+function isOptionalKey(key, validateDeployment) {
+  return optionalEmpty.has(key) || (!validateDeployment && key === "CXAPP_VERIFIED_BACKUP_ID");
 }
 
 function parseEnv(source) {
@@ -191,15 +239,27 @@ function parseEnv(source) {
   return values;
 }
 
-function renderEnv(order, values) {
+function renderEnv(templateSource, values) {
   const lines = [];
   const emitted = new Set();
-  for (const [key] of order) {
-    lines.push(`${key}=${quoteEnv(values.get(key) ?? "")}`);
-    emitted.add(key);
+  for (const line of templateSource.split(/\r?\n/u)) {
+    const match = line.match(/^\s*([A-Z][A-Z0-9_]*)\s*=.*$/u);
+    if (match) {
+      const key = match[1];
+      lines.push(`${key}=${quoteEnv(values.get(key) ?? "")}`);
+      emitted.add(key);
+    } else {
+      lines.push(line.trimEnd());
+    }
   }
+  while (lines.at(-1) === "") lines.pop();
+
+  const additional = [];
   for (const [key, value] of values) {
-    if (!emitted.has(key)) lines.push(`${key}=${quoteEnv(value)}`);
+    if (!emitted.has(key)) additional.push(`${key}=${quoteEnv(value)}`);
+  }
+  if (additional.length) {
+    lines.push("", "# === Additional environment values ===", ...additional);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -210,10 +270,6 @@ function quoteEnv(value) {
 
 function isMissing(value) {
   return !value?.trim() || /^change_this/u.test(value.trim());
-}
-
-function fingerprint(value) {
-  return createHash("sha256").update(value).digest("hex").slice(0, 8);
 }
 
 async function hiddenQuestion(prompt) {

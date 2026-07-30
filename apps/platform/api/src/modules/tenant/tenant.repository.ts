@@ -20,7 +20,7 @@ export class TenantRepository {
 
   async list() {
     const rows = await getPlatformDatabase()
-      .selectFrom("app_tenants")
+      .selectFrom("tenants")
       .selectAll()
       .orderBy("tenant_name", "asc")
       .execute();
@@ -33,7 +33,7 @@ export class TenantRepository {
     const numericId = Number.parseInt(normalized, 10);
 
     const row = await getPlatformDatabase()
-      .selectFrom("app_tenants")
+      .selectFrom("tenants")
       .selectAll()
       .where(
         sql<boolean>`
@@ -62,17 +62,14 @@ export class TenantRepository {
       uuid: normalizeUuid(input.uuid) || createPublicUuid()
     };
     const result = await getPlatformDatabase()
-      .insertInto("app_tenants")
+      .insertInto("tenants")
       .values(toTenantRow(tenantInput))
       .executeTakeFirst();
     const tenant: Tenant = {
       ...tenantInput,
       id: Number(result.insertId)
     };
-    tenant.primaryDomain = await seedTenantDomain(
-      { domain: tenant.primaryDomain, tenantId: tenant.id },
-      (domain) => this.domains.upsertPrimaryDomain(domain)
-    );
+    tenant.primaryDomain = await this.ensurePrimaryDomain(tenant.id, tenant.primaryDomain);
     await this.audit(tenant.id, "tenant.created");
     return tenant;
   }
@@ -82,14 +79,11 @@ export class TenantRepository {
     if (!existing) return null;
     const tenant = { ...existing, ...input, id: existing.id };
     await getPlatformDatabase()
-      .updateTable("app_tenants")
+      .updateTable("tenants")
       .set(toTenantRow(tenant))
       .where("id", "=", tenant.id)
       .execute();
-    tenant.primaryDomain = await seedTenantDomain(
-      { domain: tenant.primaryDomain, tenantId: tenant.id },
-      (domain) => this.domains.upsertPrimaryDomain(domain)
-    );
+    tenant.primaryDomain = await this.ensurePrimaryDomain(tenant.id, tenant.primaryDomain);
     await this.audit(tenant.id, "tenant.updated");
     return tenant;
   }
@@ -98,12 +92,18 @@ export class TenantRepository {
     const corporateId = normalizeIdentity(value);
     if (!corporateId) return null;
     const row = await getPlatformDatabase()
-      .selectFrom("app_tenants")
+      .selectFrom("tenants")
       .selectAll()
       .where("status", "=", "active")
       .where(sql<string>`LOWER(corporate_id)`, "=", corporateId)
       .executeTakeFirst();
     return row ? this.withPrimaryDomain(toTenant(row)) : null;
+  }
+
+  async ensurePrimaryDomain(tenantId: number, domain: string) {
+    return seedTenantDomain({ domain, tenantId }, (input) =>
+      this.domains.upsertPrimaryDomain(input)
+    );
   }
 
   async findByDomain(value: string) {
@@ -118,7 +118,7 @@ export class TenantRepository {
     if (!existing) return null;
     const tenant = { ...existing, status };
     await getPlatformDatabase()
-      .updateTable("app_tenants")
+      .updateTable("tenants")
       .set({ status })
       .where("id", "=", tenant.id)
       .execute();
@@ -163,7 +163,7 @@ export class TenantRepository {
     };
 
     await getPlatformDatabase()
-      .updateTable("app_tenants")
+      .updateTable("tenants")
       .set({
         default_landing_app: defaultLandingApp,
         enabled_module_keys: JSON.stringify(normalizedKeys),
@@ -185,7 +185,7 @@ export class TenantRepository {
     const tenant = await this.findByIdOrCode(id);
     if (!tenant) return [];
     const rows = await getPlatformDatabase()
-      .selectFrom("app_tenant_audit_events")
+      .selectFrom("tenant_audit_events")
       .select(["id", "actor_email", "event_name", "created_at"])
       .where("tenant_id", "=", tenant.id)
       .orderBy("created_at", "desc")
@@ -219,7 +219,7 @@ export class TenantRepository {
 
   private async audit(tenantId: number, eventName: string) {
     await getPlatformDatabase()
-      .insertInto("app_tenant_audit_events")
+      .insertInto("tenant_audit_events")
       .values({
         actor_email: "system@codexsun.app",
         event_name: eventName,

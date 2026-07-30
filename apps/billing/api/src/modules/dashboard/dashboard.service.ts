@@ -1,4 +1,4 @@
-import { InMemoryEventPublisher, type EventPublisher } from "@codexsun/framework/events";
+import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
 import { createDashboardProjectionEvent } from "./dashboard.events.js";
 import { DashboardRepository } from "./dashboard.repository.js";
 import type { DashboardProjectionRequest } from "./dashboard.types.js";

@@ -1,4 +1,4 @@
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { MasterDatabaseForm } from "./master-database.form";
 import { useMasterDatabaseMutations, useMasterDatabaseQuery } from "./master-database.hooks";
 import { MasterDatabaseList } from "./master-database.list";

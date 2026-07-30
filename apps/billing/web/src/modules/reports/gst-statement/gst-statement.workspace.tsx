@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Printer, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { cn } from "@codexsun/ui/lib/utils";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
+import { Button } from "@cxapp/ui/components/button";
+import { cn } from "@cxapp/ui/lib/utils";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { GstStatementForm } from "./gst-statement.form";
 import { useGstStatement } from "./gst-statement.hooks";
 import { GstStatementList } from "./gst-statement.list";

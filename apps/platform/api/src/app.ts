@@ -1,15 +1,15 @@
-import { createApiApp, registerHealthRoute, registerRequestLogging } from "@codexsun/framework/api";
-import { registerModules } from "@codexsun/framework/modules";
-import { createMailModule } from "@codexsun/mail-api";
+import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxapp/framework/api";
+import { registerModules } from "@cxapp/framework/modules";
+import { createMailModule } from "@cxapp/mail-api";
 import {
   billingApiModuleKeys,
   closeAllBillingDatabases,
   registerBillingApi
-} from "@codexsun/billing-api";
-import { closeCoreDatabase, coreApiModuleKeys, registerCoreApi } from "@codexsun/core-api";
-import { AppError } from "@codexsun/framework/errors";
+} from "@cxapp/billing-api";
+import { closeCoreDatabase, coreApiModuleKeys, registerCoreApi } from "@cxapp/core-api";
+import { AppError } from "@cxapp/framework/errors";
 import type { FastifyRequest } from "fastify";
-import type { HealthCheck } from "@codexsun/framework/health";
+import type { HealthCheck } from "@cxapp/framework/health";
 import { registerAuthRoutes } from "./auth/auth.routes.js";
 import { appRegistryModule } from "./modules/app-registry/index.js";
 import { tenantDomainModule } from "./modules/tenant-domain/index.js";
@@ -40,6 +40,8 @@ import { bootstrapPlatformDatabase, closePlatformDatabase } from "./database/pla
 import { closeAllTenantDatabases } from "./database/tenant-database.js";
 import { registerAuthRequestContext } from "./auth/auth-request-context.js";
 import { TenantDomainRepository } from "./modules/tenant-domain/tenant-domain.repository.js";
+import { registerDevkitHost } from "./devkit-host.js";
+import { devkitApiModuleKeys } from "@cxapp/devkit-api";
 
 export async function createApp() {
   console.info("[platform.boot] bootstrap started");
@@ -72,6 +74,8 @@ export async function createApp() {
   });
   const queueService = new QueueManagerService();
   registerAuthRequestContext(app);
+  await registerDevkitHost(app);
+  console.info("[platform.routes] DevKit package ready");
   const mailModule = createMailModule({
     enqueue: (payload) => queueService.enqueue(payload),
     resolveContext: mailContext,
@@ -86,6 +90,7 @@ export async function createApp() {
           modules: [
             ...coreApiModuleKeys,
             ...billingApiModuleKeys,
+            ...devkitApiModuleKeys,
             appRegistryModule.key,
             tenantModule.key,
             tenantUserModule.key,
@@ -170,7 +175,7 @@ export async function createApp() {
 }
 
 async function platformWebOrigins() {
-  const configuredOrigins = [env.PLATFORM_WEB_ORIGIN, ...env.PLATFORM_WEB_ORIGINS.split(",")];
+  const configuredOrigins = [env.PLATFORM_WEB_ORIGIN];
   const verifiedDomains = (await new TenantDomainRepository().listAll())
     .filter((domain) => domain.status === "active" && domain.verificationStatus === "verified")
     .map((domain) => `https://${domain.domain}`);

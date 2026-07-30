@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { PaymentTermsService } from "./payment-terms.service.js";
 export const PAYMENT_TERMS_COLLECTION_PATH = "/core/common/others/payment-terms";
 const service = new PaymentTermsService();

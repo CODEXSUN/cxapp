@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { tenantAccessContext } from "../../auth/tenant-access-context.js";
 import { TenantRoleService } from "./tenant-role.service.js";
 const path = "/tenant/access/roles",

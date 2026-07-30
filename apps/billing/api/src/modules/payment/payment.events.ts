@@ -1,4 +1,4 @@
-import type { DomainEvent } from "@codexsun/framework/events";
+import type { DomainEvent } from "@cxapp/framework/events";
 import type { PaymentStatus } from "./payment.types.js";
 
 export const paymentEvents = {

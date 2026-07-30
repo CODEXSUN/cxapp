@@ -121,10 +121,10 @@ secret, verifies the user in that tenant database, and only then creates a
 tenant-bound session.
 
 Custom domains are optional mappings. They start disabled and pending, become
-active only after DNS TXT ownership verification, and then replace Corporate ID
-as the tenant selector for that host. A supplied Corporate ID must still match
-the resolved tenant. Host mappings and session claims are rechecked on protected
-requests.
+active only after DNS TXT ownership verification. The verified host narrows tenant
+resolution, but it never replaces Corporate ID: every tenant login must supply an
+exact Corporate ID matching the tenant mapped to that host. Host mappings and
+session claims are rechecked on protected requests.
 
 Tenant, company, financial year, landing page, enabled modules, and safe settings
 may be cached for the current login. The cache is never an authorization source

@@ -71,6 +71,6 @@ Define:
 
 ## Operator Commands
 
-- `npm run db:migrations:test-local` runs migrations only after `CODEXSUN_RESTORED_DUMP_TEST=1` confirms a dump has been restored into local databases.
-- `npm run db:restore:test` requires `CODEXSUN_RESTORE_TEST_DB_NAME` and verifies the sandbox restore target is reachable.
-- `npm run db:backup:verify` requires `CODEXSUN_BACKUP_VERIFY_ID`; only mark a backup verified after a restore test succeeds.
+- `npm run db:migrations:test-local` runs migrations only after `CXAPP_RESTORED_DUMP_TEST=1` confirms a dump has been restored into local databases.
+- `npm run db:restore:test` requires `CXAPP_RESTORE_TEST_DB_NAME` and verifies the sandbox restore target is reachable.
+- `npm run db:backup:verify` requires `CXAPP_BACKUP_VERIFY_ID`; only mark a backup verified after a restore test succeeds.

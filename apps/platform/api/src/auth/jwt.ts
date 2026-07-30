@@ -5,11 +5,11 @@ export type AuthUserType = "super_admin" | "staff" | "tenant";
 export type TenantAccessMode = "custom_domain" | "platform" | "shared_domain";
 
 export type AuthTokenPayload = {
-  aud: "codexsun-platform";
+  aud: "cxapp-platform";
   email: string;
   exp: number;
   iat: number;
-  iss: "codexsun-platform-api";
+  iss: "cxapp-platform-api";
   jti: string;
   loginHost: string;
   name?: string;
@@ -42,10 +42,10 @@ export function signAuthToken(
   const now = Math.floor(Date.now() / 1000);
   const payload: AuthTokenPayload = {
     ...input,
-    aud: "codexsun-platform",
+    aud: "cxapp-platform",
     exp: now + 60 * 60 * env.AUTH_SESSION_TTL_HOURS,
     iat: now,
-    iss: "codexsun-platform-api",
+    iss: "cxapp-platform-api",
     jti: options.jti ?? randomUUID(),
     loginHost: input.loginHost ?? "",
     sessionIssuedAt: options.sessionIssuedAt ?? new Date(now * 1000).toISOString(),
@@ -78,8 +78,8 @@ export function verifyAuthToken(token: string): AuthTokenPayload | null {
     if (
       header.alg !== "HS256" ||
       header.typ !== "at+jwt" ||
-      payload.iss !== "codexsun-platform-api" ||
-      payload.aud !== "codexsun-platform" ||
+      payload.iss !== "cxapp-platform-api" ||
+      payload.aud !== "cxapp-platform" ||
       typeof payload.exp !== "number" ||
       payload.exp <= now ||
       typeof payload.jti !== "string" ||

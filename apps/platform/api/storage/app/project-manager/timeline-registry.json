@@ -1,0 +1,22 @@
+[
+  {
+    "active": true,
+    "assignee": "",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "timeline-seed-1",
+    "key": "timeline.project-manager.started",
+    "kind": "timeline",
+    "lane": "",
+    "moduleKey": "project-manager",
+    "priority": "medium",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 10,
+    "status": "active",
+    "title": "Project Manager work started",
+    "type": "milestone",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  }
+]

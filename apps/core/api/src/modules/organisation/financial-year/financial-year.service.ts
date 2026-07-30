@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { FinancialYearRepository } from "./financial-year.repository.js";
 import type { FinancialYearListFilters, FinancialYearSavePayload } from "./financial-year.types.js";
 

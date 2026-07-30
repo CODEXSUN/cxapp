@@ -1,5 +1,5 @@
-import { WorkspaceDatePicker } from "@codexsun/ui/workspace/date-picker";
-import { WorkspaceFormField, WorkspaceLookup } from "@codexsun/ui/workspace";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
+import { WorkspaceFormField, WorkspaceLookup } from "@cxapp/ui/workspace";
 import type { SupplierStatementContact } from "./supplier-statement.types";
 
 export function SupplierStatementForm({

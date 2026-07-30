@@ -42,7 +42,7 @@ GRANT ALL PRIVILEGES ON \`${tenantDb}\`.* TO '${appUser}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 `;
 
-const sqlPath = join(root, ".codexsun-create-db-user.sql");
+const sqlPath = join(root, ".cxapp-create-db-user.sql");
 writeFileSync(sqlPath, sql);
 
 const args = ["-h", host, "-P", port, "-u", adminUser];

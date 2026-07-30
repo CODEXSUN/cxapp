@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
-import { Textarea } from "@codexsun/ui/components/textarea";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
+import { Textarea } from "@cxapp/ui/components/textarea";
 import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
-} from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import { saveBillingSettings } from "./settings.services";
 import { billingSettingsQueryKey, useBillingSettings } from "./settings.hooks";
 import { BillingDocumentHeader } from "./settings.document-header";

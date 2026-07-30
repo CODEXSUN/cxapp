@@ -1,4 +1,4 @@
-import { GlobalLoader, StatusBadge } from "@codexsun/ui";
+import { GlobalLoader, StatusBadge } from "@cxapp/ui";
 import { AppOrchestrationForm } from "./app-orchestration.form";
 import { useAppOperationsQuery } from "./app-orchestration.hooks";
 import { appOperationTones, AppServiceList } from "./app-orchestration.list";

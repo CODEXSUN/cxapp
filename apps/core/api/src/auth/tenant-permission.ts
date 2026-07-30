@@ -1,6 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import { sql } from "kysely";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { getCoreDatabase } from "../database/core-database.js";
 
 export async function authorizeCoreRequest(

@@ -10,7 +10,7 @@ import { withBillingScope } from "../../auth/billing-scope.js";
 import { QuotationService } from "./quotation.service.js";
 
 export async function runQuotationE2e() {
-  const databaseName = `codexsun_quotation_e2e_${Date.now()}`;
+  const databaseName = `cxapp_quotation_e2e_${Date.now()}`;
   let admin = await createConnection({
     host: env.DB_HOST,
     password: env.DB_PASSWORD,

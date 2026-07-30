@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { BrandsRepository } from "./brands.repository.js";
 import type { BrandsListFilters, BrandsRecord, BrandsSavePayload } from "./brands.types.js";
 

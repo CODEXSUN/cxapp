@@ -13,7 +13,7 @@ Build these together:
 - Monorepo tooling foundation.
 - Platform API.
 - Platform web app.
-- Shared `@codexsun/ui` package.
+- Shared `@cxapp/ui` package.
 - Manual version and changelog tooling.
 
 ## Runtime Scope

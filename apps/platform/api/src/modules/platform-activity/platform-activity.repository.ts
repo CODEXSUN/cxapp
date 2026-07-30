@@ -5,7 +5,7 @@ import type { PlatformActivity, PlatformActivityInput } from "./platform-activit
 export class PlatformActivityRepository {
   async list(limit = 100) {
     const rows = await getPlatformDatabase()
-      .selectFrom("app_platform_activity")
+      .selectFrom("platform_activity")
       .selectAll()
       .orderBy("created_at", "desc")
       .orderBy("id", "desc")
@@ -30,7 +30,7 @@ export class PlatformActivityRepository {
 
   async record(input: PlatformActivityInput) {
     await getPlatformDatabase()
-      .insertInto("app_platform_activity")
+      .insertInto("platform_activity")
       .values({
         action: input.action,
         actor_email: input.actorEmail ?? "system@codexsun.app",

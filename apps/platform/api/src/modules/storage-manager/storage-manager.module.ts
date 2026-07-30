@@ -1,4 +1,4 @@
-import { defineModule } from "@codexsun/framework/modules";
+import { defineModule } from "@cxapp/framework/modules";
 import type { PlatformModuleDependencies } from "../../module-dependencies.js";
 import { registerStorageManagerRoutes } from "./storage-manager.routes.js";
 

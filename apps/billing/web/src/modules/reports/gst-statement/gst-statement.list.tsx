@@ -1,9 +1,9 @@
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableLoadingState,
   WorkspaceTablePanel
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import { formatGstStatementMoney } from "./gst-statement.services";
 import type { GstStatementLine } from "./gst-statement.types";
 

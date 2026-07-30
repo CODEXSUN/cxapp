@@ -4,7 +4,7 @@ import type { IndustrySavePayload } from "./industry.types.js";
 export class IndustryRepository {
   async list() {
     return (
-      await getPlatformDatabase().selectFrom("app_industries").selectAll().orderBy("name").execute()
+      await getPlatformDatabase().selectFrom("industries").selectAll().orderBy("name").execute()
     ).map((r) => ({
       code: r.code,
       description: r.description,
@@ -20,7 +20,7 @@ export class IndustryRepository {
   }
   async create(input: IndustrySavePayload) {
     await getPlatformDatabase()
-      .insertInto("app_industries")
+      .insertInto("industries")
       .values({
         code: input.code,
         description: input.description,
@@ -34,7 +34,7 @@ export class IndustryRepository {
   }
   async update(id: number, input: IndustrySavePayload) {
     await getPlatformDatabase()
-      .updateTable("app_industries")
+      .updateTable("industries")
       .set({
         code: input.code,
         description: input.description,

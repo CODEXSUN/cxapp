@@ -3,7 +3,7 @@ import {
   DESIGN_SYSTEM_NAME,
   DESIGN_SYSTEM_VARIANT_MARKER,
   isDesignSystemVariantId
-} from "@codexsun/ui/design-system";
+} from "@cxapp/ui/design-system";
 
 export function applyDesignSystemPreference() {
   const storedDesignVariant = window.localStorage.getItem(DESIGN_SYSTEM_DEFAULT_STORAGE_KEY);

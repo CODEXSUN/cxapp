@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { resolveBillingDatabaseName } from "../../../database/billing-database.js";
 import { GstStatementService } from "./gst-statement.service.js";
 

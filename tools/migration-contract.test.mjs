@@ -3,10 +3,35 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  legacyMigrationSchemaTableName,
   migrationChecksum,
+  migrationSchemaTableName,
+  planMigrationSchemaAdoption,
   planTablePrefixChanges,
   planTablePrefixRollback
 } from "../dist/packages/framework/db/migrations.js";
+
+const platformMasterTables = new Set([
+  "access_permissions",
+  "access_roles",
+  "access_users",
+  "auth_sessions",
+  "database_maintenance_runs",
+  "entitlements",
+  "industries",
+  "password_reset_requests",
+  "plans",
+  "platform_activity",
+  "platform_apps",
+  "platform_auth_users",
+  "queue_jobs",
+  "queue_runtime_settings",
+  "storage_objects",
+  "subscriptions",
+  "tenant_audit_events",
+  "tenant_domains",
+  "tenants"
+]);
 
 const migrationFiles = execFileSync("rg", ["--files", "apps", "-g", "*.migration.ts"], {
   encoding: "utf8"
@@ -32,13 +57,18 @@ const runtimeDatabaseFiles = execFileSync(
   .split(/\r?\n/)
   .filter(Boolean);
 
-test("every fresh SQL table has the required prefix and audit identity columns", () => {
+test("every fresh SQL table follows its database ownership naming contract", () => {
   const failures = [];
   for (const file of migrationFiles) {
     const source = readFileSync(file, "utf8");
     for (const { table, body } of sqlTableDefinitions(source)) {
-      if (!/^(app|core|billing|mail)_/.test(table))
-        failures.push(`${file}: ${table} has no owner prefix`);
+      if (table.startsWith("app_") && platformMasterTables.has(table.slice(4))) {
+        failures.push(`${file}: ${table} prefixes a master table`);
+      } else if (platformMasterTables.has(table)) {
+        // Platform master tables are intentionally unprefixed.
+      } else if (!/^(app|core|billing|devkit|mail)_/.test(table)) {
+        failures.push(`${file}: ${table} has no tenant owner prefix`);
+      }
       const columnNames = sqlColumnNames(body);
       for (const name of new Set(columnNames)) {
         if (columnNames.filter((candidate) => candidate === name).length > 1) {
@@ -58,8 +88,13 @@ test("every fresh SQL table has the required prefix and audit identity columns",
     }
     for (const match of source.matchAll(/\.createTable\("([^"]+)"\)([\s\S]*?)\.execute\(\);/g)) {
       const [, table, body] = match;
-      if (!/^(app|core|billing|mail)_/.test(table))
-        failures.push(`${file}: ${table} has no owner prefix`);
+      if (table.startsWith("app_") && platformMasterTables.has(table.slice(4))) {
+        failures.push(`${file}: ${table} prefixes a master table`);
+      } else if (platformMasterTables.has(table)) {
+        // Platform master tables are intentionally unprefixed.
+      } else if (!/^(app|core|billing|devkit|mail)_/.test(table)) {
+        failures.push(`${file}: ${table} has no tenant owner prefix`);
+      }
       for (const column of ["id", "uuid", "status", "created_by", "created_at", "updated_at"]) {
         if (!body.includes(`.addColumn("${column}"`))
           failures.push(`${file}: ${table} is missing ${column}`);
@@ -156,6 +191,21 @@ test("prefix plans are reversible and reject ambiguous coexistence", () => {
     { from: "app_roles", to: "roles" }
   ]);
   assert.throws(() => planTablePrefixChanges(["users", "app_users"], policy), /both tables exist/);
+});
+
+test("migration schema adopts the legacy ledger and refuses ambiguous coexistence", () => {
+  assert.equal(migrationSchemaTableName, "migration_schema");
+  assert.equal(legacyMigrationSchemaTableName, "app_migration_batches");
+  assert.deepEqual(planMigrationSchemaAdoption(["app_migration_batches", "tenants"]), {
+    from: "app_migration_batches",
+    to: "migration_schema"
+  });
+  assert.equal(planMigrationSchemaAdoption(["migration_schema", "tenants"]), null);
+  assert.equal(planMigrationSchemaAdoption(["tenants"]), null);
+  assert.throws(
+    () => planMigrationSchemaAdoption(["app_migration_batches", "migration_schema"]),
+    /ledger collision/
+  );
 });
 
 test("runtime SQL no longer references legacy unprefixed app or core tables", () => {

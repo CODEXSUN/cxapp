@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "@codexsun/framework/http";
+import { ok } from "@cxapp/framework/http";
 import { EntitlementService } from "./entitlement.service.js";
 import type { EntitlementSavePayload, PlanAccessSavePayload } from "./entitlement.types.js";
 

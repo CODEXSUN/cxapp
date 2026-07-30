@@ -1,6 +1,6 @@
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceFormField } from "@codexsun/ui/workspace";
-import { WorkspaceDatePicker } from "@codexsun/ui/workspace/date-picker";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceFormField } from "@cxapp/ui/workspace";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
 
 export function StockStatementForm({
   from,

@@ -1,6 +1,6 @@
 # CODEXSUN Project Inventory
 
-> Database boundary update: the Platform master database contains only global Platform/Super Admin tables. Core, Billing, and tenant identity/access tables are tenant-database owned. Task Manager remains JSON-backed.
+> Database boundary update: the Platform master database contains unprefixed global Platform/Super Admin tables. Tenant Platform runtime tables use `app_`; composed apps keep their owner prefixes. Every database records migrations in `migration_schema`. Platform Task Manager remains JSON-backed. DevKit Platform Registry data and its audit activity are database-backed in both master and enabled tenant databases.
 
 ## Purpose
 
@@ -35,6 +35,9 @@ apps/
     api/
     web/
   mail/
+    api/
+    web/
+  devkit/
     api/
     web/
 
@@ -78,13 +81,28 @@ Platform is the only runnable application: API `7010` and Web `7020`.
 Current Platform API modules:
 
 - `app-registry`
+- `task-manager` (JSON-backed)
 - `tenant`
 
 Current Platform Web modules:
 
 - `design-system`
+- `task-manager`
 - `tenant`
 - `tenant-portal` (read-only public projection owned by `platform.tenant`)
+
+### DevKit
+
+DevKit owns the Platform Registry application and is composed by Platform through its public API and web contracts.
+
+- `apps/devkit/api`: the request-scoped Platform Registry Fastify module, registry migration, JSON registry seed,
+  and registry audit activity.
+- `apps/devkit/web`: the Platform Registry workspace bundle used by the Super Admin desk and enabled tenant desks.
+- DevKit migrations and seeds run against the Platform master database for Super Admin and against each enabled
+  tenant database for tenant users. Tables use the `devkit_` owner prefix and migration state uses
+  `migration_schema`.
+- Platform supplies the authenticated request database and actor. DevKit does not resolve tenant identity from
+  browser input and uses the existing HttpOnly CXApp session cookie.
 
 ### Core
 
@@ -126,12 +144,12 @@ names, purpose text, taglines, and other business identity must not be added to 
 
 ## Shared Packages
 
-### `@codexsun/framework`
+### `@cxapp/framework`
 
 Shared backend runtime package. It exports API bootstrap helpers, config/env loading, database contracts, errors,
 events, health, HTTP envelope utilities, logging, module contracts, queues, storage contracts, and testing helpers.
 
-### `@codexsun/ui`
+### `@cxapp/ui`
 
 Shared frontend UI package. It exports components, layouts, menu blocks, design-system tokens, workspace controls,
 workspace presets, forms, tables, filters, panels, date picker, autocomplete, drag/drop helpers, print helpers, and
@@ -169,7 +187,7 @@ the root `package.json`. Workspace manifests retain their package identity,
 build/typecheck/lint scripts, and direct runtime dependencies. Only the root
 manifest exposes `npm run dev`.
 
-Database commands currently route through `@codexsun/platform-api` and `apps/platform/api/src/database/db-cli.ts`.
+Database commands currently route through `@cxapp/platform-api` and `apps/platform/api/src/database/db-cli.ts`.
 
 ## Current Version And Work Update
 

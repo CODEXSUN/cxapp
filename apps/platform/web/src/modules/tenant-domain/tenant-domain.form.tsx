@@ -1,5 +1,5 @@
-import { Input } from "@codexsun/ui/components/input";
-import { WorkspaceFormField } from "@codexsun/ui/workspace/upsert";
+import { Input } from "@cxapp/ui/components/input";
+import { WorkspaceFormField } from "@cxapp/ui/workspace/upsert";
 import { normalizeTenantDomain } from "./tenant-domain.services";
 
 type TenantPrimaryDomainFieldProps = {

@@ -1,6 +1,6 @@
 {
-  "name": "@codexsun/framework",
-  "version": "1.0.43",
+  "name": "@cxapp/framework",
+  "version": "1.0.44",
   "private": true,
   "type": "module",
   "exports": {

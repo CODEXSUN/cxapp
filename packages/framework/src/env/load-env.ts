@@ -23,7 +23,7 @@ function loadNearestEnvFile() {
   const envPath = findNearestEnvFile(process.cwd());
 
   if (envPath) {
-    const result = dotenv.config({ override: true, path: envPath, quiet: true });
+    const result = dotenv.config({ override: false, path: envPath, quiet: true });
     if (result.error) {
       throw result.error;
     }

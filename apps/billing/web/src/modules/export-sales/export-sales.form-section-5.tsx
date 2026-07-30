@@ -1,7 +1,7 @@
-import { Input } from "@codexsun/ui/components/input";
-import { Label } from "@codexsun/ui/components/label";
-import { cn } from "@codexsun/ui/lib/utils";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
+import { Input } from "@cxapp/ui/components/input";
+import { Label } from "@cxapp/ui/components/label";
+import { cn } from "@cxapp/ui/lib/utils";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
 import { exportSaleCommonOption } from "./export-sales.form-section-2";
 import {
   formatMoney,

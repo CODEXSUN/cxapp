@@ -1,5 +1,5 @@
 import { sql, type Generated, type Kysely } from "kysely";
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { getBillingDatabase } from "../../database/billing-database.js";
 import {
   defaultBillingSettings,

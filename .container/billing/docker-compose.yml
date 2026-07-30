@@ -1,24 +1,24 @@
-name: codexsun-billing
+name: cxapp-billing
 
 x-api-service: &api-service
-  image: ${CODEXSUN_IMAGE_REGISTRY:?required}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:?required}
+  image: ${CXAPP_IMAGE_REGISTRY:?required}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:?required}
   restart: unless-stopped
   volumes:
     - billing-stack-data:/storage
     - media-data:/storage/media
-    - ../../.env:/app/.env:ro
+    - ../deploy.env:/app/.env:ro
   networks:
-    - codexsun-network
+    - cxapp-network
 
 x-web-service: &web-service
-  image: ${CODEXSUN_IMAGE_REGISTRY:?required}/billing-stack-web:${BILLING_STACK_WEB_IMAGE_TAG:?required}
+  image: ${CXAPP_IMAGE_REGISTRY:?required}/billing-stack-web:${BILLING_STACK_WEB_IMAGE_TAG:?required}
   restart: unless-stopped
   networks:
-    - codexsun-network
+    - cxapp-network
 
 services:
   storage-init:
-    image: ${CODEXSUN_IMAGE_REGISTRY:?required}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:?required}
+    image: ${CXAPP_IMAGE_REGISTRY:?required}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:?required}
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -29,7 +29,7 @@ services:
       - billing-stack-data:/storage
       - media-data:/storage/media
     networks:
-      - codexsun-network
+      - cxapp-network
     healthcheck:
       disable: true
     restart: "no"
@@ -41,7 +41,7 @@ services:
       dockerfile: .container/billing/Dockerfile.api
       target: runtime
       args:
-        CODEXSUN_VERSION: ${CODEXSUN_VERSION:?required}
+        CXAPP_VERSION: ${CXAPP_VERSION:?required}
         NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:?required}
         NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:?required}
         PLATFORM_API_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
@@ -50,9 +50,9 @@ services:
       storage-init:
         condition: service_completed_successfully
     env_file:
-      - ../../.env
+      - ../deploy.env
     ports:
-      - "${CODEXSUN_BIND_ADDRESS:?CODEXSUN_BIND_ADDRESS is required}:${PLATFORM_API_PORT}:${PLATFORM_API_PORT}"
+      - "${CXAPP_BIND_ADDRESS:?CXAPP_BIND_ADDRESS is required}:${PLATFORM_API_PORT}:${PLATFORM_API_PORT}"
 
   platform-web:
     <<: *web-service
@@ -60,7 +60,7 @@ services:
       context: ../..
       dockerfile: .container/billing/Dockerfile.web
       args:
-        CODEXSUN_VERSION: ${CODEXSUN_VERSION:?required}
+        CXAPP_VERSION: ${CXAPP_VERSION:?required}
         NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:?required}
         NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:?required}
         DEFAULT_TENANT_NAME: ${DEFAULT_TENANT_NAME:?required}
@@ -68,27 +68,27 @@ services:
         NGINX_BASE_IMAGE: ${NGINX_BASE_IMAGE:?required}
     container_name: cxapp-web
     env_file:
-      - ../../.env
+      - ../deploy.env
     depends_on:
       platform-api:
         condition: service_healthy
     ports:
-      - "${CODEXSUN_BIND_ADDRESS:?CODEXSUN_BIND_ADDRESS is required}:${PLATFORM_WEB_PORT:?PLATFORM_WEB_PORT is required}:80"
+      - "${CXAPP_BIND_ADDRESS:?CXAPP_BIND_ADDRESS is required}:${PLATFORM_WEB_PORT:?PLATFORM_WEB_PORT is required}:80"
     labels:
       traefik.enable: "true"
-      traefik.http.routers.codexsun-web.rule: "Host(`${CODEXSUN_WEB_HOST:?CODEXSUN_WEB_HOST is required}`)"
-      traefik.http.routers.codexsun-web.entrypoints: websecure
-      traefik.http.routers.codexsun-web.tls: "true"
-      traefik.http.routers.codexsun-web.tls.certresolver: letsencrypt
-      traefik.http.services.codexsun-web.loadbalancer.server.port: "80"
-      traefik.http.routers.codexsun-web-www.rule: "Host(`${CODEXSUN_WEB_HOST_ALT:?CODEXSUN_WEB_HOST_ALT is required}`)"
-      traefik.http.routers.codexsun-web-www.entrypoints: websecure
-      traefik.http.routers.codexsun-web-www.tls: "true"
-      traefik.http.routers.codexsun-web-www.tls.certresolver: letsencrypt
-      traefik.http.routers.codexsun-web-www.middlewares: codexsun-www-redirect
-      traefik.http.middlewares.codexsun-www-redirect.redirectregex.regex: "^https://www\\.codexsun\\.com/(.*)"
-      traefik.http.middlewares.codexsun-www-redirect.redirectregex.replacement: "https://app.codexsun.com/$${1}"
-      traefik.http.middlewares.codexsun-www-redirect.redirectregex.permanent: "true"
+      traefik.http.routers.cxapp-web.rule: "Host(`${CXAPP_WEB_HOST:?CXAPP_WEB_HOST is required}`)"
+      traefik.http.routers.cxapp-web.entrypoints: websecure
+      traefik.http.routers.cxapp-web.tls: "true"
+      traefik.http.routers.cxapp-web.tls.certresolver: letsencrypt
+      traefik.http.services.cxapp-web.loadbalancer.server.port: "80"
+      traefik.http.routers.cxapp-web-www.rule: "Host(`${CXAPP_WEB_HOST_ALT:?CXAPP_WEB_HOST_ALT is required}`)"
+      traefik.http.routers.cxapp-web-www.entrypoints: websecure
+      traefik.http.routers.cxapp-web-www.tls: "true"
+      traefik.http.routers.cxapp-web-www.tls.certresolver: letsencrypt
+      traefik.http.routers.cxapp-web-www.middlewares: cxapp-www-redirect
+      traefik.http.middlewares.cxapp-www-redirect.redirectregex.regex: "^https://www\\.codexsun\\.com/(.*)"
+      traefik.http.middlewares.cxapp-www-redirect.redirectregex.replacement: "https://app.codexsun.com/$${1}"
+      traefik.http.middlewares.cxapp-www-redirect.redirectregex.permanent: "true"
 
   platform-migrate:
     build:
@@ -96,20 +96,20 @@ services:
       dockerfile: .container/billing/Dockerfile.api
       target: migrations
       args:
-        CODEXSUN_VERSION: ${CODEXSUN_VERSION:?required}
+        CXAPP_VERSION: ${CXAPP_VERSION:?required}
         NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:?required}
         NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:?required}
-    image: ${CODEXSUN_IMAGE_REGISTRY:?required}/billing-stack-migrations:${BILLING_STACK_MIGRATIONS_IMAGE_TAG:?required}
+    image: ${CXAPP_IMAGE_REGISTRY:?required}/billing-stack-migrations:${BILLING_STACK_MIGRATIONS_IMAGE_TAG:?required}
     profiles:
       - tools
     env_file:
-      - ../../.env
+      - ../deploy.env
     volumes:
       - billing-stack-data:/storage
       - media-data:/storage/media
-      - ../../.env:/app/.env:ro
+      - ../deploy.env:/app/.env:ro
     networks:
-      - codexsun-network
+      - cxapp-network
 
 volumes:
   billing-stack-data:
@@ -119,6 +119,6 @@ volumes:
     external: true
 
 networks:
-  codexsun-network:
-    name: ${CODEXSUN_DOCKER_NETWORK:?required}
+  cxapp-network:
+    name: ${CXAPP_DOCKER_NETWORK:?required}
     external: true

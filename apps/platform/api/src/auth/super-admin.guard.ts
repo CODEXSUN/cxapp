@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { fail } from "@codexsun/framework/http";
+import { fail } from "@cxapp/framework/http";
 
 export async function requireSuperAdmin(request: FastifyRequest, reply: FastifyReply) {
   const payload = request.authContext?.payload;

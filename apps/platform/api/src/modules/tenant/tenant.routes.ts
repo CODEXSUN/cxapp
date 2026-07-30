@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ok, registerContractRoute } from "@codexsun/framework/http";
+import { ok, registerContractRoute } from "@cxapp/framework/http";
 import { TenantService } from "./tenant.service.js";
 import type { TenantSavePayload } from "./tenant.types.js";
 

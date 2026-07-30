@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.43
+Current version: 1.0.44
 
-Release tag: v-1.0.43
+Release tag: v-1.0.44
 
-Changelog label: v 1.0.43
+Changelog label: v 1.0.44
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,7 +20,53 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.44
+
+### [v 1.0.44] 2026-07-30 11:29 pm - DevKit Platform Registry Consolidation
+
+#### Database Changes
+
+- Database update: Yes (manual).
+- Added forward migrations that preserve existing registry data while renaming
+  retained tables to the `devkit_platform_registry_*` ownership namespace.
+- Added one-time cleanup of retired DevKit project, issue-roadmap, planning,
+  task, synchronization, attachment, and legacy user tables in master and
+  enabled tenant databases.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.44.
+- Released DevKit as a Platform Registry-only application across its API,
+  frontend workspace, Platform navigation, package exports, and production
+  assets.
+- Removed the Overview, Projects, Issue Roadmap, Tasks, Whiteboards, GitHub,
+  Design System, Sync, and Work Automation modules, routes, dependencies,
+  environment settings, seeds, and empty directories.
+- Updated module-boundary enforcement, repository inventory, and composed E2E
+  coverage; retired DevKit endpoints are explicitly verified as unavailable.
+
 ## v-1.0.43
+
+### [v 1.0.43] 2026-07-30 11:21 pm - DevKit Platform Registry Consolidation
+
+#### Database Changes
+
+- Database update: Yes.
+- Preserved registry hierarchy and audit data while renaming its tables to the
+  `devkit_platform_registry_*` ownership namespace.
+- Added a one-time cleanup migration that removes retired DevKit project,
+  attachment, planning, task, sync, and legacy user tables from master and
+  enabled tenant databases.
+
+#### App Codebase Changes
+
+- Reduced DevKit to the Platform Registry frontend workspace and backend module.
+- Removed Overview, Projects, Issue Roadmap, Tasks, Whiteboards, GitHub,
+  Design System, synchronization, and work-automation UI, routes, modules,
+  assets, dependencies, environment settings, and empty directories.
+- Updated Platform composition, module-boundary enforcement, documentation,
+  production asset copying, and composed E2E coverage for the registry-only
+  contract.
 
 ### [v 1.0.43] 2026-07-30 10:59 am - Production Environment and Deployment Hardening
 
@@ -50,6 +96,14 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Added interactive credential-preserving environment configuration,
   non-interactive infrastructure-secret generation, strict production
   validation, and startup connectivity smoke tests for MariaDB and Redis.
+- Grouped the root `.env` and `.env.example` into readable runtime, database,
+  queue, mail, tenant, authentication, user, storage, tooling, and deployment
+  sections; made the configuration writer preserve those comments and blank
+  lines on every update instead of flattening the environment file.
+- Reduced Platform listener configuration to API port, Web port, and canonical
+  Web origin; runtime code now derives bind addresses, the internal API URL,
+  Vite allowed hosts, proxy targets, and local CORS aliases instead of requiring
+  five duplicate host/URL environment values.
 - Unified landing-application reads and writes through Default Company so
   Tenant App Connections, the tenant Landing Desk, and Default Company editing
   update the same persisted startup record.
@@ -59,6 +113,39 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Hardened Compose, Dockerfiles, setup, migration, cleanup, smoke-test, and
   database-user tooling to fail when required environment input is absent and
   to preserve named MariaDB, Redis, media, and application-storage volumes.
+- Added root `setup.sh` and guarded `update.sh` deployment entrypoints in the
+  TechMedia operator style, including read-only update checks, Compose ownership
+  refusal, pre-migration MariaDB backup, application-only replacement, complete
+  smoke verification, and automatic API/Web image rollback on failure.
+- Made root `setup.sh` run environment configuration and deployment validation
+  automatically, with a Docker Node fallback so Linux deployment hosts do not
+  require a host-level Node.js or npm installation.
+- Consolidated the complete installer and environment configuration workflow
+  into the repository-root `setup.sh`; removed the nested
+  `.container/setup.sh` entrypoint and updated cleanup and recovery guidance to
+  call the root installer.
+- Added an optional root setup cleanup menu with application-only,
+  data-preserving runtime, and complete local-data scopes; full cleanup covers
+  MariaDB, Redis, File Browser, application storage, named volumes, and the
+  CODEXSUN network, while BuildKit pruning remains a separate explicit choice.
+- Made deployment configuration apply the required production, container
+  MariaDB, Redis queue, and single-tenant seed selections before validation so
+  root setup does not depend on manual development-to-container `.env` edits.
+- Split local development `.env` from private
+  `.container/deploy.env`, added a shareable `deploy.env.sample`, and rewired
+  Compose, setup, update, cleanup, migrations, and smoke tooling to the
+  deployment file so local and container runtimes can operate in parallel.
+- Added separate setup confirmations for copying compatible non-secret local
+  values and reusing local credentials; deployment ports, database topology,
+  container resources, and existing deployment secrets remain independently
+  owned.
+- Made the root setup dialogue show exact current non-secret deployment values
+  instead of hashes, label existing credentials without printing them, and run
+  the environment configurator directly through Node.js without npm wrapper
+  noise.
+- Replaced the session-expired card inside tenant, administrator, and super
+  administrator login forms with one compact yellow message badge below the
+  shared login card.
 - Renamed the deployed application containers from
   `codexsun-platform-api`/`codexsun-platform-web` to `cxapp-api`/`cxapp-web` and
   updated the internal API hostname, cleanup workflow, and deployment

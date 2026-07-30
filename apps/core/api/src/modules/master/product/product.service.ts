@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { ProductRepository } from "./product.repository.js";
 import type { ProductListFilters, ProductSaveInput } from "./product.types.js";
 export class ProductService {

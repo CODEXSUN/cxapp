@@ -8,7 +8,7 @@ export const credentialRecoveryMigration = {
 
 export async function migrateCredentialRecoveryModule(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("app_platform_auth_users")
+    .createTable("platform_auth_users")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -28,7 +28,7 @@ export async function migrateCredentialRecoveryModule(database: Kysely<PlatformD
     .execute();
 
   await database.schema
-    .createTable("app_password_reset_requests")
+    .createTable("password_reset_requests")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -55,7 +55,7 @@ export async function migrateCredentialRecoveryModule(database: Kysely<PlatformD
   await database.schema
     .createIndex("password_reset_requests_lookup_idx")
     .ifNotExists()
-    .on("app_password_reset_requests")
+    .on("password_reset_requests")
     .columns(["token_hash", "expires_at", "consumed_at"])
     .execute();
 }

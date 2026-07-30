@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { env } from "../../env.js";
 import type { Sale, SaleEinvoiceDetails, SaleEwayDetails } from "./sales.types.js";
 

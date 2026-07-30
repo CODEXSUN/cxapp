@@ -293,7 +293,7 @@ CODEXSUN will use a shared API client package.
 Decision:
 
 ```text
-API client package: @codexsun/api-client
+API client package: @cxapp/api-client
 ```
 
 Used by:
@@ -320,7 +320,7 @@ Responsibilities:
 
 Rules:
 
-- `@codexsun/api-client` should not own business rules.
+- `@cxapp/api-client` should not own business rules.
 - It should not bypass auth, tenant, permission, or activation checks.
 - It should expose clear error objects for UI and CLI.
 - It should support app-specific base URLs.
@@ -459,14 +459,14 @@ CODEXSUN will have its own UI package.
 Decision:
 
 ```text
-UI package: @codexsun/ui
+UI package: @cxapp/ui
 Base styling: Tailwind CSS
 Component foundation: shadcn/ui style patterns
 Design inspiration: Mantine UI styling and ergonomics
 Rule: build CODEXSUN's own UI framework, do not make Mantine the application framework
 ```
 
-`@codexsun/ui` should provide shared UI primitives, business components, layout components, form components, table components, app shell elements, feedback components, and design tokens.
+`@cxapp/ui` should provide shared UI primitives, business components, layout components, form components, table components, app shell elements, feedback components, and design tokens.
 
 The package should be used by:
 
@@ -480,19 +480,19 @@ The package should be used by:
 Recommended UI areas:
 
 ```text
-@codexsun/ui/tokens
-@codexsun/ui/theme
-@codexsun/ui/primitives
-@codexsun/ui/forms
-@codexsun/ui/tables
-@codexsun/ui/layouts
-@codexsun/ui/navigation
-@codexsun/ui/feedback
-@codexsun/ui/overlays
-@codexsun/ui/business
+@cxapp/ui/tokens
+@cxapp/ui/theme
+@cxapp/ui/primitives
+@cxapp/ui/forms
+@cxapp/ui/tables
+@cxapp/ui/layouts
+@cxapp/ui/navigation
+@cxapp/ui/feedback
+@cxapp/ui/overlays
+@cxapp/ui/business
 ```
 
-Platform can still own platform-specific screens and logic, but reusable visual components belong in `@codexsun/ui`.
+Platform can still own platform-specific screens and logic, but reusable visual components belong in `@cxapp/ui`.
 
 ## Migration Strategy
 
@@ -836,22 +836,22 @@ Framework will be one package with subpath modules.
 Package:
 
 ```text
-@codexsun/framework
+@cxapp/framework
 ```
 
 Subpath examples:
 
 ```text
-@codexsun/framework/api
-@codexsun/framework/config
-@codexsun/framework/db
-@codexsun/framework/logger
-@codexsun/framework/errors
-@codexsun/framework/modules
-@codexsun/framework/events
-@codexsun/framework/queue
-@codexsun/framework/http
-@codexsun/framework/env
+@cxapp/framework/api
+@cxapp/framework/config
+@cxapp/framework/db
+@cxapp/framework/logger
+@cxapp/framework/errors
+@cxapp/framework/modules
+@cxapp/framework/events
+@cxapp/framework/queue
+@cxapp/framework/http
+@cxapp/framework/env
 ```
 
 ## Platform
@@ -863,23 +863,23 @@ Platform owns tenant, identity, subscription, activation, settings, audit, notif
 Platform package:
 
 ```text
-@codexsun/platform
+@cxapp/platform
 ```
 
 Platform subpaths:
 
 ```text
-@codexsun/platform/tenant
-@codexsun/platform/auth
-@codexsun/platform/users
-@codexsun/platform/roles
-@codexsun/platform/permissions
-@codexsun/platform/subscription
-@codexsun/platform/activation
-@codexsun/platform/audit
-@codexsun/platform/notifications
-@codexsun/platform/settings
-@codexsun/platform/design-system
+@cxapp/platform/tenant
+@cxapp/platform/auth
+@cxapp/platform/users
+@cxapp/platform/roles
+@cxapp/platform/permissions
+@cxapp/platform/subscription
+@cxapp/platform/activation
+@cxapp/platform/audit
+@cxapp/platform/notifications
+@cxapp/platform/settings
+@cxapp/platform/design-system
 ```
 
 Platform enforces shared platform business rules.
@@ -891,7 +891,7 @@ Core contains business-common modules needed across business apps.
 Core package:
 
 ```text
-@codexsun/core
+@cxapp/core
 ```
 
 Core follows the same single-package subpath pattern.
@@ -899,14 +899,14 @@ Core follows the same single-package subpath pattern.
 Expected Core subpaths:
 
 ```text
-@codexsun/core/company
-@codexsun/core/contacts
-@codexsun/core/products
-@codexsun/core/address
-@codexsun/core/location
-@codexsun/core/files
-@codexsun/core/tags
-@codexsun/core/notes
+@cxapp/core/company
+@cxapp/core/contacts
+@cxapp/core/products
+@cxapp/core/address
+@cxapp/core/location
+@cxapp/core/files
+@cxapp/core/tags
+@cxapp/core/notes
 ```
 
 Core is business-common. Billing, CRM, and future business apps can depend on Core modules.

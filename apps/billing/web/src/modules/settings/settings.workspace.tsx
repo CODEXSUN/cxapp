@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
+import { Button } from "@cxapp/ui/components/button";
 import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
-} from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+} from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import { useRouterState } from "@tanstack/react-router";
 import { PageTitle } from "../../shared/document/PageTitle";
 import { BillingLayout } from "../../shared/layout/BillingLayout";

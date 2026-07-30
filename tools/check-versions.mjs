@@ -63,6 +63,27 @@ function checkVersions(rootDir) {
     failures.push(`Changelog must contain section ## ${expectedTag}.`);
   }
 
+  const deploymentSample = join(rootDir, ".container", "deploy.env.sample");
+  if (existsSync(deploymentSample)) {
+    const values = Object.fromEntries(
+      readFileSync(deploymentSample, "utf8")
+        .split(/\r?\n/u)
+        .map((line) => line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/u))
+        .filter(Boolean)
+        .map((match) => [match[1], match[2]])
+    );
+    for (const key of [
+      "CXAPP_VERSION",
+      "BILLING_STACK_API_IMAGE_TAG",
+      "BILLING_STACK_WEB_IMAGE_TAG",
+      "BILLING_STACK_MIGRATIONS_IMAGE_TAG"
+    ]) {
+      if (values[key] !== rootVersion) {
+        failures.push(`.container/deploy.env.sample ${key} must be ${rootVersion}.`);
+      }
+    }
+  }
+
   return {
     failures,
     rootVersion

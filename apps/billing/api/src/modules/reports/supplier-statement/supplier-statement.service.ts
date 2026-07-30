@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { SupplierStatementRepository } from "./supplier-statement.repository.js";
 import type {
   SupplierStatementQuery,

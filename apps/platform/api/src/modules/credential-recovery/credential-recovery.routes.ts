@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { CredentialRecoveryService } from "./credential-recovery.service.js";
 
 const desk = z.enum(["admin", "sa", "tenant"]);

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { DefaultCompanyService } from "./default-company.service.js";
 
 export const DEFAULT_COMPANY_PATH = "/core/organisation/default-company";

@@ -3,21 +3,28 @@ import {
   migrateBillingTenantDatabase,
   rollbackBillingTenantDatabase,
   seedBillingTenantDatabase
-} from "@codexsun/billing-api";
+} from "@cxapp/billing-api";
 import {
   coreTenantMigrations,
   migrateCoreTenantDatabase,
   rollbackCoreTenantDatabase,
   seedCoreTenantDatabase,
   setDefaultCompanyLandingAppForDatabase
-} from "@codexsun/core-api";
+} from "@cxapp/core-api";
 import {
   mailMigrationBatch,
   migrateMailModule,
   rollbackMailModule,
   seedMailModule
-} from "@codexsun/mail-api";
+} from "@cxapp/mail-api";
 import type { Kysely } from "kysely";
+import {
+  devkitTenantMigrations,
+  migrateDevkitDatabase,
+  rollbackDevkitDatabase,
+  seedDevkitDatabase,
+  type DevkitDatabase
+} from "@cxapp/devkit-api";
 import type { TenantDatabase } from "./schema.js";
 import type { Tenant } from "../modules/tenant/tenant.types.js";
 import { tenantRuntimeMigrations } from "../modules/tenant/tenant.migration.js";
@@ -39,6 +46,13 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
+    ...(enabled.has("devkit")
+      ? devkitTenantMigrations.map((migration) => ({
+          description: migration.description,
+          name: migration.name,
+          statements: [`RUN ${migration.name}`]
+        }))
+      : []),
     ...(enabled.has("billing.sales")
       ? billingTenantMigrations.map((migration) => ({
           ...migration,
@@ -59,6 +73,11 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   const provisionedApps = ["application"];
 
   await migrateCoreTenantDatabase(tenant.dbName);
+
+  if (enabled.has("devkit")) {
+    await migrateDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
+    provisionedApps.push("devkit");
+  }
 
   if (enabled.has("billing.sales")) {
     await migrateBillingTenantDatabase(tenant.dbName);
@@ -87,6 +106,11 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   await seedCoreTenantDatabase(tenant.dbName);
   await setDefaultCompanyLandingAppForDatabase(tenant.dbName, tenant.defaultLandingApp);
 
+  if (enabled.has("devkit")) {
+    await seedDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
+    seededApps.push("devkit");
+  }
+
   if (enabled.has("billing.sales")) {
     await seedBillingTenantDatabase(tenant.dbName);
     seededApps.push("billing");
@@ -105,6 +129,9 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
   const enabled = new Set(tenant.enabledModuleKeys);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
+  if (enabled.has("devkit")) {
+    await rollbackDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
+  }
   await rollbackCoreTenantDatabase(tenant.dbName);
 }
 

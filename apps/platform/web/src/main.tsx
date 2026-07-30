@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import "@codexsun/ui/styles.css";
+import "@cxapp/ui/styles.css";
 import "./styles.css";
 
 const response = await fetch("/api/platform/public/runtime-config");
@@ -13,7 +13,7 @@ const envelope = (await response.json()) as {
 if (!envelope.success || !envelope.data) {
   throw new Error("Runtime configuration response is invalid.");
 }
-window.__CODEXSUN_RUNTIME_CONFIG__ = Object.freeze(envelope.data);
+window.__CXAPP_RUNTIME_CONFIG__ = Object.freeze(envelope.data);
 
 const { PlatformWebApp } = await import("./app/PlatformWebApp");
 createRoot(document.getElementById("root") as HTMLElement).render(<PlatformWebApp />);

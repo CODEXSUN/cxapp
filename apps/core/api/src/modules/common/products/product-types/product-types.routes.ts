@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { ProductTypesService } from "./product-types.service.js";
 export const PRODUCT_TYPES_COLLECTION_PATH = "/core/common/products/product-types";
 const service = new ProductTypesService();

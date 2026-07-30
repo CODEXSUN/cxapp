@@ -4,6 +4,7 @@ import { sql, type Kysely } from "kysely";
 export type MigrationDirection = "down" | "up";
 
 export type MigrationStep<Database> = {
+  acceptedAppliedChecksums?: readonly string[];
   checksum: string;
   description: string;
   down?: (database: Kysely<Database>) => Promise<unknown>;
@@ -52,7 +53,31 @@ type LedgerRow = {
   version: number;
 };
 
-const defaultLedgerTable = "app_migration_batches";
+export const migrationSchemaTableName = "migration_schema";
+export const legacyMigrationSchemaTableName = "app_migration_batches";
+
+const defaultLedgerTable = migrationSchemaTableName;
+
+export type MigrationSchemaAdoption = {
+  from: string;
+  to: string;
+};
+
+export function planMigrationSchemaAdoption(
+  tableNames: readonly string[],
+  targetTable = migrationSchemaTableName,
+  legacyTable = legacyMigrationSchemaTableName
+): MigrationSchemaAdoption | null {
+  const target = safeIdentifier(targetTable);
+  const legacy = safeIdentifier(legacyTable);
+  const tables = new Set(tableNames);
+  if (tables.has(target) && tables.has(legacy)) {
+    throw new Error(
+      `Migration ledger collision: both ${legacy} and ${target} exist. Refusing to merge migration history automatically.`
+    );
+  }
+  return !tables.has(target) && tables.has(legacy) ? { from: legacy, to: target } : null;
+}
 
 export async function runMigrationBatch<Database>(
   database: Kysely<Database>,
@@ -88,7 +113,7 @@ export async function runMigrationBatch<Database>(
             step.name
           );
           if (existing?.status === "applied") {
-            assertChecksum(existing, step, checksum);
+            assertChecksum(existing, step, checksum, true);
             result.skipped.push(step.name);
             continue;
           }
@@ -172,7 +197,7 @@ export async function rollbackMigrationBatch<Database>(
       const existing = await findLedgerRow(database, ledgerTable, migrationBatch.scope, step.name);
       if (!existing || existing.status !== "applied") continue;
       const checksum = checksumFor(migrationBatch, step);
-      assertChecksum(existing, step, checksum);
+      assertChecksum(existing, step, checksum, true);
       if (!step.down) {
         throw new Error(
           `Migration ${step.name} has no safe rollback. Restore the verified backup or add a forward corrective migration.`
@@ -340,30 +365,41 @@ export async function ensureStandardTableColumns<Database>(
 }
 
 async function ensureMigrationLedger<Database>(database: Kysely<Database>, ledgerTable: string) {
-  await sql
-    .raw(
-      `CREATE TABLE IF NOT EXISTS \`${ledgerTable}\` (` +
-        "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
-        "uuid CHAR(8) NOT NULL UNIQUE," +
-        "scope VARCHAR(80) NOT NULL," +
-        "batch INT NOT NULL," +
-        "version INT NOT NULL," +
-        "name VARCHAR(191) NOT NULL," +
-        "checksum CHAR(64) NOT NULL," +
-        "description VARCHAR(500) NOT NULL DEFAULT ''," +
-        "status VARCHAR(24) NOT NULL DEFAULT 'running'," +
-        "error_text TEXT NULL," +
-        "created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration'," +
-        "started_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)," +
-        "applied_at DATETIME(3) NULL," +
-        "rolled_back_at DATETIME(3) NULL," +
-        "created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)," +
-        "updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)," +
-        "UNIQUE KEY app_migration_scope_name_unique(scope,name)," +
-        "INDEX app_migration_batch_status_idx(scope,batch,status)" +
-        ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-    )
-    .execute(database);
+  await withMigrationLock(database, "cxapp:migration-schema", 30, async () => {
+    if (ledgerTable === migrationSchemaTableName) {
+      const adoption = planMigrationSchemaAdoption(await listDatabaseTables(database));
+      if (adoption) {
+        await sql
+          .raw(`RENAME TABLE \`${adoption.from}\` TO \`${adoption.to}\``)
+          .execute(database);
+      }
+    }
+
+    await sql
+      .raw(
+        `CREATE TABLE IF NOT EXISTS \`${ledgerTable}\` (` +
+          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+          "uuid CHAR(8) NOT NULL UNIQUE," +
+          "scope VARCHAR(80) NOT NULL," +
+          "batch INT NOT NULL," +
+          "version INT NOT NULL," +
+          "name VARCHAR(191) NOT NULL," +
+          "checksum CHAR(64) NOT NULL," +
+          "description VARCHAR(500) NOT NULL DEFAULT ''," +
+          "status VARCHAR(24) NOT NULL DEFAULT 'running'," +
+          "error_text TEXT NULL," +
+          "created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration'," +
+          "started_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)," +
+          "applied_at DATETIME(3) NULL," +
+          "rolled_back_at DATETIME(3) NULL," +
+          "created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)," +
+          "updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)," +
+          "UNIQUE KEY migration_schema_scope_name_unique(scope,name)," +
+          "INDEX migration_schema_batch_status_idx(scope,batch,status)" +
+          ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+      )
+      .execute(database);
+  });
 }
 
 async function findLedgerRow<Database>(
@@ -486,10 +522,13 @@ function checksumFor<Database>(
 
 function assertChecksum(
   existing: LedgerRow,
-  step: { name: string; version: number },
-  checksum: string
+  step: Pick<MigrationStep<unknown>, "acceptedAppliedChecksums" | "name" | "version">,
+  checksum: string,
+  allowAcceptedAppliedChecksum = false
 ) {
-  if (existing.version !== step.version || existing.checksum !== checksum) {
+  const acceptedChecksum =
+    allowAcceptedAppliedChecksum && step.acceptedAppliedChecksums?.includes(existing.checksum);
+  if (existing.version !== step.version || (existing.checksum !== checksum && !acceptedChecksum)) {
     throw new Error(
       `Migration checksum mismatch for ${step.name}. Applied migrations are immutable; add a new forward migration.`
     );
@@ -504,6 +543,11 @@ function assertBatch<Database>(batch: MigrationBatch<Database>) {
     positiveInteger(step.version, `migration version for ${step.name}`);
     if (!step.name.trim() || !step.checksum.trim()) {
       throw new Error("Migration names and checksum sources are required.");
+    }
+    for (const checksum of step.acceptedAppliedChecksums ?? []) {
+      if (!/^[a-f0-9]{64}$/u.test(checksum)) {
+        throw new Error(`Accepted migration checksum for ${step.name} must be SHA-256 hex.`);
+      }
     }
     if (names.has(step.name)) throw new Error(`Duplicate migration name ${step.name}.`);
     names.add(step.name);
@@ -585,7 +629,7 @@ function positiveInteger(value: number, label: string) {
 
 function migrationLockName(scope: string, batch: number) {
   const digest = createHash("sha256").update(`${scope}:${batch}`).digest("hex").slice(0, 24);
-  return `codexsun:migration:${digest}`;
+  return `cxapp:migration:${digest}`;
 }
 
 function migrationError(error: unknown) {

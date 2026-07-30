@@ -1,0 +1,22 @@
+{
+  "name": "@cxapp/devkit-api",
+  "version": "1.0.44",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./database": "./src/database/index.ts",
+    "./modules/platform-registry": "./src/modules/platform-registry/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ../../../tools/copy-devkit-assets.mjs",
+    "typecheck": "npm run build -w @cxapp/framework && tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@cxapp/framework": "^1.0.44",
+    "fastify": "^5.2.1",
+    "kysely": "^0.29.0",
+    "zod": "^4.4.3"
+  }
+}

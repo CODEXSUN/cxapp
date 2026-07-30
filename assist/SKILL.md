@@ -1,5 +1,5 @@
 ---
-name: codexsun-module-owner
+name: cxapp-module-owner
 description: Enforce CODEXSUN's strict module-owned architecture and verification workflow. Use when implementing, refactoring, reviewing, debugging, or finalizing CODEXSUN backend/frontend modules, CRUD masters, migrations, seeds, routes, relationships, forms, lists, workspaces, lifecycle actions, application composition, npm workspace structure, or Assist rules. Trigger whenever a request says same pattern, module owned, no shared or centralized code, boundary audit, finalize a module, or move business behavior into its owner.
 ---
 

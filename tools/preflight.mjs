@@ -45,7 +45,7 @@ const port = parseRequiredPort(env[config.envKey], config.envKey);
 const host = config.host;
 
 if (app === "platform-web") {
-  await waitForPlatformApi(env.PLATFORM_API_URL);
+  await waitForPlatformApi(parseRequiredPort(env.PLATFORM_API_PORT, "PLATFORM_API_PORT"));
 }
 
 await freePort(port, host);
@@ -64,9 +64,9 @@ const child = spawn(
       ...env,
       ...(app === "platform-api"
         ? {
-            CODEXSUN_DB_FRESH_SESSION_FILE: join(
+            CXAPP_DB_FRESH_SESSION_FILE: join(
               tmpdir(),
-              `codexsun-platform-fresh-${process.pid}.done`
+              `cxapp-platform-fresh-${process.pid}.done`
             )
           }
         : {}),
@@ -134,7 +134,7 @@ function parseRequiredPort(value, envKey) {
 
 function ensurePlatformApiDependencies() {
   console.log("  - Checking API package builds");
-  ensureWorkspacePackageBuild("@codexsun/framework", "packages/framework");
+  ensureWorkspacePackageBuild("@cxapp/framework", "packages/framework");
 }
 
 function ensureWorkspacePackageBuild(workspaceName, packagePath) {
@@ -229,9 +229,9 @@ async function freePort(port, host) {
 
   console.log(`  ! ${host}:${port} is already in use by PID ${pids.join(", ")}`);
 
-  if (process.env.CODEXSUN_DEV_PORT_POLICY === "abort") {
+  if (process.env.CXAPP_DEV_PORT_POLICY === "abort") {
     console.error(
-      "  x Port policy is abort. Stop the existing process or change CODEXSUN_DEV_PORT_POLICY.\n"
+      "  x Port policy is abort. Stop the existing process or change CXAPP_DEV_PORT_POLICY.\n"
     );
     process.exit(1);
   }
@@ -270,14 +270,8 @@ function waitForPortRelease() {
   return new Promise((resolveWait) => setTimeout(resolveWait, 100));
 }
 
-async function waitForPlatformApi(apiUrl) {
-  const rawUrl = String(apiUrl ?? "").trim();
-  if (!rawUrl) {
-    console.error("  x Missing required API configuration: PLATFORM_API_URL");
-    process.exit(1);
-  }
-
-  const healthUrl = `${rawUrl.replace(/\/$/u, "")}/health`;
+async function waitForPlatformApi(apiPort) {
+  const healthUrl = `http://127.0.0.1:${apiPort}/health`;
   const startedAt = Date.now();
   let lastStatus = "not reachable";
 

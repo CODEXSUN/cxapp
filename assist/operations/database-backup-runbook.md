@@ -19,21 +19,21 @@ Use this runbook to create, verify, and restore CODEXSUN platform and tenant dat
 
 1. Choose a backup artifact.
 2. Restore it into a sandbox database, never a live platform or tenant database.
-3. Set `CODEXSUN_RESTORE_TEST_DB_NAME` to the sandbox database name.
+3. Set `CXAPP_RESTORE_TEST_DB_NAME` to the sandbox database name.
 4. Run `npm run db:restore:test`.
 5. Validate row counts, login-critical records, tenant registry records, and affected module totals.
-6. Set `CODEXSUN_BACKUP_VERIFY_ID` to the backup artifact or run id.
+6. Set `CXAPP_BACKUP_VERIFY_ID` to the backup artifact or run id.
 7. Run `npm run db:backup:verify`.
 
 ## In-App Queue Flow
 
 1. Super Admin opens Database -> Master Database or Tenant Databases.
 2. Backup creates a `database-maintenance.run` job in Queue Management.
-3. The database queue worker or the Queue Management Run action creates a local SQL artifact under `CODEXSUN_BACKUP_DIR`.
-4. Restore creates a `database-maintenance.run` job that restores the latest completed backup, or the requested backup, into `CODEXSUN_RESTORE_TEST_DB_NAME` when configured.
-5. If `CODEXSUN_RESTORE_TEST_DB_NAME` is blank outside production, the app uses `{source_database}_restore_sandbox`.
+3. The database queue worker or the Queue Management Run action creates a local SQL artifact under `CXAPP_BACKUP_DIR`.
+4. Restore creates a `database-maintenance.run` job that restores the latest completed backup, or the requested backup, into `CXAPP_RESTORE_TEST_DB_NAME` when configured.
+5. If `CXAPP_RESTORE_TEST_DB_NAME` is blank outside production, the app uses `{source_database}_restore_sandbox`.
 6. Queue job payload/result details are visible in Queue Management with secret-like fields masked.
-7. Live restore is disabled by default. It requires `restoreMode=live`, `liveRestoreConfirm=RESTORE {database}`, `CODEXSUN_ALLOW_LIVE_RESTORE=1`, and `CODEXSUN_LIVE_RESTORE_CONFIRM=ALLOW_LIVE_RESTORE` during an approved restore window.
+7. Live restore is disabled by default. It requires `restoreMode=live`, `liveRestoreConfirm=RESTORE {database}`, `CXAPP_ALLOW_LIVE_RESTORE=1`, and `CXAPP_LIVE_RESTORE_CONFIRM=ALLOW_LIVE_RESTORE` during an approved restore window.
 
 ## Safety Rules
 

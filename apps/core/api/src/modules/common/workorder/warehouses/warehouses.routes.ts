@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AppError } from "@codexsun/framework/errors";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { AppError } from "@cxapp/framework/errors";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { WarehousesService } from "./warehouses.service.js";
 export const WAREHOUSES_COLLECTION_PATH = "/core/common/workorder/warehouses";
 const service = new WarehousesService();

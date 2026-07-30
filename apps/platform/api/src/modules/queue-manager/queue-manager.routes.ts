@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "@codexsun/framework/http";
+import { ok } from "@cxapp/framework/http";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { verifyAuthToken } from "../../auth/jwt.js";
 import { QueueManagerService } from "./queue-manager.service.js";
 import type { QueueJobFilters, QueueJobStatus } from "./queue-manager.types.js";
-import { registerContractRoute } from "@codexsun/framework/http";
+import { registerContractRoute } from "@cxapp/framework/http";
 import { z } from "zod";
 
 const service = new QueueManagerService();

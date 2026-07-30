@@ -1,10 +1,10 @@
-import { Button } from "@codexsun/ui/components/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@codexsun/ui/components/dialog";
-import { Input } from "@codexsun/ui/components/input";
-import { Textarea } from "@codexsun/ui/components/textarea";
-import { WorkspaceDatePicker } from "@codexsun/ui/workspace/date-picker";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
+import { Button } from "@cxapp/ui/components/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@cxapp/ui/components/dialog";
+import { Input } from "@cxapp/ui/components/input";
+import { Textarea } from "@cxapp/ui/components/textarea";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
 import { useQuery } from "@tanstack/react-query";
 import { Save, Send, X } from "lucide-react";
 import { useState, type ReactNode } from "react";

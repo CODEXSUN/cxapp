@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Check, GripVertical, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Input } from "@codexsun/ui";
+import { Button, Input } from "@cxapp/ui";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,22 +29,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle
-} from "@codexsun/ui/components/alert-dialog";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
-import { WorkspaceLookup, type WorkspaceLookupOption } from "@codexsun/ui/workspace/lookup";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
-import { WorkspaceFilters } from "@codexsun/ui/workspace/filters";
-import { WorkspaceDatePicker } from "@codexsun/ui/workspace/date-picker";
-import { WorkspaceMinimalEditor } from "@codexsun/ui/workspace/minimal-editor";
-import { WorkspacePagination } from "@codexsun/ui/workspace/pagination";
-import { buildShowingLabel } from "@codexsun/ui/workspace/utils";
+} from "@cxapp/ui/components/alert-dialog";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
+import { WorkspaceLookup, type WorkspaceLookupOption } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
+import { WorkspaceMinimalEditor } from "@cxapp/ui/workspace/minimal-editor";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 import {
   WorkspaceFormField,
   WorkspaceFormFooter,
   WorkspaceFormGrid,
   WorkspaceUpsertDialog
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import {
   createTodo,
   createTodoLookup,

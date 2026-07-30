@@ -32,7 +32,7 @@ try {
     results["bullmq-redis"] = "delivered";
   } catch (error) {
     results["bullmq-redis"] = `unavailable: ${errorMessage(error)}`;
-    if (process.env.CODEXSUN_QUEUE_LIVE_REQUIRE_REDIS === "1") throw error;
+    if (process.env.CXAPP_QUEUE_LIVE_REQUIRE_REDIS === "1") throw error;
   }
 
   console.log("Queue backend live verification passed", results);

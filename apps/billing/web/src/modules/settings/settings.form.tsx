@@ -1,7 +1,7 @@
 import { Save } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspaceFormField, WorkspaceFormPanel, WorkspaceSelect } from "@codexsun/ui/workspace";
-import { WorkspaceSwitchCard } from "@codexsun/ui/workspace/status";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspaceFormField, WorkspaceFormPanel, WorkspaceSelect } from "@cxapp/ui/workspace";
+import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import type { BillingDocumentLayoutSettings, BillingSettings } from "./settings.types";
 
 const layoutKeys: Array<keyof BillingDocumentLayoutSettings> = [

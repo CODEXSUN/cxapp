@@ -1,5 +1,5 @@
-import { Button } from "@codexsun/ui/components/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@codexsun/ui/components/dialog";
+import { Button } from "@cxapp/ui/components/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@cxapp/ui/components/dialog";
 import { Save, X } from "lucide-react";
 import { useState } from "react";
 import { ContactQuickField } from "./export-sales.form-section-1";

@@ -19,6 +19,10 @@ const moduleRoots = [
   {
     app: "platform-api",
     path: join(process.cwd(), "apps", "platform", "api", "src", "modules")
+  },
+  {
+    app: "devkit-api",
+    path: join(process.cwd(), "apps", "devkit", "api", "src", "modules")
   }
 ];
 
@@ -52,7 +56,7 @@ const reducedBackendRoles = [
 ];
 const shellOnlyBackendModules = new Set();
 const shellOnlyBackendRoles = ["module", "routes", "types"];
-const capabilityBackendRoles = new Map();
+const capabilityBackendRoles = new Map([["devkit-api/platform-registry", reducedBackendRoles]]);
 
 const webModuleRoots = [
   {
@@ -70,6 +74,10 @@ const webModuleRoots = [
   {
     app: "platform-web",
     path: join(process.cwd(), "apps", "platform", "web", "src", "modules")
+  },
+  {
+    app: "devkit-web",
+    path: join(process.cwd(), "apps", "devkit", "web", "src", "modules")
   }
 ];
 
@@ -156,6 +164,7 @@ for (const root of webModuleRoots) {
       capabilityFrontendRoles.get(moduleLabel) ??
       (shellOnlyFrontendModules.has(moduleLabel) ? shellOnlyFrontendRoles : requiredFrontendRoles);
     if (
+      !capabilityFrontendRoles.has(moduleLabel) &&
       !shellOnlyFrontendModules.has(moduleLabel) &&
       !existsSync(join(modulePath, `${moduleDir.name}.services.ts`))
     )

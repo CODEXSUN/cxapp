@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { DestinationsRepository } from "./destinations.repository.js";
 import type {
   DestinationsListFilters,

@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { TaxesRepository } from "./taxes.repository.js";
 import type { TaxesListFilters, TaxesRecord, TaxesSavePayload } from "./taxes.types.js";
 

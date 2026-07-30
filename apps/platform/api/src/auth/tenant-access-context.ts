@@ -1,6 +1,6 @@
 import type { FastifyRequest } from "fastify";
-import { requireTenantAccess } from "@codexsun/framework/api";
-import { AppError } from "@codexsun/framework/errors";
+import { requireTenantAccess } from "@cxapp/framework/api";
+import { AppError } from "@cxapp/framework/errors";
 import { getTenantDatabaseByName } from "../database/tenant-database.js";
 import { env } from "../env.js";
 

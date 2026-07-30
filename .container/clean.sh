@@ -7,51 +7,115 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ASSUME_YES=false
 INSTALL_FRESH=false
-PRUNE_ALL_BUILD_CACHE=false
-ALL_DOCKER=false
+PRUNE_BUILD_CACHE=false
+INTERACTIVE=false
+SCOPE=data
 TARGET=billing
 
 usage() {
   cat <<'EOF'
-Usage: .container/clean.sh [--yes] [--install] [--all-build-cache] [--all-docker] [billing]
+Usage: .container/clean.sh [OPTIONS] [billing]
 
-Deletes only CODEXSUN Docker containers, images, networks, and named volumes.
-The ignored root .env file is preserved so credentials and explicit deployment
-settings can be reused by a fresh installation.
+Clean CODEXSUN Docker resources with an explicit scope.
+
+Scopes:
+  --scope app      Remove only cxapp-api/cxapp-web and application images.
+                   Databases, Redis, File Browser, volumes, and network remain.
+  --scope runtime  Remove every CODEXSUN container and image. All named
+                   volumes, databases, Redis data, files, and network remain.
+  --scope data     Remove every CODEXSUN container, image, named volume, and
+                   network. This permanently deletes local application data.
+  --all-docker     Remove every Docker resource on the host. This is not
+                   limited to CODEXSUN and requires separate confirmation.
 
 Options:
-  --yes              Skip the destructive confirmation prompt.
-  --install          Run setup.sh after cleanup for a fresh installation.
-  --all-build-cache  Also prune all unused Docker BuildKit cache. Docker does
-                     not expose reliable project ownership for build cache, so
-                     this may remove cache created by other local projects.
-  --all-docker       Delete every local Docker container, custom network,
-                     volume, image, and build cache before installation. This
-                     is host-wide and is not limited to CODEXSUN.
+  -i, --interactive  Ask for app/runtime/data scope and optional cache pruning.
+  --prune            Also prune all unused Docker BuildKit cache. Docker does
+                     not expose reliable project ownership for build cache.
+  --all-build-cache  Alias for --prune.
+  --install          Run root setup.sh after cleanup.
+  -y, --yes          Skip the scope-specific confirmation.
+  -h, --help         Show this help.
+
+Without --interactive or --scope, the historical full CODEXSUN data-clean
+scope is used. Root .env and .container/deploy.env are always preserved.
 EOF
 }
 
-for arg in "$@"; do
-  case "$arg" in
-    --yes) ASSUME_YES=true ;;
+while (($# > 0)); do
+  case "$1" in
+    --scope)
+      shift
+      (($# > 0)) || {
+        echo "--scope requires app, runtime, or data." >&2
+        exit 64
+      }
+      SCOPE="$1"
+      ;;
+    --app) SCOPE=app ;;
+    --runtime) SCOPE=runtime ;;
+    --data) SCOPE=data ;;
+    -i|--interactive) INTERACTIVE=true ;;
+    --prune|--all-build-cache) PRUNE_BUILD_CACHE=true ;;
+    --all-docker) SCOPE=host; PRUNE_BUILD_CACHE=true ;;
     --install) INSTALL_FRESH=true ;;
-    --all-build-cache) PRUNE_ALL_BUILD_CACHE=true ;;
-    --all-docker) ALL_DOCKER=true; PRUNE_ALL_BUILD_CACHE=true ;;
-    billing) TARGET=$arg ;;
+    -y|--yes) ASSUME_YES=true ;;
+    billing) TARGET=billing ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 64 ;;
   esac
+  shift
 done
+
+case "$SCOPE" in
+  app|runtime|data|host) ;;
+  *)
+    echo "Unsupported cleanup scope: $SCOPE" >&2
+    usage >&2
+    exit 64
+    ;;
+esac
 
 prepare_deploy_env
 validate_deploy_env
 require_docker
 
-assert_codexsun_name() {
+if [ "$INTERACTIVE" = true ]; then
+  echo
+  echo "Local CODEXSUN cleanup"
+  echo "  1) app      Application containers and images only; preserve all data"
+  echo "  2) runtime  All CODEXSUN containers and images; preserve all data"
+  echo "  3) data     All CODEXSUN resources, databases, Redis, files, and volumes"
+  echo "  4) cancel"
+  read -r -p "Choose cleanup scope [1-4]: " choice
+  case "$choice" in
+    1|app) SCOPE=app ;;
+    2|runtime) SCOPE=runtime ;;
+    3|data) SCOPE=data ;;
+    4|cancel|"")
+      echo "Cleanup cancelled before Docker changes."
+      exit 0
+      ;;
+    *)
+      echo "Unknown cleanup choice: $choice" >&2
+      exit 64
+      ;;
+  esac
+  read -r -p "Also prune all unused Docker build cache? [y/N] " prune_answer
+  case "${prune_answer:-N}" in
+    y|Y|yes|Yes|YES) PRUNE_BUILD_CACHE=true ;;
+  esac
+fi
+
+if [ "$SCOPE" != host ]; then
+  validate_container_ownership
+fi
+
+assert_cxapp_name() {
   kind="$1"
   value="$2"
   case "$value" in
-    codexsun|codexsun-*) ;;
+    cxapp|cxapp-*) ;;
     *)
       echo "Refusing to delete $kind outside the CODEXSUN namespace: $value" >&2
       exit 73
@@ -59,8 +123,8 @@ assert_codexsun_name() {
   esac
 }
 
-network=$(env_value CODEXSUN_DOCKER_NETWORK)
-assert_codexsun_name network "$network"
+network=$(env_value CXAPP_DOCKER_NETWORK)
+assert_cxapp_name network "$network"
 
 volumes=(
   "$(env_value MARIADB_DATA_VOLUME)"
@@ -71,124 +135,170 @@ volumes=(
   "$(env_value BILLING_STACK_DATA_VOLUME)"
 )
 for volume in "${volumes[@]}"; do
-  assert_codexsun_name volume "$volume"
+  assert_cxapp_name volume "$volume"
 done
 
-registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
-repositories=(
-  "$registry/mariadb"
-  "$registry/redis"
-  "$registry/media"
+registry=$(env_value CXAPP_IMAGE_REGISTRY)
+app_repositories=(
   "$registry/billing-stack-api"
   "$registry/billing-stack-web"
   "$registry/billing-stack-migrations"
 )
+infrastructure_repositories=(
+  "$registry/mariadb"
+  "$registry/redis"
+  "$registry/media"
+)
 
-if [ "$ALL_DOCKER" = "true" ]; then
-  echo "HOST-WIDE Docker cleanup will permanently remove every local:"
-  echo "  Container:"
-  docker ps -a --format '    {{.Names}} ({{.Image}})'
-  echo "  Custom network:"
-  docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' | sed 's/^/    /' || true
-  echo "  Volume:"
-  docker volume ls --format '    {{.Name}}'
-  echo "  Image:"
-  docker image ls --all --format '    {{.Repository}}:{{.Tag}} ({{.ID}})'
-else
-  cat <<EOF
-CODEXSUN Docker cleanup will permanently remove:
-  Compose projects: codexsun-billing, codexsun-media, codexsun-redis, codexsun-mariadb
-  Network: $network
-  Volumes:
-$(printf '    %s\n' "${volumes[@]}")
-  Image repositories:
-$(printf '    %s\n' "${repositories[@]}")
-EOF
+print_code_resource_list() {
+  echo "  Application containers: cxapp-api, cxapp-web"
+  if [ "$SCOPE" != app ]; then
+    echo "  Infrastructure containers: cxapp-mariadb, cxapp-redis, cxapp-media"
+  fi
+  echo "  Image repositories:"
+  printf '    %s\n' "${app_repositories[@]}"
+  if [ "$SCOPE" != app ]; then
+    printf '    %s\n' "${infrastructure_repositories[@]}"
+  fi
+}
+
+echo
+case "$SCOPE" in
+  app)
+    echo "CODEXSUN application-only cleanup"
+    print_code_resource_list
+    echo "  Preserved: MariaDB, Redis, File Browser, all volumes, network, and both environment files"
+    required_confirmation=CLEAN_CXAPP_APP
+    ;;
+  runtime)
+    echo "CODEXSUN runtime cleanup"
+    print_code_resource_list
+    echo "  Preserved: all databases, Redis data, files, named volumes, network, and both environment files"
+    required_confirmation=CLEAN_CXAPP_RUNTIME
+    ;;
+  data)
+    echo "CODEXSUN full local data cleanup"
+    print_code_resource_list
+    echo "  Network: $network"
+    echo "  Permanently deleted named volumes:"
+    printf '    %s\n' "${volumes[@]}"
+    echo "  Preserved: root .env and .container/deploy.env"
+    required_confirmation=CLEAN_CXAPP_DATA
+    ;;
+  host)
+    echo "HOST-WIDE Docker cleanup will permanently remove every local:"
+    echo "  Container:"
+    docker ps -a --format '    {{.Names}} ({{.Image}})'
+    echo "  Custom network:"
+    docker network ls --format '{{.Name}}' |
+      grep -Ev '^(bridge|host|none)$' |
+      sed 's/^/    /' || true
+    echo "  Volume:"
+    docker volume ls --format '    {{.Name}}'
+    echo "  Image:"
+    docker image ls --all --format '    {{.Repository}}:{{.Tag}} ({{.ID}})'
+    required_confirmation=CLEAN_ALL_DOCKER
+    ;;
+esac
+
+if [ "$PRUNE_BUILD_CACHE" = true ]; then
+  echo "  Build cache: all unused Docker BuildKit cache, including other projects"
 fi
 
-if [ "$PRUNE_ALL_BUILD_CACHE" = "true" ]; then
-  echo "  All unused Docker BuildKit cache, including cache from other projects."
-fi
-
-if [ "$ASSUME_YES" != "true" ]; then
-  required_confirmation=CLEAN_CODEXSUN
-  [ "$ALL_DOCKER" = "true" ] && required_confirmation=CLEAN_ALL_DOCKER
-  printf 'Type %s to continue: ' "$required_confirmation"
-  read -r confirmation
+if [ "$ASSUME_YES" != true ]; then
+  read -r -p "Type $required_confirmation to continue: " confirmation
   [ "$confirmation" = "$required_confirmation" ] || {
-    echo "Cleanup cancelled."
+    echo "Cleanup cancelled before Docker changes."
     exit 0
   }
 fi
 
-if [ "$ALL_DOCKER" = "true" ]; then
-  container_ids=$(docker ps -aq)
-  if [ -n "$container_ids" ]; then
-    docker rm -f $container_ids >/dev/null
+remove_project_containers() {
+  project="$1"
+  mapfile -t container_ids < <(
+    docker ps -aq --filter "label=com.docker.compose.project=$project"
+  )
+  if ((${#container_ids[@]} > 0)); then
+    docker rm -f "${container_ids[@]}" >/dev/null
+    echo "Removed containers for Compose project: $project"
+  fi
+}
+
+remove_repository_images() {
+  repository="$1"
+  mapfile -t image_tags < <(
+    docker image ls --all --format '{{.Repository}}:{{.Tag}}' "$repository" |
+      grep -F "${repository}:" |
+      sort -u || true
+  )
+  if ((${#image_tags[@]} > 0)); then
+    docker image rm -f "${image_tags[@]}" >/dev/null
+    echo "Removed images: $repository"
+  fi
+}
+
+if [ "$SCOPE" = host ]; then
+  mapfile -t container_ids < <(docker ps -aq)
+  if ((${#container_ids[@]} > 0)); then
+    docker rm -f "${container_ids[@]}" >/dev/null
     echo "Removed all local Docker containers."
   fi
 
-  volume_names=$(docker volume ls --quiet)
-  if [ -n "$volume_names" ]; then
-    docker volume rm $volume_names >/dev/null
+  mapfile -t volume_names < <(docker volume ls --quiet)
+  if ((${#volume_names[@]} > 0)); then
+    docker volume rm "${volume_names[@]}" >/dev/null
     echo "Removed all local Docker volumes."
   fi
 
-  network_names=$(docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' || true)
-  if [ -n "$network_names" ]; then
-    docker network rm $network_names >/dev/null
+  mapfile -t network_names < <(
+    docker network ls --format '{{.Name}}' | grep -Ev '^(bridge|host|none)$' || true
+  )
+  if ((${#network_names[@]} > 0)); then
+    docker network rm "${network_names[@]}" >/dev/null
     echo "Removed all custom Docker networks."
   fi
 
-  image_ids=$(docker image ls --all --quiet | sort -u)
-  if [ -n "$image_ids" ]; then
-    docker image rm -f $image_ids >/dev/null
+  mapfile -t image_ids < <(docker image ls --all --quiet | sort -u)
+  if ((${#image_ids[@]} > 0)); then
+    docker image rm -f "${image_ids[@]}" >/dev/null
     echo "Removed all local Docker images."
   fi
 else
-  for project in codexsun-billing codexsun-media codexsun-redis codexsun-mariadb; do
-    container_ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
-    if [ -n "$container_ids" ]; then
-      docker rm -f $container_ids >/dev/null
-      echo "Removed containers for Compose project: $project"
-    fi
+  remove_project_containers cxapp-billing
+  for repository in "${app_repositories[@]}"; do
+    remove_repository_images "$repository"
   done
 
-  for container in cxapp-web cxapp-api codexsun-media codexsun-redis codexsun-mariadb; do
-    if docker container inspect "$container" >/dev/null 2>&1; then
-      docker rm -f "$container" >/dev/null
-      echo "Removed container: $container"
-    fi
-  done
-
-  for volume in "${volumes[@]}"; do
-    if docker volume inspect "$volume" >/dev/null 2>&1; then
-      docker volume rm "$volume" >/dev/null
-      echo "Removed volume: $volume"
-    fi
-  done
-
-  if docker network inspect "$network" >/dev/null 2>&1; then
-    docker network rm "$network" >/dev/null
-    echo "Removed network: $network"
+  if [ "$SCOPE" = runtime ] || [ "$SCOPE" = data ]; then
+    remove_project_containers cxapp-media
+    remove_project_containers cxapp-redis
+    remove_project_containers cxapp-mariadb
+    for repository in "${infrastructure_repositories[@]}"; do
+      remove_repository_images "$repository"
+    done
   fi
 
-  for repository in "${repositories[@]}"; do
-    image_ids=$(docker image ls --all --quiet "$repository" | sort -u)
-    if [ -n "$image_ids" ]; then
-      docker image rm -f $image_ids >/dev/null
-      echo "Removed images: $repository"
+  if [ "$SCOPE" = data ]; then
+    for volume in "${volumes[@]}"; do
+      if docker volume inspect "$volume" >/dev/null 2>&1; then
+        docker volume rm "$volume" >/dev/null
+        echo "Removed volume: $volume"
+      fi
+    done
+    if docker network inspect "$network" >/dev/null 2>&1; then
+      docker network rm "$network" >/dev/null
+      echo "Removed network: $network"
     fi
-  done
+  fi
 fi
 
-if [ "$PRUNE_ALL_BUILD_CACHE" = "true" ]; then
+if [ "$PRUNE_BUILD_CACHE" = true ]; then
   docker builder prune --all --force
 fi
 
-echo "CODEXSUN Docker cleanup completed."
+echo "CODEXSUN Docker cleanup completed: scope=$SCOPE"
 
-if [ "$INSTALL_FRESH" = "true" ]; then
+if [ "$INSTALL_FRESH" = true ]; then
   echo "Starting fresh CODEXSUN installation."
-  bash "$SCRIPT_DIR/setup.sh" "$TARGET"
+  bash "$PROJECT_ROOT/setup.sh" --non-interactive --yes "$TARGET"
 fi

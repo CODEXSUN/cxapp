@@ -3,7 +3,6 @@
   "globalEnv": [
     "PLATFORM_API_PORT",
     "PLATFORM_WEB_PORT",
-    "PLATFORM_API_URL",
     "PLATFORM_WEB_ORIGIN",
     "DEFAULT_TENANT_NAME",
     "DEV_AUTO_TENANT_LOGIN",
@@ -13,7 +12,7 @@
     "DB_PASSWORD",
     "DB_MASTER_NAME",
     "JWT_SECRET",
-    "CODEXSUN_REDIS_URL"
+    "CXAPP_REDIS_URL"
   ],
   "tasks": {
     "build": {

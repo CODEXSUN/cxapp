@@ -6,5 +6,5 @@ export const appRegistrySchema = z.object({
   description: z.string(),
   label: z.string().min(1),
   moduleKey: z.string().min(1),
-  stack: z.enum(["platform", "billing", "mail", "platform-task-manager"])
+  stack: z.enum(["platform", "billing", "devkit", "mail", "platform-task-manager"])
 });

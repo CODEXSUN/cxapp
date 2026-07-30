@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { useCompanyBranding } from "@codexsun/core-web/modules/organisation/company";
-import { AppLayout } from "@codexsun/ui/layouts/app-layout";
-import type { SidemenuItem } from "@codexsun/ui/blocks/menu/sidemenu/sub/sidemenu-section";
-import type { SidebarBrand } from "@codexsun/ui/blocks/menu/sidemenu/app-sidebar";
-import type { TopMenuWorkspaceItem } from "@codexsun/ui/blocks/menu/sidemenu/top-menu";
+import { useCompanyBranding } from "@cxapp/core-web/modules/organisation/company";
+import { AppLayout } from "@cxapp/ui/layouts/app-layout";
+import type { SidemenuItem } from "@cxapp/ui/blocks/menu/sidemenu/sub/sidemenu-section";
+import type { SidebarBrand } from "@cxapp/ui/blocks/menu/sidemenu/app-sidebar";
+import type { TopMenuWorkspaceItem } from "@cxapp/ui/blocks/menu/sidemenu/top-menu";
 import {
   BarChart3Icon,
   FileTextIcon,

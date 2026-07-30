@@ -1,24 +1,24 @@
 import { useMemo, useState } from "react";
 import { Save, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@codexsun/ui/components/button";
-import { Input } from "@codexsun/ui/components/input";
-import { Textarea } from "@codexsun/ui/components/textarea";
+import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
+import { Textarea } from "@cxapp/ui/components/textarea";
 import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
-} from "@codexsun/ui/workspace/animated-tabs";
-import { WorkspaceDatePicker } from "@codexsun/ui/workspace/date-picker";
-import { WorkspaceLookup } from "@codexsun/ui/workspace/lookup";
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
+} from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
+import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
 import {
   WorkspaceFormActions,
   WorkspaceFormBanner,
   WorkspaceFormField,
   WorkspaceFormGrid,
   WorkspaceFormPanel
-} from "@codexsun/ui/workspace/upsert";
+} from "@cxapp/ui/workspace/upsert";
 import { useReceiptFormLookups } from "./receipt.hooks";
 import { emptyReceiptContact, ReceiptContactDialog } from "./receipt.contact-dialog";
 import { validateReceipt, type ReceiptFormErrors } from "./receipt.schema";

@@ -1,6 +1,6 @@
 import { FolderPlusIcon, RefreshCwIcon, UploadIcon } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspaceSelect } from "@codexsun/ui/workspace/select";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspaceSelect } from "@cxapp/ui/workspace/select";
 import type { Tenant } from "../tenant";
 import type { StorageBrowserState } from "./storage-manager.types";
 

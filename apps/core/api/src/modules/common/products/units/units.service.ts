@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { UnitsRepository } from "./units.repository.js";
 import type { UnitsListFilters, UnitsRecord, UnitsSavePayload } from "./units.types.js";
 

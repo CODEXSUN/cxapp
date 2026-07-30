@@ -46,7 +46,7 @@ export function startBullMqWorker(
 }
 
 export async function probeBullMq() {
-  const queue = new Queue(`codexsun-probe-${process.pid}`, {
+  const queue = new Queue(`cxapp-probe-${process.pid}`, {
     connection: redisConnectionOptions()
   });
   let timer: NodeJS.Timeout | undefined;
@@ -80,7 +80,7 @@ function queueFor(queueName: string) {
 }
 
 function redisConnectionOptions() {
-  const url = new URL(env.CODEXSUN_REDIS_URL);
+  const url = new URL(env.CXAPP_REDIS_URL);
   return {
     db: url.pathname && url.pathname !== "/" ? Number(url.pathname.slice(1)) : 0,
     host: url.hostname || "127.0.0.1",

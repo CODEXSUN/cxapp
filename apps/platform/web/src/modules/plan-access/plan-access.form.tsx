@@ -1,6 +1,6 @@
 import { SaveIcon } from "lucide-react";
-import { Button } from "@codexsun/ui/components/button";
-import { WorkspaceFormBanner } from "@codexsun/ui/workspace/upsert";
+import { Button } from "@cxapp/ui/components/button";
+import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import { PlanAccessList } from "./plan-access.list";
 import type { PlanAccessApp } from "./plan-access.types";
 

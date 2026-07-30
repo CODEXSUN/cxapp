@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { runWithCoreDatabase } from "../../../database/core-database.js";
 import { DefaultCompanyRepository } from "./default-company.repository.js";
 import type { DefaultCompanySavePayload } from "./default-company.types.js";

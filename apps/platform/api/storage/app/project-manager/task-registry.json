@@ -1,0 +1,43 @@
+[
+  {
+    "active": true,
+    "assignee": "Platform",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "task-seed-1",
+    "key": "task.project-manager.json",
+    "kind": "task",
+    "lane": "",
+    "moduleKey": "project-manager",
+    "priority": "high",
+    "referenceId": "issue.project-manager.install",
+    "referenceType": "issue",
+    "sortOrder": 10,
+    "status": "assigned",
+    "title": "Build writable JSON project manager",
+    "type": "implementation",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  },
+  {
+    "active": true,
+    "assignee": "Quality Engineering",
+    "createdAt": "2026-07-26T04:00:00.000Z",
+    "description": "<p>Verify the complete issue delivery chain and its performance reporting.</p>",
+    "dueDate": "2026-08-05",
+    "id": "task-seed-issue-roadmap-verification",
+    "key": "task.project-manager.verify-roadmap",
+    "kind": "task",
+    "lane": "validation",
+    "moduleKey": "work-automation",
+    "priority": "high",
+    "referenceId": "issue.project-manager.install",
+    "referenceType": "issue",
+    "sortOrder": 20,
+    "startDate": "2026-07-29",
+    "status": "in-progress",
+    "title": "Verify issue roadmap performance",
+    "type": "testing",
+    "updatedAt": "2026-07-26T04:00:00.000Z"
+  }
+]

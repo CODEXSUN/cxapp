@@ -20,7 +20,7 @@ const app = await createApp();
 
 try {
   const [tenants] = await connection.query<TenantRow[]>(
-    "SELECT uuid, tenant_code, db_name FROM app_tenants WHERE status='active' ORDER BY id LIMIT 5"
+    "SELECT uuid, tenant_code, db_name FROM tenants WHERE status='active' ORDER BY id LIMIT 5"
   );
   assert.equal(tenants.length, 5, "Five active tenants are required for the access isolation E2E.");
   const results: Array<{ tenant: string; records: number }> = [];
@@ -70,7 +70,7 @@ async function exerciseTenant(tenant: TenantRow) {
   const user = await create(tenant, "app_users", {
     email: `e2e-${run}@${tenant.tenant_code.toLowerCase()}.test`,
     name: `E2E User ${run}`,
-    password: "Codexsun-E2E-123!",
+    password: "Cxapp-E2E-123!",
     status: "active"
   });
   const userRole = await create(tenant, "user-roles", {

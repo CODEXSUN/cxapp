@@ -1,0 +1,22 @@
+[
+  {
+    "active": true,
+    "assignee": "",
+    "createdAt": "2026-07-09T03:19:58.994Z",
+    "description": "",
+    "dueDate": "",
+    "id": "discussion-seed-1",
+    "key": "discussion.project-manager.workflow",
+    "kind": "discussion",
+    "lane": "",
+    "moduleKey": "project-manager",
+    "priority": "medium",
+    "referenceId": "",
+    "referenceType": "",
+    "sortOrder": 10,
+    "status": "open",
+    "title": "Project Manager workflow discussion",
+    "type": "architecture",
+    "updatedAt": "2026-07-09T03:19:58.994Z"
+  }
+]

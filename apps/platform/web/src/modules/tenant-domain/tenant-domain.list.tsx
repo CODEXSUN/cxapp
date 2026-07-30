@@ -1,11 +1,11 @@
-import { WorkspaceRowActions } from "@codexsun/ui/workspace/row-actions";
-import { WorkspaceStatusBadge } from "@codexsun/ui/workspace/status";
+import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
+import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
   WorkspaceTableEmptyState,
   WorkspaceTableHeaderCell,
   WorkspaceTablePanel,
   WorkspaceTableLoadingState
-} from "@codexsun/ui/workspace/table";
+} from "@cxapp/ui/workspace/table";
 import type { TenantDomainRecord } from "./tenant-domain.types";
 
 export function TenantDomainTable({

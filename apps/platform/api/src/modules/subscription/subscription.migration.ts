@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 import type { PlatformDatabase } from "../../database/schema.js";
 export async function migrateSubscriptionModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_subscriptions")
+    .createTable("subscriptions")
     .ifNotExists()
     .addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (c) => c.notNull().unique())
@@ -16,16 +16,16 @@ export async function migrateSubscriptionModule(db: Kysely<PlatformDatabase>) {
     .addColumn("updated_at", "datetime", (c) => c.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .addForeignKeyConstraint(
-      "app_subscriptions_tenant_fk",
+      "subscriptions_tenant_fk",
       ["tenant_id"],
-      "app_tenants",
+      "tenants",
       ["id"],
       (constraint) => constraint.onDelete("cascade")
     )
     .addForeignKeyConstraint(
-      "app_subscriptions_plan_fk",
+      "subscriptions_plan_fk",
       ["plan_id"],
-      "app_plans",
+      "plans",
       ["id"],
       (constraint) => constraint.onDelete("restrict")
     )

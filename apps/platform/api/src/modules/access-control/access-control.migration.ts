@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateAccessControlModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("app_access_permissions")
+    .createTable("access_permissions")
     .ifNotExists()
     .addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (c) => c.notNull().unique())
@@ -16,7 +16,7 @@ export async function migrateAccessControlModule(db: Kysely<PlatformDatabase>) {
     .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
   await db.schema
-    .createTable("app_access_roles")
+    .createTable("access_roles")
     .ifNotExists()
     .addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (c) => c.notNull().unique())
@@ -30,7 +30,7 @@ export async function migrateAccessControlModule(db: Kysely<PlatformDatabase>) {
     .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
   await db.schema
-    .createTable("app_access_users")
+    .createTable("access_users")
     .ifNotExists()
     .addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (c) => c.notNull().unique())

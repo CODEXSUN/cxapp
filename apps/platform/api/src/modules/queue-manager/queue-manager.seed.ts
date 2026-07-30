@@ -4,13 +4,13 @@ import { env } from "../../env.js";
 
 export async function seedQueueManagerModule(db: Kysely<PlatformDatabase>) {
   await db
-    .insertInto("app_queue_runtime_settings")
+    .insertInto("queue_runtime_settings")
     .values({
-      backend: env.CODEXSUN_QUEUE_BACKEND,
+      backend: env.CXAPP_QUEUE_BACKEND,
       singleton_key: 1,
       updated_by: "environment-seed"
     })
     .ignore()
     .execute();
-  return { backend: env.CODEXSUN_QUEUE_BACKEND, seeded: 1 } as const;
+  return { backend: env.CXAPP_QUEUE_BACKEND, seeded: 1 } as const;
 }

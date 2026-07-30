@@ -9,7 +9,7 @@ import {
   rollbackTablePrefixPolicy,
   runMigrationBatch,
   type MigrationBatch
-} from "@codexsun/framework/db";
+} from "@cxapp/framework/db";
 import { env } from "../env.js";
 import {
   appRegistryMigration,
@@ -54,6 +54,12 @@ import { seedTaskManagerModule } from "../modules/task-manager/task-manager.seed
 import { assertDatabaseName, quoteIdentifier } from "./database-utils.js";
 import type { PlatformDatabase } from "./schema.js";
 import { authSessionMigration, migrateAuthSession } from "../auth/auth-session.migration.js";
+import {
+  migrateDevkitDatabase,
+  rollbackDevkitDatabase,
+  seedDevkitDatabase,
+  type DevkitDatabase
+} from "@cxapp/devkit-api";
 
 let platformDatabase: Kysely<PlatformDatabase> | null = null;
 let bootstrapped = false;
@@ -142,7 +148,6 @@ const platformTableNames = [
   "access_roles",
   "access_users",
   "auth_sessions",
-  "codexsun_migrations",
   "database_maintenance_runs",
   "entitlements",
   "industries",
@@ -164,11 +169,15 @@ const platformPrefixPolicy = { include: platformTableNames, prefix: "app_" } as 
 
 export const platformMigrationBatch: MigrationBatch<PlatformDatabase> = {
   batch: 1,
-  description: "Platform module-owned schema baseline through release 1.0.42.",
+  description: "Platform module-owned schema baseline through release 1.0.43.",
   scope: "platform",
-  version: "1.0.42",
+  version: "1.0.43",
   steps: [
     {
+      acceptedAppliedChecksums: [
+        "ae0112ed9cca6070fe163bfbbcd71f9504a97552856fbe175fb57b3af1169e04",
+        "53226db63b83aa898cabad04845721700f9c2aff8cb3596a999c24b1174dc75e"
+      ],
       checksum: platformTableNames.join(","),
       description: "Rename legacy Platform tables without copying or dropping data.",
       down: (database) =>
@@ -186,30 +195,37 @@ export const platformMigrationBatch: MigrationBatch<PlatformDatabase> = {
       version: 1
     })),
     {
+      acceptedAppliedChecksums: [
+        "8a2b38d131c32d89e4cfa300e531587910a2d529e8b217d0834a867cd41665cb",
+        "c39109aacefaafdeeb45e30e8ae137d0fa0a649050e19f6fa638f01d056fbd96"
+      ],
       checksum: `standard-columns:${platformTableNames.join(",")}`,
       description: "Backfill and validate standard Platform table identity and audit columns.",
       name: "platform.standard-columns-v1",
-      up: (database) =>
-        ensureStandardTableColumns(
-          database,
-          platformTableNames
-            .filter((tableName) => tableName !== "codexsun_migrations")
-            .map((tableName) => `app_${tableName}`)
-        ),
+      up: (database) => ensureStandardTableColumns(database, platformTableNames),
       version: 1
     },
     {
+      acceptedAppliedChecksums: [
+        "0df884b26ba11151b06c2ad982af3701f0776f20b98fcc1657d5fec062b33f1b",
+        "683cfbf4c13d34dd1c9df3665a446ddda90afb8bb991569d390c72494db41ea8"
+      ],
       checksum: `uuid-defaults:${platformTableNames.join(",")}`,
       description: "Add database-generated UUID defaults for repeatable Platform writes.",
       name: "platform.uuid-defaults-v2",
-      up: (database) =>
-        ensureStandardTableColumns(
-          database,
-          platformTableNames
-            .filter((tableName) => tableName !== "codexsun_migrations")
-            .map((tableName) => `app_${tableName}`)
-        ),
+      up: (database) => ensureStandardTableColumns(database, platformTableNames),
       version: 2
+    },
+    {
+      checksum: `master-unprefix:${platformTableNames.join(",")}`,
+      description:
+        "Restore unprefixed Platform master tables without copying or dropping existing data.",
+      down: (database) =>
+        applyTablePrefixPolicy(database, platformPrefixPolicy).then(() => undefined),
+      name: "platform.master-unprefix-v3",
+      up: (database) =>
+        rollbackTablePrefixPolicy(database, platformPrefixPolicy).then(() => undefined),
+      version: 3
     }
   ]
 };
@@ -271,15 +287,15 @@ export function getPlatformDatabase() {
 }
 
 export async function bootstrapPlatformDatabase() {
-  if (bootstrapped || process.env.CODEXSUN_DEV_SKIP_DB === "1") {
-    if (process.env.CODEXSUN_DEV_SKIP_DB === "1") {
-      console.info("[database] bootstrap skipped because CODEXSUN_DEV_SKIP_DB=1");
+  if (bootstrapped || process.env.CXAPP_DEV_SKIP_DB === "1") {
+    if (process.env.CXAPP_DEV_SKIP_DB === "1") {
+      console.info("[database] bootstrap skipped because CXAPP_DEV_SKIP_DB=1");
     }
     return;
   }
 
-  if (env.CODEXSUN_DB_FRESH_ON_START === "1") {
-    const sessionFile = process.env.CODEXSUN_DB_FRESH_SESSION_FILE;
+  if (env.CXAPP_DB_FRESH_ON_START === "1") {
+    const sessionFile = process.env.CXAPP_DB_FRESH_SESSION_FILE;
     if (!sessionFile || !existsSync(sessionFile)) {
       console.info("[database] fresh startup requested");
       await resetPlatformDatabases();
@@ -331,13 +347,16 @@ export async function migratePlatformDatabase() {
   console.info(`[database] migrating platform database "${platformDatabaseName()}"`);
   const database = getPlatformDatabase();
   const result = await runMigrationBatch(database, platformMigrationBatch, { batchSize: 8 });
+  await migrateDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
   console.info(
     `[database] platform migration batch ${result.batch}: ${result.applied.length} applied, ${result.skipped.length} checksum-validated`
   );
 }
 
 export async function rollbackPlatformDatabase() {
-  return rollbackMigrationBatch(getPlatformDatabase(), platformMigrationBatch);
+  const database = getPlatformDatabase();
+  await rollbackDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
+  return rollbackMigrationBatch(database, platformMigrationBatch);
 }
 
 export async function seedPlatformDatabase() {
@@ -346,6 +365,8 @@ export async function seedPlatformDatabase() {
     await step.seed(database);
     console.info(`[seeder] platform module seeded: ${step.name}`);
   }
+  await seedDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
+  console.info("[seeder] master app seeded: devkit");
 }
 
 export async function resetPlatformDatabases() {
@@ -394,15 +415,15 @@ export async function dropPlatformDatabases() {
 }
 
 function assertDestructiveDatabaseAction(action: string) {
-  if (env.CODEXSUN_DB_RESET_CONFIRM !== "DROP_DATABASES") {
+  if (env.CXAPP_DB_RESET_CONFIRM !== "DROP_DATABASES") {
     throw new Error(
-      `${action} refused. Set CODEXSUN_DB_RESET_CONFIRM=DROP_DATABASES only when you intentionally want to delete configured databases.`
+      `${action} refused. Set CXAPP_DB_RESET_CONFIRM=DROP_DATABASES only when you intentionally want to delete configured databases.`
     );
   }
 
-  if (env.NODE_ENV === "production" && env.CODEXSUN_ALLOW_PRODUCTION_DB_RESET !== "1") {
+  if (env.NODE_ENV === "production" && env.CXAPP_ALLOW_PRODUCTION_DB_RESET !== "1") {
     throw new Error(
-      `${action} refused in production. Set CODEXSUN_ALLOW_PRODUCTION_DB_RESET=1 and CODEXSUN_DB_RESET_CONFIRM=DROP_DATABASES to continue.`
+      `${action} refused in production. Set CXAPP_ALLOW_PRODUCTION_DB_RESET=1 and CXAPP_DB_RESET_CONFIRM=DROP_DATABASES to continue.`
     );
   }
 }
@@ -418,9 +439,7 @@ async function listTenantDatabaseNames(
 
   let rows: unknown;
   try {
-    [rows] = await connection.query(
-      `SELECT db_name FROM ${quoteIdentifier(masterName)}.app_tenants`
-    );
+    [rows] = await connection.query(`SELECT db_name FROM ${quoteIdentifier(masterName)}.tenants`);
   } catch {
     return [];
   }

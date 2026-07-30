@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-source_dir="/opt/codexsun-web/platform"
+source_dir="/opt/cxapp-web/platform"
 : "${PLATFORM_API_PORT:?PLATFORM_API_PORT is required in /app/.env}"
 
 rm -rf /usr/share/nginx/html/*

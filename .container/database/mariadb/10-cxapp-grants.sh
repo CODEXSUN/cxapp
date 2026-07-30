@@ -12,11 +12,11 @@ apply_grants() {
   fi
 }
 
-: "${CODEXSUN_DB_USER:?CODEXSUN_DB_USER is required}"
-: "${CODEXSUN_DB_PASSWORD:?CODEXSUN_DB_PASSWORD is required}"
+: "${CXAPP_DB_USER:?CXAPP_DB_USER is required}"
+: "${CXAPP_DB_PASSWORD:?CXAPP_DB_PASSWORD is required}"
 : "${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}"
-db_user=$CODEXSUN_DB_USER
-db_password=$CODEXSUN_DB_PASSWORD
+db_user=$CXAPP_DB_USER
+db_password=$CXAPP_DB_PASSWORD
 escaped_user=$(printf '%s' "$db_user" | sed "s/'/''/g")
 escaped_password=$(printf '%s' "$db_password" | sed "s/'/''/g")
 

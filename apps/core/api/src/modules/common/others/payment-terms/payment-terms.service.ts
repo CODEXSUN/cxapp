@@ -1,4 +1,4 @@
-import { AppError } from "@codexsun/framework/errors";
+import { AppError } from "@cxapp/framework/errors";
 import { PaymentTermsRepository } from "./payment-terms.repository.js";
 import type {
   PaymentTermsListFilters,

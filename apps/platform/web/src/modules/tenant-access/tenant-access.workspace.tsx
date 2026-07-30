@@ -1,4 +1,4 @@
-import { WorkspacePage } from "@codexsun/ui/workspace/page";
+import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { TenantAccessForm } from "./tenant-access.form";
 import { useTenantAccessQuery } from "./tenant-access.hooks";
 import { TenantAccessList } from "./tenant-access.list";
