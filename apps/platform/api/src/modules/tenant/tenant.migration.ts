@@ -1,4 +1,12 @@
 import { sql, type Kysely } from "kysely";
+import {
+  applyTablePrefixPolicy,
+  ensureStandardTableColumns,
+  rollbackMigrationBatch,
+  rollbackTablePrefixPolicy,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@codexsun/framework/db";
 import type { PlatformDatabase, TenantDatabase } from "../../database/schema.js";
 import {
   migrateTenantPermissionModule,
@@ -19,17 +27,16 @@ export const tenantMigration = {
 
 export const tenantRuntimeMigrations = [
   {
-    description: "Tenant migration ledger and runtime foundation.",
-    name: "001_tenant_foundation",
-    statements: [
-      "RENAME legacy tenant_* tables to module-owned names when present",
-      "CREATE TABLE IF NOT EXISTS schema_migrations (...)"
-    ]
+    description: "Rename legacy tenant runtime tables to app_ module-owned names.",
+    name: "platform.tenant-runtime.table-prefix-v1",
+    statements: ["RENAME legacy runtime tables to app_* names when present"]
   },
   {
     description: "Tenant application module settings.",
-    name: "002_runtime_table_names",
-    statements: ["CREATE TABLE IF NOT EXISTS module_settings (...)"]
+    name: "platform.tenant-runtime.settings-v1",
+    statements: [
+      "CREATE TABLE IF NOT EXISTS app_module_settings (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,status VARCHAR(24) NOT NULL DEFAULT 'active',created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,...)"
+    ]
   },
   {
     description: "Tenant users and authentication identities.",
@@ -57,15 +64,114 @@ export const tenantRuntimeMigrations = [
     statements: ["RUN platform.tenant-role-permission migration"]
   },
   {
-    description: "Flatten legacy tenant access table names.",
-    name: "004_flatten_access_table_names",
-    statements: ["RENAME legacy access_* tables to module-owned names when present"]
+    description: "Backfill and validate standard tenant runtime identity and audit columns.",
+    name: "platform.tenant-runtime.standard-columns-v1",
+    statements: ["VALIDATE standard identity and audit columns"]
   }
 ] as const;
 
+const tenantRuntimeTableNames = [
+  "schema_migrations",
+  "module_settings",
+  "permissions",
+  "role_permissions",
+  "roles",
+  "user_roles",
+  "users"
+] as const;
+
+const tenantRuntimePrefixPolicy = { include: tenantRuntimeTableNames, prefix: "app_" } as const;
+
+export const tenantRuntimeMigrationBatch: MigrationBatch<TenantDatabase> = {
+  batch: 1,
+  description: "Tenant Platform runtime schema baseline through release 1.0.42.",
+  scope: "platform-tenant-runtime",
+  version: "1.0.42",
+  steps: [
+    {
+      checksum: tenantRuntimeTableNames.join(","),
+      description: "Rename legacy tenant runtime tables without copying or dropping data.",
+      down: (database) =>
+        rollbackTablePrefixPolicy(database, tenantRuntimePrefixPolicy).then(() => undefined),
+      name: "platform.tenant-runtime.table-prefix-v1",
+      up: (database) =>
+        applyTablePrefixPolicy(database, tenantRuntimePrefixPolicy).then(() => undefined),
+      version: 1
+    },
+    {
+      checksum: "platform.tenant-runtime.settings-v1",
+      description: "Tenant application module settings.",
+      name: "platform.tenant-runtime.settings-v1",
+      up: migrateTenantModuleSettings,
+      version: 1
+    },
+    {
+      checksum: `${tenantUserMigration.key}:v1`,
+      description: "Tenant users and authentication identities.",
+      name: tenantUserMigration.key,
+      up: migrateTenantUserModule,
+      version: 1
+    },
+    {
+      checksum: `${tenantRoleMigration.key}:v1`,
+      description: "Tenant roles and lifecycle state.",
+      name: tenantRoleMigration.key,
+      up: migrateTenantRoleModule,
+      version: 1
+    },
+    {
+      checksum: `${tenantPermissionMigration.key}:v1`,
+      description: "Tenant permission catalog.",
+      name: tenantPermissionMigration.key,
+      up: migrateTenantPermissionModule,
+      version: 1
+    },
+    {
+      checksum: `${tenantUserRoleMigration.key}:v1`,
+      description: "Tenant user-to-role assignments.",
+      name: tenantUserRoleMigration.key,
+      up: migrateTenantUserRoleModule,
+      version: 1
+    },
+    {
+      checksum: `${tenantRolePermissionMigration.key}:v1`,
+      description: "Tenant role-to-permission assignments.",
+      name: tenantRolePermissionMigration.key,
+      up: migrateTenantRolePermissionModule,
+      version: 1
+    },
+    {
+      checksum: `standard-columns:${tenantRuntimeTableNames.join(",")}`,
+      description: "Backfill and validate standard tenant runtime identity and audit columns.",
+      name: "platform.tenant-runtime.standard-columns-v1",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          tenantRuntimeTableNames
+            .filter((tableName) => tableName !== "schema_migrations")
+            .map((tableName) => `app_${tableName}`)
+        ),
+      version: 1
+    },
+    {
+      checksum: `uuid-defaults:${tenantRuntimeTableNames.join(",")}`,
+      description: "Add database-generated UUID defaults for repeatable tenant runtime writes.",
+      name: "platform.tenant-runtime.uuid-defaults-v2",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          tenantRuntimeTableNames
+            .filter((tableName) => tableName !== "schema_migrations")
+            .map((tableName) => `app_${tableName}`)
+        ),
+      version: 2
+    }
+  ]
+};
+
 export async function migrateTenantRegistryModule(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("tenants")
+    .createTable("app_tenants")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -86,11 +192,24 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
     .addColumn("payload_settings", "json", (col) => col.notNull())
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updated_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
   await ensureTenantColumns(database);
+  await database
+    .updateTable("app_tenants")
+    .set({ corporate_id: sql<string>`UPPER(tenant_code)` })
+    .where("corporate_id", "is", null)
+    .execute();
+  await database.schema
+    .createIndex("tenants_corporate_id_unique")
+    .ifNotExists()
+    .unique()
+    .on("app_tenants")
+    .column("corporate_id")
+    .execute();
 
   await database.schema
-    .createTable("tenant_audit_events")
+    .createTable("app_tenant_audit_events")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -98,150 +217,128 @@ export async function migrateTenantRegistryModule(database: Kysely<PlatformDatab
     .addColumn("event_name", "varchar(120)", (col) => col.notNull())
     .addColumn("actor_email", "varchar(180)", (col) => col.notNull())
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addForeignKeyConstraint(
+      "app_tenant_audit_events_tenant_fk",
+      ["tenant_id"],
+      "app_tenants",
+      ["id"],
+      (constraint) => constraint.onDelete("cascade")
+    )
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
+    .addColumn("updated_at", "datetime", (col) =>
+      col
+        .notNull()
+        .defaultTo(sql`CURRENT_TIMESTAMP`)
+        .modifyEnd(sql`ON UPDATE CURRENT_TIMESTAMP`)
+    )
     .execute();
 
   await database.schema
     .createIndex("tenant_audit_events_tenant_id_idx")
     .ifNotExists()
-    .on("tenant_audit_events")
+    .on("app_tenant_audit_events")
     .column("tenant_id")
     .execute();
 }
 
 export async function migrateTenantRuntimeModule(database: Kysely<TenantDatabase>) {
   console.info("[database] migrating tenant runtime module tables");
-  await renameLegacyTenantRuntimeTables(database);
-  await database.schema
-    .createTable("schema_migrations")
-    .ifNotExists()
-    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("name", "varchar(160)", (col) => col.notNull().unique())
-    .addColumn("applied_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .execute();
+  await runMigrationBatch(database, tenantRuntimeMigrationBatch, { batchSize: 5 });
+}
 
+export async function rollbackTenantRuntimeModule(database: Kysely<TenantDatabase>) {
+  return rollbackMigrationBatch(database, tenantRuntimeMigrationBatch);
+}
+
+async function migrateTenantModuleSettings(database: Kysely<TenantDatabase>) {
   await database.schema
-    .createTable("module_settings")
+    .createTable("app_module_settings")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
     .addColumn("module_key", "varchar(160)", (col) => col.notNull().unique())
     .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("settings_json", "json", (col) => col.notNull())
+    .addColumn("status", "varchar(32)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updated_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
-
-  await database
-    .insertInto("schema_migrations")
-    .ignore()
-    .values([{ name: "001_tenant_foundation" }, { name: "002_runtime_table_names" }])
-    .execute();
-
-  await migrateTenantUserModule(database);
-  await migrateTenantRoleModule(database);
-  await migrateTenantPermissionModule(database);
-  await migrateTenantUserRoleModule(database);
-  await migrateTenantRolePermissionModule(database);
-
-  await database
-    .insertInto("schema_migrations")
-    .ignore()
-    .values({ name: "004_flatten_access_table_names" })
-    .execute();
-  console.info(
-    "[database] tenant runtime migrations applied through: 004_flatten_access_table_names"
-  );
-}
-
-const tenantRuntimeTableRenames = [
-  ["tenant_migrations", "schema_migrations"],
-  ["tenant_module_settings", "module_settings"],
-  ["tenant_users", "users"],
-  ["tenant_roles", "roles"],
-  ["tenant_permissions", "permissions"],
-  ["tenant_role_permissions", "role_permissions"],
-  ["tenant_user_roles", "user_roles"],
-  ["access_users", "users"],
-  ["access_roles", "roles"],
-  ["access_permissions", "permissions"],
-  ["access_role_permissions", "role_permissions"],
-  ["access_user_roles", "user_roles"]
-] as const;
-
-async function renameLegacyTenantRuntimeTables(database: Kysely<TenantDatabase>) {
-  for (const [legacyName, currentName] of tenantRuntimeTableRenames) {
-    if ((await tableExists(database, legacyName)) && !(await tableExists(database, currentName))) {
-      await sql.raw(`RENAME TABLE \`${legacyName}\` TO \`${currentName}\``).execute(database);
-    }
-  }
-}
-
-async function tableExists(database: Kysely<TenantDatabase>, tableName: string) {
-  const result = await sql<{ table_count: number | string }>`
-    SELECT COUNT(*) AS table_count
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ${tableName}
-  `.execute(database);
-  return Number(result.rows[0]?.table_count ?? 0) > 0;
 }
 
 async function ensureTenantColumns(database: Kysely<PlatformDatabase>) {
-  await addColumnIfMissing(database, "tenants", "uuid", "VARCHAR(8) NULL UNIQUE");
-  await addColumnIfMissing(database, "tenants", "corporate_id", "VARCHAR(120) NULL");
-  await addColumnIfMissing(database, "tenants", "mobile", "VARCHAR(40) NULL");
-  await addColumnIfMissing(database, "tenants", "slug", "VARCHAR(120) NULL");
-  await addColumnIfMissing(database, "tenants", "status", "VARCHAR(32) NOT NULL DEFAULT 'active'");
+  await addColumnIfMissing(database, "app_tenants", "uuid", "VARCHAR(8) NULL UNIQUE");
+  await addColumnIfMissing(database, "app_tenants", "corporate_id", "VARCHAR(120) NULL");
+  await addColumnIfMissing(database, "app_tenants", "mobile", "VARCHAR(40) NULL");
+  await addColumnIfMissing(database, "app_tenants", "slug", "VARCHAR(120) NULL");
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
+    "status",
+    "VARCHAR(32) NOT NULL DEFAULT 'active'"
+  );
+  await addColumnIfMissing(
+    database,
+    "app_tenants",
     "db_type",
     "VARCHAR(32) NOT NULL DEFAULT 'mariadb'"
   );
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "db_host",
     "VARCHAR(180) NOT NULL DEFAULT '127.0.0.1'"
   );
-  await addColumnIfMissing(database, "tenants", "db_port", "INT NOT NULL DEFAULT 3306");
-  await addColumnIfMissing(database, "tenants", "db_name", "VARCHAR(120) NULL");
-  await addColumnIfMissing(database, "tenants", "db_user", "VARCHAR(120) NOT NULL DEFAULT 'root'");
+  await addColumnIfMissing(database, "app_tenants", "db_port", "INT NOT NULL DEFAULT 3306");
+  await addColumnIfMissing(database, "app_tenants", "db_name", "VARCHAR(120) NULL");
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
+    "db_user",
+    "VARCHAR(120) NOT NULL DEFAULT 'root'"
+  );
+  await addColumnIfMissing(
+    database,
+    "app_tenants",
     "db_secret_ref",
     "VARCHAR(180) NOT NULL DEFAULT 'DB_PASSWORD'"
   );
-  await addColumnIfMissing(database, "tenants", "enabled_module_keys", "LONGTEXT NULL");
+  await addColumnIfMissing(database, "app_tenants", "enabled_module_keys", "LONGTEXT NULL");
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "default_landing_app",
     "VARCHAR(64) NOT NULL DEFAULT 'application'"
   );
-  await addColumnIfMissing(database, "tenants", "payload_settings", "LONGTEXT NULL");
-  await addColumnIfMissing(database, "tenants", "storage_root", "VARCHAR(255) NOT NULL DEFAULT ''");
+  await addColumnIfMissing(database, "app_tenants", "payload_settings", "LONGTEXT NULL");
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
+    "storage_root",
+    "VARCHAR(255) NOT NULL DEFAULT ''"
+  );
+  await addColumnIfMissing(
+    database,
+    "app_tenants",
     "storage_public_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "storage_private_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "created_at",
     "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
   );
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "updated_at",
     "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
   );

@@ -34,7 +34,7 @@ export class StockStatementRepository {
              financial_year.name AS financial_year_name,
              DATE_FORMAT(financial_year.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(financial_year.end_date, '%Y-%m-%d') AS financial_year_end
-      FROM companies company CROSS JOIN financial_years financial_year
+      FROM core_companies company CROSS JOIN core_financial_years financial_year
       WHERE company.id=${scope.companyId} AND company.status='active'
         AND financial_year.id=${scope.financialYearId} AND financial_year.status='active'
         ${companyId ? sql`AND company.id=${companyId}` : sql``}
@@ -47,8 +47,8 @@ export class StockStatementRepository {
     const database = await getBillingDatabase(databaseName);
     const pattern = `%${search.trim()}%`;
     const result = await sql<{ total: number }>`
-      SELECT COUNT(*) AS total FROM products product
-      LEFT JOIN hsn_codes hsn ON hsn.id=product.hsn_code_id
+      SELECT COUNT(*) AS total FROM core_products product
+      LEFT JOIN core_hsn_codes hsn ON hsn.id=product.hsn_code_id
       WHERE product.status='active' AND product.deleted_at IS NULL
         AND (${pattern}='%%' OR product.name LIKE ${pattern} OR COALESCE(hsn.code,'') LIKE ${pattern})
     `.execute(database);
@@ -120,9 +120,9 @@ function stockRows(companyId: number, from: string, to: string, search: string) 
              - COALESCE(SUM(movement.outward_quantity),0) AS closing_quantity,
            COALESCE(SUM(movement.purchase_value),0) AS purchase_value,
            COALESCE(SUM(movement.sales_value),0) AS sales_value
-    FROM products product
-    LEFT JOIN hsn_codes hsn ON hsn.id=product.hsn_code_id
-    LEFT JOIN units unit ON unit.id=product.unit_id
+    FROM core_products product
+    LEFT JOIN core_hsn_codes hsn ON hsn.id=product.hsn_code_id
+    LEFT JOIN core_units unit ON unit.id=product.unit_id
     LEFT JOIN (
       SELECT item.product_id,
         CASE WHEN purchase.purchase_date<${from} THEN item.quantity ELSE 0 END AS opening_delta,

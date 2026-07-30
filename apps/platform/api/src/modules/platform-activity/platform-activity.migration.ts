@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migratePlatformActivityModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("platform_activity")
+    .createTable("app_platform_activity")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -16,6 +16,14 @@ export async function migratePlatformActivityModule(db: Kysely<PlatformDatabase>
     .addColumn("details_json", "json", (column) => column.notNull())
     .addColumn("created_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
+    )
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
+    .addColumn("updated_at", "datetime", (col) =>
+      col
+        .notNull()
+        .defaultTo(sql`CURRENT_TIMESTAMP`)
+        .modifyEnd(sql`ON UPDATE CURRENT_TIMESTAMP`)
     )
     .execute();
 }

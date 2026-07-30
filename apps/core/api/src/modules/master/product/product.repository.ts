@@ -41,11 +41,11 @@ export class ProductRepository {
       unit_id: number | string | null;
       tax_id: number | string | null;
     }>`SELECT
-      (SELECT id FROM product_types WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS type_id,
-      (SELECT id FROM product_categories WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS category_id,
-      (SELECT id FROM hsn_codes WHERE status='active' ORDER BY CASE WHEN TRIM(code)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS hsn_id,
-      (SELECT id FROM units WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS unit_id,
-      (SELECT id FROM taxes WHERE status='active' ORDER BY CASE WHEN TRIM(description)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS tax_id`.execute(
+      (SELECT id FROM core_product_types WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS type_id,
+      (SELECT id FROM core_product_categories WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS category_id,
+      (SELECT id FROM core_hsn_codes WHERE status='active' ORDER BY CASE WHEN TRIM(code)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS hsn_id,
+      (SELECT id FROM core_units WHERE status='active' ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS unit_id,
+      (SELECT id FROM core_taxes WHERE status='active' ORDER BY CASE WHEN TRIM(description)='-' THEN 0 ELSE 1 END, id LIMIT 1) AS tax_id`.execute(
       getCoreDatabase()
     );
     const row = result.rows[0];
@@ -59,31 +59,31 @@ export class ProductRepository {
   }
 
   async hasActiveProductType(id: number) {
-    const result = await sql<{ id: number }>`SELECT id FROM product_types
+    const result = await sql<{ id: number }>`SELECT id FROM core_product_types
       WHERE id=${id} AND status='active' LIMIT 1`.execute(getCoreDatabase());
     return Boolean(result.rows[0]);
   }
 
   async hasActiveProductCategory(id: number) {
-    const result = await sql<{ id: number }>`SELECT id FROM product_categories
+    const result = await sql<{ id: number }>`SELECT id FROM core_product_categories
       WHERE id=${id} AND status='active' LIMIT 1`.execute(getCoreDatabase());
     return Boolean(result.rows[0]);
   }
 
   async hasActiveHsnCode(id: number) {
-    const result = await sql<{ id: number }>`SELECT id FROM hsn_codes
+    const result = await sql<{ id: number }>`SELECT id FROM core_hsn_codes
       WHERE id=${id} AND status='active' LIMIT 1`.execute(getCoreDatabase());
     return Boolean(result.rows[0]);
   }
 
   async hasActiveUnit(id: number) {
-    const result = await sql<{ id: number }>`SELECT id FROM units
+    const result = await sql<{ id: number }>`SELECT id FROM core_units
       WHERE id=${id} AND status='active' LIMIT 1`.execute(getCoreDatabase());
     return Boolean(result.rows[0]);
   }
 
   async hasActiveTax(id: number) {
-    const result = await sql<{ id: number }>`SELECT id FROM taxes
+    const result = await sql<{ id: number }>`SELECT id FROM core_taxes
       WHERE id=${id} AND status='active' LIMIT 1`.execute(getCoreDatabase());
     return Boolean(result.rows[0]);
   }
@@ -91,14 +91,14 @@ export class ProductRepository {
   async list(filters: ProductListFilters = {}) {
     const search = filters.search?.trim().toLowerCase() ?? "";
     const result = await sql<ProductRow>`${productSelect()}
-      WHERE products.deleted_at IS NULL AND (${search} = '' OR LOWER(products.name) LIKE ${`%${search}%`})
-      ORDER BY products.name, products.id`.execute(getCoreDatabase());
+      WHERE core_products.deleted_at IS NULL AND (${search} = '' OR LOWER(core_products.name) LIKE ${`%${search}%`})
+      ORDER BY core_products.name, core_products.id`.execute(getCoreDatabase());
     return result.rows.map(toProduct);
   }
 
   async find(id: string | number) {
     const result = await sql<ProductRow>`${productSelect()}
-      WHERE products.id=${Number(id)} AND products.deleted_at IS NULL LIMIT 1`.execute(
+      WHERE core_products.id=${Number(id)} AND core_products.deleted_at IS NULL LIMIT 1`.execute(
       getCoreDatabase()
     );
     return result.rows[0] ? toProduct(result.rows[0]) : null;
@@ -106,7 +106,7 @@ export class ProductRepository {
 
   async create(input: ProductSaveInput) {
     const value = normalize(input);
-    const result = await sql`INSERT INTO products
+    const result = await sql`INSERT INTO core_products
       (uuid, name, product_type_id, product_category_id, hsn_code_id, unit_id, gst_tax_id,
        opening_qty, opening_price, status)
       VALUES (${randomBytes(4).toString("hex")}, ${value.name}, ${value.typeId},
@@ -119,7 +119,7 @@ export class ProductRepository {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
     const value = normalize(input, current);
-    await sql`UPDATE products SET name=${value.name}, product_type_id=${value.typeId},
+    await sql`UPDATE core_products SET name=${value.name}, product_type_id=${value.typeId},
       product_category_id=${value.productCategoryId}, hsn_code_id=${value.hsnCodeId},
       unit_id=${value.unitId}, gst_tax_id=${value.taxId}, opening_qty=${value.openingStock},
       opening_price=${value.openingRate}, status=${value.status}, updated_at=CURRENT_TIMESTAMP
@@ -130,7 +130,7 @@ export class ProductRepository {
   async setActive(id: string | number, active: boolean) {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
-    await sql`UPDATE products SET status=${active ? "active" : "suspend"},
+    await sql`UPDATE core_products SET status=${active ? "active" : "suspend"},
       updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
       getCoreDatabase()
     );
@@ -140,7 +140,7 @@ export class ProductRepository {
   async forceDelete(id: string | number) {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
-    await sql`UPDATE products SET status='deleted', deleted_at=CURRENT_TIMESTAMP,
+    await sql`UPDATE core_products SET status='deleted', deleted_at=CURRENT_TIMESTAMP,
       updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
       getCoreDatabase()
     );
@@ -192,15 +192,15 @@ function toProduct(row: ProductRow): ProductRecord {
   };
 }
 function productSelect() {
-  return sql`SELECT products.*, product_types.name AS product_type_name,
-    product_categories.name AS product_category_name, hsn_codes.code AS hsn_code,
-    units.name AS unit_name, taxes.description AS tax_name, taxes.rate_percent AS tax_rate
-    FROM products
-    LEFT JOIN product_types ON product_types.id=products.product_type_id
-    LEFT JOIN product_categories ON product_categories.id=products.product_category_id
-    LEFT JOIN hsn_codes ON hsn_codes.id=products.hsn_code_id
-    LEFT JOIN units ON units.id=products.unit_id
-    LEFT JOIN taxes ON taxes.id=products.gst_tax_id`;
+  return sql`SELECT core_products.*, core_product_types.name AS product_type_name,
+    core_product_categories.name AS product_category_name, core_hsn_codes.code AS hsn_code,
+    core_units.name AS unit_name, core_taxes.description AS tax_name, core_taxes.rate_percent AS tax_rate
+    FROM core_products
+    LEFT JOIN core_product_types ON core_product_types.id=core_products.product_type_id
+    LEFT JOIN core_product_categories ON core_product_categories.id=core_products.product_category_id
+    LEFT JOIN core_hsn_codes ON core_hsn_codes.id=core_products.hsn_code_id
+    LEFT JOIN core_units ON core_units.id=core_products.unit_id
+    LEFT JOIN core_taxes ON core_taxes.id=core_products.gst_tax_id`;
 }
 function nullableText(value: unknown) {
   const text = String(value ?? "").trim();

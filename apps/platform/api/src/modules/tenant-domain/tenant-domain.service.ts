@@ -1,6 +1,7 @@
 import { TenantDomainRepository } from "./tenant-domain.repository.js";
 import { TenantRepository } from "../tenant/tenant.repository.js";
 import type { TenantDomainSavePayload } from "./tenant-domain.types.js";
+import { tenantDomainVerificationName } from "./tenant-domain.repository.js";
 
 export class TenantDomainService {
   constructor(
@@ -43,4 +44,32 @@ export class TenantDomainService {
     if (!tenant || !Number.isInteger(domainId)) return null;
     return this.domains.update(domainId, { ...input, tenantId: tenant.id });
   }
+
+  async verifyDomain(id: string) {
+    const domainId = Number.parseInt(id, 10);
+    if (!Number.isInteger(domainId) || domainId <= 0) {
+      throw AppError.validation("Select a valid tenant domain.");
+    }
+    const domain = await this.domains.findById(domainId);
+    if (!domain) return null;
+    let records: string[][] = [];
+    try {
+      records = await resolveTxt(tenantDomainVerificationName(domain.domain));
+    } catch {
+      records = [];
+    }
+    const tokens = records
+      .map((parts) => parts.join("").trim())
+      .filter((value) => value.startsWith("codexsun-domain-verification="))
+      .map((value) => value.slice("codexsun-domain-verification=".length));
+    const verified = await this.domains.verify(domainId, tokens);
+    if (!verified) {
+      throw AppError.conflict(
+        `Publish the supplied TXT value at ${tenantDomainVerificationName(domain.domain)}, then retry.`
+      );
+    }
+    return verified;
+  }
 }
+import { resolveTxt } from "node:dns/promises";
+import { AppError } from "@codexsun/framework/errors";

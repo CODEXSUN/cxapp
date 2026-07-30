@@ -16,7 +16,7 @@ type WorkOrderTypesRow = {
 export class WorkOrderTypesRepository {
   async list(filters: WorkOrderTypesListFilters = {}) {
     const rows =
-      await sql<WorkOrderTypesRow>`SELECT id, name, status, sort_order FROM work_order_types
+      await sql<WorkOrderTypesRow>`SELECT id, name, status, sort_order FROM core_work_order_types
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toWorkOrderTypes);
@@ -24,13 +24,13 @@ export class WorkOrderTypesRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<WorkOrderTypesRow>`SELECT id, name, status, sort_order FROM work_order_types
+      await sql<WorkOrderTypesRow>`SELECT id, name, status, sort_order FROM core_work_order_types
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toWorkOrderTypes(rows.rows[0]) : null;
   }
 
   async create(input: WorkOrderTypesSavePayload) {
-    const result = await sql`INSERT INTO work_order_types (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_work_order_types (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -40,7 +40,7 @@ export class WorkOrderTypesRepository {
   async update(id: string | number, input: WorkOrderTypesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE work_order_types SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_work_order_types SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -50,7 +50,7 @@ export class WorkOrderTypesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE work_order_types SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_work_order_types SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -59,7 +59,7 @@ export class WorkOrderTypesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM work_order_types WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_work_order_types WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

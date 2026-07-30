@@ -90,6 +90,7 @@ try {
   assert.equal(initial.tenant.codexsunCompanies, 1);
   assert.equal(initial.tenant.currentFinancialYears, 1);
   assert.equal(initial.tenant.defaultCompanies, 1);
+  assert.equal(initial.tenant.defaultLandingApp, "billing");
   assert.equal(initial.tenant.demoSuppliers, 1);
   assert.equal(initial.tenant.billingSettings, 1);
   assert.equal(initial.tenant.billingTables, 8);
@@ -155,32 +156,35 @@ try {
 async function loadState() {
   await admin.changeUser({ database: masterDatabaseName });
   const platform = {
-    apps: await count("platform_apps"),
-    completedRuns: await countWhere("database_maintenance_runs", "status = 'completed'"),
-    plans: await count("plans"),
-    runningRuns: await countWhere("database_maintenance_runs", "status = 'running'"),
-    subscriptions: await count("subscriptions"),
-    tenantDomains: await count("tenant_domains"),
-    tenants: await count("tenants")
+    apps: await count("app_platform_apps"),
+    completedRuns: await countWhere("app_database_maintenance_runs", "status = 'completed'"),
+    plans: await count("app_plans"),
+    runningRuns: await countWhere("app_database_maintenance_runs", "status = 'running'"),
+    subscriptions: await count("app_subscriptions"),
+    tenantDomains: await count("app_tenant_domains"),
+    tenants: await count("app_tenants")
   };
 
   await admin.changeUser({ database: tenantDatabaseName });
   const tenant = {
     billingSettings: await countWhere(
       "billing_company_settings",
-      "settings_key = 'billing' AND company_id = (SELECT company_id FROM default_company_settings WHERE singleton_key = 1)"
+      "settings_key = 'billing' AND company_id = (SELECT company_id FROM core_default_company_settings WHERE singleton_key = 1)"
     ),
     billingTables: await countBillingRootTables(),
-    codexsunCompanies: await countWhere("companies", "name = 'codexsun'"),
-    companies: await count("companies"),
-    currentFinancialYears: await countWhere("financial_years", "is_current = 1"),
-    defaultCompanies: await count("default_company_settings"),
+    codexsunCompanies: await countWhere("core_companies", "name = 'codexsun'"),
+    companies: await count("core_companies"),
+    currentFinancialYears: await countWhere("core_financial_years", "is_current = 1"),
+    defaultCompanies: await count("core_default_company_settings"),
+    defaultLandingApp: await textValue(
+      "SELECT landing_app AS value FROM core_default_company_settings WHERE singleton_key = 1"
+    ),
     demoSuppliers: await countWhere(
-      "contacts",
+      "core_contacts",
       "code = 'C-0000' AND name = 'Codexsun Demo Supplier' AND status = 'active'"
     ),
     enabledBillingModules: await countWhere(
-      "module_settings",
+      "app_module_settings",
       "module_key = 'billing.sales' AND enabled = 1"
     ),
     mailTables: await countNamedTables([
@@ -189,8 +193,8 @@ async function loadState() {
       "mail_attachments",
       "mail_events"
     ]),
-    migrationCount: await count("schema_migrations"),
-    moduleSettings: await count("module_settings")
+    migrationCount: await count("app_migration_batches"),
+    moduleSettings: await count("app_module_settings")
   };
   return { platform, tenant };
 }
@@ -207,6 +211,11 @@ async function countWhere(tableName: string, predicate: string) {
     `SELECT COUNT(*) AS row_count FROM \`${tableName}\` WHERE ${predicate}`
   );
   return Number(rows[0]?.row_count ?? 0);
+}
+
+async function textValue(statement: string) {
+  const [rows] = await admin.query<Array<RowDataPacket & { value: string }>>(statement);
+  return String(rows[0]?.value ?? "");
 }
 
 async function countBillingRootTables() {
@@ -234,7 +243,7 @@ async function insertLegacyDuplicateRun(tenantId: number) {
   ] as const;
   for (const [uuid, status, completedAt] of values) {
     await admin.query(
-      "INSERT INTO database_maintenance_runs (uuid, database_scope, target_key, database_name, operation, status, details_json, created_at, completed_at) VALUES (?, 'tenant', ?, ?, 'migrate', ?, '{}', ?, ?)",
+      "INSERT INTO app_database_maintenance_runs (uuid, database_scope, target_key, database_name, operation, status, details_json, created_at, completed_at) VALUES (?, 'tenant', ?, ?, 'migrate', ?, '{}', ?, ?)",
       [uuid, String(tenantId), tenantDatabaseName, status, createdAt, completedAt]
     );
   }

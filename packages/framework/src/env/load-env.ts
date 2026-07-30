@@ -5,8 +5,9 @@ import type { z } from "zod";
 
 export function loadEnv<TSchema extends z.ZodTypeAny>(schema: TSchema): z.infer<TSchema> {
   const envPath = loadNearestEnvFile();
-  if (!envPath && process.env.CODEXSUN_ALLOW_MISSING_ENV !== "1") {
+  if (!envPath) {
     showMissingEnvBanner();
+    throw new Error("CODEXSUN requires a root .env file.");
   }
 
   const result = schema.safeParse(process.env);
@@ -22,7 +23,10 @@ function loadNearestEnvFile() {
   const envPath = findNearestEnvFile(process.cwd());
 
   if (envPath) {
-    dotenv.config({ path: envPath, quiet: true });
+    const result = dotenv.config({ override: true, path: envPath, quiet: true });
+    if (result.error) {
+      throw result.error;
+    }
   }
 
   return envPath;
@@ -73,7 +77,8 @@ Create one before starting the app:
   npm run env:jwt-secret
 
 Then fill DB_MASTER_NAME, DB_USER, DB_PASSWORD, and JWT_SECRET in .env.
-Only fill DEFAULT_TENANT_* when ENABLE_DEFAULT_TENANT_SEED=1 for tests.
+Every documented key must exist. Use an explicit empty value only for a
+documented optional integration.
 `);
 }
 
@@ -82,7 +87,8 @@ function showInvalidEnvBanner() {
 CODEXSUN environment is incomplete or invalid.
 
 Check .env and make sure database and JWT values are explicitly configured.
-Tenant/admin seed values are optional unless their seed flow is enabled.
+Every key in .env.example is mandatory. Optional integrations still require
+their keys and use explicit enable switches.
 Start from:
   Copy-Item .env.example .env
   npm run env:jwt-secret

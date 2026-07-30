@@ -58,9 +58,7 @@ async function registeredTenantDatabases() {
     connectTimeout: 5_000
   });
   try {
-    const [rows] = await connection.query(
-      "SELECT db_name FROM tenants WHERE db_name IS NOT NULL AND status <> 'deleted' ORDER BY id"
-    );
+    const [rows] = await connection.query("SELECT db_name FROM app_tenants WHERE db_name IS NOT NULL AND status <> 'deleted' ORDER BY id");
     return (rows as Array<{ db_name: string }>).map((row) => row.db_name);
   } finally {
     await connection.end();

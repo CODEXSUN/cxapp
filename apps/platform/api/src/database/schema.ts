@@ -9,35 +9,34 @@ export type TimestampColumn = ColumnType<
 >;
 
 export type PlatformDatabase = {
-  access_permissions: AccessPermissionsTable;
-  access_roles: AccessRolesTable;
-  access_users: AccessUsersTable;
-  codexsun_migrations: PlatformMigrationsTable;
-  database_maintenance_runs: DatabaseMaintenanceRunsTable;
-  entitlements: EntitlementsTable;
-  industries: IndustriesTable;
-  plans: PlansTable;
-  platform_activity: PlatformActivityTable;
-  platform_apps: PlatformAppsTable;
-  platform_auth_users: PlatformAuthUsersTable;
-  queue_jobs: QueueJobsTable;
-  queue_runtime_settings: QueueRuntimeSettingsTable;
-  password_reset_requests: PasswordResetRequestsTable;
-  storage_objects: StorageObjectsTable;
-  subscriptions: SubscriptionsTable;
-  tenant_domains: TenantDomainsTable;
-  tenant_audit_events: TenantAuditEventsTable;
-  tenants: TenantsTable;
+  app_access_permissions: AccessPermissionsTable;
+  app_access_roles: AccessRolesTable;
+  app_access_users: AccessUsersTable;
+  app_auth_sessions: AuthSessionsTable;
+  app_database_maintenance_runs: DatabaseMaintenanceRunsTable;
+  app_entitlements: EntitlementsTable;
+  app_industries: IndustriesTable;
+  app_plans: PlansTable;
+  app_platform_activity: PlatformActivityTable;
+  app_platform_apps: PlatformAppsTable;
+  app_platform_auth_users: PlatformAuthUsersTable;
+  app_queue_jobs: QueueJobsTable;
+  app_queue_runtime_settings: QueueRuntimeSettingsTable;
+  app_password_reset_requests: PasswordResetRequestsTable;
+  app_storage_objects: StorageObjectsTable;
+  app_subscriptions: SubscriptionsTable;
+  app_tenant_domains: TenantDomainsTable;
+  app_tenant_audit_events: TenantAuditEventsTable;
+  app_tenants: TenantsTable;
 };
 
 export type TenantDatabase = {
-  schema_migrations: TenantMigrationsTable;
-  module_settings: TenantModuleSettingsTable;
-  permissions: TenantPermissionsTable;
-  role_permissions: TenantRolePermissionsTable;
-  roles: TenantRolesTable;
-  user_roles: TenantUserRolesTable;
-  users: TenantUsersTable;
+  app_module_settings: TenantModuleSettingsTable;
+  app_permissions: TenantPermissionsTable;
+  app_role_permissions: TenantRolePermissionsTable;
+  app_roles: TenantRolesTable;
+  app_user_roles: TenantUserRolesTable;
+  app_users: TenantUsersTable;
 };
 
 export type PlatformAppsTable = {
@@ -155,6 +154,27 @@ export type PlatformAuthUsersTable = {
   status: "active" | "inactive";
   updated_at: TimestampColumn;
   user_type: "staff" | "super_admin";
+  uuid: string;
+};
+
+export type AuthSessionsTable = {
+  context_json: string;
+  created_at: TimestampColumn;
+  expires_at: TimestampColumn;
+  id: Generated<number>;
+  jti: string;
+  last_seen_at: TimestampColumn;
+  login_host: string;
+  revoked_at: TimestampColumn | null;
+  tenant_access_mode: "custom_domain" | "platform" | "shared_domain";
+  tenant_code: string | null;
+  tenant_db_name: string | null;
+  tenant_id: string | null;
+  updated_at: TimestampColumn;
+  user_email: string;
+  user_name: string | null;
+  user_type: "staff" | "super_admin" | "tenant";
+  user_uuid: string;
   uuid: string;
 };
 
@@ -288,8 +308,12 @@ export type TenantDomainsTable = {
   domain: string;
   id: Generated<number>;
   is_primary: boolean | number;
+  status: "active" | "disabled";
   tenant_id: number;
   uuid: string;
+  verification_status: "pending" | "verified";
+  verification_token_hash: string | null;
+  verified_at: TimestampColumn | null;
 };
 
 export type TenantMigrationsTable = {

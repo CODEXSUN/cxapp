@@ -1,6 +1,6 @@
 {
   "name": "@codexsun/core-api",
-  "version": "1.0.42",
+  "version": "1.0.43",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,7 +12,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@codexsun/framework": "^1.0.42",
+    "@codexsun/framework": "^1.0.43",
     "fastify": "^5.2.1",
     "kysely": "^0.29.0",
     "mysql2": "^3.22.3",

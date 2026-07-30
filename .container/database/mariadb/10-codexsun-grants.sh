@@ -12,8 +12,11 @@ apply_grants() {
   fi
 }
 
-db_user=${CODEXSUN_DB_USER:-root}
-db_password=${CODEXSUN_DB_PASSWORD:-${MARIADB_ROOT_PASSWORD}}
+: "${CODEXSUN_DB_USER:?CODEXSUN_DB_USER is required}"
+: "${CODEXSUN_DB_PASSWORD:?CODEXSUN_DB_PASSWORD is required}"
+: "${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}"
+db_user=$CODEXSUN_DB_USER
+db_password=$CODEXSUN_DB_PASSWORD
 escaped_user=$(printf '%s' "$db_user" | sed "s/'/''/g")
 escaped_password=$(printf '%s' "$db_password" | sed "s/'/''/g")
 

@@ -4,28 +4,28 @@ export const tenantUserRoleMigration = { key: "platform.tenant-user-role.foundat
 export async function migrateTenantUserRoleModule(database: Kysely<TenantDatabase>) {
   await sql
     .raw(
-      `CREATE TABLE IF NOT EXISTS user_roles (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,uuid VARCHAR(8) NOT NULL UNIQUE,user_id INT NOT NULL,role_id INT NOT NULL,status VARCHAR(24) NOT NULL DEFAULT 'active',is_protected BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY user_roles_pair_unique (user_id,role_id),CONSTRAINT user_roles_user_fk FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT user_roles_role_fk FOREIGN KEY (role_id) REFERENCES roles(id)) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+      `CREATE TABLE IF NOT EXISTS app_user_roles (created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,uuid VARCHAR(8) NOT NULL UNIQUE,user_id INT NOT NULL,role_id INT NOT NULL,status VARCHAR(24) NOT NULL DEFAULT 'active',is_protected BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY user_roles_pair_unique (user_id,role_id),CONSTRAINT user_roles_user_fk FOREIGN KEY (user_id) REFERENCES app_users(id) ON DELETE CASCADE,CONSTRAINT user_roles_role_fk FOREIGN KEY (role_id) REFERENCES app_roles(id) ON DELETE CASCADE) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     )
     .execute(database);
   if (!(await column(database, "id"))) {
     await sql
       .raw(
-        "ALTER TABLE user_roles DROP PRIMARY KEY, ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST, ADD UNIQUE KEY user_roles_pair_unique (user_id,role_id)"
+        "ALTER TABLE app_user_roles DROP PRIMARY KEY, ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST, ADD UNIQUE KEY user_roles_pair_unique (user_id,role_id)"
       )
       .execute(database);
   }
   if (!(await column(database, "uuid"))) {
     await sql
-      .raw("ALTER TABLE user_roles ADD COLUMN uuid VARCHAR(8) NULL AFTER id")
+      .raw("ALTER TABLE app_user_roles ADD COLUMN uuid VARCHAR(8) NULL AFTER id")
       .execute(database);
     await sql
       .raw(
-        "UPDATE user_roles SET uuid=LOWER(SUBSTRING(MD5(CONCAT('user-role:',user_id,':',role_id)),1,8)) WHERE uuid IS NULL"
+        "UPDATE app_user_roles SET uuid=LOWER(SUBSTRING(MD5(CONCAT('user-role:',user_id,':',role_id)),1,8)) WHERE uuid IS NULL"
       )
       .execute(database);
     await sql
       .raw(
-        "ALTER TABLE user_roles MODIFY uuid VARCHAR(8) NOT NULL, ADD UNIQUE KEY user_roles_uuid_unique (uuid)"
+        "ALTER TABLE app_user_roles MODIFY uuid VARCHAR(8) NOT NULL, ADD UNIQUE KEY user_roles_uuid_unique (uuid)"
       )
       .execute(database);
   }
@@ -40,20 +40,15 @@ export async function migrateTenantUserRoleModule(database: Kysely<TenantDatabas
   ] as const)
     if (!(await column(database, name)))
       await sql
-        .raw(`ALTER TABLE user_roles ADD COLUMN \`${name}\` ${definition}`)
+        .raw(`ALTER TABLE app_user_roles ADD COLUMN \`${name}\` ${definition}`)
         .execute(database);
-  await addFk(database, "user_roles_user_fk", "user_id", "users");
-  await addFk(database, "user_roles_role_fk", "role_id", "roles");
-  await database
-    .insertInto("schema_migrations")
-    .ignore()
-    .values({ name: tenantUserRoleMigration.key })
-    .execute();
+  await addFk(database, "user_roles_user_fk", "user_id", "app_users");
+  await addFk(database, "user_roles_role_fk", "role_id", "app_roles");
 }
 async function column(db: Kysely<TenantDatabase>, name: string) {
   const r = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_roles' AND COLUMN_NAME=${name}`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='app_user_roles' AND COLUMN_NAME=${name}`.execute(
     db
   );
   return Number(r.rows[0]?.count ?? 0) > 0;
@@ -61,13 +56,13 @@ async function column(db: Kysely<TenantDatabase>, name: string) {
 async function addFk(db: Kysely<TenantDatabase>, name: string, col: string, parent: string) {
   const r = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='user_roles' AND CONSTRAINT_NAME=${name}`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='app_user_roles' AND CONSTRAINT_NAME=${name}`.execute(
     db
   );
   if (!Number(r.rows[0]?.count ?? 0))
     await sql
       .raw(
-        `ALTER TABLE user_roles ADD CONSTRAINT \`${name}\` FOREIGN KEY (\`${col}\`) REFERENCES \`${parent}\`(id)`
+        `ALTER TABLE app_user_roles ADD CONSTRAINT \`${name}\` FOREIGN KEY (\`${col}\`) REFERENCES \`${parent}\`(id) ON DELETE CASCADE`
       )
       .execute(db);
 }

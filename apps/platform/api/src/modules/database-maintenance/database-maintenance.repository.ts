@@ -95,7 +95,7 @@ export class DatabaseMaintenanceRepository {
     targetKey: string;
   }) {
     const result = await getPlatformDatabase()
-      .insertInto("database_maintenance_runs")
+      .insertInto("app_database_maintenance_runs")
       .values({
         completed_at: input.status === "completed" || input.status === "failed" ? new Date() : null,
         database_name: input.databaseName,
@@ -114,7 +114,7 @@ export class DatabaseMaintenanceRepository {
 
   async findRun(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("database_maintenance_runs")
+      .selectFrom("app_database_maintenance_runs")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
@@ -123,7 +123,7 @@ export class DatabaseMaintenanceRepository {
 
   async updateRunStatus(id: number, status: DatabaseRunStatus, details: Record<string, unknown>) {
     await getPlatformDatabase()
-      .updateTable("database_maintenance_runs")
+      .updateTable("app_database_maintenance_runs")
       .set({
         completed_at: status === "completed" || status === "failed" ? new Date() : null,
         details_json: JSON.stringify(details),
@@ -136,7 +136,7 @@ export class DatabaseMaintenanceRepository {
 
   async latestCompletedBackup(scope: DatabaseScope, targetKey: string) {
     const rows = await getPlatformDatabase()
-      .selectFrom("database_maintenance_runs")
+      .selectFrom("app_database_maintenance_runs")
       .selectAll()
       .where("database_scope", "=", scope)
       .where("target_key", "=", targetKey)
@@ -151,7 +151,7 @@ export class DatabaseMaintenanceRepository {
 
   private async runs(scope: DatabaseScope, targetKey: string) {
     const rows = await getPlatformDatabase()
-      .selectFrom("database_maintenance_runs")
+      .selectFrom("app_database_maintenance_runs")
       .selectAll()
       .where("database_scope", "=", scope)
       .where("target_key", "=", targetKey)
@@ -212,7 +212,7 @@ export class DatabaseMaintenanceRepository {
       });
       try {
         const [rows] = await connection.query(
-          "SELECT name, applied_at FROM codexsun_migrations ORDER BY applied_at, id"
+          "SELECT name, applied_at FROM app_migration_batches WHERE status='applied' ORDER BY batch, id"
         );
         return Array.isArray(rows)
           ? rows.map((row) => ({
@@ -240,7 +240,7 @@ export class DatabaseMaintenanceRepository {
       });
       try {
         const [rows] = await connection.query(
-          "SELECT name, applied_at FROM schema_migrations ORDER BY applied_at, id"
+          "SELECT name, applied_at FROM app_migration_batches WHERE status='applied' ORDER BY scope, batch, id"
         );
         return Array.isArray(rows)
           ? rows.map((row) => ({

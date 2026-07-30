@@ -20,7 +20,7 @@ export class TenantRepository {
 
   async list() {
     const rows = await getPlatformDatabase()
-      .selectFrom("tenants")
+      .selectFrom("app_tenants")
       .selectAll()
       .orderBy("tenant_name", "asc")
       .execute();
@@ -33,7 +33,7 @@ export class TenantRepository {
     const numericId = Number.parseInt(normalized, 10);
 
     const row = await getPlatformDatabase()
-      .selectFrom("tenants")
+      .selectFrom("app_tenants")
       .selectAll()
       .where(
         sql<boolean>`
@@ -62,7 +62,7 @@ export class TenantRepository {
       uuid: normalizeUuid(input.uuid) || createPublicUuid()
     };
     const result = await getPlatformDatabase()
-      .insertInto("tenants")
+      .insertInto("app_tenants")
       .values(toTenantRow(tenantInput))
       .executeTakeFirst();
     const tenant: Tenant = {
@@ -82,7 +82,7 @@ export class TenantRepository {
     if (!existing) return null;
     const tenant = { ...existing, ...input, id: existing.id };
     await getPlatformDatabase()
-      .updateTable("tenants")
+      .updateTable("app_tenants")
       .set(toTenantRow(tenant))
       .where("id", "=", tenant.id)
       .execute();
@@ -98,22 +98,16 @@ export class TenantRepository {
     const corporateId = normalizeIdentity(value);
     if (!corporateId) return null;
     const row = await getPlatformDatabase()
-      .selectFrom("tenants")
+      .selectFrom("app_tenants")
       .selectAll()
       .where("status", "=", "active")
-      .where((eb) =>
-        eb.or([
-          eb(sql<string>`LOWER(corporate_id)`, "=", corporateId),
-          eb(sql<string>`LOWER(tenant_code)`, "=", corporateId),
-          eb(sql<string>`LOWER(slug)`, "=", corporateId)
-        ])
-      )
+      .where(sql<string>`LOWER(corporate_id)`, "=", corporateId)
       .executeTakeFirst();
     return row ? this.withPrimaryDomain(toTenant(row)) : null;
   }
 
   async findByDomain(value: string) {
-    const tenantId = await this.domains.findTenantIdByDomain(value);
+    const tenantId = await this.domains.findVerifiedTenantIdByDomain(value);
     if (!tenantId) return null;
     const tenant = await this.findByIdOrCode(String(tenantId));
     return tenant?.status === "active" ? tenant : null;
@@ -124,7 +118,7 @@ export class TenantRepository {
     if (!existing) return null;
     const tenant = { ...existing, status };
     await getPlatformDatabase()
-      .updateTable("tenants")
+      .updateTable("app_tenants")
       .set({ status })
       .where("id", "=", tenant.id)
       .execute();
@@ -169,7 +163,7 @@ export class TenantRepository {
     };
 
     await getPlatformDatabase()
-      .updateTable("tenants")
+      .updateTable("app_tenants")
       .set({
         default_landing_app: defaultLandingApp,
         enabled_module_keys: JSON.stringify(normalizedKeys),
@@ -191,7 +185,7 @@ export class TenantRepository {
     const tenant = await this.findByIdOrCode(id);
     if (!tenant) return [];
     const rows = await getPlatformDatabase()
-      .selectFrom("tenant_audit_events")
+      .selectFrom("app_tenant_audit_events")
       .select(["id", "actor_email", "event_name", "created_at"])
       .where("tenant_id", "=", tenant.id)
       .orderBy("created_at", "desc")
@@ -208,16 +202,24 @@ export class TenantRepository {
   async findTenantUserByEmail(tenant: Tenant, email: string) {
     const database = getTenantDatabase(tenant);
     const row = await database
-      .selectFrom("users")
+      .selectFrom("app_users")
       .select(["id", "uuid", "name", "email", "password_hash", "role", "status"])
       .where(sql<string>`LOWER(email)`, "=", email.trim().toLowerCase())
       .executeTakeFirst();
     return row as TenantUserRow | undefined;
   }
 
+  async updateTenantUserPasswordHash(tenant: Tenant, userUuid: string, passwordHash: string) {
+    await getTenantDatabase(tenant)
+      .updateTable("app_users")
+      .set({ password_hash: passwordHash, updated_at: new Date() })
+      .where("uuid", "=", userUuid)
+      .execute();
+  }
+
   private async audit(tenantId: number, eventName: string) {
     await getPlatformDatabase()
-      .insertInto("tenant_audit_events")
+      .insertInto("app_tenant_audit_events")
       .values({
         actor_email: "system@codexsun.app",
         event_name: eventName,

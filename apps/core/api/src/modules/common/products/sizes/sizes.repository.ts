@@ -11,20 +11,20 @@ type SizesRow = {
 
 export class SizesRepository {
   async list(filters: SizesListFilters = {}) {
-    const rows = await sql<SizesRow>`SELECT id, name, status, sort_order FROM sizes
+    const rows = await sql<SizesRow>`SELECT id, name, status, sort_order FROM core_sizes
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toSizes);
   }
 
   async find(id: string | number) {
-    const rows = await sql<SizesRow>`SELECT id, name, status, sort_order FROM sizes
+    const rows = await sql<SizesRow>`SELECT id, name, status, sort_order FROM core_sizes
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toSizes(rows.rows[0]) : null;
   }
 
   async create(input: SizesSavePayload) {
-    const result = await sql`INSERT INTO sizes (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_sizes (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -34,7 +34,7 @@ export class SizesRepository {
   async update(id: string | number, input: SizesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE sizes SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_sizes SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -44,7 +44,7 @@ export class SizesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE sizes SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_sizes SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -53,7 +53,7 @@ export class SizesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM sizes WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_sizes WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

@@ -50,18 +50,18 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       INDEX billing_export_sales_work_order (work_order_id),
       INDEX billing_export_sales_ledger (ledger_id),
       INDEX billing_export_sales_issued_status (issued_on, status),
-      CONSTRAINT billing_export_sales_company_fk FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES financial_years (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_customer_fk FOREIGN KEY (customer_id) REFERENCES contacts (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_billing_address_fk FOREIGN KEY (billing_address_id) REFERENCES contacts_addresses (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_shipping_address_fk FOREIGN KEY (shipping_address_id) REFERENCES contacts_addresses (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_work_order_fk FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_ledger_fk FOREIGN KEY (ledger_id) REFERENCES ledgers (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_currency_fk FOREIGN KEY (currency_id) REFERENCES currencies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_created_by_fk FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_updated_by_fk FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_confirmed_by_fk FOREIGN KEY (confirmed_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_company_fk FOREIGN KEY (company_id) REFERENCES core_companies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES core_financial_years (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_customer_fk FOREIGN KEY (customer_id) REFERENCES core_contacts (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_billing_address_fk FOREIGN KEY (billing_address_id) REFERENCES core_contacts_addresses (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_shipping_address_fk FOREIGN KEY (shipping_address_id) REFERENCES core_contacts_addresses (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_work_order_fk FOREIGN KEY (work_order_id) REFERENCES core_work_orders (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_ledger_fk FOREIGN KEY (ledger_id) REFERENCES core_ledgers (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_currency_fk FOREIGN KEY (currency_id) REFERENCES core_currencies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_created_by_fk FOREIGN KEY (created_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_updated_by_fk FOREIGN KEY (updated_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_confirmed_by_fk FOREIGN KEY (confirmed_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -73,6 +73,8 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_export_sales_items (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       export_sale_id INT NOT NULL,
@@ -102,13 +104,13 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       INDEX billing_export_sales_items_product (product_id),
       INDEX billing_export_sales_items_hsn (hsn_code_id),
       INDEX billing_export_sales_items_tax (tax_id),
-      CONSTRAINT billing_export_sales_items_exportSales_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_product_fk FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_hsn_fk FOREIGN KEY (hsn_code_id) REFERENCES hsn_codes (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_colour_fk FOREIGN KEY (colour_id) REFERENCES colours (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_size_fk FOREIGN KEY (size_id) REFERENCES sizes (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_unit_fk FOREIGN KEY (unit_id) REFERENCES units (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_items_tax_fk FOREIGN KEY (tax_id) REFERENCES taxes (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_items_exportSales_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
+      CONSTRAINT billing_export_sales_items_product_fk FOREIGN KEY (product_id) REFERENCES core_products (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_items_hsn_fk FOREIGN KEY (hsn_code_id) REFERENCES core_hsn_codes (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_items_colour_fk FOREIGN KEY (colour_id) REFERENCES core_colours (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_items_size_fk FOREIGN KEY (size_id) REFERENCES core_sizes (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_items_unit_fk FOREIGN KEY (unit_id) REFERENCES core_units (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_items_tax_fk FOREIGN KEY (tax_id) REFERENCES core_taxes (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -118,6 +120,7 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_export_sales_eway_bills (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       export_sale_id INT NOT NULL,
@@ -139,10 +142,10 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       UNIQUE KEY billing_export_sales_eway_uuid_unique (uuid),
       UNIQUE KEY billing_export_sales_eway_bill_unique (bill_number),
       INDEX billing_export_sales_eway_exportSale_status (export_sale_id, status),
-      CONSTRAINT billing_export_sales_eway_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_eway_transport_fk FOREIGN KEY (transport_id) REFERENCES transports (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_eway_generated_by_fk FOREIGN KEY (generated_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_eway_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_eway_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
+      CONSTRAINT billing_export_sales_eway_transport_fk FOREIGN KEY (transport_id) REFERENCES core_transports (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_eway_generated_by_fk FOREIGN KEY (generated_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_eway_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -152,6 +155,7 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_export_sales_einvoices (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       export_sale_id INT NOT NULL,
@@ -172,9 +176,9 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       UNIQUE KEY billing_export_sales_einvoice_uuid_unique (uuid),
       UNIQUE KEY billing_export_sales_einvoice_irn_unique (irn),
       INDEX billing_export_sales_einvoice_exportSale_status (export_sale_id, status),
-      CONSTRAINT billing_export_sales_einvoice_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_einvoice_generated_by_fk FOREIGN KEY (generated_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_einvoice_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_einvoice_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
+      CONSTRAINT billing_export_sales_einvoice_generated_by_fk FOREIGN KEY (generated_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_einvoice_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -199,10 +203,10 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       UNIQUE KEY billing_export_sales_comments_uuid_unique (uuid),
       INDEX billing_export_sales_comments_exportSale_created (export_sale_id, created_at),
       INDEX billing_export_sales_comments_parent (parent_comment_id),
-      CONSTRAINT billing_export_sales_comments_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_comments_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
       CONSTRAINT billing_export_sales_comments_parent_fk FOREIGN KEY (parent_comment_id) REFERENCES billing_export_sales_comments (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_comments_created_by_fk FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_comments_updated_by_fk FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_comments_created_by_fk FOREIGN KEY (created_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_export_sales_comments_updated_by_fk FOREIGN KEY (updated_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -212,6 +216,9 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_export_sales_activities (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       export_sale_id INT NOT NULL,
@@ -227,8 +234,8 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       UNIQUE KEY billing_export_sales_activities_uuid_unique (uuid),
       INDEX billing_export_sales_activities_exportSale_created (export_sale_id, created_at),
       INDEX billing_export_sales_activities_correlation (correlation_id),
-      CONSTRAINT billing_export_sales_activities_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_activities_actor_fk FOREIGN KEY (actor_user_id) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_activities_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
+      CONSTRAINT billing_export_sales_activities_actor_fk FOREIGN KEY (actor_user_id) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -238,6 +245,7 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_export_sales_entry_tools (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       export_sale_id INT NOT NULL,
@@ -255,8 +263,8 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
       UNIQUE KEY billing_export_sales_entry_tools_uuid_unique (uuid),
       INDEX billing_export_sales_entry_tools_exportSale_status (export_sale_id, status),
       INDEX billing_export_sales_entry_tools_requested (requested_by, requested_at),
-      CONSTRAINT billing_export_sales_entry_tools_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_export_sales_entry_tools_requested_by_fk FOREIGN KEY (requested_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_export_sales_entry_tools_exportSale_fk FOREIGN KEY (export_sale_id) REFERENCES billing_export_sales (id) ON DELETE CASCADE,
+      CONSTRAINT billing_export_sales_entry_tools_requested_by_fk FOREIGN KEY (requested_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -264,21 +272,21 @@ export async function migrateExportSalesModule<Database>(database: Kysely<Databa
 }
 
 const exportSalesParentTables = [
-  "colours",
-  "companies",
-  "contacts",
-  "contacts_addresses",
-  "currencies",
-  "financial_years",
-  "hsn_codes",
-  "ledgers",
-  "products",
-  "sizes",
-  "taxes",
-  "transports",
-  "units",
-  "users",
-  "work_orders"
+  "core_colours",
+  "core_companies",
+  "core_contacts",
+  "core_contacts_addresses",
+  "core_currencies",
+  "core_financial_years",
+  "core_hsn_codes",
+  "core_ledgers",
+  "core_products",
+  "core_sizes",
+  "core_taxes",
+  "core_transports",
+  "core_units",
+  "app_users",
+  "core_work_orders"
 ] as const;
 
 async function assertExportSalesParentSchema<Database>(database: Kysely<Database>) {
@@ -300,21 +308,21 @@ async function assertExportSalesParentSchema<Database>(database: Kysely<Database
       AND columns.COLUMN_NAME = 'id'
     WHERE tables.TABLE_SCHEMA = DATABASE()
       AND tables.TABLE_NAME IN (
-        'colours',
-        'companies',
-        'contacts',
-        'contacts_addresses',
-        'currencies',
-        'financial_years',
-        'hsn_codes',
-        'ledgers',
-        'products',
-        'sizes',
-        'taxes',
-        'transports',
-        'units',
-        'users',
-        'work_orders'
+        'core_colours',
+        'core_companies',
+        'core_contacts',
+        'core_contacts_addresses',
+        'core_currencies',
+        'core_financial_years',
+        'core_hsn_codes',
+        'core_ledgers',
+        'core_products',
+        'core_sizes',
+        'core_taxes',
+        'core_transports',
+        'core_units',
+        'app_users',
+        'core_work_orders'
       )
   `.execute(database);
 

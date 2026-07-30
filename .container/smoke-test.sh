@@ -36,9 +36,9 @@ case "$published_port" in
 esac
 echo "ok MariaDB host port: $published_port"
 
-db_password=$(env_value DB_PASSWORD "")
-db_user=$(env_value DB_USER root)
-master_db=$(env_value DB_MASTER_NAME codexsun_master_db)
+db_password=$(env_value DB_PASSWORD)
+db_user=$(env_value DB_USER)
+master_db=$(env_value DB_MASTER_NAME)
 case "$master_db" in
   *[!A-Za-z0-9_]*) echo "Unsafe DB_MASTER_NAME: $master_db" >&2; exit 78 ;;
 esac
@@ -49,8 +49,8 @@ docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
   | grep -qx 1
 echo "ok Platform master database"
 
-if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED 0)" = "1" ]; then
-  tenant_db=$(env_value DEFAULT_TENANT_DB_NAME "")
+if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
+  tenant_db=$(env_value DEFAULT_TENANT_DB_NAME)
   case "$tenant_db" in
     ""|*[!A-Za-z0-9_]*) echo "Unsafe DEFAULT_TENANT_DB_NAME: $tenant_db" >&2; exit 78 ;;
   esac
@@ -62,18 +62,18 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED 0)" = "1" ]; then
   enabled_product_apps=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
     mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
     --batch --skip-column-names \
-    -e "SELECT COUNT(*) FROM \`$tenant_db\`.module_settings WHERE module_key IN ('billing.sales','mail') AND enabled=1;")
+    -e "SELECT COUNT(*) FROM \`$tenant_db\`.app_module_settings WHERE module_key IN ('billing.sales','mail') AND enabled=1;")
   [ "$enabled_product_apps" = "2" ] || {
     echo "Billing and Mail are not both enabled in tenant database: $tenant_db" >&2
     exit 69
   }
   echo "ok default tenant database with Billing and Mail enabled"
 
-  if [ "$(env_value CODEXSUN_SINGLE_TENANT 1)" = "1" ]; then
+  if [ "$(env_value CODEXSUN_SINGLE_TENANT)" = "1" ]; then
     tenant_count=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
-      -e "SELECT COUNT(*) FROM tenants;")
+      -e "SELECT COUNT(*) FROM app_tenants;")
     [ "$tenant_count" = "1" ] || {
       echo "Single-tenant deployment expected exactly one tenant; found: $tenant_count" >&2
       exit 69
@@ -81,7 +81,7 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED 0)" = "1" ]; then
     default_tenant=$(docker exec -e MYSQL_PWD="$db_password" codexsun-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
-      -e "SELECT CONCAT(tenant_code, ':', db_name) FROM tenants LIMIT 1;")
+      -e "SELECT CONCAT(corporate_id, ':', db_name) FROM app_tenants LIMIT 1;")
     [ "$default_tenant" = "CODEXSUN:codexsun_db" ] || {
       echo "Unexpected default tenant mapping: $default_tenant" >&2
       exit 69

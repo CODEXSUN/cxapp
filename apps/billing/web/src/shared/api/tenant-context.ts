@@ -6,15 +6,14 @@ const FINANCIAL_YEAR_ID_KEY = "codexsun.tenant.financial-year-id";
 
 export function getToken(_desk?: "tenant"): string | null {
   try {
-    return localStorage.getItem(TENANT_TOKEN_KEY);
-  } catch {
-    return null;
-  }
+    localStorage.removeItem(TENANT_TOKEN_KEY);
+  } catch {}
+  return null;
 }
 
 export function getTenantId(): string | null {
   try {
-    return localStorage.getItem(TENANT_ID_KEY);
+    return sessionStorage.getItem(TENANT_ID_KEY);
   } catch {
     return null;
   }
@@ -22,7 +21,7 @@ export function getTenantId(): string | null {
 
 export function getTenantDbName(): string | null {
   try {
-    return localStorage.getItem(TENANT_DB_NAME_KEY);
+    return sessionStorage.getItem(TENANT_DB_NAME_KEY);
   } catch {
     return null;
   }
@@ -51,20 +50,11 @@ export function getTenantUserLabel(): string {
 }
 
 export function getTenantUserIdentity(): { email: string; name: string } {
-  const token = getToken("tenant");
-  if (!token) return { email: "", name: "Tenant User" };
-
   try {
-    const encoded = token.split(".")[1];
-    if (!encoded) return { email: "", name: "Tenant User" };
-    const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const payload = JSON.parse(atob(padded)) as {
-      email?: unknown;
-      name?: unknown;
-    };
-    const email = typeof payload.email === "string" ? payload.email.trim() : "";
-    const name = typeof payload.name === "string" ? payload.name.trim() : "";
+    const value = sessionStorage.getItem("codexsun.auth.identity");
+    const identity = value ? (JSON.parse(value) as { email?: unknown; name?: unknown }) : null;
+    const email = typeof identity?.email === "string" ? identity.email.trim() : "";
+    const name = typeof identity?.name === "string" ? identity.name.trim() : "";
     return {
       email,
       name: name || email.split("@")[0]?.trim() || "Tenant User"

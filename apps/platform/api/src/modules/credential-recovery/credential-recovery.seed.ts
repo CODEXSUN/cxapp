@@ -21,7 +21,7 @@ export async function seedCredentialRecoveryModule(database: Kysely<PlatformData
   ].filter((item) => item.email && item.password);
   for (const credential of credentials) {
     await database
-      .insertInto("platform_auth_users")
+      .insertInto("app_platform_auth_users")
       .values({
         email: credential.email,
         name: credential.name,

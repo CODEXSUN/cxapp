@@ -18,7 +18,7 @@ type PrioritiesRow = {
 export class PrioritiesRepository {
   async list(filters: PrioritiesListFilters = {}) {
     const rows =
-      await sql<PrioritiesRow>`SELECT id, name, colour, tag, status, sort_order FROM priorities
+      await sql<PrioritiesRow>`SELECT id, name, colour, tag, status, sort_order FROM core_priorities
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)} OR LOWER(colour) LIKE ${like(filters.search)} OR LOWER(tag) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toPriorities);
@@ -26,13 +26,13 @@ export class PrioritiesRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<PrioritiesRow>`SELECT id, name, colour, tag, status, sort_order FROM priorities
+      await sql<PrioritiesRow>`SELECT id, name, colour, tag, status, sort_order FROM core_priorities
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toPriorities(rows.rows[0]) : null;
   }
 
   async create(input: PrioritiesSavePayload) {
-    const result = await sql`INSERT INTO priorities (name, colour, tag, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_priorities (name, colour, tag, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.colour)}, ${normalizeString(input.tag)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -42,7 +42,7 @@ export class PrioritiesRepository {
   async update(id: string | number, input: PrioritiesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE priorities SET name=${normalizeString(input.name)}, colour=${normalizeString(input.colour)}, tag=${normalizeString(input.tag)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_priorities SET name=${normalizeString(input.name)}, colour=${normalizeString(input.colour)}, tag=${normalizeString(input.tag)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -52,7 +52,7 @@ export class PrioritiesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE priorities SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_priorities SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -61,7 +61,7 @@ export class PrioritiesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM priorities WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_priorities WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

@@ -12,10 +12,7 @@ const rootPackage = JSON.parse(
 ) as { version: string };
 
 export default defineConfig(({ command, mode }) => {
-  const runtimeEnv = {
-    ...loadEnv(mode, resolve(configDir, "../../.."), ""),
-    ...process.env
-  };
+  const runtimeEnv = loadEnv(mode, resolve(configDir, "../../.."), "");
 
   return {
     build: {
@@ -26,28 +23,23 @@ export default defineConfig(({ command, mode }) => {
     cacheDir: "../../../node_modules/.vite/platform-web",
     envDir: "../../..",
     define: {
-      __APP_VERSION__: JSON.stringify(rootPackage.version),
-      "import.meta.env.VITE_DEV_AUTO_TENANT_LOGIN": JSON.stringify(
-        runtimeEnv.DEV_AUTO_TENANT_LOGIN ?? "0"
-      ),
-      "import.meta.env.VITE_PLATFORM_API_URL": JSON.stringify("/api/platform"),
-      "import.meta.env.VITE_TENANT_NAME": JSON.stringify(
-        runtimeEnv.DEFAULT_TENANT_NAME || "Codexsun"
-      )
+      __APP_VERSION__: JSON.stringify(rootPackage.version)
     },
     plugins: [tailwindcss(), react()],
     ...(command === "serve"
       ? {
           server: {
-            allowedHosts: [
-              "sukraa.codexsun.com",
-              "cotton.codexsun.com",
-              "ganapathi.codexsun.com"
-            ],
+            allowedHosts: requireEnvValue(
+              runtimeEnv.PLATFORM_WEB_ALLOWED_HOSTS,
+              "PLATFORM_WEB_ALLOWED_HOSTS"
+            )
+              .split(",")
+              .map((host) => host.trim())
+              .filter(Boolean),
             headers: {
               "Permissions-Policy": "unload=*"
             },
-            host: "127.0.0.1",
+            host: requireEnvValue(runtimeEnv.PLATFORM_WEB_HOST, "PLATFORM_WEB_HOST"),
             port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
             proxy: {
               "/api/billing": {

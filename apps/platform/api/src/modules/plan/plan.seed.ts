@@ -7,7 +7,7 @@ export async function seedPlanModule(db: Kysely<PlatformDatabase>) {
     { code: "growth", name: "Growth", monthly: 2499, annual: 24990 }
   ])
     await db
-      .insertInto("plans")
+      .insertInto("app_plans")
       .values({
         annual_price: plan.annual,
         code: plan.code,

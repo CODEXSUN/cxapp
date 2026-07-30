@@ -6,28 +6,28 @@ export const tenantRolePermissionMigration = {
 export async function migrateTenantRolePermissionModule(database: Kysely<TenantDatabase>) {
   await sql
     .raw(
-      `CREATE TABLE IF NOT EXISTS role_permissions (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,uuid VARCHAR(8) NOT NULL UNIQUE,role_id INT NOT NULL,permission_id INT NOT NULL,status VARCHAR(24) NOT NULL DEFAULT 'active',is_protected BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY role_permissions_pair_unique (role_id,permission_id),CONSTRAINT role_permissions_role_fk FOREIGN KEY (role_id) REFERENCES roles(id),CONSTRAINT role_permissions_permission_fk FOREIGN KEY (permission_id) REFERENCES permissions(id)) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+      `CREATE TABLE IF NOT EXISTS app_role_permissions (created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,uuid VARCHAR(8) NOT NULL UNIQUE,role_id INT NOT NULL,permission_id INT NOT NULL,status VARCHAR(24) NOT NULL DEFAULT 'active',is_protected BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY role_permissions_pair_unique (role_id,permission_id),CONSTRAINT role_permissions_role_fk FOREIGN KEY (role_id) REFERENCES app_roles(id) ON DELETE CASCADE,CONSTRAINT role_permissions_permission_fk FOREIGN KEY (permission_id) REFERENCES app_permissions(id) ON DELETE CASCADE) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     )
     .execute(database);
   if (!(await column(database, "id"))) {
     await sql
       .raw(
-        "ALTER TABLE role_permissions DROP PRIMARY KEY, ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST, ADD UNIQUE KEY role_permissions_pair_unique (role_id,permission_id)"
+        "ALTER TABLE app_role_permissions DROP PRIMARY KEY, ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST, ADD UNIQUE KEY role_permissions_pair_unique (role_id,permission_id)"
       )
       .execute(database);
   }
   if (!(await column(database, "uuid"))) {
     await sql
-      .raw("ALTER TABLE role_permissions ADD COLUMN uuid VARCHAR(8) NULL AFTER id")
+      .raw("ALTER TABLE app_role_permissions ADD COLUMN uuid VARCHAR(8) NULL AFTER id")
       .execute(database);
     await sql
       .raw(
-        "UPDATE role_permissions SET uuid=LOWER(SUBSTRING(MD5(CONCAT('role-permission:',role_id,':',permission_id)),1,8)) WHERE uuid IS NULL"
+        "UPDATE app_role_permissions SET uuid=LOWER(SUBSTRING(MD5(CONCAT('role-permission:',role_id,':',permission_id)),1,8)) WHERE uuid IS NULL"
       )
       .execute(database);
     await sql
       .raw(
-        "ALTER TABLE role_permissions MODIFY uuid VARCHAR(8) NOT NULL, ADD UNIQUE KEY role_permissions_uuid_unique (uuid)"
+        "ALTER TABLE app_role_permissions MODIFY uuid VARCHAR(8) NOT NULL, ADD UNIQUE KEY role_permissions_uuid_unique (uuid)"
       )
       .execute(database);
   }
@@ -42,20 +42,15 @@ export async function migrateTenantRolePermissionModule(database: Kysely<TenantD
   ] as const)
     if (!(await column(database, name)))
       await sql
-        .raw(`ALTER TABLE role_permissions ADD COLUMN \`${name}\` ${definition}`)
+        .raw(`ALTER TABLE app_role_permissions ADD COLUMN \`${name}\` ${definition}`)
         .execute(database);
-  await addFk(database, "role_permissions_role_fk", "role_id", "roles");
-  await addFk(database, "role_permissions_permission_fk", "permission_id", "permissions");
-  await database
-    .insertInto("schema_migrations")
-    .ignore()
-    .values({ name: tenantRolePermissionMigration.key })
-    .execute();
+  await addFk(database, "role_permissions_role_fk", "role_id", "app_roles");
+  await addFk(database, "role_permissions_permission_fk", "permission_id", "app_permissions");
 }
 async function column(db: Kysely<TenantDatabase>, name: string) {
   const r = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='role_permissions' AND COLUMN_NAME=${name}`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='app_role_permissions' AND COLUMN_NAME=${name}`.execute(
     db
   );
   return Number(r.rows[0]?.count ?? 0) > 0;
@@ -63,13 +58,13 @@ async function column(db: Kysely<TenantDatabase>, name: string) {
 async function addFk(db: Kysely<TenantDatabase>, name: string, col: string, parent: string) {
   const r = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='role_permissions' AND CONSTRAINT_NAME=${name}`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='app_role_permissions' AND CONSTRAINT_NAME=${name}`.execute(
     db
   );
   if (!Number(r.rows[0]?.count ?? 0))
     await sql
       .raw(
-        `ALTER TABLE role_permissions ADD CONSTRAINT \`${name}\` FOREIGN KEY (\`${col}\`) REFERENCES \`${parent}\`(id)`
+        `ALTER TABLE app_role_permissions ADD CONSTRAINT \`${name}\` FOREIGN KEY (\`${col}\`) REFERENCES \`${parent}\`(id) ON DELETE CASCADE`
       )
       .execute(db);
 }

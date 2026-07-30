@@ -48,18 +48,18 @@ export async function migrateQuotationModule<Database>(database: Kysely<Database
       INDEX billing_quotations_work_order (work_order_id),
       INDEX billing_quotations_ledger (ledger_id),
       INDEX billing_quotations_date_status (quotation_date, status),
-      CONSTRAINT billing_quotations_company_fk FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES financial_years (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_customer_fk FOREIGN KEY (customer_id) REFERENCES contacts (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_billing_address_fk FOREIGN KEY (billing_address_id) REFERENCES contacts_addresses (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_shipping_address_fk FOREIGN KEY (shipping_address_id) REFERENCES contacts_addresses (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_work_order_fk FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_ledger_fk FOREIGN KEY (ledger_id) REFERENCES ledgers (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_currency_fk FOREIGN KEY (currency_id) REFERENCES currencies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_created_by_fk FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_updated_by_fk FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_confirmed_by_fk FOREIGN KEY (confirmed_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotations_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_quotations_company_fk FOREIGN KEY (company_id) REFERENCES core_companies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES core_financial_years (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_customer_fk FOREIGN KEY (customer_id) REFERENCES core_contacts (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_billing_address_fk FOREIGN KEY (billing_address_id) REFERENCES core_contacts_addresses (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_shipping_address_fk FOREIGN KEY (shipping_address_id) REFERENCES core_contacts_addresses (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_work_order_fk FOREIGN KEY (work_order_id) REFERENCES core_work_orders (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_ledger_fk FOREIGN KEY (ledger_id) REFERENCES core_ledgers (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_currency_fk FOREIGN KEY (currency_id) REFERENCES core_currencies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_created_by_fk FOREIGN KEY (created_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_updated_by_fk FOREIGN KEY (updated_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_confirmed_by_fk FOREIGN KEY (confirmed_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotations_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -71,6 +71,8 @@ export async function migrateQuotationModule<Database>(database: Kysely<Database
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_quotation_items (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       quotation_id INT NOT NULL,
@@ -100,13 +102,13 @@ export async function migrateQuotationModule<Database>(database: Kysely<Database
       INDEX billing_quotation_items_product (product_id),
       INDEX billing_quotation_items_hsn (hsn_code_id),
       INDEX billing_quotation_items_tax (tax_id),
-      CONSTRAINT billing_quotation_items_quotation_fk FOREIGN KEY (quotation_id) REFERENCES billing_quotations (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_product_fk FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_hsn_fk FOREIGN KEY (hsn_code_id) REFERENCES hsn_codes (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_colour_fk FOREIGN KEY (colour_id) REFERENCES colours (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_size_fk FOREIGN KEY (size_id) REFERENCES sizes (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_unit_fk FOREIGN KEY (unit_id) REFERENCES units (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_items_tax_fk FOREIGN KEY (tax_id) REFERENCES taxes (id) ON DELETE RESTRICT
+      CONSTRAINT billing_quotation_items_quotation_fk FOREIGN KEY (quotation_id) REFERENCES billing_quotations (id) ON DELETE CASCADE,
+      CONSTRAINT billing_quotation_items_product_fk FOREIGN KEY (product_id) REFERENCES core_products (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotation_items_hsn_fk FOREIGN KEY (hsn_code_id) REFERENCES core_hsn_codes (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotation_items_colour_fk FOREIGN KEY (colour_id) REFERENCES core_colours (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotation_items_size_fk FOREIGN KEY (size_id) REFERENCES core_sizes (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotation_items_unit_fk FOREIGN KEY (unit_id) REFERENCES core_units (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_quotation_items_tax_fk FOREIGN KEY (tax_id) REFERENCES core_taxes (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -116,6 +118,9 @@ export async function migrateQuotationModule<Database>(database: Kysely<Database
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_quotation_activities (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       quotation_id INT NOT NULL,
@@ -130,8 +135,8 @@ export async function migrateQuotationModule<Database>(database: Kysely<Database
       created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
       UNIQUE KEY billing_quotation_activities_uuid_unique (uuid),
       INDEX billing_quotation_activities_created (quotation_id, created_at),
-      CONSTRAINT billing_quotation_activities_quotation_fk FOREIGN KEY (quotation_id) REFERENCES billing_quotations (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_quotation_activities_actor_fk FOREIGN KEY (actor_user_id) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_quotation_activities_quotation_fk FOREIGN KEY (quotation_id) REFERENCES billing_quotations (id) ON DELETE CASCADE,
+      CONSTRAINT billing_quotation_activities_actor_fk FOREIGN KEY (actor_user_id) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )

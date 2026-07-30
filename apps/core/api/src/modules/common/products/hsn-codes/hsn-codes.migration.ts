@@ -11,7 +11,9 @@ export function migrateHsnCodes(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS hsn_codes (
+    CREATE TABLE IF NOT EXISTS core_hsn_codes (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       code VARCHAR(255) NOT NULL,
       description VARCHAR(255) NOT NULL,

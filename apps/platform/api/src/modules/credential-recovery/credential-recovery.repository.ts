@@ -11,12 +11,25 @@ import type {
 export class CredentialRecoveryRepository {
   async findPlatformCredential(userType: "staff" | "super_admin", email: string) {
     const row = await getPlatformDatabase()
-      .selectFrom("platform_auth_users")
+      .selectFrom("app_platform_auth_users")
       .selectAll()
       .where("user_type", "=", userType)
       .where("email", "=", normalizeEmail(email))
       .executeTakeFirst();
     return row ? toCredential(row) : null;
+  }
+
+  async updatePlatformCredentialPasswordHash(
+    userType: "staff" | "super_admin",
+    userUuid: string,
+    passwordHash: string
+  ) {
+    await getPlatformDatabase()
+      .updateTable("app_platform_auth_users")
+      .set({ password_hash: passwordHash, updated_at: new Date() })
+      .where("user_type", "=", userType)
+      .where("uuid", "=", userUuid)
+      .execute();
   }
 
   async createRequest(input: {
@@ -29,14 +42,14 @@ export class CredentialRecoveryRepository {
     userUuid: string;
   }) {
     await getPlatformDatabase()
-      .updateTable("password_reset_requests")
+      .updateTable("app_password_reset_requests")
       .set({ consumed_at: new Date() })
       .where("email", "=", normalizeEmail(input.email))
       .where("desk", "=", input.desk)
       .where("consumed_at", "is", null)
       .execute();
     const result = await getPlatformDatabase()
-      .insertInto("password_reset_requests")
+      .insertInto("app_password_reset_requests")
       .values({
         consumed_at: null,
         desk: input.desk,
@@ -54,7 +67,7 @@ export class CredentialRecoveryRepository {
 
   async findActiveRequest(tokenHash: string) {
     const row = await getPlatformDatabase()
-      .selectFrom("password_reset_requests")
+      .selectFrom("app_password_reset_requests")
       .selectAll()
       .where("token_hash", "=", tokenHash)
       .where("consumed_at", "is", null)
@@ -71,7 +84,7 @@ export class CredentialRecoveryRepository {
     if (request.desk === "tenant") {
       if (!tenantDatabase) return false;
       const result = await tenantDatabase
-        .updateTable("users")
+        .updateTable("app_users")
         .set({ password_hash: passwordHash, updated_at: new Date() })
         .where("uuid", "=", request.userUuid)
         .where("email", "=", request.email)
@@ -80,7 +93,7 @@ export class CredentialRecoveryRepository {
     }
     const userType = request.desk === "sa" ? "super_admin" : "staff";
     const result = await getPlatformDatabase()
-      .updateTable("platform_auth_users")
+      .updateTable("app_platform_auth_users")
       .set({ password_hash: passwordHash, updated_at: new Date() })
       .where("user_type", "=", userType)
       .where("uuid", "=", request.userUuid)
@@ -91,7 +104,7 @@ export class CredentialRecoveryRepository {
 
   async consume(id: number) {
     const result = await getPlatformDatabase()
-      .updateTable("password_reset_requests")
+      .updateTable("app_password_reset_requests")
       .set({ consumed_at: new Date() })
       .where("id", "=", id)
       .where("consumed_at", "is", null)
@@ -102,14 +115,14 @@ export class CredentialRecoveryRepository {
 
   async purgeExpired() {
     await getPlatformDatabase()
-      .deleteFrom("password_reset_requests")
+      .deleteFrom("app_password_reset_requests")
       .where("expires_at", "<", new Date(Date.now() - 24 * 60 * 60 * 1000))
       .execute();
   }
 
   private async findRequestById(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("password_reset_requests")
+      .selectFrom("app_password_reset_requests")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();

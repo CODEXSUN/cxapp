@@ -41,7 +41,7 @@ export class DistrictService {
     const count = await this.repository.dependentCount(id);
     if (count > 0) {
       throw AppError.conflict(
-        `District cannot be force deleted because it is referenced by ${count} cities.`,
+        `District cannot be force deleted because it is referenced by ${count} core_cities.`,
         { count }
       );
     }

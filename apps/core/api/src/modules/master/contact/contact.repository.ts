@@ -19,7 +19,7 @@ type ContactDatabase = Kysely<CoreDatabase> | Transaction<CoreDatabase>;
 export class ContactRepository {
   async createAddress(contactId: number, address: ContactAddress) {
     await getCoreDatabase()
-      .insertInto("contacts_addresses" as never)
+      .insertInto("core_contacts_addresses" as never)
       .values({ parent_id: contactId, ...toAddressRow(address) } as never)
       .executeTakeFirst();
     return this.find(String(contactId));
@@ -27,7 +27,7 @@ export class ContactRepository {
 
   async updateAddress(contactId: number, address: ContactAddress) {
     await getCoreDatabase()
-      .updateTable("contacts_addresses" as never)
+      .updateTable("core_contacts_addresses" as never)
       .set(toAddressRow(address) as never)
       .where("id" as never, "=", address.id as never)
       .where("parent_id" as never, "=", contactId as never)
@@ -50,24 +50,24 @@ export class ContactRepository {
       pincode_id: number | string | null;
       pincode_name: string | null;
     }>`SELECT
-      address_types.id AS address_type_id, address_types.name AS address_type_name,
-      countries.id AS country_id, countries.name AS country_name,
-      states.id AS state_id, states.name AS state_name,
-      districts.id AS district_id, districts.name AS district_name,
-      cities.id AS city_id, cities.name AS city_name,
-      pincodes.id AS pincode_id, pincodes.name AS pincode_name
-      FROM pincodes
-      INNER JOIN cities ON cities.id=pincodes.city_id AND cities.status='active'
-      INNER JOIN districts ON districts.id=cities.district_id AND districts.status='active'
-      INNER JOIN states ON states.id=districts.state_id AND states.status='active'
-      INNER JOIN countries ON countries.id=states.country_id AND countries.status='active'
-      CROSS JOIN address_types
-      WHERE pincodes.status='active' AND address_types.status='active'
+      core_address_types.id AS address_type_id, core_address_types.name AS address_type_name,
+      core_countries.id AS country_id, core_countries.name AS country_name,
+      core_states.id AS state_id, core_states.name AS state_name,
+      core_districts.id AS district_id, core_districts.name AS district_name,
+      core_cities.id AS city_id, core_cities.name AS city_name,
+      core_pincodes.id AS pincode_id, core_pincodes.name AS pincode_name
+      FROM core_pincodes
+      INNER JOIN core_cities ON core_cities.id=core_pincodes.city_id AND core_cities.status='active'
+      INNER JOIN core_districts ON core_districts.id=core_cities.district_id AND core_districts.status='active'
+      INNER JOIN core_states ON core_states.id=core_districts.state_id AND core_states.status='active'
+      INNER JOIN core_countries ON core_countries.id=core_states.country_id AND core_countries.status='active'
+      CROSS JOIN core_address_types
+      WHERE core_pincodes.status='active' AND core_address_types.status='active'
       ORDER BY
-        CASE WHEN TRIM(address_types.name)='-' THEN 0 ELSE 1 END,
-        CASE WHEN TRIM(pincodes.name)='-' AND TRIM(cities.name)='-' AND TRIM(districts.name)='-'
-          AND TRIM(states.name)='-' AND TRIM(countries.name)='-' THEN 0 ELSE 1 END,
-        address_types.id, pincodes.id
+        CASE WHEN TRIM(core_address_types.name)='-' THEN 0 ELSE 1 END,
+        CASE WHEN TRIM(core_pincodes.name)='-' AND TRIM(core_cities.name)='-' AND TRIM(core_districts.name)='-'
+          AND TRIM(core_states.name)='-' AND TRIM(core_countries.name)='-' THEN 0 ELSE 1 END,
+        core_address_types.id, core_pincodes.id
       LIMIT 1`.execute(getCoreDatabase());
     const row = result.rows[0];
     if (!row) throw new Error("Default address masters have not been seeded.");
@@ -92,7 +92,7 @@ export class ContactRepository {
 
   async nextCode() {
     const rows = (await getCoreDatabase()
-      .selectFrom("contacts" as never)
+      .selectFrom("core_contacts" as never)
       .select(["code" as never])
       .execute()) as Row[];
     const next =
@@ -106,7 +106,7 @@ export class ContactRepository {
   async list(search = "") {
     const database = getCoreDatabase();
     let query = database
-      .selectFrom("contacts" as never)
+      .selectFrom("core_contacts" as never)
       .selectAll()
       .where("deleted_at" as never, "is", null as never)
       .orderBy("code" as never);
@@ -128,7 +128,7 @@ export class ContactRepository {
   async find(id: number | string) {
     const database = getCoreDatabase();
     const row = (await database
-      .selectFrom("contacts" as never)
+      .selectFrom("core_contacts" as never)
       .selectAll()
       .where("id" as never, "=", Number(id) as never)
       .where("deleted_at" as never, "is", null as never)
@@ -140,7 +140,7 @@ export class ContactRepository {
   async findByCode(code: string, excludingId?: number) {
     const database = getCoreDatabase();
     let query = database
-      .selectFrom("contacts" as never)
+      .selectFrom("core_contacts" as never)
       .select(["id" as never])
       .where("code" as never, "=", code as never)
       .where("deleted_at" as never, "is", null as never);
@@ -153,7 +153,7 @@ export class ContactRepository {
     const database = getCoreDatabase();
     const id = await database.transaction().execute(async (transaction) => {
       const result = await transaction
-        .insertInto("contacts" as never)
+        .insertInto("core_contacts" as never)
         .values(toContactRow(draft) as never)
         .executeTakeFirst();
       const contactId = Number(result.insertId);
@@ -171,7 +171,7 @@ export class ContactRepository {
     const database = getCoreDatabase();
     await database.transaction().execute(async (transaction) => {
       await transaction
-        .updateTable("contacts" as never)
+        .updateTable("core_contacts" as never)
         .set(toContactRow(draft) as never)
         .where("id" as never, "=", numericId as never)
         .execute();
@@ -184,7 +184,7 @@ export class ContactRepository {
     const current = await this.find(id);
     if (!current || isProtectedContact(current)) return null;
     await getCoreDatabase()
-      .updateTable("contacts" as never)
+      .updateTable("core_contacts" as never)
       .set({ status: isActive ? "active" : "suspend" } as never)
       .where("id" as never, "=", Number(id) as never)
       .execute();
@@ -195,7 +195,7 @@ export class ContactRepository {
     const current = await this.find(id);
     if (!current || isProtectedContact(current)) return null;
     await getCoreDatabase()
-      .updateTable("contacts" as never)
+      .updateTable("core_contacts" as never)
       .set({ deleted_at: new Date(), status: "deleted" } as never)
       .where("id" as never, "=", Number(id) as never)
       .execute();
@@ -204,7 +204,7 @@ export class ContactRepository {
 
   async findContactType(id: number): Promise<ContactReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("contact_types" as never)
+      .selectFrom("core_contact_types" as never)
       .select(["id" as never, "name" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -214,7 +214,7 @@ export class ContactRepository {
 
   async findContactGroup(id: number): Promise<ContactReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("contact_groups" as never)
+      .selectFrom("core_contact_groups" as never)
       .select(["id" as never, "name" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -224,7 +224,7 @@ export class ContactRepository {
 
   async findAddressType(id: number): Promise<ContactReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("address_types" as never)
+      .selectFrom("core_address_types" as never)
       .select(["id" as never, "name" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -234,7 +234,7 @@ export class ContactRepository {
 
   async findBankName(id: number): Promise<ContactReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("bank_names" as never)
+      .selectFrom("core_bank_names" as never)
       .select(["id" as never, "name" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -244,7 +244,7 @@ export class ContactRepository {
 
   async findCountry(id: number): Promise<ContactReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("countries" as never)
+      .selectFrom("core_countries" as never)
       .select(["id" as never, "name" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -254,7 +254,7 @@ export class ContactRepository {
 
   async findState(id: number): Promise<ContactLocationReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("states" as never)
+      .selectFrom("core_states" as never)
       .select(["id" as never, "name" as never, "country_id" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -266,7 +266,7 @@ export class ContactRepository {
 
   async findDistrict(id: number): Promise<ContactLocationReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("districts" as never)
+      .selectFrom("core_districts" as never)
       .select(["id" as never, "name" as never, "state_id" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -278,7 +278,7 @@ export class ContactRepository {
 
   async findCity(id: number): Promise<ContactLocationReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("cities" as never)
+      .selectFrom("core_cities" as never)
       .select(["id" as never, "name" as never, "district_id" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -290,7 +290,7 @@ export class ContactRepository {
 
   async findPincode(id: number): Promise<ContactLocationReference | null> {
     const row = (await getCoreDatabase()
-      .selectFrom("pincodes" as never)
+      .selectFrom("core_pincodes" as never)
       .select(["id" as never, "name" as never, "city_id" as never])
       .where("id" as never, "=", id as never)
       .where("status" as never, "=", "active" as never)
@@ -543,31 +543,31 @@ async function hydrateContactChildren(database: ContactDatabase, records: Contac
   const ids = records.map(({ id }) => id);
   const [emails, phones, addresses, bankAccounts, socialLinks] = await Promise.all([
     database
-      .selectFrom("contacts_emails" as never)
+      .selectFrom("core_contacts_emails" as never)
       .selectAll()
       .where("parent_id" as never, "in", ids as never)
       .orderBy("sort_order" as never)
       .execute() as Promise<Row[]>,
     database
-      .selectFrom("contacts_phones" as never)
+      .selectFrom("core_contacts_phones" as never)
       .selectAll()
       .where("parent_id" as never, "in", ids as never)
       .orderBy("sort_order" as never)
       .execute() as Promise<Row[]>,
     database
-      .selectFrom("contacts_addresses" as never)
+      .selectFrom("core_contacts_addresses" as never)
       .selectAll()
       .where("parent_id" as never, "in", ids as never)
       .orderBy("sort_order" as never)
       .execute() as Promise<Row[]>,
     database
-      .selectFrom("contacts_bank_accounts" as never)
+      .selectFrom("core_contacts_bank_accounts" as never)
       .selectAll()
       .where("parent_id" as never, "in", ids as never)
       .orderBy("sort_order" as never)
       .execute() as Promise<Row[]>,
     database
-      .selectFrom("contacts_social_links" as never)
+      .selectFrom("core_contacts_social_links" as never)
       .selectAll()
       .where("parent_id" as never, "in", ids as never)
       .orderBy("sort_order" as never)
@@ -662,25 +662,25 @@ async function replaceContactChildren(
   record: ContactRecord
 ) {
   await database
-    .deleteFrom("contacts_emails" as never)
+    .deleteFrom("core_contacts_emails" as never)
     .where("parent_id" as never, "=", contactId as never)
     .execute();
   await database
-    .deleteFrom("contacts_phones" as never)
+    .deleteFrom("core_contacts_phones" as never)
     .where("parent_id" as never, "=", contactId as never)
     .execute();
   await database
-    .deleteFrom("contacts_bank_accounts" as never)
+    .deleteFrom("core_contacts_bank_accounts" as never)
     .where("parent_id" as never, "=", contactId as never)
     .execute();
   await database
-    .deleteFrom("contacts_social_links" as never)
+    .deleteFrom("core_contacts_social_links" as never)
     .where("parent_id" as never, "=", contactId as never)
     .execute();
 
   if (record.emails.length) {
     await database
-      .insertInto("contacts_emails" as never)
+      .insertInto("core_contacts_emails" as never)
       .values(
         record.emails.map((item) => ({
           parent_id: contactId,
@@ -694,7 +694,7 @@ async function replaceContactChildren(
   }
   if (record.phones.length) {
     await database
-      .insertInto("contacts_phones" as never)
+      .insertInto("core_contacts_phones" as never)
       .values(
         record.phones.map((item) => ({
           parent_id: contactId,
@@ -709,7 +709,7 @@ async function replaceContactChildren(
   await syncContactAddresses(database, contactId, record.addresses);
   if (record.bankAccounts.length) {
     await database
-      .insertInto("contacts_bank_accounts" as never)
+      .insertInto("core_contacts_bank_accounts" as never)
       .values(
         record.bankAccounts.map((item) => ({
           parent_id: contactId,
@@ -728,7 +728,7 @@ async function replaceContactChildren(
   }
   if (record.socialLinks.length) {
     await database
-      .insertInto("contacts_social_links" as never)
+      .insertInto("core_contacts_social_links" as never)
       .values(
         record.socialLinks.map((item) => ({
           parent_id: contactId,
@@ -748,7 +748,7 @@ async function syncContactAddresses(
   addresses: ContactAddress[]
 ) {
   const existingRows = (await database
-    .selectFrom("contacts_addresses" as never)
+    .selectFrom("core_contacts_addresses" as never)
     .select(["id" as never])
     .where("parent_id" as never, "=", contactId as never)
     .execute()) as Row[];
@@ -761,7 +761,7 @@ async function syncContactAddresses(
   for (const address of addresses) {
     if (!retainedIdSet.has(Number(address.id))) continue;
     await database
-      .updateTable("contacts_addresses" as never)
+      .updateTable("core_contacts_addresses" as never)
       .set(toAddressRow(address) as never)
       .where("id" as never, "=", Number(address.id) as never)
       .where("parent_id" as never, "=", contactId as never)
@@ -769,7 +769,7 @@ async function syncContactAddresses(
   }
 
   let deleteQuery = database
-    .deleteFrom("contacts_addresses" as never)
+    .deleteFrom("core_contacts_addresses" as never)
     .where("parent_id" as never, "=", contactId as never);
   if (retainedIds.length) {
     deleteQuery = deleteQuery.where("id" as never, "not in", retainedIds as never);
@@ -779,7 +779,7 @@ async function syncContactAddresses(
   const newAddresses = addresses.filter((address) => !retainedIdSet.has(Number(address.id)));
   if (newAddresses.length) {
     await database
-      .insertInto("contacts_addresses" as never)
+      .insertInto("core_contacts_addresses" as never)
       .values(
         newAddresses.map((address) => ({
           parent_id: contactId,

@@ -83,3 +83,13 @@ AI tools must:
 - Avoid cross-tenant retrieval.
 - Ask for confirmation before actions.
 - Never train on tenant data without explicit policy and consent.
+
+## Browser Session Security
+
+- Tenant selection and authentication are server decisions bound to a verified host.
+- Browser JWT or session storage in Web Storage is prohibited.
+- Production cookies must be encrypted, HttpOnly, Secure, host-only, SameSite Strict, and revocable.
+- Login and logout must clear legacy cookies and browser-readable tokens.
+- Signed claims must validate algorithm, type, issuer, audience, subject, expiry, session ID, tenant, and login host.
+- Cookie-authenticated state changes must reject cross-site requests and mismatched origins.
+- Cached tenant/company context is non-secret and non-authoritative; permissions and tenant lifecycle state are checked live.

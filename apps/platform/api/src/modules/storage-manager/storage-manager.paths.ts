@@ -29,7 +29,7 @@ export function workspaceRoot() {
 }
 
 export function appStorageRoot() {
-  return resolve(workspaceRoot(), env.STORAGE_ROOT || "storage/app");
+  return resolve(workspaceRoot(), env.STORAGE_ROOT);
 }
 
 export function appPublicStorageRoot() {

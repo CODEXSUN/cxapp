@@ -2,22 +2,27 @@ import { sql, type Kysely } from "kysely";
 import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateStorageManagerModule(database: Kysely<PlatformDatabase>) {
-  await addColumnIfMissing(database, "tenants", "storage_root", "VARCHAR(255) NOT NULL DEFAULT ''");
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
+    "storage_root",
+    "VARCHAR(255) NOT NULL DEFAULT ''"
+  );
+  await addColumnIfMissing(
+    database,
+    "app_tenants",
     "storage_public_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
   await addColumnIfMissing(
     database,
-    "tenants",
+    "app_tenants",
     "storage_private_root",
     "VARCHAR(255) NOT NULL DEFAULT ''"
   );
 
   await database.schema
-    .createTable("storage_objects")
+    .createTable("app_storage_objects")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -32,19 +37,21 @@ export async function migrateStorageManagerModule(database: Kysely<PlatformDatab
     .addColumn("checksum", "varchar(64)")
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updated_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
 
   await database.schema
     .createIndex("storage_objects_scope_idx")
     .ifNotExists()
-    .on("storage_objects")
+    .on("app_storage_objects")
     .columns(["scope", "tenant_id", "visibility"])
     .execute();
   await database.schema
     .createIndex("storage_objects_owner_path_idx")
     .ifNotExists()
     .unique()
-    .on("storage_objects")
+    .on("app_storage_objects")
     .columns(["scope", "tenant_id", "visibility", "relative_path"])
     .execute();
 }

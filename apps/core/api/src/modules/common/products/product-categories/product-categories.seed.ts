@@ -13,8 +13,7 @@ export async function seedProductCategories() {
     const seed = seeds[index]!;
     const match = existing.find((record) => identity(record.name) === identity(seed.name));
     const payload = { ...seed, isActive: true, sortOrder: index + 1 };
-    if (match) await repository.update(match.id, payload);
-    else await repository.create(payload);
+    if (!match) await repository.create(payload);
   }
 }
 

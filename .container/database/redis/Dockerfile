@@ -1,6 +1,6 @@
-ARG REDIS_BASE_IMAGE=redis:7.4-alpine
+ARG REDIS_BASE_IMAGE
 FROM ${REDIS_BASE_IMAGE}
 
-ARG CODEXSUN_VERSION=1.0.42
+ARG CODEXSUN_VERSION
 LABEL org.opencontainers.image.title="CODEXSUN Redis" \
       org.opencontainers.image.version="$CODEXSUN_VERSION"

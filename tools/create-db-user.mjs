@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -11,10 +11,10 @@ if (existsSync(envPath)) {
   process.loadEnvFile(envPath);
 }
 
-const client = process.env.MARIADB_CLIENT || "C:\\Program Files\\MariaDB 12.3\\bin\\mariadb.exe";
+const client = requiredEnv("MARIADB_CLIENT_PATH");
 
-const adminUser = requiredEnv("DB_ADMIN_USER");
-const adminPassword = process.env.DB_ADMIN_PASSWORD || "";
+const adminUser = requiredEnv("MARIADB_ADMIN_USER");
+const adminPassword = requiredEnv("MARIADB_ROOT_PASSWORD");
 const host = requiredEnv("DB_HOST");
 const port = requiredEnv("DB_PORT");
 const appUser = requiredEnv("DB_APP_USER");
@@ -22,9 +22,9 @@ const appPassword = requiredEnv("DB_APP_PASSWORD");
 const masterDb = requiredEnv("DB_MASTER_NAME");
 const tenantDb = requiredEnv("DEFAULT_TENANT_DB_NAME");
 
-if (!existsSync(client)) {
+if ((client.includes("/") || client.includes("\\")) && !existsSync(client)) {
   throw new Error(
-    `MariaDB client was not found at ${client}. Set MARIADB_CLIENT to the full mariadb.exe path.`
+    `MariaDB client was not found at ${client}. Set MARIADB_CLIENT_PATH to the executable path or command.`
   );
 }
 
@@ -53,13 +53,14 @@ if (adminPassword) {
 
 args.push("--default-character-set=utf8mb4", "-e", `source ${sqlPath.replace(/\\/g, "/")}`);
 
-execFileSync(client, args, {
-  stdio: "inherit"
-});
-
-console.log(
-  `Created MariaDB app user ${appUser}. Set DB_USER=${appUser} and DB_PASSWORD=${appPassword}.`
-);
+try {
+  execFileSync(client, args, {
+    stdio: "inherit"
+  });
+  console.log(`MariaDB application user ${appUser} was reconciled from .env.`);
+} finally {
+  rmSync(sqlPath, { force: true });
+}
 
 function requiredEnv(name) {
   const value = process.env[name]?.trim();

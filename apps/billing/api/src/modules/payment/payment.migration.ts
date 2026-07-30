@@ -11,6 +11,7 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_payments (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       company_id INT NOT NULL,
@@ -45,13 +46,13 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
       UNIQUE KEY billing_payments_line_unique (company_id, financial_year_id, line_number),
       INDEX billing_payments_supplier (supplier_id),
       INDEX billing_payments_date_status (payment_date, status),
-      CONSTRAINT billing_payments_company_fk FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES financial_years (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_currency_fk FOREIGN KEY (currency_id) REFERENCES currencies (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_supplier_fk FOREIGN KEY (supplier_id) REFERENCES contacts (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_ledger_fk FOREIGN KEY (ledger_id) REFERENCES ledgers (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_posted_by_fk FOREIGN KEY (posted_by) REFERENCES users (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payments_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE RESTRICT
+      CONSTRAINT billing_payments_company_fk FOREIGN KEY (company_id) REFERENCES core_companies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_financial_year_fk FOREIGN KEY (financial_year_id) REFERENCES core_financial_years (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_currency_fk FOREIGN KEY (currency_id) REFERENCES core_currencies (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_supplier_fk FOREIGN KEY (supplier_id) REFERENCES core_contacts (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_ledger_fk FOREIGN KEY (ledger_id) REFERENCES core_ledgers (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_posted_by_fk FOREIGN KEY (posted_by) REFERENCES app_users (id) ON DELETE RESTRICT,
+      CONSTRAINT billing_payments_cancelled_by_fk FOREIGN KEY (cancelled_by) REFERENCES app_users (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -61,6 +62,8 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_payment_allocations (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       payment_id INT NOT NULL,
@@ -73,8 +76,8 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
       UNIQUE KEY billing_payment_allocations_purchase_unique (payment_id, purchase_id),
       UNIQUE KEY billing_payment_allocations_line_unique (payment_id, line_number),
       INDEX billing_payment_allocations_purchase (purchase_id),
-      CONSTRAINT billing_payment_allocations_payment_fk FOREIGN KEY (payment_id) REFERENCES billing_payments (id) ON DELETE RESTRICT,
-      CONSTRAINT billing_payment_allocations_purchase_fk FOREIGN KEY (purchase_id) REFERENCES billing_purchases (id) ON DELETE RESTRICT
+      CONSTRAINT billing_payment_allocations_payment_fk FOREIGN KEY (payment_id) REFERENCES billing_payments (id) ON DELETE CASCADE,
+      CONSTRAINT billing_payment_allocations_purchase_fk FOREIGN KEY (purchase_id) REFERENCES billing_purchases (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -83,6 +86,9 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_payment_activities (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       payment_id INT NOT NULL,
@@ -94,7 +100,7 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
       created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
       UNIQUE KEY billing_payment_activities_uuid_unique (uuid),
       INDEX billing_payment_activities_payment_created (payment_id, created_at),
-      CONSTRAINT billing_payment_activities_payment_fk FOREIGN KEY (payment_id) REFERENCES billing_payments (id) ON DELETE RESTRICT
+      CONSTRAINT billing_payment_activities_payment_fk FOREIGN KEY (payment_id) REFERENCES billing_payments (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -103,12 +109,12 @@ export async function migratePaymentModule<Database>(database: Kysely<Database>)
 
 async function assertPaymentParentSchema<Database>(database: Kysely<Database>) {
   const required = [
-    "companies",
-    "financial_years",
-    "currencies",
-    "contacts",
-    "ledgers",
-    "users",
+    "core_companies",
+    "core_financial_years",
+    "core_currencies",
+    "core_contacts",
+    "core_ledgers",
+    "app_users",
     "billing_purchases"
   ];
   const result = await sql<{ table_name: string }>`

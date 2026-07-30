@@ -9,7 +9,7 @@ import type {
   Mailbox
 } from "./mail.types";
 
-const API_BASE_URL = import.meta.env.VITE_PLATFORM_API_URL as string;
+const API_BASE_URL = requiredRuntimeValue("VITE_PLATFORM_API_URL");
 
 export function listMail(mailbox: Mailbox, search = "") {
   return mailRequest<MailMessage[]>(
@@ -137,4 +137,15 @@ async function mailRequest<T>(path: string, init: RequestInit = {}) {
   if (!response.ok)
     throw new Error(body.error?.message ?? `Mail request failed: ${response.status}`);
   return body.data as T;
+}
+
+function requiredRuntimeValue(name: string) {
+  const runtime = (
+    window as Window & {
+      __CODEXSUN_RUNTIME_CONFIG__?: Readonly<Record<string, string>>;
+    }
+  ).__CODEXSUN_RUNTIME_CONFIG__;
+  const value = runtime?.[name]?.trim();
+  if (!value) throw new Error(`Missing required runtime configuration: ${name}`);
+  return value;
 }

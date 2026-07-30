@@ -46,6 +46,7 @@ async function billingApiRequest<T>(path: string, init?: RequestInit) {
   const companyId = getCompanyId();
   const financialYearId = getFinancialYearId();
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: "include",
     headers: {
       Accept: "application/json",
       ...(init?.body !== undefined ? { "Content-Type": "application/json" } : {}),

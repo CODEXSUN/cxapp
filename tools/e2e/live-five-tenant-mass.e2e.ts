@@ -94,11 +94,11 @@ try {
   await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
   const [masterCounts] = await admin.query<Array<RowDataPacket & MasterCounts>>(`
     SELECT
-      (SELECT COUNT(*) FROM tenants WHERE status='active') AS tenants,
-      (SELECT COUNT(*) FROM tenant_domains domain
-        INNER JOIN tenants tenant ON tenant.id=domain.tenant_id
+      (SELECT COUNT(*) FROM app_tenants WHERE status='active') AS app_tenants,
+      (SELECT COUNT(*) FROM app_tenant_domains domain
+        INNER JOIN app_tenants tenant ON tenant.id=domain.tenant_id
         WHERE tenant.status='active') AS domains,
-      (SELECT COUNT(*) FROM subscriptions WHERE status IN ('active','trial')) AS subscriptions
+      (SELECT COUNT(*) FROM app_subscriptions WHERE status IN ('active','trial')) AS app_subscriptions
   `);
   assert.equal(Number(masterCounts[0]?.tenants), 5);
   assert.equal(Number(masterCounts[0]?.domains), 5);
@@ -155,7 +155,7 @@ async function provisionTenants() {
   const tenants: Tenant[] = [];
   await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
   const [plans] = await admin.query<Array<RowDataPacket & { id: number }>>(
-    "SELECT id FROM plans WHERE code='starter' AND status='active' LIMIT 1"
+    "SELECT id FROM app_plans WHERE code='starter' AND status='active' LIMIT 1"
   );
   const planId = Number(plans[0]?.id);
   assert.ok(planId, "Starter plan was not seeded.");
@@ -188,7 +188,7 @@ async function provisionTenants() {
     }
     await admin.changeUser({ database: platformEnv.DB_MASTER_NAME });
     const [subscriptions] = await admin.query<Array<RowDataPacket & { id: number }>>(
-      "SELECT id FROM subscriptions WHERE tenant_id=? AND status IN ('active','trial') LIMIT 1",
+      "SELECT id FROM app_subscriptions WHERE tenant_id=? AND status IN ('active','trial') LIMIT 1",
       [tenant.id]
     );
     if (!subscriptions.length) {
@@ -305,40 +305,40 @@ async function createMassReferences(connection: Connection, tenant: Tenant) {
   const token = stableId(tenant.uuid);
   const actorEmail = `mass-${tenant.tenantCode.toLowerCase()}@example.test`;
   await connection.query(
-    `INSERT INTO users (uuid,email,name,password_hash,role,status,is_protected)
+    `INSERT INTO app_users (uuid,email,name,password_hash,role,status,is_protected)
      VALUES (?,?,?,'e2e-not-login','admin','active',TRUE)
      ON DUPLICATE KEY UPDATE name=VALUES(name),role='admin',status='active',is_protected=TRUE`,
     [stableId(actorEmail), actorEmail, `${tenant.tenantName} Mass Actor`]
   );
   await connection.query(
-    `INSERT INTO user_roles (uuid,user_id,role_id,status,is_protected)
-     SELECT ?,user.id,role.id,'active',TRUE FROM users user
-     INNER JOIN roles role ON role.key='admin' WHERE user.email=?
+    `INSERT INTO app_user_roles (uuid,user_id,role_id,status,is_protected)
+     SELECT ?,user.id,role.id,'active',TRUE FROM app_users user
+     INNER JOIN app_roles role ON role.key='admin' WHERE user.email=?
      ON DUPLICATE KEY UPDATE status='active',is_protected=TRUE`,
     [stableId(`user-role:${actorEmail}:admin`), actorEmail]
   );
   await connection.query(`
-    INSERT INTO contacts (uuid,code,name,status)
+    INSERT INTO core_contacts (uuid,code,name,status)
     VALUES ('${token.slice(0, 8)}','C-MASS','${tenant.tenantName} Mass Contact','active')
     ON DUPLICATE KEY UPDATE name=VALUES(name),status='active'
   `);
   await connection.query(`
-    INSERT INTO contacts_addresses (parent_id,address_line1,is_default,sort_order)
-    SELECT id,'${tenant.tenantCode} Mass Address',1,1 FROM contacts WHERE code='C-MASS'
-      AND NOT EXISTS (SELECT 1 FROM contacts_addresses a WHERE a.parent_id=contacts.id AND a.is_default=1)
+    INSERT INTO core_contacts_addresses (parent_id,address_line1,is_default,sort_order)
+    SELECT id,'${tenant.tenantCode} Mass Address',1,1 FROM core_contacts WHERE code='C-MASS'
+      AND NOT EXISTS (SELECT 1 FROM core_contacts_addresses a WHERE a.parent_id=core_contacts.id AND a.is_default=1)
   `);
   await connection.query(`
-    INSERT INTO work_orders (uuid,code,name,status)
+    INSERT INTO core_work_orders (uuid,code,name,status)
     VALUES ('${stableId(`${tenant.uuid}:work`)}','WO-MASS','${tenant.tenantName} Mass Work Order','active')
     ON DUPLICATE KEY UPDATE name=VALUES(name),status='active'
   `);
   await connection.query(`
-    INSERT INTO products (uuid,name,hsn_code_id,unit_id,gst_tax_id,status)
+    INSERT INTO core_products (uuid,name,hsn_code_id,unit_id,gst_tax_id,status)
     SELECT '${stableId(`${tenant.uuid}:product`)}','${tenant.tenantName} Mass Product',
-      (SELECT id FROM hsn_codes WHERE status='active' AND code<>'-' ORDER BY id LIMIT 1),
-      (SELECT id FROM units WHERE status='active' AND LOWER(name)='nos' LIMIT 1),
-      (SELECT id FROM taxes WHERE status='active' AND rate_percent=18 LIMIT 1),'active'
-    FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM products WHERE uuid='${stableId(`${tenant.uuid}:product`)}')
+      (SELECT id FROM core_hsn_codes WHERE status='active' AND code<>'-' ORDER BY id LIMIT 1),
+      (SELECT id FROM core_units WHERE status='active' AND LOWER(name)='nos' LIMIT 1),
+      (SELECT id FROM core_taxes WHERE status='active' AND rate_percent=18 LIMIT 1),'active'
+    FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM core_products WHERE uuid='${stableId(`${tenant.uuid}:product`)}')
   `);
 }
 
@@ -448,7 +448,7 @@ async function createRandomizedReferences(
 
   const [contactTypeRows] = await connection.query<
     Array<RowDataPacket & { id: number; name: string }>
-  >("SELECT id,name FROM contact_types WHERE status='active' ORDER BY id");
+  >("SELECT id,name FROM core_contact_types WHERE status='active' ORDER BY id");
   assert.ok(contactTypeRows.length, `${tenant.tenantCode} has no active contact types.`);
   const customerType =
     contactTypeRows.find((entry) => /customer|client/i.test(entry.name)) ?? contactTypeRows[0]!;
@@ -571,19 +571,19 @@ async function loadReferences(
       work_order.id AS work_order_id,ledger.id AS ledger_id,product.id AS product_id,
       hsn.id AS hsn_code_id,colour.id AS colour_id,size.id AS size_id,
       unit.id AS unit_id,tax.id AS tax_id
-    FROM default_company_settings defaults
-    INNER JOIN financial_years financial_year ON financial_year.id=defaults.financial_year_id
-    INNER JOIN currencies currency ON UPPER(currency.name)='INR' AND currency.status='active'
-    INNER JOIN contacts contact ON contact.code='C-MASS'
-    INNER JOIN contacts_addresses address ON address.parent_id=contact.id AND address.is_default=1
-    INNER JOIN work_orders work_order ON work_order.code='WO-MASS'
-    INNER JOIN ledgers ledger ON ledger.status='active' AND ledger.name<>'-'
-    INNER JOIN products product ON product.uuid='${stableId(`${tenant.uuid}:product`)}'
-    INNER JOIN hsn_codes hsn ON hsn.id=product.hsn_code_id
-    INNER JOIN colours colour ON colour.status='active' AND colour.name<>'-'
-    INNER JOIN sizes size ON size.status='active' AND size.name<>'-'
-    INNER JOIN units unit ON unit.id=product.unit_id
-    INNER JOIN taxes tax ON tax.id=product.gst_tax_id
+    FROM core_default_company_settings defaults
+    INNER JOIN core_financial_years financial_year ON financial_year.id=defaults.financial_year_id
+    INNER JOIN core_currencies currency ON UPPER(currency.name)='INR' AND currency.status='active'
+    INNER JOIN core_contacts contact ON contact.code='C-MASS'
+    INNER JOIN core_contacts_addresses address ON address.parent_id=contact.id AND address.is_default=1
+    INNER JOIN core_work_orders work_order ON work_order.code='WO-MASS'
+    INNER JOIN core_ledgers ledger ON ledger.status='active' AND ledger.name<>'-'
+    INNER JOIN core_products product ON product.uuid='${stableId(`${tenant.uuid}:product`)}'
+    INNER JOIN core_hsn_codes hsn ON hsn.id=product.hsn_code_id
+    INNER JOIN core_colours colour ON colour.status='active' AND colour.name<>'-'
+    INNER JOIN core_sizes size ON size.status='active' AND size.name<>'-'
+    INNER JOIN core_units unit ON unit.id=product.unit_id
+    INNER JOIN core_taxes tax ON tax.id=product.gst_tax_id
     WHERE defaults.singleton_key=1 LIMIT 1
   `);
   const row = rows[0];
@@ -804,11 +804,11 @@ async function assertRandomizedReferencesPersisted(
   await connection.changeUser({ database: tenant.dbName });
   const [rows] = await connection.query<Array<RowDataPacket & RandomReferenceCounts>>(
     `SELECT
-      (SELECT COUNT(*) FROM contacts WHERE name LIKE ?) AS contacts,
-      (SELECT COUNT(*) FROM products WHERE name LIKE ?) AS products,
-      (SELECT COUNT(*) FROM hsn_codes WHERE description LIKE ?) AS hsn_codes,
-      (SELECT COUNT(*) FROM taxes WHERE description LIKE ?) AS taxes,
-      (SELECT COUNT(*) FROM cities WHERE name LIKE ?) AS cities`,
+      (SELECT COUNT(*) FROM core_contacts WHERE name LIKE ?) AS core_contacts,
+      (SELECT COUNT(*) FROM core_products WHERE name LIKE ?) AS core_products,
+      (SELECT COUNT(*) FROM core_hsn_codes WHERE description LIKE ?) AS core_hsn_codes,
+      (SELECT COUNT(*) FROM core_taxes WHERE description LIKE ?) AS core_taxes,
+      (SELECT COUNT(*) FROM core_cities WHERE name LIKE ?) AS core_cities`,
     Array(5).fill(`%${runToken}%`)
   );
   const counts = rows[0];
@@ -816,7 +816,7 @@ async function assertRandomizedReferencesPersisted(
   assert.equal(
     Number(counts.contacts),
     references.customers.length + references.suppliers.length,
-    `${tenant.tenantCode} randomized contacts did not persist.`
+    `${tenant.tenantCode} randomized core_contacts did not persist.`
   );
   assert.equal(Number(counts.products), references.products.length);
   assert.equal(Number(counts.cities), references.locations.length);
@@ -831,8 +831,8 @@ async function verifyRandomReferenceIsolation(connection: Connection, tenants: T
       if (otherTenant.id === tenant.id) continue;
       const [rows] = await connection.query<Array<RowDataPacket & { count: number }>>(
         `SELECT
-          (SELECT COUNT(*) FROM contacts WHERE name LIKE ?) +
-          (SELECT COUNT(*) FROM products WHERE name LIKE ?) AS count`,
+          (SELECT COUNT(*) FROM core_contacts WHERE name LIKE ?) +
+          (SELECT COUNT(*) FROM core_products WHERE name LIKE ?) AS count`,
         [
           `${otherTenant.tenantName} Random % ${runToken}%`,
           `${otherTenant.tenantName} Random % ${runToken}%`
@@ -991,7 +991,7 @@ async function auditDatabase(connection: Connection, databaseName: string): Prom
       .filter(([, count]) => count === 0)
       .map(([tableName]) => tableName),
     foreignKeys: foreignKeys.length,
-    migrationCount: rowCounts.schema_migrations ?? 0,
+    migrationCount: rowCounts.app_migration_batches ?? 0,
     rowCounts,
     schema,
     tables: tableRows.length

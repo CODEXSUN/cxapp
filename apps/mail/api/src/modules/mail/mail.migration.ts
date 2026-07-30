@@ -1,15 +1,75 @@
+import {
+  ensureStandardTableColumns,
+  rollbackMigrationBatch,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@codexsun/framework/db";
 import { sql, type Kysely } from "kysely";
+
+type MailDatabase = Record<string, Record<string, unknown>>;
 
 export const mailMigration = {
   key: "mail.001_foundation",
   moduleKey: "mail"
 } as const;
 
-export async function migrateMailModule(database: Kysely<Record<string, Record<string, unknown>>>) {
+export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
+  batch: 1,
+  description: "Mail module-owned schema baseline through release 1.0.42.",
+  scope: "mail",
+  version: "1.0.42",
+  steps: [
+    {
+      checksum: `${mailMigration.key}:v1`,
+      description: "Mail settings, messages, attachments, and delivery events.",
+      name: mailMigration.key,
+      up: applyMailSchema,
+      version: 1
+    },
+    {
+      checksum: "standard-columns:mail_settings,mail_messages,mail_attachments,mail_events",
+      description: "Backfill and validate standard Mail table identity and audit columns.",
+      name: "mail.standard-columns-v1",
+      up: (database) =>
+        ensureStandardTableColumns(database, [
+          "mail_settings",
+          "mail_messages",
+          "mail_attachments",
+          "mail_events"
+        ]),
+      version: 1
+    },
+    {
+      checksum: "uuid-defaults:mail_settings,mail_messages,mail_attachments,mail_events",
+      description: "Add database-generated UUID defaults for repeatable Mail writes.",
+      name: "mail.uuid-defaults-v2",
+      up: (database) =>
+        ensureStandardTableColumns(database, [
+          "mail_settings",
+          "mail_messages",
+          "mail_attachments",
+          "mail_events"
+        ]),
+      version: 2
+    }
+  ]
+};
+
+export async function migrateMailModule(database: Kysely<MailDatabase>) {
+  await runMigrationBatch(database, mailMigrationBatch, { batchSize: 1 });
+}
+
+export async function rollbackMailModule(database: Kysely<MailDatabase>) {
+  return rollbackMigrationBatch(database, mailMigrationBatch);
+}
+
+async function applyMailSchema(database: Kysely<MailDatabase>) {
   await sql
     .raw(
       `
     CREATE TABLE IF NOT EXISTS mail_settings (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL UNIQUE,
       company_id INT NOT NULL DEFAULT 0,
@@ -80,6 +140,9 @@ export async function migrateMailModule(database: Kysely<Record<string, Record<s
     .raw(
       `
     CREATE TABLE IF NOT EXISTS mail_attachments (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL UNIQUE,
       mail_message_id INT NOT NULL,
@@ -99,6 +162,9 @@ export async function migrateMailModule(database: Kysely<Record<string, Record<s
     .raw(
       `
     CREATE TABLE IF NOT EXISTS mail_events (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL UNIQUE,
       mail_message_id INT NOT NULL,
@@ -113,8 +179,4 @@ export async function migrateMailModule(database: Kysely<Record<string, Record<s
   `
     )
     .execute(database);
-
-  await sql`INSERT IGNORE INTO schema_migrations (name) VALUES (${mailMigration.key})`.execute(
-    database
-  );
 }

@@ -11,7 +11,9 @@ export function migrateTaxes(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS taxes (
+    CREATE TABLE IF NOT EXISTS core_taxes (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       rate_percent DOUBLE NOT NULL,
       description VARCHAR(255) NOT NULL,

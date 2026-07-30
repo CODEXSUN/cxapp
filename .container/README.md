@@ -30,9 +30,21 @@ bash .container/update-runtime.sh
 
 `setup.sh` runs this command automatically. It updates `NODE_RUNTIME_VERSION` and `NPM_RUNTIME_VERSION` from `package.json`, pulls the matching Node base image, and verifies npm before the application build starts.
 
-On first use, `prepare-env.sh` creates the ignored `.container/deploy.env`. Database, super-admin, software-admin, and tenant-admin values are imported from the repository `.env`; missing infrastructure secrets are generated. The default deployment uses the Platform master database `codexsun_master_db` plus exactly one seeded tenant: `CODEXSUN`, backed by `codexsun_db`, with Billing and Mail enabled. Once created, deployment credentials are retained across subsequent setup and upgrade runs. Review the file before production use, especially public origins, registry, administrator values, and `CODEXSUN_VERIFIED_BACKUP_ID`.
+The ignored repository-root `.env` is the only deployment configuration source.
+Start with `.env.example`, then run `npm run env:configure` in a terminal. The
+interactive configurator preserves existing values by default, hides password
+input, and covers MariaDB, Redis, File Browser, super administrator, software
+administrator, tenant administrator, and default-tenant administrator
+credentials. Use `npm run env:deployment:check` before every deployment.
 
-Mail is available to the tenant by default. Configure `MAIL_ENABLED` and the `MAIL_SMTP_*`/`MAIL_FROM_*` values in `deploy.env` only when a verified SMTP provider is ready; tenant company Mail settings continue to take priority over this deployment fallback.
+For an automated host where application administrator credentials are already
+present, `npm run env:configure -- --non-interactive` fills documented
+non-secret deployment values and generates only missing infrastructure secrets.
+It never replaces an existing credential.
+
+Configure `MAIL_ENABLED` and the `MAIL_SMTP_*`/`MAIL_FROM_*` values in `.env`
+only when a verified SMTP provider is ready; tenant company Mail settings
+continue to take priority over this deployment fallback.
 
 `PLATFORM_API_PORT` and `PLATFORM_WEB_PORT` are the only published application port settings. `PLATFORM_API_URL` is the internal/server endpoint for the composed API. Browser builds use the same-origin `/api/platform` path; local Vite and the runtime nginx container proxy that path to Platform API. Core, Billing, Mail, and Platform all use that same composed API.
 
@@ -53,7 +65,7 @@ bash .container/clean.sh --yes --install billing
 
 This permanently deletes the Platform master database, `codexsun_db`, Redis
 state, uploaded Media, application storage, and database backups stored in the
-named CODEXSUN volumes. It preserves `.container/deploy.env`.
+named CODEXSUN volumes. It preserves `.env`.
 
 Docker does not expose reliable per-project ownership for BuildKit cache. To
 also remove all unused local Docker build cache, including cache from other
@@ -89,16 +101,18 @@ bash .container/deploy.sh billing up
 For a production-style immutable update, publish versioned images to a registry and pull them on the server:
 
 ```bash
-# Build machine / CI
-CODEXSUN_IMAGE_REGISTRY=registry.example.com/codexsun \
-  bash .container/deploy.sh billing publish
+# Build machine / CI: set CODEXSUN_IMAGE_REGISTRY in .env first.
+bash .container/deploy.sh billing publish
 
 # Deployment host
-CODEXSUN_IMAGE_REGISTRY=registry.example.com/codexsun \
-  bash .container/deploy.sh billing upgrade
+bash .container/deploy.sh billing upgrade
 ```
 
-`upgrade` pulls the selected version, runs its safe forward migrations, and recreates only that product's containers. It does not change `.container/deploy.env`, MariaDB, Redis, Media, uploads, or named volumes. Increment the root workspace version before publishing a new immutable release tag. Authenticate Docker to a private registry before `publish` or `upgrade`.
+`upgrade` pulls the selected version, runs its safe forward migrations, and
+recreates only that product's containers. It does not change `.env`, MariaDB,
+Redis, Media, uploads, or named volumes. Increment the root workspace version
+before publishing a new immutable release tag. Authenticate Docker to a private
+registry before `publish` or `upgrade`.
 
 Available actions are:
 
@@ -119,6 +133,12 @@ bash .container/deploy.sh PRODUCT down
 ## Persistent resources
 
 The stable Docker volumes include MariaDB data/backups, Redis data, Media files/metadata, and per-product application storage. MariaDB owns the Platform master database and tenant databases.
+
+Normal `setup`, `up`, and `upgrade` reuse those exact named volumes. MariaDB
+application grants and the configured File Browser administrator are
+reconciled from `.env`; Redis starts with the configured password and its AOF
+volume. Changing a credential in `.env` is therefore an explicit rotation on
+the next setup. No normal deployment action deletes a volume or database.
 
 Before a production database migration, set `CODEXSUN_VERIFIED_BACKUP_ID` to the verified backup run ID. For a confirmed empty first install, record a unique marker such as `initial-empty-database-YYYYMMDD`.
 

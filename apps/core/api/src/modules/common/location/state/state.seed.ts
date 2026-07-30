@@ -10,32 +10,30 @@ export async function seedStateModule() {
   const countries = await sql<{
     id: number;
     code: string;
-  }>`SELECT id,code FROM countries WHERE code='IN'`.execute(getCoreDatabase());
+  }>`SELECT id,code FROM core_countries WHERE code='IN'`.execute(getCoreDatabase());
   const countryIds = new Map(countries.rows.map((country) => [country.code, country.id]));
   const indiaId = countryIds.get("IN");
   if (!indiaId) throw new Error("India country seed must exist before state seeds are applied.");
 
-  await sql`UPDATE states AS legacy_state
-    INNER JOIN countries AS legacy_country ON legacy_country.id=legacy_state.country_id
+  await sql`UPDATE core_states AS legacy_state
+    INNER JOIN core_countries AS legacy_country ON legacy_country.id=legacy_state.country_id
     SET legacy_state.country_id=${indiaId}
     WHERE legacy_country.code='UNKNOWN' OR legacy_country.name='-'`.execute(getCoreDatabase());
 
-  const fallback = await sql<{ id: number }>`SELECT id FROM states
+  const fallback = await sql<{ id: number }>`SELECT id FROM core_states
     WHERE code='UNKNOWN' OR name='-' ORDER BY id LIMIT 1`.execute(getCoreDatabase());
   if (fallback.rows[0]?.id) {
-    await sql`UPDATE states SET country_id=${indiaId},code='UNKNOWN',name='-',sort_order=0,status='active'
+    await sql`UPDATE core_states SET country_id=${indiaId},code='UNKNOWN',name='-',sort_order=0,status='active'
       WHERE id=${fallback.rows[0].id}`.execute(getCoreDatabase());
   } else {
-    await sql`INSERT INTO states (country_id,code,name,sort_order,status)
+    await sql`INSERT INTO core_states (country_id,code,name,sort_order,status)
       VALUES (${indiaId},'UNKNOWN','-',0,'active')`.execute(getCoreDatabase());
   }
 
   for (const state of stateSeeds) {
-    await sql`INSERT INTO states (country_id, code, name, sort_order, status)
+    await sql`INSERT INTO core_states (country_id, code, name, sort_order, status)
       VALUES (${indiaId}, ${state.code}, ${state.name}, ${state.sortOrder}, ${state.status})
-      ON DUPLICATE KEY UPDATE country_id=VALUES(country_id), code=VALUES(code), name=VALUES(name), sort_order=VALUES(sort_order), status=VALUES(status)`.execute(
-      getCoreDatabase()
-    );
+      ON DUPLICATE KEY UPDATE id=id`.execute(getCoreDatabase());
   }
 }
 

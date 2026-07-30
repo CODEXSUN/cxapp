@@ -21,7 +21,7 @@ type TransportsRow = {
 export class TransportsRepository {
   async list(filters: TransportsListFilters = {}) {
     const rows =
-      await sql<TransportsRow>`SELECT id, name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order FROM transports
+      await sql<TransportsRow>`SELECT id, name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order FROM core_transports
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)} OR LOWER(gst) LIKE ${like(filters.search)} OR LOWER(vehicle_no) LIKE ${like(filters.search)} OR LOWER(address) LIKE ${like(filters.search)} OR LOWER(contact_no) LIKE ${like(filters.search)} OR LOWER(contact_person) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toTransports);
@@ -29,14 +29,14 @@ export class TransportsRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<TransportsRow>`SELECT id, name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order FROM transports
+      await sql<TransportsRow>`SELECT id, name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order FROM core_transports
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toTransports(rows.rows[0]) : null;
   }
 
   async create(input: TransportsSavePayload) {
     const result =
-      await sql`INSERT INTO transports (name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order) VALUES
+      await sql`INSERT INTO core_transports (name, gst, vehicle_no, address, contact_no, contact_person, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.gst)}, ${normalizeString(input.vehicleNo)}, ${normalizeString(input.address)}, ${normalizeString(input.contactNo)}, ${normalizeString(input.contactPerson)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
         getCoreDatabase()
       );
@@ -46,7 +46,7 @@ export class TransportsRepository {
   async update(id: string | number, input: TransportsSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE transports SET name=${normalizeString(input.name)}, gst=${normalizeString(input.gst)}, vehicle_no=${normalizeString(input.vehicleNo)}, address=${normalizeString(input.address)}, contact_no=${normalizeString(input.contactNo)}, contact_person=${normalizeString(input.contactPerson)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_transports SET name=${normalizeString(input.name)}, gst=${normalizeString(input.gst)}, vehicle_no=${normalizeString(input.vehicleNo)}, address=${normalizeString(input.address)}, contact_no=${normalizeString(input.contactNo)}, contact_person=${normalizeString(input.contactPerson)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -56,7 +56,7 @@ export class TransportsRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE transports SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_transports SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -65,7 +65,7 @@ export class TransportsRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM transports WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_transports WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

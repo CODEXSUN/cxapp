@@ -19,11 +19,11 @@ export function tenantAccessContext(request: FastifyRequest) {
     actorEmail: claims.email ?? "tenant@codexsun.app",
     authorize: async (permission: string) => {
       const allowed = await database
-        .selectFrom("users as user")
-        .innerJoin("user_roles as userRole", "userRole.user_id", "user.id")
-        .innerJoin("roles as role", "role.id", "userRole.role_id")
-        .innerJoin("role_permissions as rolePermission", "rolePermission.role_id", "role.id")
-        .innerJoin("permissions as permission", "permission.id", "rolePermission.permission_id")
+        .selectFrom("app_users as user")
+        .innerJoin("app_user_roles as userRole", "userRole.user_id", "user.id")
+        .innerJoin("app_roles as role", "role.id", "userRole.role_id")
+        .innerJoin("app_role_permissions as rolePermission", "rolePermission.role_id", "role.id")
+        .innerJoin("app_permissions as permission", "permission.id", "rolePermission.permission_id")
         .select("permission.id")
         .where("user.email", "=", claims.email ?? "")
         .where("user.status", "=", "active")

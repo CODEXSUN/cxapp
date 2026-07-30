@@ -1,26 +1,84 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { Kysely, MysqlDialect, sql } from "kysely";
+import {
+  applyTablePrefixPolicy,
+  ensureStandardTableColumns,
+  rollbackMigrationBatch,
+  rollbackTablePrefixPolicy,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@codexsun/framework/db";
+import { Kysely, MysqlDialect } from "kysely";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
 import { seedCoreTenantPermissions } from "../auth/tenant-permission.seed.js";
 import { env } from "../env.js";
-import { commonMigrationSteps, migrateCommonModule } from "../modules/common/common.migration.js";
+import { commonMigrationSteps } from "../modules/common/common.migration.js";
 import { seedCommonModule } from "../modules/common/common.seed.js";
 import { removeUnknownCountrySeed } from "../modules/common/location/country/index.js";
-import { migrateMasterModule, seedMasterModule } from "../modules/master/index.js";
+import { seedMasterModule } from "../modules/master/index.js";
 import { masterMigrationSteps } from "../modules/master/master.migration.js";
-import {
-  migrateOrganisationModule,
-  seedOrganisationModule
-} from "../modules/organisation/index.js";
+import { seedOrganisationModule } from "../modules/organisation/index.js";
 import { organisationMigrationSteps } from "../modules/organisation/organisation.migration.js";
 
 export type CoreDatabase = Record<string, unknown>;
+
+const coreTableNames = [
+  "address_types",
+  "bank_names",
+  "brands",
+  "cities",
+  "colours",
+  "companies",
+  "companies_addresses",
+  "companies_bank_accounts",
+  "companies_emails",
+  "companies_phones",
+  "companies_social_links",
+  "contact_groups",
+  "contact_types",
+  "contacts",
+  "contacts_addresses",
+  "contacts_bank_accounts",
+  "contacts_emails",
+  "contacts_phones",
+  "contacts_social_links",
+  "countries",
+  "currencies",
+  "default_company_settings",
+  "destinations",
+  "districts",
+  "financial_years",
+  "hsn_codes",
+  "ledger_groups",
+  "ledgers",
+  "months",
+  "payment_terms",
+  "pincodes",
+  "priorities",
+  "product_categories",
+  "product_groups",
+  "product_types",
+  "products",
+  "sales_types",
+  "sizes",
+  "states",
+  "stock_rejection_types",
+  "styles",
+  "taxes",
+  "transports",
+  "units",
+  "warehouses",
+  "work_order_types",
+  "work_orders"
+] as const;
+
+const corePrefixPolicy = { include: coreTableNames, prefix: "core_" } as const;
 
 const context = new AsyncLocalStorage<string>();
 type CoreConnectionEntry = { database: Kysely<CoreDatabase>; lastUsedAt: number };
 
 const connections = new Map<string, CoreConnectionEntry>();
+const tenantConnectionOptions = new Map<string, TenantConnectionOptions>();
 const migrated = new Set<string>();
 const bootstrapping = new Map<string, Promise<void>>();
 const connectionIdleMs = 10 * 60 * 1000;
@@ -29,13 +87,66 @@ evictionTimer.unref();
 
 export const coreTenantMigrations = [
   {
-    description: "Flatten legacy Core table names before module-owned migrations.",
-    name: "003_flatten_core_table_names"
+    description: "Rename unprefixed legacy Core tables to their module-owned core_ names.",
+    name: "core.table-prefix-v1"
   },
   ...commonMigrationSteps.map(({ description, key }) => ({ description, name: key })),
   ...organisationMigrationSteps.map(({ description, key }) => ({ description, name: key })),
-  ...masterMigrationSteps.map(({ description, key }) => ({ description, name: key }))
+  ...masterMigrationSteps.map(({ description, key }) => ({ description, name: key })),
+  {
+    description: "Backfill and validate standard Core table identity and audit columns.",
+    name: "core.standard-columns-v1"
+  }
 ] as const;
+
+export const coreMigrationBatch: MigrationBatch<CoreDatabase> = {
+  batch: 1,
+  description: "Core module-owned schema baseline through release 1.0.42.",
+  scope: "core",
+  version: "1.0.42",
+  steps: [
+    {
+      checksum: coreTableNames.join(","),
+      description: "Rename legacy Core tables without copying or dropping data.",
+      down: (database) =>
+        rollbackTablePrefixPolicy(database, corePrefixPolicy).then(() => undefined),
+      name: "core.table-prefix-v1",
+      up: (database) => applyTablePrefixPolicy(database, corePrefixPolicy).then(() => undefined),
+      version: 1
+    },
+    ...[...commonMigrationSteps, ...organisationMigrationSteps, ...masterMigrationSteps].map(
+      ({ description, key, migrate }) => ({
+        checksum: `${key}:v1`,
+        description,
+        name: key,
+        up: migrate,
+        version: 1
+      })
+    ),
+    {
+      checksum: `standard-columns:${coreTableNames.join(",")}`,
+      description: "Backfill and validate standard Core table identity and audit columns.",
+      name: "core.standard-columns-v1",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          coreTableNames.map((tableName) => `core_${tableName}`)
+        ),
+      version: 1
+    },
+    {
+      checksum: `uuid-defaults:${coreTableNames.join(",")}`,
+      description: "Add database-generated UUID defaults for repeatable Core writes.",
+      name: "core.uuid-defaults-v2",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          coreTableNames.map((tableName) => `core_${tableName}`)
+        ),
+      version: 2
+    }
+  ]
+};
 
 export function resolveCoreDatabaseName(value: unknown) {
   const requested = typeof value === "string" ? value.trim() : "";
@@ -50,6 +161,11 @@ export function runWithCoreDatabase<T>(databaseName: string, callback: () => T) 
   return context.run(resolveCoreDatabaseName(databaseName), callback);
 }
 
+export function registerCoreTenantDatabaseConnection(input: TenantConnectionOptions) {
+  const name = resolveCoreDatabaseName(input.database);
+  tenantConnectionOptions.set(name, { ...input, database: name });
+}
+
 export function getCoreDatabase(databaseName = context.getStore()) {
   const name = resolveCoreDatabaseName(databaseName);
   const existing = connections.get(name);
@@ -61,15 +177,15 @@ export function getCoreDatabase(databaseName = context.getStore()) {
     dialect: new MysqlDialect({
       pool: createPool({
         database: name,
-        host: env.DB_HOST,
-        password: env.DB_PASSWORD,
-        port: env.DB_PORT,
+        host: tenantConnectionOptions.get(name)?.host ?? env.DB_HOST,
+        password: tenantConnectionOptions.get(name)?.password ?? env.DB_PASSWORD,
+        port: tenantConnectionOptions.get(name)?.port ?? env.DB_PORT,
         connectionLimit: 4,
         idleTimeout: 60_000,
         maxIdle: 1,
         queueLimit: 100,
         timezone: "Z",
-        user: env.DB_USER
+        user: tenantConnectionOptions.get(name)?.user ?? env.DB_USER
       } satisfies PoolOptions)
     })
   });
@@ -120,18 +236,14 @@ export async function seedCoreTenantDatabase(databaseName: string) {
   });
 }
 
-async function recordCoreMigration(database: Kysely<CoreDatabase>, name: string) {
-  await sql`INSERT IGNORE INTO schema_migrations (name) VALUES (${name})`.execute(database);
+async function migrateCoreModules(database: Kysely<CoreDatabase>) {
+  await runMigrationBatch(database, coreMigrationBatch, { batchSize: 10 });
 }
 
-async function migrateCoreModules(database: Kysely<CoreDatabase>) {
-  await flattenLegacyCoreTableNames(database);
-  await migrateCommonModule(database);
-  for (const step of commonMigrationSteps) await recordCoreMigration(database, step.key);
-  await migrateOrganisationModule(database);
-  for (const step of organisationMigrationSteps) await recordCoreMigration(database, step.key);
-  await migrateMasterModule(database);
-  for (const step of masterMigrationSteps) await recordCoreMigration(database, step.key);
+export async function rollbackCoreTenantDatabase(databaseName: string) {
+  const name = resolveCoreDatabaseName(databaseName);
+  await ensureDatabase(name);
+  return rollbackMigrationBatch(getCoreDatabase(name), coreMigrationBatch);
 }
 
 async function seedCoreModules(database: Kysely<CoreDatabase>) {
@@ -142,42 +254,6 @@ async function seedCoreModules(database: Kysely<CoreDatabase>) {
   await seedMasterModule();
   await removeUnknownCountrySeed();
   await seedCoreTenantPermissions(database as unknown as Kysely<unknown>);
-}
-
-async function flattenLegacyCoreTableNames(database: Kysely<CoreDatabase>) {
-  await sql
-    .raw(
-      "CREATE TABLE IF NOT EXISTS schema_migrations (" +
-        "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(160) NOT NULL UNIQUE, " +
-        "applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)"
-    )
-    .execute(database);
-  const result = await sql<{ table_name: string }>`
-    SELECT TABLE_NAME AS table_name
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE 'core\_%'
-    ORDER BY TABLE_NAME
-  `.execute(database);
-
-  for (const { table_name: legacyName } of result.rows) {
-    const currentName = legacyName
-      .replace(/^core_common_/, "")
-      .replace(/^core_master_/, "")
-      .replace(/^core_/, "");
-    const existing = await sql<{ table_count: number | string }>`
-      SELECT COUNT(*) AS table_count
-      FROM information_schema.TABLES
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ${currentName}
-    `.execute(database);
-    if (Number(existing.rows[0]?.table_count ?? 0) > 0) {
-      throw new Error(`Cannot flatten Core table ${legacyName}: ${currentName} already exists.`);
-    }
-    await sql.raw(`RENAME TABLE \`${legacyName}\` TO \`${currentName}\``).execute(database);
-  }
-
-  await sql`INSERT IGNORE INTO schema_migrations (name) VALUES ('003_flatten_core_table_names')`.execute(
-    database
-  );
 }
 
 export async function bootstrapRegisteredCoreDatabases() {
@@ -212,12 +288,13 @@ export async function evictIdleCoreDatabases(now = Date.now()) {
 }
 
 async function ensureDatabase(databaseName: string) {
+  const options = tenantConnectionOptions.get(databaseName);
   const connection = await createConnection({
-    host: env.DB_HOST,
-    password: env.DB_PASSWORD,
-    port: env.DB_PORT,
+    host: options?.host ?? env.DB_HOST,
+    password: options?.password ?? env.DB_PASSWORD,
+    port: options?.port ?? env.DB_PORT,
     timezone: "Z",
-    user: env.DB_USER
+    user: options?.user ?? env.DB_USER
   });
   try {
     await connection.query(
@@ -227,6 +304,14 @@ async function ensureDatabase(databaseName: string) {
     await connection.end();
   }
 }
+
+type TenantConnectionOptions = {
+  database: string;
+  host: string;
+  password: string;
+  port: number;
+  user: string;
+};
 
 async function registeredTenantDatabaseNames() {
   const connection = await createConnection({
@@ -239,7 +324,7 @@ async function registeredTenantDatabaseNames() {
   });
   try {
     const [rows] = await connection.query(
-      "SELECT db_name FROM tenants WHERE db_name IS NOT NULL AND status <> 'deleted'"
+      "SELECT db_name FROM app_tenants WHERE db_name IS NOT NULL AND status <> 'deleted'"
     );
     return (rows as Array<{ db_name: string }>).map(({ db_name }) =>
       resolveCoreDatabaseName(db_name)

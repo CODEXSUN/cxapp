@@ -1,6 +1,6 @@
 import { pbkdf2Sync, randomBytes, timingSafeEqual } from "node:crypto";
 
-const ITERATIONS = 120_000;
+const ITERATIONS = 600_000;
 const KEY_LENGTH = 32;
 const DIGEST = "sha256";
 
@@ -19,4 +19,9 @@ export function verifyPassword(password: string, encoded: string) {
   const expected = Buffer.from(hash, "base64url");
   const actual = pbkdf2Sync(password, salt, Number(iterations), expected.length, DIGEST);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+export function passwordNeedsRehash(encoded: string) {
+  const [scheme, iterations] = encoded.split("$");
+  return scheme !== "pbkdf2" || Number(iterations) < ITERATIONS;
 }

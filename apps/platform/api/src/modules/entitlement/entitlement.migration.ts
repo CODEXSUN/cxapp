@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateEntitlementModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("entitlements")
+    .createTable("app_entitlements")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -21,6 +21,28 @@ export async function migrateEntitlementModule(db: Kysely<PlatformDatabase>) {
     )
     .addColumn("updated_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
+    )
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
+    .addForeignKeyConstraint(
+      "app_entitlements_tenant_fk",
+      ["tenant_id"],
+      "app_tenants",
+      ["id"],
+      (constraint) => constraint.onDelete("cascade")
+    )
+    .addForeignKeyConstraint(
+      "app_entitlements_plan_fk",
+      ["plan_id"],
+      "app_plans",
+      ["id"],
+      (constraint) => constraint.onDelete("cascade")
+    )
+    .addForeignKeyConstraint(
+      "app_entitlements_app_fk",
+      ["app_id"],
+      "app_platform_apps",
+      ["id"],
+      (constraint) => constraint.onDelete("restrict")
     )
     .execute();
 }

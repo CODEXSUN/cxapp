@@ -23,7 +23,7 @@ export async function seedTenantRoleModule(database: Kysely<TenantDatabase>) {
     }
   ])
     await database
-      .insertInto("roles")
+      .insertInto("app_roles")
       .values({
         description: role.description,
         is_protected: role.protected,

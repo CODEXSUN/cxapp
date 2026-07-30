@@ -50,7 +50,7 @@ type HeaderRow = {
 export class PaymentRepository {
   async defaultLedgerId(databaseName: string) {
     const database = await paymentDatabase(databaseName);
-    const result = await sql<{ id: number }>`SELECT id FROM ledgers WHERE status='active'
+    const result = await sql<{ id: number }>`SELECT id FROM core_ledgers WHERE status='active'
       ORDER BY CASE WHEN TRIM(name)='-' THEN 0 ELSE 1 END,id LIMIT 1`.execute(database);
     return Number(result.rows[0]?.id ?? 0);
   }
@@ -77,7 +77,7 @@ export class PaymentRepository {
     const count = await sql<{
       total: string | number;
     }>`SELECT COUNT(*) AS total FROM billing_payments r
-      INNER JOIN contacts supplier ON supplier.id=r.supplier_id INNER JOIN ledgers ledger ON ledger.id=r.ledger_id
+      INNER JOIN core_contacts supplier ON supplier.id=r.supplier_id INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
       WHERE r.deleted_at IS NULL
       AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
       AND (${page.status}='all' OR r.status=${page.status})
@@ -142,9 +142,9 @@ export class PaymentRepository {
       SELECT c.id AS company_id, c.name AS company_name, f.id AS financial_year_id,
              f.name AS financial_year_name, currency.id AS currency_id,
              currency.name AS currency_code
-      FROM companies c
-      CROSS JOIN financial_years f
-      INNER JOIN currencies currency ON UPPER(currency.name) = 'INR' AND currency.status = 'active'
+      FROM core_companies c
+      CROSS JOIN core_financial_years f
+      INNER JOIN core_currencies currency ON UPPER(currency.name) = 'INR' AND currency.status = 'active'
       WHERE c.id=${scope.companyId} AND c.status='active'
         AND f.id=${scope.financialYearId} AND f.status='active' LIMIT 1
     `.execute(database);
@@ -190,11 +190,11 @@ export class PaymentRepository {
       ledger: number;
     }>`
       SELECT
-        EXISTS(SELECT 1 FROM companies WHERE id = ${input.companyId} AND id=${scope.companyId} AND status = 'active') AS company,
-        EXISTS(SELECT 1 FROM financial_years WHERE id = ${input.financialYearId} AND id=${scope.financialYearId} AND status = 'active' AND ${input.paymentDate} BETWEEN start_date AND end_date) AS financialYear,
-        EXISTS(SELECT 1 FROM currencies WHERE id = ${input.currencyId} AND status = 'active') AS currency,
-        EXISTS(SELECT 1 FROM contacts WHERE id = ${input.supplierId} AND status = 'active') AS supplier,
-        EXISTS(SELECT 1 FROM ledgers WHERE id = ${input.ledgerId} AND status = 'active') AS ledger
+        EXISTS(SELECT 1 FROM core_companies WHERE id = ${input.companyId} AND id=${scope.companyId} AND status = 'active') AS company,
+        EXISTS(SELECT 1 FROM core_financial_years WHERE id = ${input.financialYearId} AND id=${scope.financialYearId} AND status = 'active' AND ${input.paymentDate} BETWEEN start_date AND end_date) AS financialYear,
+        EXISTS(SELECT 1 FROM core_currencies WHERE id = ${input.currencyId} AND status = 'active') AS currency,
+        EXISTS(SELECT 1 FROM core_contacts WHERE id = ${input.supplierId} AND status = 'active') AS supplier,
+        EXISTS(SELECT 1 FROM core_ledgers WHERE id = ${input.ledgerId} AND status = 'active') AS ledger
     `.execute(database);
     const allocations = await Promise.all(
       input.allocations.map(async (allocation) => {
@@ -449,11 +449,11 @@ function selectHeaders(
     SELECT r.*, c.name AS company_name, f.name AS financial_year_name, currency.name AS currency_code,
            supplier.name AS supplier_name, ledger.name AS ledger_name
     FROM billing_payments r
-    INNER JOIN companies c ON c.id=r.company_id
-    INNER JOIN financial_years f ON f.id=r.financial_year_id
-    INNER JOIN currencies currency ON currency.id=r.currency_id
-    INNER JOIN contacts supplier ON supplier.id=r.supplier_id
-    INNER JOIN ledgers ledger ON ledger.id=r.ledger_id
+    INNER JOIN core_companies c ON c.id=r.company_id
+    INNER JOIN core_financial_years f ON f.id=r.financial_year_id
+    INNER JOIN core_currencies currency ON currency.id=r.currency_id
+    INNER JOIN core_contacts supplier ON supplier.id=r.supplier_id
+    INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
     WHERE ${uuid ? sql`r.uuid=${uuid}` : sql`1=1`}
       AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
       ${includeDeleted ? sql`` : sql`AND r.deleted_at IS NULL`}

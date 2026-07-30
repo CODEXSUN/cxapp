@@ -20,39 +20,39 @@ export class TenantPermissionRepository {
   async list(filters: TenantPermissionListFilters = {}) {
     const term = `%${(filters.search ?? "").trim().toLowerCase()}%`;
     const r =
-      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM permissions WHERE (${filters.search ?? ""}='' OR LOWER(\`key\`) LIKE ${term} OR LOWER(label) LIKE ${term}) ORDER BY \`key\``.execute(
+      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM app_permissions WHERE (${filters.search ?? ""}='' OR LOWER(\`key\`) LIKE ${term} OR LOWER(label) LIKE ${term}) ORDER BY \`key\``.execute(
         this.database
       );
     return r.rows.map(map);
   }
   async find(id: string | number) {
     const r =
-      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM permissions WHERE id=${Number(id)} LIMIT 1`.execute(
+      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM app_permissions WHERE id=${Number(id)} LIMIT 1`.execute(
         this.database
       );
     return r.rows[0] ? map(r.rows[0]) : null;
   }
   async create(v: TenantPermissionSavePayload, uuid: string) {
     const r =
-      await sql`INSERT INTO permissions (uuid,\`key\`,label,description,status,is_protected) VALUES (${uuid},${v.key},${v.label},${v.description},${v.status},FALSE)`.execute(
+      await sql`INSERT INTO app_permissions (uuid,\`key\`,label,description,status,is_protected) VALUES (${uuid},${v.key},${v.label},${v.description},${v.status},FALSE)`.execute(
         this.database
       );
     return (await this.find(Number(r.insertId)))!;
   }
   async update(id: number, v: TenantPermissionSavePayload) {
-    await sql`UPDATE permissions SET \`key\`=${v.key},label=${v.label},description=${v.description},status=${v.status} WHERE id=${id}`.execute(
+    await sql`UPDATE app_permissions SET \`key\`=${v.key},label=${v.label},description=${v.description},status=${v.status} WHERE id=${id}`.execute(
       this.database
     );
     return this.find(id);
   }
   async setStatus(id: number, status: TenantPermissionStatus) {
-    await sql`UPDATE permissions SET status=${status} WHERE id=${id}`.execute(this.database);
+    await sql`UPDATE app_permissions SET status=${status} WHERE id=${id}`.execute(this.database);
     return this.find(id);
   }
   async dependentCount(id: number) {
     const r = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) count FROM role_permissions WHERE permission_id=${id}`.execute(
+    }>`SELECT COUNT(*) count FROM app_role_permissions WHERE permission_id=${id}`.execute(
       this.database
     );
     return Number(r.rows[0]?.count ?? 0);
@@ -60,7 +60,7 @@ export class TenantPermissionRepository {
   async forceDelete(id: number) {
     const r = await this.find(id);
     if (!r) return null;
-    await sql`DELETE FROM permissions WHERE id=${id}`.execute(this.database);
+    await sql`DELETE FROM app_permissions WHERE id=${id}`.execute(this.database);
     return r;
   }
 }

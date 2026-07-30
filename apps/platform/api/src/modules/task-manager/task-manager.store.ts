@@ -1,16 +1,12 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { AppError } from "@codexsun/framework/errors";
 import type { Todo, TodoInput, TodoStatus } from "./task-manager.types.js";
+import { env } from "../../env.js";
 
-const defaultDatabaseDir = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../task-manager-json"
-);
-const baseDir = process.env.TASK_MANAGER_JSON_DIR ?? defaultDatabaseDir;
+const baseDir = env.TASK_MANAGER_JSON_DIR;
 
 export class TaskManagerJsonStore {
   async list(tenantKey: string) {

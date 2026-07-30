@@ -35,7 +35,7 @@ const seeds = [
 export async function seedTenantPermissionModule(database: Kysely<TenantDatabase>) {
   for (const p of seeds)
     await database
-      .insertInto("permissions")
+      .insertInto("app_permissions")
       .values({
         description: `Allows ${p.label.toLowerCase()} in the tenant Application desk.`,
         is_protected: true,

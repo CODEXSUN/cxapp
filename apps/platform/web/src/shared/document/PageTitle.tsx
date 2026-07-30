@@ -1,6 +1,7 @@
 import { useEffect } from "react";
+import { requiredClientEnv } from "../env/client-env";
 
-const tenantDisplayName = import.meta.env.VITE_TENANT_NAME ?? "Codexsun";
+const tenantDisplayName = requiredClientEnv("VITE_TENANT_NAME");
 
 export function setPlatformDocumentTitle(pageTitle: string) {
   document.title = `${tenantDisplayName} | ${pageTitle}`;

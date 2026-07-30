@@ -11,7 +11,9 @@ export function migratePincodeModule(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS pincodes (
+    CREATE TABLE IF NOT EXISTS core_pincodes (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       city_id INT NOT NULL,
       name VARCHAR(200) NOT NULL,
@@ -22,7 +24,7 @@ export function migratePincodeModule(database: Kysely<CoreDatabase>) {
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY pincodes_city_name_area_unique (city_id, name, area),
       INDEX pincodes_city_id_idx (city_id),
-      CONSTRAINT pincodes_city_id_fk FOREIGN KEY (city_id) REFERENCES cities(id) ON UPDATE CASCADE ON DELETE RESTRICT
+      CONSTRAINT pincodes_city_id_fk FOREIGN KEY (city_id) REFERENCES core_cities(id) ON UPDATE CASCADE ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -35,38 +37,40 @@ export function migratePincodeModule(database: Kysely<CoreDatabase>) {
 async function upgradeExistingPincodes(database: Kysely<CoreDatabase>) {
   const areaColumn = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pincodes' AND COLUMN_NAME='area'`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_pincodes' AND COLUMN_NAME='area'`.execute(
     database
   );
   if (Number(areaColumn.rows[0]?.count ?? 0) === 0) {
     await sql
-      .raw("ALTER TABLE pincodes ADD COLUMN area VARCHAR(200) NOT NULL DEFAULT '' AFTER name")
+      .raw("ALTER TABLE core_pincodes ADD COLUMN area VARCHAR(200) NOT NULL DEFAULT '' AFTER name")
       .execute(database);
     await sql
       .raw(
-        "UPDATE pincodes SET area=CASE WHEN name LIKE '% - %' THEN TRIM(SUBSTRING_INDEX(name, ' - ', -1)) ELSE name END, name=CASE WHEN name LIKE '% - %' THEN TRIM(SUBSTRING_INDEX(name, ' - ', 1)) ELSE name END"
+        "UPDATE core_pincodes SET area=CASE WHEN name LIKE '% - %' THEN TRIM(SUBSTRING_INDEX(name, ' - ', -1)) ELSE name END, name=CASE WHEN name LIKE '% - %' THEN TRIM(SUBSTRING_INDEX(name, ' - ', 1)) ELSE name END"
       )
       .execute(database);
     await sql
-      .raw("ALTER TABLE pincodes MODIFY COLUMN area VARCHAR(200) NOT NULL")
+      .raw("ALTER TABLE core_pincodes MODIFY COLUMN area VARCHAR(200) NOT NULL")
       .execute(database);
   }
   const oldUnique = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pincodes' AND INDEX_NAME='pincodes_city_name_unique'`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_pincodes' AND INDEX_NAME='pincodes_city_name_unique'`.execute(
     database
   );
   if (Number(oldUnique.rows[0]?.count ?? 0) > 0)
-    await sql.raw("ALTER TABLE pincodes DROP INDEX pincodes_city_name_unique").execute(database);
+    await sql
+      .raw("ALTER TABLE core_pincodes DROP INDEX pincodes_city_name_unique")
+      .execute(database);
   const newUnique = await sql<{
     count: number | string;
-  }>`SELECT COUNT(*) count FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pincodes' AND INDEX_NAME='pincodes_city_name_area_unique'`.execute(
+  }>`SELECT COUNT(*) count FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_pincodes' AND INDEX_NAME='pincodes_city_name_area_unique'`.execute(
     database
   );
   if (Number(newUnique.rows[0]?.count ?? 0) === 0)
     await sql
       .raw(
-        "ALTER TABLE pincodes ADD UNIQUE KEY pincodes_city_name_area_unique (city_id, name, area)"
+        "ALTER TABLE core_pincodes ADD UNIQUE KEY pincodes_city_name_area_unique (city_id, name, area)"
       )
       .execute(database);
 }

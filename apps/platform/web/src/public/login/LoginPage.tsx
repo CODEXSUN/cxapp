@@ -1,8 +1,16 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AuthLayout, Button, Field } from "@codexsun/ui";
-import { LogIn } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@codexsun/ui/components/alert";
+import { Clock3, LogIn } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { developmentTenantLogin, type Desk, login } from "../../shared/api/platform-api";
+import {
+  developmentTenantLogin,
+  type Desk,
+  getTenantLoginContext,
+  login
+} from "../../shared/api/platform-api";
+import { requiredClientEnv } from "../../shared/env/client-env";
+import { hasSessionExpiredReason } from "../../shared/auth/session-expiry";
 
 type LoginPageProps = {
   desk: Desk;
@@ -16,7 +24,13 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tenantContext, setTenantContext] = useState<{
+    corporateIdRequired: boolean;
+    mode: "custom_domain" | "shared_domain" | "unknown";
+    tenantName: string | null;
+  } | null>(null);
   const autoLoginStarted = useRef(false);
+  const sessionExpired = hasSessionExpiredReason(window.location.search);
 
   const targetPath = useMemo(() => {
     if (desk === "sa") {
@@ -31,10 +45,16 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   }, [desk]);
 
   useEffect(() => {
+    if (desk !== "tenant") return;
+    void getTenantLoginContext()
+      .then(setTenantContext)
+      .catch(() => setMessage("Unable to verify this application domain."));
+  }, [desk]);
+
+  useEffect(() => {
     if (
       desk !== "tenant" ||
-      !import.meta.env.DEV ||
-      import.meta.env.VITE_DEV_AUTO_TENANT_LOGIN !== "1" ||
+      requiredClientEnv("VITE_DEV_AUTO_TENANT_LOGIN") !== "1" ||
       autoLoginStarted.current
     ) {
       return;
@@ -57,12 +77,16 @@ export function LoginPage({ desk, title }: LoginPageProps) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (desk === "tenant" && tenantContext?.mode === "unknown") {
+      setMessage("This domain is not mapped to an active tenant.");
+      return;
+    }
     setLoading(true);
     setMessage("");
 
     try {
       const result = await login({
-        ...(desk === "tenant" ? { corporateId } : {}),
+        ...(desk === "tenant" && tenantContext?.corporateIdRequired ? { corporateId } : {}),
         desk,
         email,
         password
@@ -91,7 +115,19 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   return (
     <AuthLayout surface={desk} title={title}>
       <form className="auth-form" onSubmit={submit}>
-        {desk === "tenant" ? (
+        {sessionExpired ? (
+          <Alert>
+            <Clock3 className="size-4" />
+            <AlertTitle>Session expired</AlertTitle>
+            <AlertDescription>
+              Your session timed out. Please sign in again to continue.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {desk === "tenant" && tenantContext?.tenantName ? (
+          <p className="auth-workspace">{tenantContext.tenantName}</p>
+        ) : null}
+        {desk === "tenant" && tenantContext?.corporateIdRequired !== false ? (
           <Field
             autoComplete="organization"
             className="auth-field"
@@ -131,7 +167,11 @@ export function LoginPage({ desk, title }: LoginPageProps) {
           Forgot password?
         </Button>
         {message ? <p className="form-error">{message}</p> : null}
-        <Button disabled={loading} icon={<LogIn size={16} />} type="submit">
+        <Button
+          disabled={loading || (desk === "tenant" && tenantContext?.mode === "unknown")}
+          icon={<LogIn size={16} />}
+          type="submit"
+        >
           {loading ? "Signing in..." : "Sign in"}
         </Button>
       </form>

@@ -8,16 +8,14 @@ export const countrySeed = {
 
 export async function seedCountryModule() {
   for (const country of countrySeeds) {
-    await sql`INSERT INTO countries (code, name, sort_order, status)
+    await sql`INSERT INTO core_countries (code, name, sort_order, status)
       VALUES (${country.code}, ${country.name}, ${country.sortOrder}, ${country.status})
-      ON DUPLICATE KEY UPDATE name=VALUES(name), sort_order=VALUES(sort_order), status=VALUES(status)`.execute(
-      getCoreDatabase()
-    );
+      ON DUPLICATE KEY UPDATE id=id`.execute(getCoreDatabase());
   }
 }
 
 export async function removeUnknownCountrySeed() {
-  await sql`DELETE FROM countries
+  await sql`DELETE FROM core_countries
     WHERE (code='UNKNOWN' OR name='-') AND code<>'IN'`.execute(getCoreDatabase());
 }
 

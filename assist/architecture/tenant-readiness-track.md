@@ -106,11 +106,11 @@ Every tenant-aware change should keep or add tests around:
 
 Before declaring production tenancy complete:
 
-1. Add a tenant database connection provider that resolves from trusted tenant context.
+1. Keep the tenant database provider fail-closed: it now resolves a registered tenant and server-side secret before opening a pool. Extend the same credential injection contract through every composed Core and Billing connection before production.
 2. Move tenant business repositories from master database tenant-scoped tables to tenant database tables, or explicitly document modules that must remain shared.
 3. Add tenant database migration/version tracking.
 4. Add tenant provisioning workflow status with failure, retry, and rollback states.
-5. Add host/domain tenant resolution middleware and make header tenant context a post-resolution transport detail.
+5. Maintain the implemented host/domain resolution middleware: `app.codexsun.com` uses exact Corporate ID; custom domains require an active DNS-verified mapping; server claims overwrite tenant routing headers.
 6. Add tenant industry activation tables and runtime resolver.
 7. Add industry-pack activation services for modules, settings, roles, templates, reports, and dashboards.
 8. Add database-level tests using two tenants and two tenant databases.
@@ -130,4 +130,4 @@ When changing tenant-aware code:
 
 ## Final Track Status
 
-CODEXSUN is on the correct tenant-aware track, but production-complete tenancy is not finished yet. The current foundation is good: login, tenant identity, module activation, tenant-scoped persistence, domain registry, industry registry, multi-company master data, and E2E mismatch blocking are in place. The main remaining work is to route tenant business data through dedicated tenant databases, enforce domain/subdomain tenant binding, and implement tenant industry activation.
+CODEXSUN is on the correct tenant-aware track, but production-complete tenancy is not finished yet. Shared-host Corporate ID resolution, verified custom-domain binding, encrypted revocable browser sessions, tenant registry validation, and fail-closed Platform tenant database routing are in place. The main remaining production blockers are credential injection across composed Core/Billing pools, distributed login throttling, MFA/recovery hardening, automated TLS provisioning for custom domains, and comprehensive two-tenant isolation E2E coverage.

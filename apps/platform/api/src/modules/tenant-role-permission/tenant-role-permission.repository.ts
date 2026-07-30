@@ -23,14 +23,14 @@ export class TenantRolePermissionRepository {
   async list(f: TenantRolePermissionListFilters = {}) {
     const term = `%${(f.search ?? "").trim().toLowerCase()}%`;
     const r =
-      await sql<Row>`SELECT rp.id,rp.uuid,rp.role_id,rp.permission_id,rp.status,rp.is_protected,r.label role_label,r.\`key\` role_key,p.label permission_label,p.\`key\` permission_key FROM role_permissions rp INNER JOIN roles r ON r.id=rp.role_id INNER JOIN permissions p ON p.id=rp.permission_id WHERE (${f.search ?? ""}='' OR LOWER(r.label) LIKE ${term} OR LOWER(p.label) LIKE ${term} OR LOWER(p.\`key\`) LIKE ${term}) ORDER BY r.label,p.\`key\``.execute(
+      await sql<Row>`SELECT rp.id,rp.uuid,rp.role_id,rp.permission_id,rp.status,rp.is_protected,r.label role_label,r.\`key\` role_key,p.label permission_label,p.\`key\` permission_key FROM app_role_permissions rp INNER JOIN app_roles r ON r.id=rp.role_id INNER JOIN app_permissions p ON p.id=rp.permission_id WHERE (${f.search ?? ""}='' OR LOWER(r.label) LIKE ${term} OR LOWER(p.label) LIKE ${term} OR LOWER(p.\`key\`) LIKE ${term}) ORDER BY r.label,p.\`key\``.execute(
         this.database
       );
     return r.rows.map(map);
   }
   async find(id: string | number) {
     const r =
-      await sql<Row>`SELECT rp.id,rp.uuid,rp.role_id,rp.permission_id,rp.status,rp.is_protected,r.label role_label,r.\`key\` role_key,p.label permission_label,p.\`key\` permission_key FROM role_permissions rp INNER JOIN roles r ON r.id=rp.role_id INNER JOIN permissions p ON p.id=rp.permission_id WHERE rp.id=${Number(id)} LIMIT 1`.execute(
+      await sql<Row>`SELECT rp.id,rp.uuid,rp.role_id,rp.permission_id,rp.status,rp.is_protected,r.label role_label,r.\`key\` role_key,p.label permission_label,p.\`key\` permission_key FROM app_role_permissions rp INNER JOIN app_roles r ON r.id=rp.role_id INNER JOIN app_permissions p ON p.id=rp.permission_id WHERE rp.id=${Number(id)} LIMIT 1`.execute(
         this.database
       );
     return r.rows[0] ? map(r.rows[0]) : null;
@@ -39,7 +39,7 @@ export class TenantRolePermissionRepository {
     const r = await sql<{
       permission_count: number | string;
       role_count: number | string;
-    }>`SELECT (SELECT COUNT(*) FROM roles WHERE id=${v.roleId} AND status='active') role_count,(SELECT COUNT(*) FROM permissions WHERE id=${v.permissionId} AND status='active') permission_count`.execute(
+    }>`SELECT (SELECT COUNT(*) FROM app_roles WHERE id=${v.roleId} AND status='active') role_count,(SELECT COUNT(*) FROM app_permissions WHERE id=${v.permissionId} AND status='active') permission_count`.execute(
       this.database
     );
     return {
@@ -49,25 +49,25 @@ export class TenantRolePermissionRepository {
   }
   async create(v: TenantRolePermissionSavePayload, uuid: string) {
     const r =
-      await sql`INSERT INTO role_permissions (uuid,role_id,permission_id,status,is_protected) VALUES (${uuid},${v.roleId},${v.permissionId},${v.status},FALSE)`.execute(
+      await sql`INSERT INTO app_role_permissions (uuid,role_id,permission_id,status,is_protected) VALUES (${uuid},${v.roleId},${v.permissionId},${v.status},FALSE)`.execute(
         this.database
       );
     return (await this.find(Number(r.insertId)))!;
   }
   async update(id: number, v: TenantRolePermissionSavePayload) {
-    await sql`UPDATE role_permissions SET role_id=${v.roleId},permission_id=${v.permissionId},status=${v.status} WHERE id=${id}`.execute(
+    await sql`UPDATE app_role_permissions SET role_id=${v.roleId},permission_id=${v.permissionId},status=${v.status} WHERE id=${id}`.execute(
       this.database
     );
     return this.find(id);
   }
   async setStatus(id: number, status: TenantRolePermissionStatus) {
-    await sql`UPDATE role_permissions SET status=${status} WHERE id=${id}`.execute(this.database);
+    await sql`UPDATE app_role_permissions SET status=${status} WHERE id=${id}`.execute(this.database);
     return this.find(id);
   }
   async forceDelete(id: number) {
     const r = await this.find(id);
     if (!r) return null;
-    await sql`DELETE FROM role_permissions WHERE id=${id}`.execute(this.database);
+    await sql`DELETE FROM app_role_permissions WHERE id=${id}`.execute(this.database);
     return r;
   }
 }

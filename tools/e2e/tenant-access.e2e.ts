@@ -20,7 +20,7 @@ const app = await createApp();
 
 try {
   const [tenants] = await connection.query<TenantRow[]>(
-    "SELECT uuid, tenant_code, db_name FROM tenants WHERE status='active' ORDER BY id LIMIT 5"
+    "SELECT uuid, tenant_code, db_name FROM app_tenants WHERE status='active' ORDER BY id LIMIT 5"
   );
   assert.equal(tenants.length, 5, "Five active tenants are required for the access isolation E2E.");
   const results: Array<{ tenant: string; records: number }> = [];
@@ -44,24 +44,30 @@ try {
 }
 
 async function exerciseTenant(tenant: TenantRow) {
-  for (const resource of ["users", "roles", "permissions", "user-roles", "role-permissions"]) {
+  for (const resource of [
+    "app_users",
+    "app_roles",
+    "app_permissions",
+    "user-roles",
+    "role-permissions"
+  ]) {
     const listed = await request(tenant, "GET", `/tenant/access/${resource}`);
     assert.equal(listed.statusCode, 200, `${tenant.tenant_code} could not list ${resource}.`);
   }
 
-  const role = await create(tenant, "roles", {
+  const role = await create(tenant, "app_roles", {
     description: `E2E role ${run}`,
     key: `e2e-${run}`,
     label: `E2E Role ${run}`,
     status: "active"
   });
-  const permission = await create(tenant, "permissions", {
+  const permission = await create(tenant, "app_permissions", {
     description: `E2E permission ${run}`,
     key: `e2e.${run}.read`,
     label: `E2E Permission ${run}`,
     status: "active"
   });
-  const user = await create(tenant, "users", {
+  const user = await create(tenant, "app_users", {
     email: `e2e-${run}@${tenant.tenant_code.toLowerCase()}.test`,
     name: `E2E User ${run}`,
     password: "Codexsun-E2E-123!",
@@ -79,9 +85,9 @@ async function exerciseTenant(tenant: TenantRow) {
   });
 
   for (const [resource, record] of [
-    ["users", user],
-    ["roles", role],
-    ["permissions", permission],
+    ["app_users", user],
+    ["app_roles", role],
+    ["app_permissions", permission],
     ["user-roles", userRole],
     ["role-permissions", rolePermission]
   ] as const) {
@@ -98,9 +104,9 @@ async function exerciseTenant(tenant: TenantRow) {
   for (const [resource, record] of [
     ["role-permissions", rolePermission],
     ["user-roles", userRole],
-    ["permissions", permission],
-    ["roles", role],
-    ["users", user]
+    ["app_permissions", permission],
+    ["app_roles", role],
+    ["app_users", user]
   ] as const) {
     const removed = await request(
       tenant,
@@ -127,7 +133,7 @@ async function request(
 ) {
   await connection.changeUser({ database: tenant.db_name });
   const [users] = await connection.query<Array<RowDataPacket & { email: string; uuid: string }>>(
-    "SELECT email, uuid FROM users WHERE role='admin' AND status='active' ORDER BY id LIMIT 1"
+    "SELECT email, uuid FROM app_users WHERE role='admin' AND status='active' ORDER BY id LIMIT 1"
   );
   const admin = users[0];
   assert.ok(admin, `${tenant.tenant_code} administrator was not seeded.`);

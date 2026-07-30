@@ -3,7 +3,7 @@ import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
   await db.schema
-    .createTable("queue_runtime_settings")
+    .createTable("app_queue_runtime_settings")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("singleton_key", "integer", (column) => column.notNull().unique())
@@ -12,9 +12,18 @@ export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
     .addColumn("updated_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
     )
+    .addColumn("uuid", "varchar(8)", (col) =>
+      col
+        .notNull()
+        .unique()
+        .defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
+    )
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
+    .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
   await db.schema
-    .createTable("queue_jobs")
+    .createTable("app_queue_jobs")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -43,18 +52,19 @@ export async function migrateQueueManagerModule(db: Kysely<PlatformDatabase>) {
     .addColumn("updated_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
     )
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
 
   await db.schema
     .createIndex("queue_jobs_status_idx")
     .ifNotExists()
-    .on("queue_jobs")
+    .on("app_queue_jobs")
     .column("status")
     .execute();
   await db.schema
     .createIndex("queue_jobs_queue_status_idx")
     .ifNotExists()
-    .on("queue_jobs")
+    .on("app_queue_jobs")
     .columns(["queue_name", "status"])
     .execute();
 }

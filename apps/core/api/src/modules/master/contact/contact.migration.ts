@@ -10,7 +10,8 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts (
+    CREATE TABLE IF NOT EXISTS core_contacts (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL UNIQUE,
       code VARCHAR(80) NOT NULL,
@@ -41,8 +42,8 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       INDEX contacts_status_name (status, name),
       INDEX contacts_type (type_id),
       INDEX contacts_group (group_id),
-      CONSTRAINT contacts_type_fk FOREIGN KEY (type_id) REFERENCES contact_types (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_group_fk FOREIGN KEY (group_id) REFERENCES contact_groups (id) ON DELETE RESTRICT
+      CONSTRAINT contacts_type_fk FOREIGN KEY (type_id) REFERENCES core_contact_types (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_group_fk FOREIGN KEY (group_id) REFERENCES core_contact_groups (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -51,7 +52,12 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts_emails (
+    CREATE TABLE IF NOT EXISTS core_contacts_emails (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       parent_id INT NOT NULL,
       email VARCHAR(191) NOT NULL,
@@ -59,7 +65,7 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       is_primary TINYINT(1) NOT NULL DEFAULT 0,
       sort_order INT NOT NULL DEFAULT 1,
       INDEX contacts_emails_parent (parent_id, sort_order),
-      CONSTRAINT contacts_emails_parent_fk FOREIGN KEY (parent_id) REFERENCES contacts (id) ON DELETE CASCADE
+      CONSTRAINT contacts_emails_parent_fk FOREIGN KEY (parent_id) REFERENCES core_contacts (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -68,7 +74,12 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts_phones (
+    CREATE TABLE IF NOT EXISTS core_contacts_phones (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       parent_id INT NOT NULL,
       phone VARCHAR(80) NOT NULL,
@@ -76,7 +87,7 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       is_primary TINYINT(1) NOT NULL DEFAULT 0,
       sort_order INT NOT NULL DEFAULT 1,
       INDEX contacts_phones_parent (parent_id, sort_order),
-      CONSTRAINT contacts_phones_parent_fk FOREIGN KEY (parent_id) REFERENCES contacts (id) ON DELETE CASCADE
+      CONSTRAINT contacts_phones_parent_fk FOREIGN KEY (parent_id) REFERENCES core_contacts (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -85,7 +96,12 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts_addresses (
+    CREATE TABLE IF NOT EXISTS core_contacts_addresses (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       parent_id INT NOT NULL,
       address_type_id INT NULL,
@@ -106,13 +122,13 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       sort_order INT NOT NULL DEFAULT 1,
       INDEX contacts_addresses_parent (parent_id, sort_order),
       INDEX contacts_addresses_location (country_id, state_id, district_id, city_id, pincode_id),
-      CONSTRAINT contacts_addresses_parent_fk FOREIGN KEY (parent_id) REFERENCES contacts (id) ON DELETE CASCADE,
-      CONSTRAINT contacts_addresses_type_fk FOREIGN KEY (address_type_id) REFERENCES address_types (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_addresses_country_fk FOREIGN KEY (country_id) REFERENCES countries (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_addresses_state_fk FOREIGN KEY (state_id) REFERENCES states (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_addresses_district_fk FOREIGN KEY (district_id) REFERENCES districts (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_addresses_city_fk FOREIGN KEY (city_id) REFERENCES cities (id) ON DELETE RESTRICT,
-      CONSTRAINT contacts_addresses_pincode_fk FOREIGN KEY (pincode_id) REFERENCES pincodes (id) ON DELETE RESTRICT
+      CONSTRAINT contacts_addresses_parent_fk FOREIGN KEY (parent_id) REFERENCES core_contacts (id) ON DELETE CASCADE,
+      CONSTRAINT contacts_addresses_type_fk FOREIGN KEY (address_type_id) REFERENCES core_address_types (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_addresses_country_fk FOREIGN KEY (country_id) REFERENCES core_countries (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_addresses_state_fk FOREIGN KEY (state_id) REFERENCES core_states (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_addresses_district_fk FOREIGN KEY (district_id) REFERENCES core_districts (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_addresses_city_fk FOREIGN KEY (city_id) REFERENCES core_cities (id) ON DELETE RESTRICT,
+      CONSTRAINT contacts_addresses_pincode_fk FOREIGN KEY (pincode_id) REFERENCES core_pincodes (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -121,7 +137,12 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts_bank_accounts (
+    CREATE TABLE IF NOT EXISTS core_contacts_bank_accounts (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       parent_id INT NOT NULL,
       bank_name_id INT NULL,
@@ -135,8 +156,8 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       sort_order INT NOT NULL DEFAULT 1,
       INDEX contacts_bank_accounts_parent (parent_id, sort_order),
       INDEX contacts_bank_accounts_bank (bank_name_id),
-      CONSTRAINT contacts_bank_accounts_parent_fk FOREIGN KEY (parent_id) REFERENCES contacts (id) ON DELETE CASCADE,
-      CONSTRAINT contacts_bank_accounts_bank_fk FOREIGN KEY (bank_name_id) REFERENCES bank_names (id) ON DELETE RESTRICT
+      CONSTRAINT contacts_bank_accounts_parent_fk FOREIGN KEY (parent_id) REFERENCES core_contacts (id) ON DELETE CASCADE,
+      CONSTRAINT contacts_bank_accounts_bank_fk FOREIGN KEY (bank_name_id) REFERENCES core_bank_names (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
@@ -145,7 +166,11 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS contacts_social_links (
+    CREATE TABLE IF NOT EXISTS core_contacts_social_links (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       parent_id INT NOT NULL,
       platform VARCHAR(80) NOT NULL,
@@ -153,42 +178,22 @@ export async function migrateContactModule(database: Kysely<CoreDatabase>) {
       status VARCHAR(24) NOT NULL DEFAULT 'active',
       sort_order INT NOT NULL DEFAULT 1,
       INDEX contacts_social_links_parent (parent_id, sort_order),
-      CONSTRAINT contacts_social_links_parent_fk FOREIGN KEY (parent_id) REFERENCES contacts (id) ON DELETE CASCADE
+      CONSTRAINT contacts_social_links_parent_fk FOREIGN KEY (parent_id) REFERENCES core_contacts (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )
     .execute(database);
 
-  await removeLegacyTenantColumn(database);
-}
-
-async function removeLegacyTenantColumn(database: Kysely<CoreDatabase>) {
-  for (const indexName of [
-    "contacts_tenant_code",
-    "contacts_tenant_status",
-    "uq_contacts_tenant_code",
-    "idx_contacts_tenant_status"
-  ]) {
-    const result = await sql<{ count: number | string }>`
-      SELECT COUNT(*) AS count
-      FROM information_schema.STATISTICS
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'contacts'
-        AND INDEX_NAME = ${indexName}
-    `.execute(database);
-    if (Number(result.rows[0]?.count ?? 0) > 0) {
-      await sql.raw(`ALTER TABLE contacts DROP INDEX \`${indexName}\``).execute(database);
-    }
-  }
-
-  const result = await sql<{ count: number | string }>`
-    SELECT COUNT(*) AS count
-    FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'contacts'
-      AND COLUMN_NAME = 'tenant_id'
-  `.execute(database);
-  if (Number(result.rows[0]?.count ?? 0) > 0) {
-    await sql.raw("ALTER TABLE contacts DROP COLUMN tenant_id").execute(database);
-  }
+  // Compatibility-only data normalization belongs to the owning migration,
+  // never to the repeatable default seeder.
+  await sql`UPDATE core_contacts_addresses AS address
+    INNER JOIN core_countries AS current_country ON current_country.id=address.country_id
+    INNER JOIN core_countries AS india ON india.code='IN'
+    SET address.country_id=india.id,address.country_name=india.name
+    WHERE current_country.code='UNKNOWN' OR current_country.name='-'`.execute(database);
+  await sql`UPDATE core_contacts AS legacy
+    LEFT JOIN core_contacts AS canonical
+      ON canonical.id<>legacy.id AND canonical.code=REPLACE(legacy.code, '_', '-')
+    SET legacy.code=REPLACE(legacy.code, '_', '-')
+    WHERE legacy.code REGEXP '^C_[0-9]+$' AND canonical.id IS NULL`.execute(database);
 }

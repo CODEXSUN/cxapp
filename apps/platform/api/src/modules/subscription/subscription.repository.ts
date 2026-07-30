@@ -5,29 +5,29 @@ import type { SubscriptionSavePayload } from "./subscription.types.js";
 export class SubscriptionRepository {
   async list() {
     const rows = await getPlatformDatabase()
-      .selectFrom("subscriptions")
-      .innerJoin("tenants", "tenants.id", "subscriptions.tenant_id")
-      .innerJoin("plans", "plans.id", "subscriptions.plan_id")
+      .selectFrom("app_subscriptions")
+      .innerJoin("app_tenants", "app_tenants.id", "app_subscriptions.tenant_id")
+      .innerJoin("app_plans", "app_plans.id", "app_subscriptions.plan_id")
       .select([
-        "subscriptions.id",
-        "subscriptions.uuid",
-        "subscriptions.tenant_id",
-        "subscriptions.plan_id",
-        "subscriptions.billing_cycle",
-        "subscriptions.starts_on",
-        "subscriptions.ends_on",
-        "subscriptions.status",
-        "tenants.tenant_name",
-        "plans.name as plan_name"
+        "app_subscriptions.id",
+        "app_subscriptions.uuid",
+        "app_subscriptions.tenant_id",
+        "app_subscriptions.plan_id",
+        "app_subscriptions.billing_cycle",
+        "app_subscriptions.starts_on",
+        "app_subscriptions.ends_on",
+        "app_subscriptions.status",
+        "app_tenants.tenant_name",
+        "app_plans.name as plan_name"
       ])
-      .orderBy("tenants.tenant_name")
+      .orderBy("app_tenants.tenant_name")
       .execute();
     return rows.map(toSubscription);
   }
 
   async create(input: SubscriptionSavePayload) {
     const result = await getPlatformDatabase()
-      .insertInto("subscriptions")
+      .insertInto("app_subscriptions")
       .values({
         billing_cycle: input.billingCycle,
         ends_on: input.endsOn,
@@ -43,7 +43,7 @@ export class SubscriptionRepository {
 
   async update(id: number, input: SubscriptionSavePayload) {
     await getPlatformDatabase()
-      .updateTable("subscriptions")
+      .updateTable("app_subscriptions")
       .set({
         billing_cycle: input.billingCycle,
         ends_on: input.endsOn,
@@ -59,22 +59,22 @@ export class SubscriptionRepository {
 
   async find(id: number) {
     const row = await getPlatformDatabase()
-      .selectFrom("subscriptions")
-      .innerJoin("tenants", "tenants.id", "subscriptions.tenant_id")
-      .innerJoin("plans", "plans.id", "subscriptions.plan_id")
+      .selectFrom("app_subscriptions")
+      .innerJoin("app_tenants", "app_tenants.id", "app_subscriptions.tenant_id")
+      .innerJoin("app_plans", "app_plans.id", "app_subscriptions.plan_id")
       .select([
-        "subscriptions.id",
-        "subscriptions.uuid",
-        "subscriptions.tenant_id",
-        "subscriptions.plan_id",
-        "subscriptions.billing_cycle",
-        "subscriptions.starts_on",
-        "subscriptions.ends_on",
-        "subscriptions.status",
-        "tenants.tenant_name",
-        "plans.name as plan_name"
+        "app_subscriptions.id",
+        "app_subscriptions.uuid",
+        "app_subscriptions.tenant_id",
+        "app_subscriptions.plan_id",
+        "app_subscriptions.billing_cycle",
+        "app_subscriptions.starts_on",
+        "app_subscriptions.ends_on",
+        "app_subscriptions.status",
+        "app_tenants.tenant_name",
+        "app_plans.name as plan_name"
       ])
-      .where("subscriptions.id", "=", id)
+      .where("app_subscriptions.id", "=", id)
       .executeTakeFirst();
     return row ? toSubscription(row) : null;
   }

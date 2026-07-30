@@ -17,7 +17,7 @@ type SalesTypesRow = {
 export class SalesTypesRepository {
   async list(filters: SalesTypesListFilters = {}) {
     const rows =
-      await sql<SalesTypesRow>`SELECT id, name, description, status, sort_order FROM sales_types
+      await sql<SalesTypesRow>`SELECT id, name, description, status, sort_order FROM core_sales_types
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)} OR LOWER(description) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toSalesTypes);
@@ -25,13 +25,13 @@ export class SalesTypesRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<SalesTypesRow>`SELECT id, name, description, status, sort_order FROM sales_types
+      await sql<SalesTypesRow>`SELECT id, name, description, status, sort_order FROM core_sales_types
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toSalesTypes(rows.rows[0]) : null;
   }
 
   async create(input: SalesTypesSavePayload) {
-    const result = await sql`INSERT INTO sales_types (name, description, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_sales_types (name, description, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.description)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -41,7 +41,7 @@ export class SalesTypesRepository {
   async update(id: string | number, input: SalesTypesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE sales_types SET name=${normalizeString(input.name)}, description=${normalizeString(input.description)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_sales_types SET name=${normalizeString(input.name)}, description=${normalizeString(input.description)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -51,7 +51,7 @@ export class SalesTypesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE sales_types SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_sales_types SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -60,7 +60,7 @@ export class SalesTypesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM sales_types WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_sales_types WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

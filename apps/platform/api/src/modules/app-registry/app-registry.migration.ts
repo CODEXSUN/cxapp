@@ -8,7 +8,7 @@ export const appRegistryMigration = {
 
 export async function migrateAppRegistryModule(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("platform_apps")
+    .createTable("app_platform_apps")
     .ifNotExists()
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (col) => col.notNull().unique())
@@ -21,5 +21,7 @@ export async function migrateAppRegistryModule(database: Kysely<PlatformDatabase
     .addColumn("description", "text", (col) => col.notNull())
     .addColumn("created_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updated_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
 }

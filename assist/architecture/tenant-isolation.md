@@ -111,3 +111,21 @@ Each tenant should have a planned backup and restore strategy:
 - External integration credentials must be encrypted.
 - Support access must be audited.
 - Cross-tenant admin actions need elevated permission and logging.
+
+## Domain And Login Resolution
+
+The canonical production host is `app.codexsun.com`. It is a shared entry point and
+does not belong to any one tenant. Tenant login on this host resolves an exact
+Corporate ID, verifies that tenant is active, resolves its server-side database
+secret, verifies the user in that tenant database, and only then creates a
+tenant-bound session.
+
+Custom domains are optional mappings. They start disabled and pending, become
+active only after DNS TXT ownership verification, and then replace Corporate ID
+as the tenant selector for that host. A supplied Corporate ID must still match
+the resolved tenant. Host mappings and session claims are rechecked on protected
+requests.
+
+Tenant, company, financial year, landing page, enabled modules, and safe settings
+may be cached for the current login. The cache is never an authorization source
+and is cleared whenever the browser principal changes.

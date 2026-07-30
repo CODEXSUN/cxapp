@@ -10,9 +10,10 @@ import type { TenantDatabase } from "../../database/schema.js";
 import { env } from "../../env.js";
 import {
   migrateSelectedTenantApps,
+  rollbackSelectedTenantApps,
   seedSelectedTenantApps
 } from "../../database/tenant-app-database.js";
-import { migrateTenantRuntimeModule } from "./tenant.migration.js";
+import { migrateTenantRuntimeModule, rollbackTenantRuntimeModule } from "./tenant.migration.js";
 import { TenantRepository } from "./tenant.repository.js";
 import { normalizeTenantDomain } from "../tenant-domain/tenant-domain.repository.js";
 import { EntitlementAccessService } from "../entitlement/entitlement.access.js";
@@ -76,10 +77,21 @@ export async function seedTenantDatabase(tenant: Tenant) {
   }
 }
 
+export async function rollbackTenantDatabase(tenant: Tenant) {
+  await createTenantDatabase(tenant);
+  const database = getTenantDatabase(tenant);
+  try {
+    await rollbackSelectedTenantApps(database, tenant);
+    return rollbackTenantRuntimeModule(database);
+  } finally {
+    await closeTenantDatabase(tenant);
+  }
+}
+
 export async function provisionTenantStorage(tenant: Tenant) {
   const roots = await ensureTenantStorage(tenant.slug || tenant.tenantCode);
   await getPlatformDatabase()
-    .updateTable("tenants")
+    .updateTable("app_tenants")
     .set({
       storage_private_root: roots.privateRoot,
       storage_public_root: roots.publicRoot,
@@ -128,15 +140,6 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
     `[seeder] seeding tenant "${tenant.tenantCode}" app modules (${moduleKeys.length} modules)`
   );
 
-  await database
-    .updateTable("module_settings")
-    .set({
-      enabled: false,
-      updated_at: sql`CURRENT_TIMESTAMP`
-    })
-    .where("module_key", "not in", moduleKeys)
-    .execute();
-
   for (const moduleKey of moduleKeys) {
     const settingsJson = JSON.stringify({
       defaultLandingApp: tenant.defaultLandingApp,
@@ -144,7 +147,7 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
     });
 
     await database
-      .insertInto("module_settings")
+      .insertInto("app_module_settings")
       .values({
         enabled: enabledKeys.has(moduleKey),
         module_key: moduleKey,
@@ -153,7 +156,6 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
       })
       .onDuplicateKeyUpdate({
         enabled: enabledKeys.has(moduleKey),
-        settings_json: settingsJson,
         updated_at: sql`CURRENT_TIMESTAMP`
       })
       .execute();
@@ -250,7 +252,7 @@ function stringArray(value: unknown) {
 async function seedDefaultTenantSubscription(tenant: Tenant) {
   const database = getPlatformDatabase();
   const existing = await database
-    .selectFrom("subscriptions")
+    .selectFrom("app_subscriptions")
     .select("id")
     .where("tenant_id", "=", tenant.id)
     .where("status", "in", ["active", "trial"])
@@ -261,7 +263,7 @@ async function seedDefaultTenantSubscription(tenant: Tenant) {
   }
 
   const starterPlan = await database
-    .selectFrom("plans")
+    .selectFrom("app_plans")
     .select(["id", "code"])
     .where("code", "=", "starter")
     .executeTakeFirst();
@@ -273,7 +275,7 @@ async function seedDefaultTenantSubscription(tenant: Tenant) {
   }
 
   await database
-    .insertInto("subscriptions")
+    .insertInto("app_subscriptions")
     .values({
       billing_cycle: "monthly",
       ends_on: null,

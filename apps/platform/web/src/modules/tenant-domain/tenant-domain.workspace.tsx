@@ -36,7 +36,8 @@ import {
   createTenantDomain,
   listAllTenantDomains,
   normalizeTenantDomain,
-  updateTenantDomain
+  updateTenantDomain,
+  verifyTenantDomain
 } from "./tenant-domain.services";
 import type { TenantDomainRecord, TenantDomainSavePayload } from "./tenant-domain.types";
 
@@ -92,7 +93,9 @@ export function TenantDomainList() {
     onError: (error) => showDomainError("Domain save failed", error),
     onSuccess: async (domain) => {
       await invalidateDomainData(queryClient);
-      toast.success("Domain saved", { description: `${domain.domain} is ready.` });
+      toast.success("Domain saved", {
+        description: `Publish the DNS verification record for ${domain.domain}.`
+      });
       setView({ domain, mode: "show" });
     }
   });
@@ -105,6 +108,15 @@ export function TenantDomainList() {
       toast.success("Domain updated", {
         description: `${domain.domain} was updated successfully.`
       });
+      setView({ domain, mode: "show" });
+    }
+  });
+  const verifyMutation = useMutation({
+    mutationFn: verifyTenantDomain,
+    onError: (error) => showDomainError("Domain verification failed", error),
+    onSuccess: async (domain) => {
+      await invalidateDomainData(queryClient);
+      toast.success("Domain verified", { description: `${domain.domain} is active.` });
       setView({ domain, mode: "show" });
     }
   });
@@ -138,6 +150,8 @@ export function TenantDomainList() {
         domain={view.domain}
         onBack={() => setView({ mode: "list" })}
         onEdit={() => setView({ domain: view.domain, mode: "upsert", returnTo: "show" })}
+        onVerify={() => verifyMutation.mutate(view.domain.id)}
+        verifying={verifyMutation.isPending}
       />
     );
   }
@@ -334,11 +348,15 @@ export function TenantDomainList() {
 function DomainShowPage({
   domain,
   onBack,
-  onEdit
+  onEdit,
+  onVerify,
+  verifying
 }: {
   domain: TenantDomainRecord;
   onBack: () => void;
   onEdit: () => void;
+  onVerify: () => void;
+  verifying: boolean;
 }) {
   return (
     <WorkspacePage
@@ -354,6 +372,16 @@ function DomainShowPage({
             <Pencil className="size-4" />
             Edit
           </Button>
+          {domain.verificationStatus !== "verified" ? (
+            <Button
+              className="h-9 rounded-md"
+              disabled={verifying}
+              onClick={onVerify}
+              type="button"
+            >
+              {verifying ? "Verifying..." : "Verify DNS"}
+            </Button>
+          ) : null}
         </div>
       }
     >
@@ -381,7 +409,17 @@ function DomainShowPage({
                   {domain.tenantCode}
                 </span>
               ],
-              ["Tenant status", domain.tenantStatus]
+              ["Tenant status", domain.tenantStatus],
+              ["Domain status", domain.status],
+              ["Verification", domain.verificationStatus],
+              ...(domain.verificationToken
+                ? [
+                    [
+                      "DNS TXT",
+                      `_codexsun-verification.${domain.domain} = codexsun-domain-verification=${domain.verificationToken}`
+                    ] as [string, string]
+                  ]
+                : [])
             ]}
           />
         </WorkspaceShowCard>

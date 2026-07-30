@@ -5,27 +5,22 @@ const ACCOUNTING_YEAR_ID_KEY = "codexsun.tenant.financial-year-id";
 
 export function getToken(_desk?: "tenant"): string | null {
   try {
-    return localStorage.getItem(TENANT_TOKEN_KEY);
+    localStorage.removeItem(TENANT_TOKEN_KEY);
+  } catch {}
+  return null;
+}
+
+export function getTenantDbName(): string | null {
+  try {
+    return sessionStorage.getItem(TENANT_DB_NAME_KEY);
   } catch {
     return null;
   }
 }
 
-export function getTenantDbName(): string | null {
-  try {
-    return (
-      localStorage.getItem(TENANT_DB_NAME_KEY) ??
-      import.meta.env.VITE_DEFAULT_TENANT_DB_NAME?.trim() ??
-      null
-    );
-  } catch {
-    return import.meta.env.VITE_DEFAULT_TENANT_DB_NAME?.trim() ?? null;
-  }
-}
-
 export function getTenantId(): string | null {
   try {
-    return localStorage.getItem(TENANT_ID_KEY);
+    return sessionStorage.getItem(TENANT_ID_KEY);
   } catch {
     return null;
   }

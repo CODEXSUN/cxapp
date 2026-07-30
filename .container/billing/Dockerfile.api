@@ -1,8 +1,8 @@
-ARG NODE_RUNTIME_VERSION=26.5.0
+ARG NODE_RUNTIME_VERSION
 FROM node:${NODE_RUNTIME_VERSION}-bookworm-slim AS build
 
 WORKDIR /app
-ARG NPM_RUNTIME_VERSION=12.0.1
+ARG NPM_RUNTIME_VERSION
 RUN npm install --global npm@${NPM_RUNTIME_VERSION}
 COPY package.json package-lock.json .npmrc tsconfig.json tsconfig.base.json turbo.json ./
 COPY tools ./tools
@@ -21,7 +21,7 @@ RUN npm ci \
   && npm run dependencies:check
 
 FROM build AS migrations
-ARG CODEXSUN_VERSION=1.0.42
+ARG CODEXSUN_VERSION
 LABEL org.opencontainers.image.title="CODEXSUN Billing Stack Migrations" \
       org.opencontainers.image.version="$CODEXSUN_VERSION"
 ENV NODE_ENV=production
@@ -32,8 +32,8 @@ RUN npm prune --omit=dev
 
 FROM node:${NODE_RUNTIME_VERSION}-bookworm-slim AS runtime
 
-ARG CODEXSUN_VERSION=1.0.42
-ARG NPM_RUNTIME_VERSION=12.0.1
+ARG CODEXSUN_VERSION
+ARG NPM_RUNTIME_VERSION
 ARG PLATFORM_API_PORT
 LABEL org.opencontainers.image.title="CODEXSUN Billing Stack API" \
       org.opencontainers.image.version="$CODEXSUN_VERSION"
@@ -69,5 +69,5 @@ ENV NODE_ENV=production
 USER node
 EXPOSE ${PLATFORM_API_PORT}
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=10 \
-  CMD node -e "fetch('http://127.0.0.1:'+process.env.HEALTH_PORT+'/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+process.env.PLATFORM_API_PORT+'/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 ENTRYPOINT ["codexsun-api-entrypoint"]

@@ -17,7 +17,7 @@ type CountryRow = {
 
 export class CountryRepository {
   async list(filters: CountryListFilters = {}) {
-    const rows = await sql<CountryRow>`SELECT id, code, name, sort_order, status FROM countries
+    const rows = await sql<CountryRow>`SELECT id, code, name, sort_order, status FROM core_countries
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)} OR LOWER(code) LIKE ${like(filters.search)})
       ORDER BY sort_order, name`.execute(getCoreDatabase());
     return rows.rows.map(toCountry);
@@ -25,14 +25,14 @@ export class CountryRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<CountryRow>`SELECT id, code, name, sort_order, status FROM countries WHERE id=${Number(id)} LIMIT 1`.execute(
+      await sql<CountryRow>`SELECT id, code, name, sort_order, status FROM core_countries WHERE id=${Number(id)} LIMIT 1`.execute(
         getCoreDatabase()
       );
     return rows.rows[0] ? toCountry(rows.rows[0]) : null;
   }
 
   async create(input: CountrySavePayload) {
-    const result = await sql`INSERT INTO countries (code, name, sort_order, status) VALUES
+    const result = await sql`INSERT INTO core_countries (code, name, sort_order, status) VALUES
       (${input.code}, ${input.name}, ${input.sortOrder}, ${input.status})`.execute(
       getCoreDatabase()
     );
@@ -40,14 +40,14 @@ export class CountryRepository {
   }
 
   async update(id: string | number, input: CountrySavePayload) {
-    await sql`UPDATE countries SET code=${input.code}, name=${input.name}, sort_order=${input.sortOrder}, status=${input.status} WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_countries SET code=${input.code}, name=${input.name}, sort_order=${input.sortOrder}, status=${input.status} WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
   }
 
   async setStatus(id: string | number, status: CountryStatus) {
-    await sql`UPDATE countries SET status=${status} WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_countries SET status=${status} WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -56,14 +56,14 @@ export class CountryRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing) return null;
-    await sql`DELETE FROM countries WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_countries WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 
   async dependentCount(id: string | number) {
     const rows = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) count FROM states WHERE country_id=${id}`.execute(getCoreDatabase());
+    }>`SELECT COUNT(*) count FROM core_states WHERE country_id=${id}`.execute(getCoreDatabase());
     return Number(rows.rows[0]?.count ?? 0);
   }
 }

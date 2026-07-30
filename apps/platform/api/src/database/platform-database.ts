@@ -1,7 +1,15 @@
-import { Kysely, MysqlDialect, sql } from "kysely";
+import { Kysely, MysqlDialect } from "kysely";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
 import { existsSync, writeFileSync } from "node:fs";
+import {
+  applyTablePrefixPolicy,
+  ensureStandardTableColumns,
+  rollbackMigrationBatch,
+  rollbackTablePrefixPolicy,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@codexsun/framework/db";
 import { env } from "../env.js";
 import {
   appRegistryMigration,
@@ -45,6 +53,7 @@ import {
 import { seedTaskManagerModule } from "../modules/task-manager/task-manager.seed.js";
 import { assertDatabaseName, quoteIdentifier } from "./database-utils.js";
 import type { PlatformDatabase } from "./schema.js";
+import { authSessionMigration, migrateAuthSession } from "../auth/auth-session.migration.js";
 
 let platformDatabase: Kysely<PlatformDatabase> | null = null;
 let bootstrapped = false;
@@ -64,6 +73,11 @@ const platformMasterMigrationSteps = [
     description: "Tenant domain registry.",
     migrate: migrateTenantDomainModule,
     name: "platform.tenant-domain.foundation"
+  },
+  {
+    description: authSessionMigration.description,
+    migrate: migrateAuthSession,
+    name: authSessionMigration.key
   },
   { description: "Platform plans.", migrate: migratePlanModule, name: "platform.plan.foundation" },
   {
@@ -122,6 +136,83 @@ const platformMasterMigrationSteps = [
     name: "platform.app-orchestration.runtime-policy"
   }
 ] as const;
+
+const platformTableNames = [
+  "access_permissions",
+  "access_roles",
+  "access_users",
+  "auth_sessions",
+  "codexsun_migrations",
+  "database_maintenance_runs",
+  "entitlements",
+  "industries",
+  "password_reset_requests",
+  "plans",
+  "platform_activity",
+  "platform_apps",
+  "platform_auth_users",
+  "queue_jobs",
+  "queue_runtime_settings",
+  "storage_objects",
+  "subscriptions",
+  "tenant_audit_events",
+  "tenant_domains",
+  "tenants"
+] as const;
+
+const platformPrefixPolicy = { include: platformTableNames, prefix: "app_" } as const;
+
+export const platformMigrationBatch: MigrationBatch<PlatformDatabase> = {
+  batch: 1,
+  description: "Platform module-owned schema baseline through release 1.0.42.",
+  scope: "platform",
+  version: "1.0.42",
+  steps: [
+    {
+      checksum: platformTableNames.join(","),
+      description: "Rename legacy Platform tables without copying or dropping data.",
+      down: (database) =>
+        rollbackTablePrefixPolicy(database, platformPrefixPolicy).then(() => undefined),
+      name: "platform.table-prefix-v1",
+      up: (database) =>
+        applyTablePrefixPolicy(database, platformPrefixPolicy).then(() => undefined),
+      version: 1
+    },
+    ...platformMasterMigrationSteps.map(({ description, migrate, name }) => ({
+      checksum: `${name}:v1`,
+      description,
+      name,
+      up: migrate,
+      version: 1
+    })),
+    {
+      checksum: `standard-columns:${platformTableNames.join(",")}`,
+      description: "Backfill and validate standard Platform table identity and audit columns.",
+      name: "platform.standard-columns-v1",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          platformTableNames
+            .filter((tableName) => tableName !== "codexsun_migrations")
+            .map((tableName) => `app_${tableName}`)
+        ),
+      version: 1
+    },
+    {
+      checksum: `uuid-defaults:${platformTableNames.join(",")}`,
+      description: "Add database-generated UUID defaults for repeatable Platform writes.",
+      name: "platform.uuid-defaults-v2",
+      up: (database) =>
+        ensureStandardTableColumns(
+          database,
+          platformTableNames
+            .filter((tableName) => tableName !== "codexsun_migrations")
+            .map((tableName) => `app_${tableName}`)
+        ),
+      version: 2
+    }
+  ]
+};
 
 export const platformMasterMigrationOrder = platformMasterMigrationSteps.map(({ name }) => name);
 
@@ -239,29 +330,14 @@ export async function createMasterDatabase() {
 export async function migratePlatformDatabase() {
   console.info(`[database] migrating platform database "${platformDatabaseName()}"`);
   const database = getPlatformDatabase();
-  await database.schema
-    .createTable("codexsun_migrations")
-    .ifNotExists()
-    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("name", "varchar(160)", (col) => col.notNull().unique())
-    .addColumn("applied_at", "datetime", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .execute();
+  const result = await runMigrationBatch(database, platformMigrationBatch, { batchSize: 8 });
+  console.info(
+    `[database] platform migration batch ${result.batch}: ${result.applied.length} applied, ${result.skipped.length} checksum-validated`
+  );
+}
 
-  for (const step of platformMasterMigrationSteps) {
-    await step.migrate(database);
-    await database.insertInto("codexsun_migrations").ignore().values({ name: step.name }).execute();
-    console.info(`[database] platform migration applied: ${step.name}`);
-  }
-
-  await database
-    .insertInto("codexsun_migrations")
-    .ignore()
-    .values([
-      { name: "001_platform_foundation" },
-      { name: "005_database_maintenance_run_lifecycle" }
-    ])
-    .execute();
-  console.info("[database] platform migration applied: 001_platform_foundation");
+export async function rollbackPlatformDatabase() {
+  return rollbackMigrationBatch(getPlatformDatabase(), platformMigrationBatch);
 }
 
 export async function seedPlatformDatabase() {
@@ -342,7 +418,9 @@ async function listTenantDatabaseNames(
 
   let rows: unknown;
   try {
-    [rows] = await connection.query(`SELECT db_name FROM ${quoteIdentifier(masterName)}.tenants`);
+    [rows] = await connection.query(
+      `SELECT db_name FROM ${quoteIdentifier(masterName)}.app_tenants`
+    );
   } catch {
     return [];
   }

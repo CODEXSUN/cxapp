@@ -35,7 +35,7 @@ export class SupplierStatementRepository {
              financial_year.name AS financial_year_name,
              DATE_FORMAT(financial_year.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(financial_year.end_date, '%Y-%m-%d') AS financial_year_end
-      FROM companies company CROSS JOIN financial_years financial_year
+      FROM core_companies company CROSS JOIN core_financial_years financial_year
       WHERE company.id=${scope.companyId} AND company.status='active'
         AND financial_year.id=${scope.financialYearId} AND financial_year.status='active'
         ${companyId ? sql`AND company.id=${companyId}` : sql``}
@@ -54,7 +54,7 @@ export class SupplierStatementRepository {
       name: string;
     }>`
       SELECT contact.id, contact.code, contact.name, contact.gstin
-      FROM contacts contact
+      FROM core_contacts contact
       WHERE contact.status='active' AND contact.deleted_at IS NULL
         AND (
           LOWER(COALESCE(contact.type_name,'')) LIKE '%supplier%'
@@ -87,7 +87,7 @@ export class SupplierStatementRepository {
           WHERE payment.company_id=${companyId} AND payment.financial_year_id=${financialYearId} AND payment.supplier_id=${contactId}
             AND payment.status='posted' AND payment.deleted_at IS NULL
             AND payment.payment_date<${from}),0) AS balance
-      FROM contacts contact WHERE contact.id=${contactId} LIMIT 1
+      FROM core_contacts contact WHERE contact.id=${contactId} LIMIT 1
     `.execute(database);
     return money(result.rows[0]?.balance);
   }

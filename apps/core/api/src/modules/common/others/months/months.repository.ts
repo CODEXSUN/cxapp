@@ -14,7 +14,7 @@ type MonthsRow = {
 export class MonthsRepository {
   async list(filters: MonthsListFilters = {}) {
     const rows =
-      await sql<MonthsRow>`SELECT id, name, start_date, end_date, status, sort_order FROM months
+      await sql<MonthsRow>`SELECT id, name, start_date, end_date, status, sort_order FROM core_months
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toMonths);
@@ -22,14 +22,14 @@ export class MonthsRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<MonthsRow>`SELECT id, name, start_date, end_date, status, sort_order FROM months
+      await sql<MonthsRow>`SELECT id, name, start_date, end_date, status, sort_order FROM core_months
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toMonths(rows.rows[0]) : null;
   }
 
   async create(input: MonthsSavePayload) {
     const result =
-      await sql`INSERT INTO months (name, start_date, end_date, status, sort_order) VALUES
+      await sql`INSERT INTO core_months (name, start_date, end_date, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.startDate)}, ${normalizeString(input.endDate)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
         getCoreDatabase()
       );
@@ -39,7 +39,7 @@ export class MonthsRepository {
   async update(id: string | number, input: MonthsSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE months SET name=${normalizeString(input.name)}, start_date=${normalizeString(input.startDate)}, end_date=${normalizeString(input.endDate)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_months SET name=${normalizeString(input.name)}, start_date=${normalizeString(input.startDate)}, end_date=${normalizeString(input.endDate)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -49,7 +49,7 @@ export class MonthsRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE months SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_months SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -58,7 +58,7 @@ export class MonthsRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM months WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_months WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

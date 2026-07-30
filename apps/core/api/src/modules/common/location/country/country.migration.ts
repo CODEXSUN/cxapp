@@ -11,7 +11,9 @@ export function migrateCountryModule(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS countries (
+    CREATE TABLE IF NOT EXISTS core_countries (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       code VARCHAR(80) NOT NULL UNIQUE,
       name VARCHAR(200) NOT NULL,

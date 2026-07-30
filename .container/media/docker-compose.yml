@@ -6,9 +6,9 @@ services:
       context: ../..
       dockerfile: .container/media/Dockerfile
       args:
-        CODEXSUN_VERSION: ${CODEXSUN_VERSION:-1.0.42}
-        FILEBROWSER_BASE_IMAGE: ${FILEBROWSER_BASE_IMAGE:-filebrowser/filebrowser:v2.63.5}
-    image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/media:${MEDIA_IMAGE_TAG:-1.0.42-filebrowser2.63.5}
+        CODEXSUN_VERSION: ${CODEXSUN_VERSION:?CODEXSUN_VERSION is required}
+        FILEBROWSER_BASE_IMAGE: ${FILEBROWSER_BASE_IMAGE:?FILEBROWSER_BASE_IMAGE is required}
+    image: ${CODEXSUN_IMAGE_REGISTRY:?CODEXSUN_IMAGE_REGISTRY is required}/media:${MEDIA_IMAGE_TAG:?MEDIA_IMAGE_TAG is required}
     container_name: codexsun-media
     restart: unless-stopped
     user: "0:0"
@@ -44,13 +44,13 @@ services:
 
 volumes:
   media-data:
-    name: ${MEDIA_DATA_VOLUME:-codexsun-media-data}
+    name: ${MEDIA_DATA_VOLUME:?MEDIA_DATA_VOLUME is required}
     external: true
   media-db:
-    name: ${MEDIA_DB_VOLUME:-codexsun-media-db}
+    name: ${MEDIA_DB_VOLUME:?MEDIA_DB_VOLUME is required}
     external: true
 
 networks:
   codexsun-network:
-    name: ${CODEXSUN_DOCKER_NETWORK:-codexsun-network}
+    name: ${CODEXSUN_DOCKER_NETWORK:?CODEXSUN_DOCKER_NETWORK is required}
     external: true

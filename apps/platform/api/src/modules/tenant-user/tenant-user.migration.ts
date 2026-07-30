@@ -6,7 +6,8 @@ export const tenantUserMigration = { key: "platform.tenant-user.foundation-v1" }
 export async function migrateTenantUserModule(database: Kysely<TenantDatabase>) {
   await sql
     .raw(
-      `CREATE TABLE IF NOT EXISTS users (
+      `CREATE TABLE IF NOT EXISTS app_users (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(8) NOT NULL UNIQUE,
     name VARCHAR(180) NOT NULL,
@@ -20,16 +21,13 @@ export async function migrateTenantUserModule(database: Kysely<TenantDatabase>) 
   ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     )
     .execute(database);
-  if (!(await columnExists(database, "users", "is_protected"))) {
+  if (!(await columnExists(database, "app_users", "is_protected"))) {
     await sql
-      .raw("ALTER TABLE users ADD COLUMN is_protected BOOLEAN NOT NULL DEFAULT FALSE AFTER status")
+      .raw(
+        "ALTER TABLE app_users ADD COLUMN is_protected BOOLEAN NOT NULL DEFAULT FALSE AFTER status"
+      )
       .execute(database);
   }
-  await database
-    .insertInto("schema_migrations")
-    .ignore()
-    .values({ name: tenantUserMigration.key })
-    .execute();
 }
 
 async function columnExists(database: Kysely<TenantDatabase>, table: string, column: string) {

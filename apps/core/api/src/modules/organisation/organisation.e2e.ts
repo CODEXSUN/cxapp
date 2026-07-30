@@ -8,6 +8,10 @@ import {
 } from "../../database/core-database.js";
 import { env } from "../../env.js";
 import { CompanyRepository } from "./company/company.repository.js";
+import {
+  getDefaultCompanyForDatabase,
+  setDefaultCompanyLandingAppForDatabase
+} from "./default-company/index.js";
 
 export async function runOrganisationE2e() {
   const databaseName = `codexsun_organisation_e2e_${Date.now()}`;
@@ -42,6 +46,14 @@ export async function runOrganisationE2e() {
     assert.equal(initial.defaults[0]?.financial_year_id, initial.financialYears[0]?.id);
     assert.equal(initial.defaults[0]?.landing_app, "application");
 
+    const updatedDefault = await setDefaultCompanyLandingAppForDatabase(databaseName, "billing");
+    assert.equal(updatedDefault.landingApp, "billing");
+    assert.equal(
+      (await getDefaultCompanyForDatabase(databaseName))?.landingApp,
+      "billing",
+      "Default Company must remain the startup landing source."
+    );
+
     await runWithCoreDatabase(databaseName, () =>
       new CompanyRepository().create({ name: "Dummy E2E Company" })
     );
@@ -55,6 +67,7 @@ export async function runOrganisationE2e() {
     assert.equal(restarted.defaults.length, 1);
     assert.equal(restarted.defaults[0]?.company_id, initial.companies[0]?.id);
     assert.equal(restarted.defaults[0]?.financial_year_id, initial.financialYears[0]?.id);
+    assert.equal(restarted.defaults[0]?.landing_app, "billing");
 
     return {
       companyId: initial.companies[0]?.id,
@@ -71,13 +84,13 @@ export async function runOrganisationE2e() {
 
 async function loadSeedState(admin: Awaited<ReturnType<typeof createConnection>>) {
   const [companies] = await admin.query<Array<RowDataPacket & CompanyRow>>(
-    "SELECT id,code,name,legal_name,tds_available,tcs_available,status,emails_json FROM companies ORDER BY id"
+    "SELECT id,code,name,legal_name,tds_available,tcs_available,status,emails_json FROM core_companies ORDER BY id"
   );
   const [financialYears] = await admin.query<Array<RowDataPacket & FinancialYearRow>>(
-    "SELECT id,is_current,status FROM financial_years ORDER BY id"
+    "SELECT id,is_current,status FROM core_financial_years ORDER BY id"
   );
   const [defaults] = await admin.query<Array<RowDataPacket & DefaultCompanyRow>>(
-    "SELECT company_id,financial_year_id,landing_app,status FROM default_company_settings ORDER BY id"
+    "SELECT company_id,financial_year_id,landing_app,status FROM core_default_company_settings ORDER BY id"
   );
   return { companies, defaults, financialYears };
 }

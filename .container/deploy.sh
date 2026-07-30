@@ -54,14 +54,14 @@ compose_all() {
 }
 
 require_stack_dependencies() {
-  network=$(env_value CODEXSUN_DOCKER_NETWORK codexsun-network)
+  network=$(env_value CODEXSUN_DOCKER_NETWORK)
   docker network inspect "$network" >/dev/null 2>&1 || {
     echo "Required Docker network is missing: $network" >&2
     echo "Run: bash .container/setup.sh $STACK" >&2
     exit 69
   }
 
-  media_data=$(env_value MEDIA_DATA_VOLUME codexsun-media-data)
+  media_data=$(env_value MEDIA_DATA_VOLUME)
   docker volume inspect "$media_data" >/dev/null 2>&1 || {
     echo "Required Media volume is missing: $media_data" >&2
     echo "Run: bash .container/setup.sh $STACK" >&2
@@ -83,7 +83,7 @@ require_stack_dependencies() {
 
 stack_image() {
   suffix="$1"
-  registry=${CODEXSUN_IMAGE_REGISTRY:-$(env_value CODEXSUN_IMAGE_REGISTRY codexsun)}
+  registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
   upper_stack=$(printf '%s' "$STACK" | tr '[:lower:]' '[:upper:]')
   case "$suffix" in
     api) tag_key="${upper_stack}_STACK_API_IMAGE_TAG" ;;
@@ -91,7 +91,7 @@ stack_image() {
     migrations) tag_key="${upper_stack}_STACK_MIGRATIONS_IMAGE_TAG" ;;
     *) echo "Unknown image role: $suffix" >&2; exit 64 ;;
   esac
-  tag=$(env_value "$tag_key" "$(env_value CODEXSUN_VERSION 1.0.42)")
+  tag=$(env_value "$tag_key")
   printf '%s/%s-stack-%s:%s' "$registry" "$STACK" "$suffix" "$tag"
 }
 
@@ -158,7 +158,7 @@ reinstall_stack() {
 
 upgrade_stack() {
   require_stack_dependencies
-  registry=${CODEXSUN_IMAGE_REGISTRY:-$(env_value CODEXSUN_IMAGE_REGISTRY codexsun)}
+  registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
   echo "Pulling the versioned $STACK release from $registry."
   compose_all pull
   migrate_stack

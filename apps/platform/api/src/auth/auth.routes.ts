@@ -1,120 +1,132 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { fail, ok } from "@codexsun/framework/http";
+import { z } from "zod";
 import { AuthService } from "./auth.service.js";
-import { signAuthToken, verifyAuthToken, type AuthUserType } from "./jwt.js";
+import { AuthSessionRepository } from "./auth-session.repository.js";
+import { clearAllSessionCookies, writeEncryptedSessionCookie } from "./session-cookie.js";
+import { enforceBrowserRequestOrigin, requestHost } from "./auth-request-context.js";
+import { canonicalAppHost } from "../modules/tenant-domain/tenant-domain.repository.js";
+import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import { env } from "../env.js";
 
 const authService = new AuthService();
+const sessions = new AuthSessionRepository();
+const tenants = new TenantRepository();
+const attempts = new Map<string, { count: number; resetAt: number }>();
 
 export async function registerAuthRoutes(app: FastifyInstance) {
+  app.get("/auth/tenant-context", async (request) => {
+    const host = requestHost(request);
+    if (host === canonicalAppHost()) {
+      return ok(
+        { corporateIdRequired: true, host, mode: "shared_domain", tenantName: null },
+        { requestId: request.id }
+      );
+    }
+    const tenant = await tenants.findByDomain(host);
+    return ok(
+      tenant
+        ? { corporateIdRequired: false, host, mode: "custom_domain", tenantName: tenant.tenantName }
+        : { corporateIdRequired: false, host, mode: "unknown", tenantName: null },
+      { requestId: request.id }
+    );
+  });
+
   app.post("/auth/development/tenant-login", async (request, reply) => {
+    enforceBrowserRequestOrigin(request);
     if (
       env.NODE_ENV !== "development" ||
       env.DEV_AUTO_TENANT_LOGIN !== "1" ||
       env.DEFAULT_TENANT_CORPORATE_ID.trim().toUpperCase() !== "CODEXSUN"
     ) {
-      return reply.code(404).send(
-        fail(
-          {
-            code: "AUTH_DEVELOPMENT_LOGIN_DISABLED",
-            message: "Development tenant login is disabled."
-          },
-          { requestId: request.id }
-        )
-      );
+      return reply
+        .code(404)
+        .send(
+          fail(
+            { code: "AUTH_DEVELOPMENT_LOGIN_DISABLED", message: "Development login is disabled." },
+            { requestId: request.id }
+          )
+        );
     }
-
+    await replaceCurrentSession(request);
+    clearAllSessionCookies(reply);
     const result = await authService.login({
       corporateId: "CODEXSUN",
       desk: "tenant",
-      domain: requestDomain(request),
+      domain: requestHost(request),
       email: env.DEFAULT_TENANT_ADMIN_EMAIL,
       password: env.DEFAULT_TENANT_ADMIN_PASSWORD
     });
-
     if (!result || !("tenantId" in result)) {
-      return reply.code(401).send(
-        fail(
-          {
-            code: "AUTH_DEVELOPMENT_LOGIN_FAILED",
-            message: "CODEXSUN development credentials are invalid."
-          },
-          { requestId: request.id }
-        )
-      );
+      return reply.code(401).send(invalidCredentials(request));
     }
-
-    writeSessionCookie(reply, result.userType, result.accessToken);
-    return ok(result, {
+    writeEncryptedSessionCookie(reply, result.accessToken);
+    return ok(publicResult(request, result), {
       requestId: request.id,
       tenantId: result.tenantId
     });
   });
 
   app.post("/auth/login", async (request, reply) => {
-    const body = request.body as LoginBody | undefined;
+    enforceBrowserRequestOrigin(request);
+    const body = loginSchema.parse(request.body);
+    const key = `${request.ip}:${requestHost(request)}:${body.desk}:${body.email.toLowerCase()}`;
+    if (isRateLimited(key)) {
+      return reply
+        .code(429)
+        .send(
+          fail(
+            { code: "AUTH_RATE_LIMITED", message: "Too many sign-in attempts. Try again later." },
+            { requestId: request.id }
+          )
+        );
+    }
+    await replaceCurrentSession(request);
+    clearAllSessionCookies(reply);
     const loginInput: {
       corporateId?: string;
-      desk?: AuthUserType | "admin" | "sa";
+      desk: typeof body.desk;
       domain: string;
-      email?: string;
-      password?: string;
+      email: string;
+      password: string;
     } = {
-      domain: requestDomain(request)
+      desk: body.desk,
+      domain: requestHost(request),
+      email: body.email,
+      password: body.password
     };
-    if (body?.desk) loginInput.desk = body.desk;
-    if (body?.email) loginInput.email = body.email;
-    if (body?.password) loginInput.password = body.password;
-    const corporateId = body?.corporateId ?? body?.tenantCode;
+    const corporateId = body.corporateId ?? body.tenantCode;
     if (corporateId) loginInput.corporateId = corporateId;
     const result = await authService.login(loginInput);
-
     if (!result) {
-      return reply.code(401).send(
-        fail(
-          {
-            code: "AUTH_INVALID_CREDENTIALS",
-            message: "Invalid credentials or workspace."
-          },
-          { requestId: request.id }
-        )
-      );
+      recordFailure(key);
+      return reply.code(401).send(invalidCredentials(request));
     }
-
-    writeSessionCookie(reply, result.userType, result.accessToken);
-    return ok(result, {
+    attempts.delete(key);
+    writeEncryptedSessionCookie(reply, result.accessToken);
+    return ok(publicResult(request, result), {
       requestId: request.id,
       ...("tenantId" in result && result.tenantId ? { tenantId: result.tenantId } : {})
     });
   });
 
   app.get("/auth/session", async (request, reply) => {
-    const session = sessionToken(request);
-    const payload = session.token ? verifyAuthToken(session.token) : null;
-    if (!payload) {
-      return reply.code(401).send(
-        fail(
-          {
-            code: "AUTH_SESSION_EXPIRED",
-            message: "Session expired. Please sign in again."
-          },
-          { requestId: request.id }
-        )
-      );
+    const auth = request.authContext;
+    if (!auth) {
+      return reply
+        .code(401)
+        .send(
+          fail(
+            { code: "AUTH_SESSION_EXPIRED", message: "Session expired. Please sign in again." },
+            { requestId: request.id }
+          )
+        );
     }
-
-    const renewedToken =
-      payload.exp - Math.floor(Date.now() / 1000) <= env.AUTH_SESSION_RENEWAL_HOURS * 60 * 60
-        ? signRenewedToken(payload)
-        : null;
-    if (renewedToken) writeSessionCookie(reply, payload.userType, renewedToken);
-
+    const payload = auth.payload;
     return ok(
       {
-        ...((session.source === "cookie" || renewedToken) && {
-          accessToken: renewedToken ?? session.token
-        }),
         authenticated: true,
+        context: auth.session?.context,
         email: payload.email,
         expiresAt: new Date(payload.exp * 1000).toISOString(),
         name: payload.name,
@@ -125,118 +137,60 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         tenantUuid: payload.tenantUuid,
         userType: payload.userType
       },
-      {
-        requestId: request.id,
-        ...(payload.tenantId ? { tenantId: payload.tenantId } : {})
-      }
+      { requestId: request.id, ...(payload.tenantId ? { tenantId: payload.tenantId } : {}) }
     );
   });
 
   app.post("/auth/logout", async (request, reply) => {
-    const desk = requestedUserType(request);
-    if (desk) clearSessionCookie(reply, desk);
-    else {
-      clearSessionCookie(reply, "tenant");
-      clearSessionCookie(reply, "staff");
-      clearSessionCookie(reply, "super_admin");
-    }
+    await replaceCurrentSession(request);
+    clearAllSessionCookies(reply);
     return ok({ loggedOut: true }, { requestId: request.id });
   });
 }
 
-type LoginBody = {
-  corporateId?: string;
-  desk?: AuthUserType | "admin" | "sa";
-  email?: string;
-  password?: string;
-  tenantCode?: string;
-};
+const loginSchema = z
+  .object({
+    corporateId: z.string().trim().min(1).max(120).optional(),
+    desk: z.enum(["tenant", "admin", "staff", "sa", "super_admin"]),
+    email: z.string().trim().email().max(180),
+    password: z.string().min(1).max(1024),
+    tenantCode: z.string().trim().min(1).max(120).optional()
+  })
+  .strict();
 
-function bearerToken(request: FastifyRequest) {
-  const authorization = request.headers.authorization;
-  if (!authorization?.startsWith("Bearer ")) {
-    return "";
+function invalidCredentials(request: FastifyRequest) {
+  return fail(
+    { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid credentials or workspace." },
+    { requestId: request.id }
+  );
+}
+
+function publicResult<T extends { accessToken: string }>(request: FastifyRequest, result: T) {
+  const { accessToken, ...safe } = result;
+  return env.AUTH_MODE === "jwt" ||
+    String(request.headers["x-auth-token-delivery"] ?? "").toLowerCase() === "bearer"
+    ? { ...safe, accessToken }
+    : safe;
+}
+
+async function replaceCurrentSession(request: FastifyRequest) {
+  if (request.authContext?.payload.jti) await sessions.revoke(request.authContext.payload.jti);
+}
+
+function isRateLimited(key: string) {
+  const entry = attempts.get(key);
+  if (!entry) return false;
+  if (entry.resetAt <= Date.now()) {
+    attempts.delete(key);
+    return false;
   }
-  return authorization.slice("Bearer ".length).trim();
+  return entry.count >= 5;
 }
 
-const sessionCookieNames: Record<AuthUserType, string> = {
-  staff: "codexsun_session_admin",
-  super_admin: "codexsun_session_sa",
-  tenant: "codexsun_session_tenant"
-};
-
-function sessionToken(request: FastifyRequest) {
-  const bearer = bearerToken(request);
-  if (bearer) return { source: "bearer" as const, token: bearer };
-  if (env.AUTH_MODE === "jwt") return { source: "none" as const, token: "" };
-
-  const userType = requestedUserType(request);
-  if (userType) {
-    return {
-      source: "cookie" as const,
-      token: request.cookies[sessionCookieNames[userType]] ?? ""
-    };
-  }
-
-  for (const cookieName of Object.values(sessionCookieNames)) {
-    const token = request.cookies[cookieName];
-    if (token) return { source: "cookie" as const, token };
-  }
-  return { source: "none" as const, token: "" };
-}
-
-function requestedUserType(request: FastifyRequest): AuthUserType | null {
-  const value = request.headers["x-auth-desk"];
-  const desk = Array.isArray(value) ? value[0] : value;
-  if (desk === "tenant") return "tenant";
-  if (desk === "admin" || desk === "staff") return "staff";
-  if (desk === "sa" || desk === "super_admin") return "super_admin";
-  return null;
-}
-
-function writeSessionCookie(reply: FastifyReply, userType: AuthUserType, token: string) {
-  if (env.AUTH_MODE === "jwt") return;
-  reply.setCookie(sessionCookieNames[userType], token, sessionCookieOptions());
-}
-
-function clearSessionCookie(reply: FastifyReply, userType: AuthUserType) {
-  reply.clearCookie(sessionCookieNames[userType], {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: env.NODE_ENV === "production"
+function recordFailure(key: string) {
+  const current = attempts.get(key);
+  attempts.set(key, {
+    count: current && current.resetAt > Date.now() ? current.count + 1 : 1,
+    resetAt: current && current.resetAt > Date.now() ? current.resetAt : Date.now() + 15 * 60 * 1000
   });
-}
-
-function sessionCookieOptions() {
-  return {
-    httpOnly: true,
-    maxAge: env.AUTH_SESSION_TTL_HOURS * 60 * 60,
-    path: "/",
-    sameSite: "lax" as const,
-    secure: env.NODE_ENV === "production"
-  };
-}
-
-function signRenewedToken(payload: ReturnType<typeof verifyAuthToken> & {}) {
-  if (!payload) return null;
-  return signAuthToken({
-    email: payload.email,
-    ...(payload.name ? { name: payload.name } : {}),
-    ...(payload.tenantCode ? { tenantCode: payload.tenantCode } : {}),
-    ...(payload.tenantDbName ? { tenantDbName: payload.tenantDbName } : {}),
-    ...(payload.tenantId ? { tenantId: payload.tenantId } : {}),
-    ...(payload.tenantUuid ? { tenantUuid: payload.tenantUuid } : {}),
-    userId: payload.userId,
-    userType: payload.userType
-  });
-}
-
-function requestDomain(request: FastifyRequest) {
-  const forwardedHost = request.headers["x-forwarded-host"];
-  const host = Array.isArray(forwardedHost)
-    ? forwardedHost[0]
-    : forwardedHost || request.headers.host || "";
-  return String(host);
 }

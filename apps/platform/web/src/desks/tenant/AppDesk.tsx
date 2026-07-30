@@ -18,11 +18,11 @@ import { GlobalLoader } from "@codexsun/ui/components/global-loader";
 import { Label } from "@codexsun/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@codexsun/ui/components/radio-group";
 import { StatusBadge } from "@codexsun/ui/components/StatusBadge";
+import { toast } from "sonner";
 import { AuthGate } from "../../shared/auth/AuthGate";
 import {
   appMenuItemsFor,
   appWorkspaceItems,
-  defaultLandingApp,
   enabledAppIds,
   type BillingNavigationFeatures,
   type PlatformAppId
@@ -37,7 +37,7 @@ import {
 } from "@codexsun/core-web/modules/organisation/default-company/services";
 import type { LandingAppOption } from "@codexsun/core-web/modules/organisation/default-company/types";
 import { listFinancialYears } from "@codexsun/core-web/modules/organisation/financial-year/services";
-import { getToken, logout } from "../../shared/api/platform-api";
+import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
@@ -344,17 +344,13 @@ type AppPage =
   | "core.master.product"
   | "core.master.work-order"
   | `core.common.${"accounts" | "contacts" | "others" | "products" | "workorder"}.${string}`;
-const LANDING_APP_STORAGE_KEY = "codexsun.tenant.landing-app.live";
 const COMPANY_CONTEXT_STORAGE_KEY = "codexsun.tenant.company-id";
 const ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY = "codexsun.tenant.financial-year-id";
 
 export function AppDesk() {
   const queryClient = useQueryClient();
   const signedInUser = signedInTenantUser();
-  const [page, setPage] = useState<AppPage>(() => pageFromUrl(readPublishedLandingApp()));
-  const [publishedLandingApp, setPublishedLandingApp] = useState<PlatformAppId | null>(() =>
-    readPublishedLandingApp()
-  );
+  const [page, setPage] = useState<AppPage>(() => pageFromUrl(null));
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() => isAppRootPath());
   const runtimeQuery = useQuery({
     queryFn: getTenantRuntime,
@@ -381,36 +377,27 @@ export function AppDesk() {
   const moduleKeys = runtime?.tenant?.enabledModuleKeys ?? ["platform.application"];
   const enabledApps = enabledAppIds(moduleKeys);
   const switchableApps = uniqueApps(enabledApps);
-  const runtimeLandingApp =
-    runtime?.defaultLandingApp ?? defaultLandingApp(runtime?.tenant?.defaultLandingApp, moduleKeys);
   const activeDefaultCompany =
     defaultCompanyQuery.data?.status === "active" ? defaultCompanyQuery.data : null;
   const persistedLandingApp = activeDefaultCompany?.landingApp as PlatformAppId | undefined;
   const landingApp =
-    publishedLandingApp && enabledApps.includes(publishedLandingApp)
-      ? publishedLandingApp
-      : persistedLandingApp && enabledApps.includes(persistedLandingApp)
-        ? persistedLandingApp
-        : runtimeLandingApp;
+    persistedLandingApp && enabledApps.includes(persistedLandingApp)
+      ? persistedLandingApp
+      : "application";
   const activeApp = appFromPage(page, landingApp, switchableApps);
   const activeCompanies = useMemo(
     () => (companiesQuery.data ?? []).filter((company) => company.isActive),
     [companiesQuery.data]
   );
   const selectedCompany =
-    activeCompanies.find((company) => company.id === activeDefaultCompany?.companyId) ??
-    activeCompanies[0] ??
-    null;
+    activeCompanies.find((company) => company.id === activeDefaultCompany?.companyId) ?? null;
   const companyBranding = useCompanyBranding(selectedCompany?.id ?? null);
   const activeFinancialYears = useMemo(
     () => (financialYearsQuery.data ?? []).filter((year) => year.status === "active"),
     [financialYearsQuery.data]
   );
   const selectedFinancialYear =
-    activeFinancialYears.find((year) => year.id === activeDefaultCompany?.financialYearId) ??
-    activeFinancialYears.find((year) => year.isCurrent) ??
-    activeFinancialYears[0] ??
-    null;
+    activeFinancialYears.find((year) => year.id === activeDefaultCompany?.financialYearId) ?? null;
   const billingSettingsQuery = useQuery({
     enabled:
       activeApp === "billing" && enabledApps.includes("billing") && Boolean(companyContextId),
@@ -435,7 +422,12 @@ export function AppDesk() {
       publishCompanyContext(record.companyId);
       publishAccountingYear(record.financialYearId);
       await queryClient.invalidateQueries({ queryKey: defaultCompanyQueryKey });
-    }
+      toast.success("Startup defaults updated");
+    },
+    onError: (error) =>
+      toast.error("Startup defaults could not be updated", {
+        description: error instanceof Error ? error.message : "Update failed."
+      })
   });
 
   useEffect(() => {
@@ -452,13 +444,6 @@ export function AppDesk() {
       `/app/${fallbackPage.replaceAll(".", "/")}`
     );
   }, [billingSettingsQuery.data?.features, page]);
-
-  useEffect(() => {
-    if (publishedLandingApp && !enabledApps.includes(publishedLandingApp)) {
-      setPublishedLandingApp(null);
-      window.localStorage.removeItem(LANDING_APP_STORAGE_KEY);
-    }
-  }, [enabledApps, publishedLandingApp]);
 
   useEffect(() => {
     if (!selectedCompany) {
@@ -480,14 +465,14 @@ export function AppDesk() {
 
   useEffect(() => {
     if (!shouldResolveLandingPath) return;
-    if (!publishedLandingApp && runtimeQuery.isLoading) return;
+    if (runtimeQuery.isLoading || !defaultCompanyQuery.isFetched) return;
 
     const landingPage = pageForApp(landingApp);
     setPage(landingPage);
     setShouldResolveLandingPath(false);
     window.history.replaceState({ page: landingPage }, "", `/app/${landingPage.replace(".", "/")}`);
     setPlatformDocumentTitle(titleForPage(landingPage));
-  }, [landingApp, publishedLandingApp, runtimeQuery.isLoading, shouldResolveLandingPath]);
+  }, [defaultCompanyQuery.isFetched, landingApp, runtimeQuery.isLoading, shouldResolveLandingPath]);
 
   function selectPage(nextPage: AppPage) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
@@ -510,8 +495,13 @@ export function AppDesk() {
   }
 
   function publishLandingApp(nextLandingApp: PlatformAppId) {
-    setPublishedLandingApp(nextLandingApp);
-    window.localStorage.setItem(LANDING_APP_STORAGE_KEY, nextLandingApp);
+    if (!activeDefaultCompany) return;
+    defaultSelectionMutation.mutate({
+      companyId: activeDefaultCompany.companyId,
+      financialYearId: activeDefaultCompany.financialYearId,
+      landingApp: nextLandingApp,
+      status: "active"
+    });
   }
 
   async function handleLogout() {
@@ -565,11 +555,13 @@ export function AppDesk() {
   }));
 
   const contextError =
-    !companiesQuery.isLoading && runtime?.tenant && !selectedCompany
-      ? new Error("No active company is available for this tenant.")
-      : !financialYearsQuery.isLoading && runtime?.tenant && !selectedFinancialYear
-        ? new Error("No active financial year is available for this tenant.")
-        : null;
+    !defaultCompanyQuery.isLoading && runtime?.tenant && !activeDefaultCompany
+      ? new Error("Configure an active Default Company before opening the tenant workspace.")
+      : !companiesQuery.isLoading && runtime?.tenant && !selectedCompany
+        ? new Error("No active company is available for this tenant.")
+        : !financialYearsQuery.isLoading && runtime?.tenant && !selectedFinancialYear
+          ? new Error("No active financial year is available for this tenant.")
+          : null;
 
   const bootstrapLoading =
     runtimeQuery.isLoading ||
@@ -665,6 +657,7 @@ export function AppDesk() {
               enabledApps={enabledApps}
               landingApp={landingApp}
               onPublish={publishLandingApp}
+              saving={defaultSelectionMutation.isPending}
             />
           ) : null}
           {safePage === "application.profile" ? <ApplicationProfile /> : null}
@@ -832,11 +825,13 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
 function LandingDesk({
   enabledApps,
   landingApp,
-  onPublish
+  onPublish,
+  saving
 }: {
   enabledApps: PlatformAppId[];
   landingApp: PlatformAppId;
   onPublish: (app: PlatformAppId) => void;
+  saving: boolean;
 }) {
   const [draftLandingApp, setDraftLandingApp] = useState<PlatformAppId>(landingApp);
   const dirty = draftLandingApp !== landingApp;
@@ -894,8 +889,12 @@ function LandingDesk({
             Choose which enabled app opens first for this workspace.
           </p>
         </div>
-        <Button disabled={!dirty} icon={<RocketIcon />} onClick={() => onPublish(draftLandingApp)}>
-          Publish live
+        <Button
+          disabled={!dirty || saving}
+          icon={<RocketIcon />}
+          onClick={() => onPublish(draftLandingApp)}
+        >
+          {saving ? "Publishing..." : "Publish live"}
         </Button>
       </div>
 
@@ -1179,8 +1178,7 @@ function resolveBillingFeaturePage(
 }
 
 function signedInTenantUser() {
-  const token = getToken("tenant");
-  const identity = token ? decodeTokenIdentity(token) : null;
+  const identity = getSessionIdentity();
   const email = identity?.email || "user@codexsun.app";
   const name = identity?.name || email.split("@")[0] || "User";
   return {
@@ -1188,24 +1186,6 @@ function signedInTenantUser() {
     fallback: userInitials(name),
     name
   };
-}
-
-function decodeTokenIdentity(token: string) {
-  try {
-    const encoded = token.split(".")[1];
-    if (!encoded) return null;
-    const payload = JSON.parse(atob(encoded.replace(/-/g, "+").replace(/_/g, "/"))) as {
-      email?: unknown;
-      name?: unknown;
-    };
-    if (typeof payload.email !== "string" || !payload.email.trim()) return null;
-    return {
-      email: payload.email.trim(),
-      name: typeof payload.name === "string" ? payload.name.trim() : ""
-    };
-  } catch {
-    return null;
-  }
 }
 
 function userInitials(name: string) {
@@ -1399,18 +1379,4 @@ function pageForApp(app: PlatformAppId): AppPage {
 
 function isAppRootPath() {
   return window.location.pathname === "/app" || window.location.pathname === "/app/";
-}
-
-function readPublishedLandingApp(): PlatformAppId | null {
-  try {
-    const stored = window.localStorage.getItem(LANDING_APP_STORAGE_KEY);
-    return stored === "application" ||
-      stored === "billing" ||
-      stored === "mail" ||
-      stored === "task-manager"
-      ? stored
-      : null;
-  } catch {
-    return null;
-  }
 }

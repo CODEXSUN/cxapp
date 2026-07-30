@@ -38,6 +38,8 @@ import { seedDefaultTenant } from "./modules/tenant/tenant.seed.js";
 import { env } from "./env.js";
 import { bootstrapPlatformDatabase, closePlatformDatabase } from "./database/platform-database.js";
 import { closeAllTenantDatabases } from "./database/tenant-database.js";
+import { registerAuthRequestContext } from "./auth/auth-request-context.js";
+import { TenantDomainRepository } from "./modules/tenant-domain/tenant-domain.repository.js";
 
 export async function createApp() {
   console.info("[platform.boot] bootstrap started");
@@ -47,7 +49,7 @@ export async function createApp() {
   const app = await createApiApp({
     appName: "CODEXSUN Platform API",
     cookieSecret: env.JWT_SECRET,
-    corsOrigins: platformWebOrigins(),
+    corsOrigins: await platformWebOrigins(),
     environment: env.NODE_ENV,
     shutdownHooks: [
       async () => {
@@ -69,6 +71,7 @@ export async function createApp() {
     ]
   });
   const queueService = new QueueManagerService();
+  registerAuthRequestContext(app);
   const mailModule = createMailModule({
     enqueue: (payload) => queueService.enqueue(payload),
     resolveContext: mailContext,
@@ -114,6 +117,14 @@ export async function createApp() {
 
   registerRequestLogging(app);
   registerHealthRoute(app, healthChecks);
+  app.get("/public/runtime-config", async () => ({
+    data: {
+      VITE_DEV_AUTO_TENANT_LOGIN: env.DEV_AUTO_TENANT_LOGIN,
+      VITE_PLATFORM_API_URL: "/api/platform",
+      VITE_TENANT_NAME: env.DEFAULT_TENANT_NAME
+    },
+    success: true
+  }));
   console.info("[platform.routes] health ready");
   await registerAuthRoutes(app);
   console.info("[platform.routes] auth ready");
@@ -158,8 +169,12 @@ export async function createApp() {
   return app;
 }
 
-function platformWebOrigins() {
+async function platformWebOrigins() {
   const configuredOrigins = [env.PLATFORM_WEB_ORIGIN, ...env.PLATFORM_WEB_ORIGINS.split(",")];
+  const verifiedDomains = (await new TenantDomainRepository().listAll())
+    .filter((domain) => domain.status === "active" && domain.verificationStatus === "verified")
+    .map((domain) => `https://${domain.domain}`);
+  configuredOrigins.push(...verifiedDomains);
   if (env.NODE_ENV !== "production") {
     configuredOrigins.push(
       `http://127.0.0.1:${env.PLATFORM_WEB_PORT}`,

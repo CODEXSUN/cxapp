@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.42
+Current version: 1.0.43
 
-Release tag: v-1.0.42
+Release tag: v-1.0.43
 
-Changelog label: v 1.0.42
+Changelog label: v 1.0.43
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,17 +20,84 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.43
+
+### [v 1.0.43] 2026-07-30 10:59 am - Production Environment and Deployment Hardening
+
+#### Database Changes
+
+- Database update: Yes.
+- Made migration checksums build-mode stable across source execution and compiled
+  production containers, and expanded the migration contract suite to reject
+  duplicate SQL columns and ambiguous repeatable-seed updates.
+- Added forward migration steps that install database-generated 8-character
+  UUID defaults on existing Platform, tenant-runtime, Core, Billing, and Mail
+  tables without replacing persisted identifiers.
+- Corrected duplicate company social-link and Billing settings column
+  declarations and qualified the contact seed's no-op duplicate update for
+  repeatable MariaDB execution.
+- Kept the default company, financial year, and landing application in the
+  tenant database's singleton `core_default_company_settings` record so startup
+  selection survives application and infrastructure restarts.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.43.
+- Made the root `.env` the mandatory deployment source for application ports,
+  MariaDB, Redis, File Browser, JWT/session keys, administrator accounts, tenant
+  defaults, image versions, and public runtime settings; removed deployment
+  fallbacks and the secondary deploy-environment contract.
+- Added interactive credential-preserving environment configuration,
+  non-interactive infrastructure-secret generation, strict production
+  validation, and startup connectivity smoke tests for MariaDB and Redis.
+- Unified landing-application reads and writes through Default Company so
+  Tenant App Connections, the tenant Landing Desk, and Default Company editing
+  update the same persisted startup record.
+- Updated tenant login/session startup to resolve the company, financial year,
+  enabled applications, and landing application from the configured Default
+  Company instead of tenant settings.
+- Hardened Compose, Dockerfiles, setup, migration, cleanup, smoke-test, and
+  database-user tooling to fail when required environment input is absent and
+  to preserve named MariaDB, Redis, media, and application-storage volumes.
+- Renamed the deployed application containers from
+  `codexsun-platform-api`/`codexsun-platform-web` to `cxapp-api`/`cxapp-web` and
+  updated the internal API hostname, cleanup workflow, and deployment
+  documentation.
+- Verified a production build and repeat deployment with persistent
+  MariaDB/Redis/File Browser data, authenticated Super Admin, software-admin,
+  tenant-admin, default-tenant-admin, and File Browser access, plus live API,
+  web, media, database, tenant-module, and internal container-connectivity
+  smoke checks.
+
 ## v-1.0.42
 
 ### [v 1.0.42] 2026-07-21 11:52 pm - updated dockers
 
 #### Database Changes
 
-- Database update: Yes (auto-check).
+- Database update: Yes.
+- Consolidated the current fresh-install schema into module-owned Platform,
+  tenant-runtime, Core, Billing, and Mail batch-1 migrations.
+- Added the shared `app_migration_batches` version/checksum/status ledger,
+  advisory locking, bounded batch execution, checksum validation, retry state,
+  guarded rollback, and reversible legacy table-prefix planning.
+- Standardized fresh tables on integer auto-increment IDs, 8-character UUIDs,
+  status and audit timestamps, `created_by`, owner prefixes, and explicit
+  foreign-key delete policies.
+- Removed destructive baseline table/column drops and moved compatibility data
+  updates out of repeatable seeders.
+- Made default seeders additive so existing tenant-admin passwords, tenant
+  module JSON, and edited Core lookup data are preserved.
+- Added migration contract tests for schema standards, destructive-DDL
+  exclusions, checksum changes, and forward/backward prefix compatibility.
 
 #### App Codebase Changes
 
 - Bumped workspace version to 1.0.42.
+- Redirected expired browser sessions from every protected Platform, Core,
+  Billing, and Mail screen to the correct tenant, staff, or Super Admin login
+  route, cleared cached session context, and added a session-expired login
+  banner without redirecting failed login or other public requests.
 
 ## v-1.0.41
 

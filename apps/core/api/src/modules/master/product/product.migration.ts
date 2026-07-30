@@ -9,7 +9,8 @@ export const productMigration = {
 export async function migrateProductModule(database: Kysely<CoreDatabase>) {
   await sql
     .raw(
-      `CREATE TABLE IF NOT EXISTS products (
+      `CREATE TABLE IF NOT EXISTS core_products (
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid CHAR(8) NOT NULL UNIQUE,
     name VARCHAR(191) NOT NULL,
@@ -25,12 +26,13 @@ export async function migrateProductModule(database: Kysely<CoreDatabase>) {
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at DATETIME NULL,
     UNIQUE KEY products_name_unique (name),
-    INDEX products_status_name (status, name)
+    INDEX products_status_name (status, name),
+    CONSTRAINT products_type_fk FOREIGN KEY (product_type_id) REFERENCES core_product_types(id) ON DELETE RESTRICT,
+    CONSTRAINT products_category_fk FOREIGN KEY (product_category_id) REFERENCES core_product_categories(id) ON DELETE RESTRICT,
+    CONSTRAINT products_hsn_fk FOREIGN KEY (hsn_code_id) REFERENCES core_hsn_codes(id) ON DELETE RESTRICT,
+    CONSTRAINT products_unit_fk FOREIGN KEY (unit_id) REFERENCES core_units(id) ON DELETE RESTRICT,
+    CONSTRAINT products_tax_fk FOREIGN KEY (gst_tax_id) REFERENCES core_taxes(id) ON DELETE RESTRICT
   ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     )
     .execute(database);
-
-  for (const suffix of ["addresses", "bank_accounts", "emails", "phones", "social_links"]) {
-    await sql.raw(`DROP TABLE IF EXISTS products_${suffix}`).execute(database);
-  }
 }

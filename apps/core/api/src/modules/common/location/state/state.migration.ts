@@ -11,7 +11,9 @@ export function migrateStateModule(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS states (
+    CREATE TABLE IF NOT EXISTS core_states (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       country_id INT NOT NULL,
       code VARCHAR(80) NOT NULL,
@@ -23,7 +25,7 @@ export function migrateStateModule(database: Kysely<CoreDatabase>) {
       UNIQUE KEY states_country_code_unique (country_id, code),
       UNIQUE KEY states_country_name_unique (country_id, name),
       INDEX states_country_id_idx (country_id),
-      CONSTRAINT states_country_id_fk FOREIGN KEY (country_id) REFERENCES countries(id) ON UPDATE CASCADE ON DELETE RESTRICT
+      CONSTRAINT states_country_id_fk FOREIGN KEY (country_id) REFERENCES core_countries(id) ON UPDATE CASCADE ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )

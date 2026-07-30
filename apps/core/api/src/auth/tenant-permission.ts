@@ -11,11 +11,11 @@ export async function authorizeCoreRequest(
   const permission = corePermission(request);
   const result = await sql<{ id: number }>`
     SELECT permission.id
-    FROM users actor
-    INNER JOIN user_roles user_role ON user_role.user_id=actor.id AND user_role.status='active'
-    INNER JOIN roles role ON role.id=user_role.role_id AND role.status='active'
-    INNER JOIN role_permissions role_permission ON role_permission.role_id=role.id AND role_permission.status='active'
-    INNER JOIN permissions permission ON permission.id=role_permission.permission_id AND permission.status='active'
+    FROM app_users actor
+    INNER JOIN app_user_roles user_role ON user_role.user_id=actor.id AND user_role.status='active'
+    INNER JOIN app_roles role ON role.id=user_role.role_id AND role.status='active'
+    INNER JOIN app_role_permissions role_permission ON role_permission.role_id=role.id AND role_permission.status='active'
+    INNER JOIN app_permissions permission ON permission.id=role_permission.permission_id AND permission.status='active'
     WHERE actor.email=${actorEmail} AND actor.status='active' AND permission.key=${permission}
     LIMIT 1
   `.execute(getCoreDatabase(databaseName));

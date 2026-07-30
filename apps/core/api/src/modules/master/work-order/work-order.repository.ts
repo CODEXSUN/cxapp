@@ -21,14 +21,14 @@ export class WorkOrderRepository {
   async list(filters: WorkOrderListFilters = {}) {
     const search = filters.search?.trim().toLowerCase() ?? "";
     const result =
-      await sql<Row>`SELECT * FROM work_orders WHERE deleted_at IS NULL AND (${search}='' OR LOWER(code) LIKE ${`%${search}%`} OR LOWER(name) LIKE ${`%${search}%`}) ORDER BY code, id`.execute(
+      await sql<Row>`SELECT * FROM core_work_orders WHERE deleted_at IS NULL AND (${search}='' OR LOWER(code) LIKE ${`%${search}%`} OR LOWER(name) LIKE ${`%${search}%`}) ORDER BY code, id`.execute(
         getCoreDatabase()
       );
     return result.rows.map(toRecord);
   }
   async find(id: string | number) {
     const result =
-      await sql<Row>`SELECT * FROM work_orders WHERE id=${Number(id)} AND deleted_at IS NULL LIMIT 1`.execute(
+      await sql<Row>`SELECT * FROM core_work_orders WHERE id=${Number(id)} AND deleted_at IS NULL LIMIT 1`.execute(
         getCoreDatabase()
       );
     return result.rows[0] ? toRecord(result.rows[0]) : null;
@@ -36,7 +36,7 @@ export class WorkOrderRepository {
   async create(input: WorkOrderSaveInput) {
     const value = normalize(input);
     const result =
-      await sql`INSERT INTO work_orders (uuid, code, name, status) VALUES (${randomBytes(4).toString("hex")}, ${value.code}, ${value.name}, ${value.status})`.execute(
+      await sql`INSERT INTO core_work_orders (uuid, code, name, status) VALUES (${randomBytes(4).toString("hex")}, ${value.code}, ${value.name}, ${value.status})`.execute(
         getCoreDatabase()
       );
     return (await this.find(Number(result.insertId)))!;
@@ -45,7 +45,7 @@ export class WorkOrderRepository {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
     const value = normalize(input, current);
-    await sql`UPDATE work_orders SET code=${value.code}, name=${value.name}, status=${value.status}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
+    await sql`UPDATE core_work_orders SET code=${value.code}, name=${value.name}, status=${value.status}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -53,7 +53,7 @@ export class WorkOrderRepository {
   async setActive(id: string | number, active: boolean) {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
-    await sql`UPDATE work_orders SET status=${active ? "active" : "suspend"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
+    await sql`UPDATE core_work_orders SET status=${active ? "active" : "suspend"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -61,7 +61,7 @@ export class WorkOrderRepository {
   async forceDelete(id: string | number) {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
-    await sql`UPDATE work_orders SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
+    await sql`UPDATE core_work_orders SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)} AND deleted_at IS NULL`.execute(
       getCoreDatabase()
     );
     return current;

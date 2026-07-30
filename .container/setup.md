@@ -3,8 +3,8 @@
 Last updated: 2026-07-21
 
 This document records the active deployment on `69.62.81.166`. Secrets and
-passwords are intentionally omitted. Runtime credentials are stored in the
-ignored `.env` and `.container/deploy.env` files, both with mode `0600`.
+passwords are intentionally omitted. Runtime credentials are stored only in
+the ignored repository-root `.env` file with mode `0600`.
 
 ## Repository and runtime
 
@@ -21,13 +21,13 @@ runtime.
 
 ## Containers and host ports
 
-| Service | Container | Host binding |
-| --- | --- | --- |
-| MariaDB | `codexsun-mariadb` | `127.0.0.1:3307` |
-| Redis | `codexsun-redis` | `127.0.0.1:6379` |
-| Platform API | `codexsun-platform-api` | `127.0.0.1:17010` |
-| Platform Web | `codexsun-platform-web` | `127.0.0.1:17020` |
-| FileBrowser | `codexsun-media` | `127.0.0.1:7090` |
+| Service      | Container          | Host binding      |
+| ------------ | ------------------ | ----------------- |
+| MariaDB      | `codexsun-mariadb` | `127.0.0.1:3307`  |
+| Redis        | `codexsun-redis`   | `127.0.0.1:6379`  |
+| Platform API | `cxapp-api`        | `127.0.0.1:17010` |
+| Platform Web | `cxapp-web`        | `127.0.0.1:17020` |
+| FileBrowser  | `codexsun-media`   | `127.0.0.1:7090`  |
 
 Traefik runs separately from `/docker/traefik`, listens on public ports 80 and
 443, redirects HTTP to HTTPS, and obtains certificates with the `letsencrypt`
@@ -35,8 +35,8 @@ resolver.
 
 ## Public HTTPS routes
 
-- `https://codexsun.com` - canonical Platform Web address
-- `https://www.codexsun.com` - permanent redirect to `https://codexsun.com`
+- `https://app.codexsun.com` - canonical Platform Web address
+- `https://www.codexsun.com` - optional marketing-domain redirect
 - `https://files.codexsun.com` - FileBrowser
 
 The canonical hostname routes through Traefik to the Platform Web container and
@@ -48,9 +48,9 @@ of this single-tenant deployment.
 The MariaDB application user is `root`; its password is stored only in the
 protected environment files. The master database is `codexsun_master_db`.
 
-| Tenant code | Primary domain | Database | Status |
-| --- | --- | --- | --- |
-| `CODEXSUN` | `codexsun.com` | `codexsun_db` | Active |
+| Tenant code | Primary domain     | Database      | Status |
+| ----------- | ------------------ | ------------- | ------ |
+| `CODEXSUN`  | `app.codexsun.com` | `codexsun_db` | Active |
 
 The tenant database is provisioned with the repository-supported tenant
 workflow and seeded idempotently with Platform Application, Core/Billing, Mail,
@@ -58,7 +58,7 @@ roles, permissions, module settings, migrations, and isolated storage paths.
 The seed command is:
 
 ```bash
-docker compose --env-file .container/deploy.env \
+docker compose --env-file .env \
   -f .container/billing/docker-compose.yml --profile tools \
   run --rm platform-migrate npm run db:seed
 ```

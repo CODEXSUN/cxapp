@@ -9,7 +9,7 @@ export async function seedTenantUserModule(database: Kysely<TenantDatabase>) {
   const password = (env.DEFAULT_TENANT_ADMIN_PASSWORD || env.TENANT_ADMIN_PASSWORD).trim();
   if (!email || !password) return;
   await database
-    .insertInto("users")
+    .insertInto("app_users")
     .values({
       email,
       name: (env.DEFAULT_TENANT_ADMIN_NAME || env.TENANT_ADMIN_NAME).trim() || email,
@@ -19,13 +19,7 @@ export async function seedTenantUserModule(database: Kysely<TenantDatabase>) {
       uuid: stable(email),
       is_protected: true
     })
-    .onDuplicateKeyUpdate({
-      name: (env.DEFAULT_TENANT_ADMIN_NAME || env.TENANT_ADMIN_NAME).trim() || email,
-      password_hash: hashPassword(password),
-      role: "admin",
-      status: "active",
-      is_protected: true
-    })
+    .ignore()
     .execute();
 }
 function stable(value: string) {

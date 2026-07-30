@@ -36,7 +36,7 @@ export async function createTenantDatabase(target: string | Tenant) {
 }
 
 export function getTenantDatabase(tenant: Tenant) {
-  const key = tenant.slug || tenant.dbName;
+  const key = assertDatabaseName(tenant.dbName, "tenant database name");
   const existing = tenantConnections.get(key);
   if (existing) {
     return existing;
@@ -61,32 +61,22 @@ export function getTenantDatabase(tenant: Tenant) {
 }
 
 export function resolveTenantDatabasePassword(tenant: Tenant) {
-  return process.env[tenant.dbSecretRef] || env.DB_PASSWORD;
+  const secretRef = tenant.dbSecretRef.trim();
+  if (secretRef === "DB_PASSWORD") return env.DB_PASSWORD;
+  const secret = process.env[secretRef];
+  if (!secret) throw new Error(`Tenant database secret "${secretRef}" is not configured.`);
+  return secret;
 }
 
 export function getTenantDatabaseByName(databaseName: string) {
   const name = assertDatabaseName(databaseName, "tenant database name");
   const existing = tenantConnections.get(name);
   if (existing) return existing;
-  const database = new Kysely<TenantDatabase>({
-    dialect: new MysqlDialect({
-      pool: createPool({
-        connectionLimit: 10,
-        database: name,
-        host: env.DB_HOST,
-        password: env.DB_PASSWORD,
-        port: env.DB_PORT,
-        timezone: "Z",
-        user: env.DB_USER
-      } satisfies PoolOptions)
-    })
-  });
-  tenantConnections.set(name, database);
-  return database;
+  throw new Error(`Tenant database "${name}" was not resolved through the tenant registry.`);
 }
 
 export async function closeTenantDatabase(tenant: Tenant) {
-  const key = tenant.slug || tenant.dbName;
+  const key = assertDatabaseName(tenant.dbName, "tenant database name");
   const existing = tenantConnections.get(key);
   if (!existing) {
     return;

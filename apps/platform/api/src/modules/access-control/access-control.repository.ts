@@ -17,7 +17,7 @@ export class AccessControlRepository {
   async permissions() {
     return (
       await getPlatformDatabase()
-        .selectFrom("access_permissions")
+        .selectFrom("app_access_permissions")
         .selectAll()
         .orderBy("key")
         .execute()
@@ -32,7 +32,7 @@ export class AccessControlRepository {
   }
   async roles() {
     return (
-      await getPlatformDatabase().selectFrom("access_roles").selectAll().orderBy("key").execute()
+      await getPlatformDatabase().selectFrom("app_access_roles").selectAll().orderBy("key").execute()
     ).map((r) => ({
       description: r.description,
       id: Number(r.id),
@@ -45,7 +45,7 @@ export class AccessControlRepository {
   }
   async users() {
     return (
-      await getPlatformDatabase().selectFrom("access_users").selectAll().orderBy("name").execute()
+      await getPlatformDatabase().selectFrom("app_access_users").selectAll().orderBy("name").execute()
     ).map((r) => ({
       email: r.email,
       id: Number(r.id),
@@ -57,7 +57,7 @@ export class AccessControlRepository {
   }
   async savePermission(input: AccessPermissionSavePayload) {
     await getPlatformDatabase()
-      .insertInto("access_permissions")
+      .insertInto("app_access_permissions")
       .values({
         description: input.description,
         key: input.key,
@@ -79,7 +79,7 @@ export class AccessControlRepository {
       .map((x) => x.trim())
       .filter(Boolean);
     await getPlatformDatabase()
-      .insertInto("access_roles")
+      .insertInto("app_access_roles")
       .values({
         description: input.description,
         key: input.key,
@@ -99,7 +99,7 @@ export class AccessControlRepository {
   }
   async saveUser(input: AccessUserSavePayload) {
     await getPlatformDatabase()
-      .insertInto("access_users")
+      .insertInto("app_access_users")
       .values({
         email: input.email.trim().toLowerCase(),
         name: input.name,

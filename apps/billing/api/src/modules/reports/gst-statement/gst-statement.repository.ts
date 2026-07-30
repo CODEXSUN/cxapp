@@ -32,7 +32,7 @@ export class GstStatementRepository {
              financial_year.name AS financial_year_name,
              DATE_FORMAT(financial_year.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(financial_year.end_date, '%Y-%m-%d') AS financial_year_end
-      FROM companies company CROSS JOIN financial_years financial_year
+      FROM core_companies company CROSS JOIN core_financial_years financial_year
       WHERE company.id=${scope.companyId} AND company.status='active'
         AND financial_year.id=${scope.financialYearId} AND financial_year.status='active'
         ${companyId ? sql`AND company.id=${companyId}` : sql``}

@@ -17,7 +17,7 @@ type CurrenciesRow = {
 export class CurrenciesRepository {
   async list(filters: CurrenciesListFilters = {}) {
     const rows =
-      await sql<CurrenciesRow>`SELECT id, name, symbol, status, sort_order FROM currencies
+      await sql<CurrenciesRow>`SELECT id, name, symbol, status, sort_order FROM core_currencies
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)} OR LOWER(symbol) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toCurrencies);
@@ -25,13 +25,13 @@ export class CurrenciesRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<CurrenciesRow>`SELECT id, name, symbol, status, sort_order FROM currencies
+      await sql<CurrenciesRow>`SELECT id, name, symbol, status, sort_order FROM core_currencies
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toCurrencies(rows.rows[0]) : null;
   }
 
   async create(input: CurrenciesSavePayload) {
-    const result = await sql`INSERT INTO currencies (name, symbol, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_currencies (name, symbol, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.symbol)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -41,7 +41,7 @@ export class CurrenciesRepository {
   async update(id: string | number, input: CurrenciesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE currencies SET name=${normalizeString(input.name)}, symbol=${normalizeString(input.symbol)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_currencies SET name=${normalizeString(input.name)}, symbol=${normalizeString(input.symbol)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -51,7 +51,7 @@ export class CurrenciesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE currencies SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_currencies SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -60,7 +60,7 @@ export class CurrenciesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM currencies WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_currencies WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

@@ -137,14 +137,14 @@ export function selectPurchaseHeaders(
            DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%s') AS created_at,
            DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%s') AS updated_at
     FROM billing_purchases s
-    INNER JOIN companies company ON company.id = s.company_id
-    INNER JOIN financial_years financial_year ON financial_year.id = s.financial_year_id
-    INNER JOIN contacts supplier ON supplier.id = s.supplier_id
-    INNER JOIN contacts_addresses billing ON billing.id = s.billing_address_id
-    INNER JOIN contacts_addresses shipping ON shipping.id = s.shipping_address_id
-    INNER JOIN currencies currency ON currency.id = s.currency_id
-    LEFT JOIN work_orders work_order ON work_order.id = s.work_order_id
-    LEFT JOIN ledgers ledger ON ledger.id = s.ledger_id
+    INNER JOIN core_companies company ON company.id = s.company_id
+    INNER JOIN core_financial_years financial_year ON financial_year.id = s.financial_year_id
+    INNER JOIN core_contacts supplier ON supplier.id = s.supplier_id
+    INNER JOIN core_contacts_addresses billing ON billing.id = s.billing_address_id
+    INNER JOIN core_contacts_addresses shipping ON shipping.id = s.shipping_address_id
+    INNER JOIN core_currencies currency ON currency.id = s.currency_id
+    LEFT JOIN core_work_orders work_order ON work_order.id = s.work_order_id
+    LEFT JOIN core_ledgers ledger ON ledger.id = s.ledger_id
     WHERE s.deleted_at IS NULL
       AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
       ${uuid ? sql`AND s.uuid = ${uuid}` : sql``}
@@ -197,12 +197,12 @@ export function selectPurchaseItems(purchaseId: number) {
            item.tax_id, item.tax_rate, item.taxable_amount, item.cgst_amount,
            item.sgst_amount, item.igst_amount, item.tax_amount, item.line_total
     FROM billing_purchase_items item
-    LEFT JOIN products product ON product.id = item.product_id
-    LEFT JOIN hsn_codes hsn ON hsn.id = item.hsn_code_id
-    LEFT JOIN colours colour ON colour.id = item.colour_id
-    LEFT JOIN sizes size ON size.id = item.size_id
-    INNER JOIN units unit ON unit.id = item.unit_id
-    LEFT JOIN taxes tax ON tax.id = item.tax_id
+    LEFT JOIN core_products product ON product.id = item.product_id
+    LEFT JOIN core_hsn_codes hsn ON hsn.id = item.hsn_code_id
+    LEFT JOIN core_colours colour ON colour.id = item.colour_id
+    LEFT JOIN core_sizes size ON size.id = item.size_id
+    INNER JOIN core_units unit ON unit.id = item.unit_id
+    LEFT JOIN core_taxes tax ON tax.id = item.tax_id
     WHERE item.purchase_id = ${purchaseId}
     ORDER BY item.line_number
   `;

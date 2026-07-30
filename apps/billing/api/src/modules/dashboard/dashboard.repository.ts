@@ -62,7 +62,7 @@ export class DashboardRepository {
       SELECT c.id AS company_id, c.name AS company_name, f.id AS financial_year_id,
              f.name AS financial_year_name, DATE_FORMAT(f.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(f.end_date, '%Y-%m-%d') AS financial_year_end
-      FROM companies c CROSS JOIN financial_years f
+      FROM core_companies c CROSS JOIN core_financial_years f
       WHERE c.id=${scope.companyId} AND c.status='active'
         AND f.id=${scope.financialYearId} AND f.status='active'
         ${companyId ? sql`AND c.id=${companyId}` : sql``}
@@ -74,7 +74,7 @@ export class DashboardRepository {
   async contexts(databaseName: string) {
     const database = await getBillingDatabase(databaseName);
     const result = await sql<{ company_id: number; financial_year_id: number }>`
-      SELECT company_id, financial_year_id FROM default_company_settings WHERE status='active'
+      SELECT company_id, financial_year_id FROM core_default_company_settings WHERE status='active'
       UNION
       SELECT company_id, financial_year_id FROM billing_sales WHERE deleted_at IS NULL
       UNION
@@ -111,7 +111,7 @@ export class DashboardRepository {
       SELECT c.id AS company_id, c.name AS company_name, f.id AS financial_year_id,
              f.name AS financial_year_name, DATE_FORMAT(f.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(f.end_date, '%Y-%m-%d') AS financial_year_end
-      FROM companies c CROSS JOIN financial_years f
+      FROM core_companies c CROSS JOIN core_financial_years f
       WHERE c.id=${companyId} AND f.id=${financialYearId} AND c.status='active' AND f.status='active'
       LIMIT 1
     `.execute(database);
@@ -216,15 +216,15 @@ function recentQuery(
   return sql<RecentRow>`
     SELECT kind, document_id, document_number, contact_name, document_date, amount, status FROM (
       SELECT 'sales' kind, s.uuid document_id, s.invoice_number document_number, c.name contact_name, DATE_FORMAT(s.issued_on, '%Y-%m-%d') document_date, s.amount, s.status, s.updated_at
-        FROM billing_sales s INNER JOIN contacts c ON c.id=s.customer_id WHERE s.company_id=${companyId} AND s.financial_year_id=${financialYearId} AND s.deleted_at IS NULL
+        FROM billing_sales s INNER JOIN core_contacts c ON c.id=s.customer_id WHERE s.company_id=${companyId} AND s.financial_year_id=${financialYearId} AND s.deleted_at IS NULL
       UNION ALL SELECT 'export-sales', s.uuid, s.invoice_number, c.name, DATE_FORMAT(s.issued_on, '%Y-%m-%d'), s.amount, s.status, s.updated_at
-        FROM billing_export_sales s INNER JOIN contacts c ON c.id=s.customer_id WHERE s.company_id=${companyId} AND s.financial_year_id=${financialYearId} AND s.deleted_at IS NULL
+        FROM billing_export_sales s INNER JOIN core_contacts c ON c.id=s.customer_id WHERE s.company_id=${companyId} AND s.financial_year_id=${financialYearId} AND s.deleted_at IS NULL
       UNION ALL SELECT 'purchase', p.uuid, p.purchase_number, c.name, DATE_FORMAT(p.purchase_date, '%Y-%m-%d'), p.amount, p.status, p.updated_at
-        FROM billing_purchases p INNER JOIN contacts c ON c.id=p.supplier_id WHERE p.company_id=${companyId} AND p.financial_year_id=${financialYearId} AND p.deleted_at IS NULL
+        FROM billing_purchases p INNER JOIN core_contacts c ON c.id=p.supplier_id WHERE p.company_id=${companyId} AND p.financial_year_id=${financialYearId} AND p.deleted_at IS NULL
       UNION ALL SELECT 'receipt', r.uuid, r.receipt_number, c.name, DATE_FORMAT(r.receipt_date, '%Y-%m-%d'), r.total_amount, r.status, r.updated_at
-        FROM billing_receipts r INNER JOIN contacts c ON c.id=r.customer_id WHERE r.company_id=${companyId} AND r.financial_year_id=${financialYearId} AND r.deleted_at IS NULL
+        FROM billing_receipts r INNER JOIN core_contacts c ON c.id=r.customer_id WHERE r.company_id=${companyId} AND r.financial_year_id=${financialYearId} AND r.deleted_at IS NULL
       UNION ALL SELECT 'payment', p.uuid, p.payment_number, c.name, DATE_FORMAT(p.payment_date, '%Y-%m-%d'), p.total_amount, p.status, p.updated_at
-        FROM billing_payments p INNER JOIN contacts c ON c.id=p.supplier_id WHERE p.company_id=${companyId} AND p.financial_year_id=${financialYearId} AND p.deleted_at IS NULL
+        FROM billing_payments p INNER JOIN core_contacts c ON c.id=p.supplier_id WHERE p.company_id=${companyId} AND p.financial_year_id=${financialYearId} AND p.deleted_at IS NULL
     ) recent_values ORDER BY updated_at DESC LIMIT 12
   `.execute(database);
 }
@@ -240,7 +240,7 @@ function outstandingQuery(
     FROM (
       SELECT 'receivable' direction, c.id contact_id, c.name contact_name, c.credit_limit,
         SUM(s.amount) gross_amount, SUM(COALESCE(a.allocated_amount,0)) settled_amount
-      FROM billing_sales s INNER JOIN contacts c ON c.id=s.customer_id
+      FROM billing_sales s INNER JOIN core_contacts c ON c.id=s.customer_id
       LEFT JOIN (
         SELECT a.sales_id, SUM(a.allocated_amount) allocated_amount FROM billing_receipt_allocations a
         INNER JOIN billing_receipts r ON r.id=a.receipt_id
@@ -251,12 +251,12 @@ function outstandingQuery(
       GROUP BY c.id, c.name, c.credit_limit
       UNION ALL
       SELECT 'receivable', c.id, c.name, c.credit_limit, SUM(s.amount), 0
-      FROM billing_export_sales s INNER JOIN contacts c ON c.id=s.customer_id
+      FROM billing_export_sales s INNER JOIN core_contacts c ON c.id=s.customer_id
       WHERE s.company_id=${companyId} AND s.financial_year_id=${financialYearId} AND s.status='confirmed' AND s.deleted_at IS NULL
       GROUP BY c.id, c.name, c.credit_limit
       UNION ALL
       SELECT 'payable', c.id, c.name, c.credit_limit, SUM(p.amount), SUM(COALESCE(a.allocated_amount,0))
-      FROM billing_purchases p INNER JOIN contacts c ON c.id=p.supplier_id
+      FROM billing_purchases p INNER JOIN core_contacts c ON c.id=p.supplier_id
       LEFT JOIN (
         SELECT a.purchase_id, SUM(a.allocated_amount) allocated_amount FROM billing_payment_allocations a
         INNER JOIN billing_payments p ON p.id=a.payment_id

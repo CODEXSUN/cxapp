@@ -7,17 +7,17 @@
 This document records what is present in the current CODEXSUN workspace. Use it as the first practical inventory before
 planning new work, because some assist files describe future direction or older foundation snapshots.
 
-Last reviewed: 2026-07-29.
+Last reviewed: 2026-07-30.
 
 ## Working Repository
 
 The current and authoritative checkout is:
 
 ```text
-E:\Workspace\prefiq\codexsun
+E:\Workspace\codexsun\cxapp
 ```
 
-Its Git remote is `https://github.com/PREFIQ/codexsun.git`. Older CODEXSUN/CXSUN
+Its Git remote is `https://github.com/CODEXSUN/cxapp.git`. Older CODEXSUN/CXSUN
 workspace paths are not project sources and must not be used for implementation,
 configuration, documentation, or verification.
 

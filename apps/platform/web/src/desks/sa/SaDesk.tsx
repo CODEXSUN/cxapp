@@ -7,7 +7,8 @@ import {
   DatabaseIcon,
   ListChecksIcon,
   PaletteIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  WorkflowIcon
 } from "lucide-react";
 import { SuperLayout } from "@codexsun/ui/layouts/super-layout";
 import type { SidemenuItem } from "@codexsun/ui/blocks/menu/sidemenu/sub/sidemenu-section";
@@ -141,6 +142,18 @@ export function SaDesk() {
       onSelect: () => selectPage("task-manager")
     },
     {
+      title: "Operations",
+      icon: WorkflowIcon,
+      isActive: page === "queue-management",
+      items: [
+        {
+          title: "Queue Management",
+          isActive: page === "queue-management",
+          onSelect: () => selectPage("queue-management")
+        }
+      ]
+    },
+    {
       title: "Tenant Setup",
       icon: Building2Icon,
       isActive: page === "tenants" || page === "domains" || page === "tenant-access",
@@ -207,10 +220,7 @@ export function SaDesk() {
       title: "Database",
       icon: DatabaseIcon,
       isActive:
-        page === "master-database" ||
-        page === "tenant-database" ||
-        page === "queue-management" ||
-        page === "storage-manager",
+        page === "master-database" || page === "tenant-database" || page === "storage-manager",
       items: [
         {
           title: "Master Database",
@@ -221,11 +231,6 @@ export function SaDesk() {
           title: "Tenant Databases",
           isActive: page === "tenant-database",
           onSelect: () => selectPage("tenant-database")
-        },
-        {
-          title: "Queue Management",
-          isActive: page === "queue-management",
-          onSelect: () => selectPage("queue-management")
         },
         {
           title: "Storage Manager",

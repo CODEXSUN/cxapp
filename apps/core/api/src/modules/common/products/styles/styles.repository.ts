@@ -11,20 +11,20 @@ type StylesRow = {
 
 export class StylesRepository {
   async list(filters: StylesListFilters = {}) {
-    const rows = await sql<StylesRow>`SELECT id, name, status, sort_order FROM styles
+    const rows = await sql<StylesRow>`SELECT id, name, status, sort_order FROM core_styles
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toStyles);
   }
 
   async find(id: string | number) {
-    const rows = await sql<StylesRow>`SELECT id, name, status, sort_order FROM styles
+    const rows = await sql<StylesRow>`SELECT id, name, status, sort_order FROM core_styles
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toStyles(rows.rows[0]) : null;
   }
 
   async create(input: StylesSavePayload) {
-    const result = await sql`INSERT INTO styles (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_styles (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -34,7 +34,7 @@ export class StylesRepository {
   async update(id: string | number, input: StylesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE styles SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_styles SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -44,7 +44,7 @@ export class StylesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE styles SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_styles SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -53,7 +53,7 @@ export class StylesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM styles WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_styles WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

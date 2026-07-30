@@ -2,7 +2,7 @@
 set -eu
 
 source_dir="/opt/codexsun-web/platform"
-: "${PLATFORM_API_PORT:=17010}"
+: "${PLATFORM_API_PORT:?PLATFORM_API_PORT is required in /app/.env}"
 
 rm -rf /usr/share/nginx/html/*
 cp -a "$source_dir/." /usr/share/nginx/html/

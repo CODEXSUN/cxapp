@@ -10,10 +10,14 @@ export async function migrateBillingSettingsModule<Database>(database: Kysely<Da
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_settings (
-      id varchar(40) primary key,
+      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+      status VARCHAR(24) NOT NULL DEFAULT 'active',
+      created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
+      settings_key VARCHAR(40) NOT NULL UNIQUE,
       settings_json longtext null,
-      created_at varchar(40) null,
-      updated_at varchar(40) null
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `
     )
@@ -23,6 +27,8 @@ export async function migrateBillingSettingsModule<Database>(database: Kysely<Da
     .raw(
       `
     CREATE TABLE IF NOT EXISTS billing_company_settings (
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       company_id INT NOT NULL,
@@ -33,7 +39,7 @@ export async function migrateBillingSettingsModule<Database>(database: Kysely<Da
       UNIQUE KEY billing_company_settings_uuid_unique (uuid),
       UNIQUE KEY billing_company_settings_owner_unique (company_id, settings_key),
       CONSTRAINT billing_company_settings_company_fk FOREIGN KEY (company_id)
-        REFERENCES companies (id) ON DELETE RESTRICT
+        REFERENCES core_companies (id) ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )

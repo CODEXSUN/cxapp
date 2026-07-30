@@ -54,8 +54,8 @@ export class PurchaseRepository {
     const result = await selectPurchaseHeaders(undefined, page).execute(database);
     const count = await sql<{ total: string | number }>`
       SELECT COUNT(*) AS total FROM billing_purchases s
-      INNER JOIN contacts supplier ON supplier.id=s.supplier_id
-      LEFT JOIN work_orders work_order ON work_order.id=s.work_order_id
+      INNER JOIN core_contacts supplier ON supplier.id=s.supplier_id
+      LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
       WHERE s.deleted_at IS NULL
         AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
         AND (${page.status}='all' OR s.status=${page.status})
@@ -97,9 +97,9 @@ export class PurchaseRepository {
              f.name AS financial_year_name,
              currency.id AS currency_id,
              currency.name AS currency_code
-      FROM companies c
-      CROSS JOIN financial_years f
-      INNER JOIN currencies currency ON UPPER(currency.name) = 'INR' AND currency.status = 'active'
+      FROM core_companies c
+      CROSS JOIN core_financial_years f
+      INNER JOIN core_currencies currency ON UPPER(currency.name) = 'INR' AND currency.status = 'active'
       WHERE c.id=${scope.companyId} AND c.status='active'
         AND f.id=${scope.financialYearId} AND f.status='active'
       LIMIT 1
@@ -125,14 +125,14 @@ export class PurchaseRepository {
     const scope = currentBillingScope();
     const result = await sql<Record<keyof PurchaseReferenceState, number>>`
       SELECT
-        EXISTS(SELECT 1 FROM companies WHERE id = ${input.companyId} AND id=${scope.companyId} AND status = 'active') AS company,
-        EXISTS(SELECT 1 FROM financial_years WHERE id = ${input.financialYearId} AND id=${scope.financialYearId} AND status = 'active' AND ${input.issuedOn} BETWEEN start_date AND end_date) AS financialYear,
-        EXISTS(SELECT 1 FROM contacts WHERE id = ${input.supplierId} AND status = 'active') AS supplier,
-        EXISTS(SELECT 1 FROM contacts_addresses WHERE id = ${input.billingAddressId} AND parent_id = ${input.supplierId}) AS billingAddress,
-        EXISTS(SELECT 1 FROM contacts_addresses WHERE id = ${input.shippingAddressId} AND parent_id = ${input.supplierId}) AS shippingAddress,
-        ${input.workOrderId ? sql`EXISTS(SELECT 1 FROM work_orders WHERE id = ${input.workOrderId} AND status = 'active')` : sql`1`} AS workOrder,
-        ${input.ledgerId ? sql`EXISTS(SELECT 1 FROM ledgers WHERE id = ${input.ledgerId} AND status = 'active')` : sql`1`} AS ledger,
-        EXISTS(SELECT 1 FROM currencies WHERE id = ${input.currencyId} AND status = 'active') AS currency
+        EXISTS(SELECT 1 FROM core_companies WHERE id = ${input.companyId} AND id=${scope.companyId} AND status = 'active') AS company,
+        EXISTS(SELECT 1 FROM core_financial_years WHERE id = ${input.financialYearId} AND id=${scope.financialYearId} AND status = 'active' AND ${input.issuedOn} BETWEEN start_date AND end_date) AS financialYear,
+        EXISTS(SELECT 1 FROM core_contacts WHERE id = ${input.supplierId} AND status = 'active') AS supplier,
+        EXISTS(SELECT 1 FROM core_contacts_addresses WHERE id = ${input.billingAddressId} AND parent_id = ${input.supplierId}) AS billingAddress,
+        EXISTS(SELECT 1 FROM core_contacts_addresses WHERE id = ${input.shippingAddressId} AND parent_id = ${input.supplierId}) AS shippingAddress,
+        ${input.workOrderId ? sql`EXISTS(SELECT 1 FROM core_work_orders WHERE id = ${input.workOrderId} AND status = 'active')` : sql`1`} AS workOrder,
+        ${input.ledgerId ? sql`EXISTS(SELECT 1 FROM core_ledgers WHERE id = ${input.ledgerId} AND status = 'active')` : sql`1`} AS ledger,
+        EXISTS(SELECT 1 FROM core_currencies WHERE id = ${input.currencyId} AND status = 'active') AS currency
     `.execute(database);
     const row = result.rows[0];
     return {
@@ -157,7 +157,7 @@ export class PurchaseRepository {
       input.supplierId > 0
         ? null
         : await sql<{ id: number }>`
-            SELECT id FROM contacts
+            SELECT id FROM core_contacts
             WHERE LOWER(name) = LOWER(${input.supplierName}) AND status = 'active'
             LIMIT 1
           `.execute(database);
@@ -165,7 +165,7 @@ export class PurchaseRepository {
     const addressResult =
       supplierId > 0 && (!input.billingAddressId || !input.shippingAddressId)
         ? await sql<{ id: number }>`
-            SELECT id FROM contacts_addresses
+            SELECT id FROM core_contacts_addresses
             WHERE parent_id = ${supplierId}
             ORDER BY is_default DESC, sort_order, id
           `.execute(database)
@@ -173,7 +173,7 @@ export class PurchaseRepository {
     const addressIds = addressResult?.rows.map((row) => Number(row.id)) ?? [];
     const workOrderResult = !input.workOrderId
       ? await sql<{ id: number }>`
-            SELECT id FROM work_orders
+            SELECT id FROM core_work_orders
             WHERE status = 'active'
             ORDER BY CASE WHEN code=${input.workOrderNo} AND ${input.workOrderNo}<>'' THEN 0
               WHEN TRIM(code)='-' THEN 1 ELSE 2 END,id LIMIT 1
@@ -181,7 +181,7 @@ export class PurchaseRepository {
       : null;
     const ledgerResult = !input.ledgerId
       ? await sql<{ id: number }>`
-            SELECT id FROM ledgers
+            SELECT id FROM core_ledgers
             WHERE status = 'active'
             ORDER BY CASE WHEN LOWER(name)=LOWER(${input.salesLedger}) AND ${input.salesLedger}<>'' THEN 0
               WHEN TRIM(name)='-' THEN 1 ELSE 2 END,id LIMIT 1
@@ -198,7 +198,7 @@ export class PurchaseRepository {
               tax_id: number | null;
               unit_id: number | null;
             }>`
-              SELECT id, hsn_code_id, gst_tax_id AS tax_id, unit_id FROM products
+              SELECT id, hsn_code_id, gst_tax_id AS tax_id, unit_id FROM core_products
               WHERE (${item.productId || 0} > 0 AND id=${item.productId || 0}
                 OR ${item.productId || 0}=0 AND LOWER(name)=LOWER(${item.productName}))
                 AND status = 'active' AND deleted_at IS NULL
@@ -209,7 +209,7 @@ export class PurchaseRepository {
         !item.hsnCodeId && item.hsnCode
           ? await sql<{
               id: number;
-            }>`SELECT id FROM hsn_codes WHERE code = ${item.hsnCode} AND status = 'active' LIMIT 1`.execute(
+            }>`SELECT id FROM core_hsn_codes WHERE code = ${item.hsnCode} AND status = 'active' LIMIT 1`.execute(
               database
             )
           : null;
@@ -217,7 +217,7 @@ export class PurchaseRepository {
         !item.colourId && item.colour
           ? await sql<{
               id: number;
-            }>`SELECT id FROM colours WHERE LOWER(name) = LOWER(${item.colour}) AND status = 'active' LIMIT 1`.execute(
+            }>`SELECT id FROM core_colours WHERE LOWER(name) = LOWER(${item.colour}) AND status = 'active' LIMIT 1`.execute(
               database
             )
           : null;
@@ -225,7 +225,7 @@ export class PurchaseRepository {
         !item.sizeId && item.size
           ? await sql<{
               id: number;
-            }>`SELECT id FROM sizes WHERE LOWER(name) = LOWER(${item.size}) AND status = 'active' LIMIT 1`.execute(
+            }>`SELECT id FROM core_sizes WHERE LOWER(name) = LOWER(${item.size}) AND status = 'active' LIMIT 1`.execute(
               database
             )
           : null;
@@ -233,14 +233,14 @@ export class PurchaseRepository {
         !item.unitId && item.unit
           ? await sql<{
               id: number;
-            }>`SELECT id FROM units WHERE LOWER(name) = LOWER(${item.unit}) AND status = 'active' LIMIT 1`.execute(
+            }>`SELECT id FROM core_units WHERE LOWER(name) = LOWER(${item.unit}) AND status = 'active' LIMIT 1`.execute(
               database
             )
           : null;
       const tax = !item.taxId
         ? await sql<{
             id: number;
-          }>`SELECT id FROM taxes WHERE rate_percent = ${item.taxRate} AND status = 'active' LIMIT 1`.execute(
+          }>`SELECT id FROM core_taxes WHERE rate_percent = ${item.taxRate} AND status = 'active' LIMIT 1`.execute(
             database
           )
         : null;
@@ -274,15 +274,15 @@ export class PurchaseRepository {
   async validItemReferenceIds(databaseName: string, input: PurchaseSavePayload) {
     const database = await purchaseDatabase(databaseName);
     return {
-      colours: await existingIds(database, sql`SELECT id FROM colours WHERE status = 'active'`),
-      hsnCodes: await existingIds(database, sql`SELECT id FROM hsn_codes WHERE status = 'active'`),
+      colours: await existingIds(database, sql`SELECT id FROM core_colours WHERE status = 'active'`),
+      hsnCodes: await existingIds(database, sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`),
       products: await existingIds(
         database,
-        sql`SELECT id FROM products WHERE status = 'active' AND deleted_at IS NULL`
+        sql`SELECT id FROM core_products WHERE status = 'active' AND deleted_at IS NULL`
       ),
-      sizes: await existingIds(database, sql`SELECT id FROM sizes WHERE status = 'active'`),
-      taxes: await existingIds(database, sql`SELECT id FROM taxes WHERE status = 'active'`),
-      units: await existingIds(database, sql`SELECT id FROM units WHERE status = 'active'`),
+      sizes: await existingIds(database, sql`SELECT id FROM core_sizes WHERE status = 'active'`),
+      taxes: await existingIds(database, sql`SELECT id FROM core_taxes WHERE status = 'active'`),
+      units: await existingIds(database, sql`SELECT id FROM core_units WHERE status = 'active'`),
       requested: {
         colours: nonNullIds(input.items.map((item) => item.colourId)),
         hsnCodes: nonNullIds(input.items.map((item) => item.hsnCodeId)),

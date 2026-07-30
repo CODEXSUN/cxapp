@@ -16,8 +16,8 @@ usage() {
 Usage: .container/clean.sh [--yes] [--install] [--all-build-cache] [--all-docker] [billing]
 
 Deletes only CODEXSUN Docker containers, images, networks, and named volumes.
-The ignored .container/deploy.env file is preserved so credentials and explicit
-deployment settings can be reused by a fresh installation.
+The ignored root .env file is preserved so credentials and explicit deployment
+settings can be reused by a fresh installation.
 
 Options:
   --yes              Skip the destructive confirmation prompt.
@@ -59,22 +59,22 @@ assert_codexsun_name() {
   esac
 }
 
-network=$(env_value CODEXSUN_DOCKER_NETWORK codexsun-network)
+network=$(env_value CODEXSUN_DOCKER_NETWORK)
 assert_codexsun_name network "$network"
 
 volumes=(
-  "$(env_value MARIADB_DATA_VOLUME codexsun-mariadb-data)"
-  "$(env_value MARIADB_BACKUP_VOLUME codexsun-mariadb-backups)"
-  "$(env_value REDIS_DATA_VOLUME codexsun-redis-data)"
-  "$(env_value MEDIA_DATA_VOLUME codexsun-media-data)"
-  "$(env_value MEDIA_DB_VOLUME codexsun-media-db)"
-  "$(env_value BILLING_STACK_DATA_VOLUME codexsun-billing-stack-data)"
+  "$(env_value MARIADB_DATA_VOLUME)"
+  "$(env_value MARIADB_BACKUP_VOLUME)"
+  "$(env_value REDIS_DATA_VOLUME)"
+  "$(env_value MEDIA_DATA_VOLUME)"
+  "$(env_value MEDIA_DB_VOLUME)"
+  "$(env_value BILLING_STACK_DATA_VOLUME)"
 )
 for volume in "${volumes[@]}"; do
   assert_codexsun_name volume "$volume"
 done
 
-registry=$(env_value CODEXSUN_IMAGE_REGISTRY codexsun)
+registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
 repositories=(
   "$registry/mariadb"
   "$registry/redis"
@@ -154,7 +154,7 @@ else
     fi
   done
 
-  for container in codexsun-platform-web codexsun-platform-api codexsun-media codexsun-redis codexsun-mariadb; do
+  for container in cxapp-web cxapp-api codexsun-media codexsun-redis codexsun-mariadb; do
     if docker container inspect "$container" >/dev/null 2>&1; then
       docker rm -f "$container" >/dev/null
       echo "Removed container: $container"

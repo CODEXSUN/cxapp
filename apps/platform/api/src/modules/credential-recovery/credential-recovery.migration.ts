@@ -8,7 +8,7 @@ export const credentialRecoveryMigration = {
 
 export async function migrateCredentialRecoveryModule(database: Kysely<PlatformDatabase>) {
   await database.schema
-    .createTable("platform_auth_users")
+    .createTable("app_platform_auth_users")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -24,10 +24,11 @@ export async function migrateCredentialRecoveryModule(database: Kysely<PlatformD
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
     )
     .addUniqueConstraint("platform_auth_users_type_email_unique", ["user_type", "email"])
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
     .execute();
 
   await database.schema
-    .createTable("password_reset_requests")
+    .createTable("app_password_reset_requests")
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) => column.notNull().unique())
@@ -42,11 +43,19 @@ export async function migrateCredentialRecoveryModule(database: Kysely<PlatformD
     .addColumn("created_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
     )
+    .addColumn("status", "varchar(24)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_by", "varchar(191)", (col) => col.notNull().defaultTo("system:migration"))
+    .addColumn("updated_at", "datetime", (col) =>
+      col
+        .notNull()
+        .defaultTo(sql`CURRENT_TIMESTAMP`)
+        .modifyEnd(sql`ON UPDATE CURRENT_TIMESTAMP`)
+    )
     .execute();
   await database.schema
     .createIndex("password_reset_requests_lookup_idx")
     .ifNotExists()
-    .on("password_reset_requests")
+    .on("app_password_reset_requests")
     .columns(["token_hash", "expires_at", "consumed_at"])
     .execute();
 }

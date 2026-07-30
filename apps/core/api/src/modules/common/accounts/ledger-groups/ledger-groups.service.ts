@@ -32,7 +32,7 @@ export class LedgerGroupsService {
     const count = await this.repository.dependentCount(id);
     if (count > 0)
       throw AppError.conflict(
-        `Ledger group cannot be force deleted because it is referenced by ${count} ledgers.`,
+        `Ledger group cannot be force deleted because it is referenced by ${count} core_ledgers.`,
         { count }
       );
     return (await this.repository.forceDelete(record.id))!;

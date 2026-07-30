@@ -15,8 +15,7 @@ export async function seedTaxes() {
       (record) => identity(record.ratePercent) === identity(seed.ratePercent)
     );
     const payload = { ...seed, isActive: true, sortOrder: index + 1 };
-    if (match) await repository.update(match.id, payload);
-    else await repository.create(payload);
+    if (!match) await repository.create(payload);
   }
 }
 

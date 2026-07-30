@@ -8,8 +8,6 @@ import { createServer } from "node:net";
 
 const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
-const requestedMode = process.argv[3]?.trim();
-const requestedPort = process.argv[4]?.trim();
 
 const apps = {
   "platform-api": {
@@ -43,14 +41,11 @@ if (!app || !apps[app]) {
 
 const config = apps[app];
 const env = loadDotEnv();
-const port = parseRequiredPort(
-  requestedPort || process.env[config.envKey] || env[config.envKey],
-  requestedPort ? `${config.envKey} command override` : config.envKey
-);
+const port = parseRequiredPort(env[config.envKey], config.envKey);
 const host = config.host;
 
 if (app === "platform-web") {
-  await waitForPlatformApi(process.env.PLATFORM_API_URL || env.PLATFORM_API_URL);
+  await waitForPlatformApi(env.PLATFORM_API_URL);
 }
 
 await freePort(port, host);

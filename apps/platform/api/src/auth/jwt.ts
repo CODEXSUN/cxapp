@@ -2,6 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { env } from "../env.js";
 
 export type AuthUserType = "super_admin" | "staff" | "tenant";
+export type TenantAccessMode = "custom_domain" | "platform" | "shared_domain";
 
 export type AuthTokenPayload = {
   aud: "codexsun-platform";
@@ -10,8 +11,11 @@ export type AuthTokenPayload = {
   iat: number;
   iss: "codexsun-platform-api";
   jti: string;
+  loginHost: string;
   name?: string;
   sessionIssuedAt: string;
+  sub: string;
+  tenantAccessMode: TenantAccessMode;
   tenantCode?: string;
   tenantDbName?: string;
   tenantId?: string;
@@ -21,7 +25,19 @@ export type AuthTokenPayload = {
 };
 
 export function signAuthToken(
-  input: Omit<AuthTokenPayload, "aud" | "exp" | "iat" | "iss" | "jti" | "sessionIssuedAt">
+  input: Omit<
+    AuthTokenPayload,
+    | "aud"
+    | "exp"
+    | "iat"
+    | "iss"
+    | "jti"
+    | "loginHost"
+    | "sessionIssuedAt"
+    | "sub"
+    | "tenantAccessMode"
+  > & { loginHost?: string; tenantAccessMode?: TenantAccessMode },
+  options: { jti?: string; sessionIssuedAt?: string } = {}
 ) {
   const now = Math.floor(Date.now() / 1000);
   const payload: AuthTokenPayload = {
@@ -30,11 +46,15 @@ export function signAuthToken(
     exp: now + 60 * 60 * env.AUTH_SESSION_TTL_HOURS,
     iat: now,
     iss: "codexsun-platform-api",
-    jti: randomUUID(),
-    sessionIssuedAt: new Date(now * 1000).toISOString()
+    jti: options.jti ?? randomUUID(),
+    loginHost: input.loginHost ?? "",
+    sessionIssuedAt: options.sessionIssuedAt ?? new Date(now * 1000).toISOString(),
+    sub: `${input.userType}:${input.userId}`,
+    tenantAccessMode:
+      input.tenantAccessMode ?? (input.userType === "tenant" ? "shared_domain" : "platform")
   };
 
-  const header = { alg: "HS256", typ: "JWT" };
+  const header = { alg: "HS256", typ: "at+jwt" };
   const head = base64Url(JSON.stringify(header));
   const body = base64Url(JSON.stringify(payload));
   const signature = sign(`${head}.${body}`);
@@ -49,12 +69,25 @@ export function verifyAuthToken(token: string): AuthTokenPayload | null {
   if (!safeEqual(signature, expected)) return null;
 
   try {
+    const header = JSON.parse(Buffer.from(head, "base64url").toString("utf8")) as {
+      alg?: unknown;
+      typ?: unknown;
+    };
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as AuthTokenPayload;
     const now = Math.floor(Date.now() / 1000);
     if (
+      header.alg !== "HS256" ||
+      header.typ !== "at+jwt" ||
       payload.iss !== "codexsun-platform-api" ||
       payload.aud !== "codexsun-platform" ||
-      payload.exp <= now
+      typeof payload.exp !== "number" ||
+      payload.exp <= now ||
+      typeof payload.jti !== "string" ||
+      !payload.jti ||
+      payload.sub !== `${payload.userType}:${payload.userId}` ||
+      !isUserType(payload.userType) ||
+      !isTenantAccessMode(payload.tenantAccessMode) ||
+      typeof payload.loginHost !== "string"
     ) {
       return null;
     }
@@ -62,6 +95,14 @@ export function verifyAuthToken(token: string): AuthTokenPayload | null {
   } catch {
     return null;
   }
+}
+
+function isUserType(value: unknown): value is AuthUserType {
+  return value === "tenant" || value === "staff" || value === "super_admin";
+}
+
+function isTenantAccessMode(value: unknown): value is TenantAccessMode {
+  return value === "custom_domain" || value === "platform" || value === "shared_domain";
 }
 
 function sign(value: string) {

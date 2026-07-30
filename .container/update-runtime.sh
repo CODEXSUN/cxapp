@@ -9,8 +9,8 @@ prepare_deploy_env
 validate_deploy_env
 require_docker
 
-node_version=$(env_value NODE_RUNTIME_VERSION "")
-npm_version=$(env_value NPM_RUNTIME_VERSION "")
+node_version=$(env_value NODE_RUNTIME_VERSION)
+npm_version=$(env_value NPM_RUNTIME_VERSION)
 [ -n "$node_version" ] && [ -n "$npm_version" ] || {
   echo "NODE_RUNTIME_VERSION and NPM_RUNTIME_VERSION are required." >&2
   exit 78

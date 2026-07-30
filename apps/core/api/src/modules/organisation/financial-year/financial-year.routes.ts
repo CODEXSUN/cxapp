@@ -11,7 +11,7 @@ const idSchema = z.object({ id: z.string().regex(/^\d+$/, "Financial year ID mus
 const statusSchema = z.enum(["active", "inactive"]);
 const recordSchema = z.object({
   id: z.number().int().positive(),
-  uuid: z.string().uuid(),
+  uuid: z.string().length(8),
   name: z.string(),
   startDate: z.string(),
   endDate: z.string(),

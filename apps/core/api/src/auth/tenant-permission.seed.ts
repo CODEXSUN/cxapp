@@ -12,22 +12,22 @@ const permissions = [
 export async function seedCoreTenantPermissions(database: Kysely<unknown>) {
   const available = await sql<{ table_count: string | number }>`
     SELECT COUNT(*) AS table_count FROM information_schema.tables
-    WHERE table_schema=DATABASE() AND table_name IN ('permissions','roles','role_permissions')
+    WHERE table_schema=DATABASE() AND table_name IN ('app_permissions','app_roles','app_role_permissions')
   `.execute(database);
   if (Number(available.rows[0]?.table_count ?? 0) !== 3) return;
   for (const key of permissions) {
     const label = key.split(".").join(" · ");
     await sql`
-      INSERT INTO permissions (uuid, \`key\`, label, description, status, is_protected)
+      INSERT INTO app_permissions (uuid, \`key\`, label, description, status, is_protected)
       VALUES (${stable(key)}, ${key}, ${label}, ${`Allows ${label.toLowerCase()} in Core.`}, 'active', TRUE)
       ON DUPLICATE KEY UPDATE
         label=VALUES(label), description=VALUES(description), status='active', is_protected=TRUE
     `.execute(database);
     await sql`
-      INSERT INTO role_permissions (uuid, role_id, permission_id, status, is_protected)
+      INSERT INTO app_role_permissions (uuid, role_id, permission_id, status, is_protected)
       SELECT ${stable(`role-permission:admin:${key}`)}, role.id, permission.id, 'active', TRUE
-      FROM roles role
-      INNER JOIN permissions permission ON permission.\`key\`=${key}
+      FROM app_roles role
+      INNER JOIN app_permissions permission ON permission.\`key\`=${key}
       WHERE role.\`key\`='admin'
       ON DUPLICATE KEY UPDATE status='active', is_protected=TRUE
     `.execute(database);

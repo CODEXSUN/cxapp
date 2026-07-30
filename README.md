@@ -4,15 +4,16 @@ Software makes simple.
 
 ## Working Repository
 
-This CODEXSUN project is owned and developed from:
+This CODEXSUN CXApp project is owned and developed from:
 
 ```text
-E:\Workspace\prefiq\codexsun
+E:\Workspace\codexsun\cxapp
 ```
 
-Treat this checkout and its `PREFIQ/codexsun` Git remote as the current project.
+Treat this checkout and its `https://github.com/CODEXSUN/cxapp.git` Git remote as
+the current project.
 Do not use files, configuration, or assumptions from older CODEXSUN/CXSUN
-workspaces outside `E:\Workspace\prefiq`.
+workspaces outside `E:\Workspace\codexsun\cxapp`.
 
 CODEXSUN is a monorepo foundation for a multi-tenant business application
 platform. The current workspace includes the Platform API, Platform web shell,
@@ -47,6 +48,8 @@ Media services are installed once alongside the composed Platform API and web
 runtime.
 
 ```bash
+npm run env:configure
+npm run env:deployment:check
 bash .container/setup.sh billing
 ```
 
@@ -64,11 +67,11 @@ bash .container/deploy.sh billing publish
 bash .container/deploy.sh billing upgrade
 ```
 
-MariaDB is exposed at `127.0.0.1:3307`; its application username, password,
-and Billing master database are initially imported from the repository `.env`.
-Normal updates preserve deployment configuration, credentials, databases,
-uploads, and named volumes. See `.container/README.md` for the full port map,
-registry flow, persistence contract, and verification commands.
+MariaDB is exposed at the host binding and port declared in `.env`. The root
+`.env` is the only application and deployment configuration source. Normal
+updates preserve configuration, credentials, databases, uploads, and named
+volumes. See `.container/README.md` for interactive credential setup, the full
+port map, registry flow, persistence contract, and verification commands.
 
 ## Workspace
 

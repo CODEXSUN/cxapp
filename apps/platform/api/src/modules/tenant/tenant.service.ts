@@ -20,6 +20,10 @@ import {
   defaultTenantDomainForSlug,
   normalizeTenantDomain
 } from "../tenant-domain/tenant-domain.repository.js";
+import {
+  getDefaultCompanyForDatabase,
+  setDefaultCompanyLandingAppForDatabase
+} from "@codexsun/core-api";
 
 export class TenantService {
   constructor(
@@ -28,8 +32,9 @@ export class TenantService {
     private readonly maintenance = new DatabaseMaintenanceService()
   ) {}
 
-  listTenants() {
-    return this.repository.list();
+  async listTenants() {
+    const tenants = await this.repository.list();
+    return Promise.all(tenants.map((tenant) => this.withDefaultCompanyLandingApp(tenant)));
   }
 
   getTenant(value: string) {
@@ -41,10 +46,10 @@ export class TenantService {
     const accessTenant = tenant ? await this.access.refreshTenantAccess(tenant.id) : null;
     const runtimeTenant = accessTenant ?? tenant;
     const enabledModuleKeys = runtimeTenant?.enabledModuleKeys ?? ["platform.application"];
-    const landingSettings = isRecord(runtimeTenant?.payloadSettings?.landing)
-      ? runtimeTenant?.payloadSettings.landing
-      : {};
-    const defaultLandingApp = resolveLandingApp(landingSettings?.app, enabledModuleKeys);
+    const defaultCompany = runtimeTenant
+      ? await getDefaultCompanyForDatabase(runtimeTenant.dbName)
+      : null;
+    const defaultLandingApp = resolveLandingApp(defaultCompany?.landingApp, enabledModuleKeys);
     return {
       apps: resolveEnabledApps(enabledModuleKeys),
       defaultLandingApp,
@@ -70,7 +75,14 @@ export class TenantService {
     await this.maintenance.setupTenant(tenant.id, {
       note: "Automatic provisioning after tenant creation."
     });
-    return tenant;
+    const defaultCompany = await setDefaultCompanyLandingAppForDatabase(
+      tenant.dbName,
+      tenant.defaultLandingApp
+    );
+    return {
+      ...tenant,
+      defaultLandingApp: resolveLandingApp(defaultCompany.landingApp, tenant.enabledModuleKeys)
+    };
   }
 
   async updateTenant(id: string, input: TenantSavePayload) {
@@ -80,6 +92,14 @@ export class TenantService {
       await this.maintenance.reinstallTenant(tenant.id, {
         note: "Automatic provisioning after tenant update."
       });
+      const defaultCompany = await setDefaultCompanyLandingAppForDatabase(
+        tenant.dbName,
+        tenant.defaultLandingApp
+      );
+      return {
+        ...tenant,
+        defaultLandingApp: resolveLandingApp(defaultCompany.landingApp, tenant.enabledModuleKeys)
+      };
     }
     return tenant;
   }
@@ -114,13 +134,10 @@ export class TenantService {
       ? defaultTenantModuleKeys.filter((key) => !disabledModuleKeys.includes(key))
       : ["platform.application"];
     const enabledModuleKeys = Array.from(new Set([...defaultKeys, ...legacyKeys]));
-    const defaultLandingApp = resolveLandingApp(
-      input.defaultLandingApp ?? incomingLanding.app,
-      enabledModuleKeys
-    );
+    const defaultLandingApp = resolveLandingApp(input.defaultLandingApp, enabledModuleKeys);
     return {
       ...input,
-      corporateId: input.corporateId?.trim() || null,
+      corporateId: input.corporateId?.trim().toUpperCase() || tenantCode,
       dbHost: input.dbHost.trim() || "127.0.0.1",
       dbName: input.dbName.trim() || `${slug}_db`,
       dbPort: Number(input.dbPort) || 3306,
@@ -148,6 +165,14 @@ export class TenantService {
       status: input.status,
       tenantCode,
       tenantName: input.tenantName.trim()
+    };
+  }
+
+  private async withDefaultCompanyLandingApp(tenant: Tenant): Promise<Tenant> {
+    const defaultCompany = await getDefaultCompanyForDatabase(tenant.dbName).catch(() => null);
+    return {
+      ...tenant,
+      defaultLandingApp: resolveLandingApp(defaultCompany?.landingApp, tenant.enabledModuleKeys)
     };
   }
 }

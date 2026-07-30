@@ -35,7 +35,7 @@ export class CityService {
     const count = await this.repository.dependentCount(id);
     if (count > 0) {
       throw AppError.conflict(
-        `City cannot be force deleted because it is referenced by ${count} pincodes.`,
+        `City cannot be force deleted because it is referenced by ${count} core_pincodes.`,
         { count }
       );
     }

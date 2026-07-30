@@ -1,6 +1,10 @@
 import { TenantRepository } from "../tenant/tenant.repository.js";
 import { resolveLandingApp } from "../app-registry/index.js";
 import { EntitlementRepository } from "./entitlement.repository.js";
+import {
+  getDefaultCompanyForDatabase,
+  setDefaultCompanyLandingAppForDatabase
+} from "@codexsun/core-api";
 
 export class EntitlementAccessService {
   constructor(
@@ -12,11 +16,16 @@ export class EntitlementAccessService {
     const tenant = await this.tenants.findByIdOrCode(String(tenantId));
     if (!tenant) return null;
     const moduleKeys = await this.entitlements.resolveTenantModuleKeys(tenant.id);
-    const defaultLandingApp = resolveLandingApp(tenant.defaultLandingApp, [
+    const defaultCompany = await getDefaultCompanyForDatabase(tenant.dbName).catch(() => null);
+    const defaultLandingApp = resolveLandingApp(defaultCompany?.landingApp, [
       ...tenant.enabledModuleKeys,
       ...moduleKeys
     ]);
-    return this.tenants.updateAccess(tenant, moduleKeys, defaultLandingApp);
+    const updated = await this.tenants.updateAccess(tenant, moduleKeys, defaultLandingApp);
+    if (defaultCompany && defaultCompany.landingApp !== defaultLandingApp) {
+      await setDefaultCompanyLandingAppForDatabase(tenant.dbName, defaultLandingApp);
+    }
+    return updated;
   }
 
   async refreshTenantsForPlan(planId: number) {

@@ -119,7 +119,7 @@ try {
     const contactBeforeReferencedAddressUpdate = await requestData(
       api!,
       "GET",
-      `/core/master/contacts/${references.customerId}`,
+      `/core/master/core_contacts/${references.customerId}`,
       databaseName,
       undefined,
       timings
@@ -129,7 +129,7 @@ try {
     return requestData(
       api!,
       "PUT",
-      `/core/master/contacts/${references.customerId}`,
+      `/core/master/core_contacts/${references.customerId}`,
       databaseName,
       {
         addresses: [
@@ -896,7 +896,7 @@ try {
 
 async function assertIndiaCountryDefault(connection: Awaited<ReturnType<typeof createConnection>>) {
   const [countries] = await connection.query<RowDataPacket[]>(
-    "SELECT code,name,sort_order FROM countries ORDER BY sort_order,name"
+    "SELECT code,name,sort_order FROM core_countries ORDER BY sort_order,name"
   );
   assert.equal(countries[0]?.code, "IN", "India must be the first seeded Country.");
   assert.equal(countries[0]?.name, "India", "India must be the default seeded Country.");
@@ -906,9 +906,9 @@ async function assertIndiaCountryDefault(connection: Awaited<ReturnType<typeof c
     "The removed hyphen Country must not be seeded."
   );
   const [fallbackStates] = await connection.query<RowDataPacket[]>(
-    `SELECT countries.code country_code FROM states
-      INNER JOIN countries ON countries.id=states.country_id
-      WHERE states.code='UNKNOWN' OR states.name='-'`
+    `SELECT core_countries.code country_code FROM core_states
+      INNER JOIN core_countries ON core_countries.id=core_states.country_id
+      WHERE core_states.code='UNKNOWN' OR core_states.name='-'`
   );
   assert.equal(
     fallbackStates[0]?.country_code,
@@ -916,7 +916,7 @@ async function assertIndiaCountryDefault(connection: Awaited<ReturnType<typeof c
     "The fallback State chain must remain valid under India."
   );
   const [states] = await connection.query<RowDataPacket[]>(
-    "SELECT code,name,sort_order FROM states ORDER BY sort_order,name"
+    "SELECT code,name,sort_order FROM core_states ORDER BY sort_order,name"
   );
   assert.equal(states[0]?.name, "-", "The fallback State must remain first.");
   assert.equal(states[1]?.name, "Tamil Nadu", "Tamil Nadu must be the second seeded State.");
@@ -929,20 +929,22 @@ async function assertLegacyCountryCleanup(
 ) {
   await connection.changeUser({ database: tenantDatabase });
   await connection.query(
-    "INSERT INTO countries (code,name,sort_order,status) VALUES ('UNKNOWN','-',-1,'active')"
+    "INSERT INTO core_countries (code,name,sort_order,status) VALUES ('UNKNOWN','-',-1,'active')"
   );
   const [legacyCountries] = await connection.query<RowDataPacket[]>(
-    "SELECT id FROM countries WHERE code='UNKNOWN'"
+    "SELECT id FROM core_countries WHERE code='UNKNOWN'"
   );
   const legacyCountryId = Number(legacyCountries[0]?.id);
   assert.ok(legacyCountryId > 0);
-  await connection.query("UPDATE states SET country_id=? WHERE code='UNKNOWN'", [legacyCountryId]);
+  await connection.query("UPDATE core_states SET country_id=? WHERE code='UNKNOWN'", [
+    legacyCountryId
+  ]);
   await connection.query(
-    "INSERT INTO states (country_id,code,name,sort_order,status) VALUES (?,'LEGACY-STATE','Legacy State',999,'active')",
+    "INSERT INTO core_states (country_id,code,name,sort_order,status) VALUES (?,'LEGACY-STATE','Legacy State',999,'active')",
     [legacyCountryId]
   );
   await connection.query(
-    "UPDATE contacts_addresses SET country_id=?,country_name='-' ORDER BY id LIMIT 1",
+    "UPDATE core_contacts_addresses SET country_id=?,country_name='-' ORDER BY id LIMIT 1",
     [legacyCountryId]
   );
 
@@ -953,7 +955,7 @@ async function assertLegacyCountryCleanup(
   });
 
   const [remainingLegacyCountries] = await connection.query<RowDataPacket[]>(
-    "SELECT id FROM countries WHERE code='UNKNOWN' OR name='-'"
+    "SELECT id FROM core_countries WHERE code='UNKNOWN' OR name='-'"
   );
   assert.equal(
     remainingLegacyCountries.length,
@@ -961,15 +963,15 @@ async function assertLegacyCountryCleanup(
     "Legacy hyphen Country cleanup must be repeatable."
   );
   const [invalidStates] = await connection.query<RowDataPacket[]>(
-    `SELECT states.id FROM states
-      INNER JOIN countries ON countries.id=states.country_id
-      WHERE states.code IN ('UNKNOWN','LEGACY-STATE') AND countries.code<>'IN'`
+    `SELECT core_states.id FROM core_states
+      INNER JOIN core_countries ON core_countries.id=core_states.country_id
+      WHERE core_states.code IN ('UNKNOWN','LEGACY-STATE') AND core_countries.code<>'IN'`
   );
   assert.equal(invalidStates.length, 0, "Legacy States must be reparented to India.");
   const [invalidAddresses] = await connection.query<RowDataPacket[]>(
-    `SELECT contacts_addresses.id FROM contacts_addresses
-      LEFT JOIN countries ON countries.id=contacts_addresses.country_id
-      WHERE contacts_addresses.country_id IS NOT NULL AND countries.id IS NULL`
+    `SELECT core_contacts_addresses.id FROM core_contacts_addresses
+      LEFT JOIN core_countries ON core_countries.id=core_contacts_addresses.country_id
+      WHERE core_contacts_addresses.country_id IS NOT NULL AND core_countries.id IS NULL`
   );
   assert.equal(
     invalidAddresses.length,
@@ -1222,7 +1224,7 @@ async function assertMinimalProduct(
   const updated = await requestData(
     app,
     "PUT",
-    `/core/master/products/${created.id}`,
+    `/core/master/core_products/${created.id}`,
     tenantDatabase,
     { name: "E2E Minimal Product Updated", hsnCodeId: Number(created.hsnCodeId) },
     timings
@@ -1231,7 +1233,7 @@ async function assertMinimalProduct(
   await requestData(
     app,
     "DELETE",
-    `/core/master/products/${created.id}/force`,
+    `/core/master/core_products/${created.id}/force`,
     tenantDatabase,
     undefined,
     timings
@@ -1263,7 +1265,7 @@ async function assertMinimalContact(
   await requestData(
     app,
     "DELETE",
-    `/core/master/contacts/${contact.id}/force`,
+    `/core/master/core_contacts/${contact.id}/force`,
     tenantDatabase,
     undefined,
     timings
@@ -1276,7 +1278,7 @@ async function prepareTenant(tenantDatabase: string) {
   );
   await admin.changeUser({ database: tenantDatabase });
   await admin.query(
-    "CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    "CREATE TABLE app_users (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
   );
   await bootstrapCoreDatabase(tenantDatabase);
   await createDummyCoreEntries(admin);
@@ -1387,23 +1389,23 @@ function assertEnvelopeMeta(body: Envelope, rawBody: string) {
 
 async function createDummyCoreEntries(connection: typeof admin) {
   await connection.query(`
-    INSERT INTO contacts (uuid,code,name,type_id,type_name,status)
+    INSERT INTO core_contacts (uuid,code,name,type_id,type_name,status)
     SELECT 'c0de0001','C-E2E','Dummy persisted customer',id,name,'active'
-    FROM contact_types WHERE status='active' ORDER BY name<>'-',id LIMIT 1
+    FROM core_contact_types WHERE status='active' ORDER BY name<>'-',id LIMIT 1
   `);
   await connection.query(`
-    INSERT INTO contacts_addresses (parent_id,address_line1,is_default,sort_order)
-    SELECT id,'1 Persistence Street',1,1 FROM contacts WHERE code='C-E2E'
+    INSERT INTO core_contacts_addresses (parent_id,address_line1,is_default,sort_order)
+    SELECT id,'1 Persistence Street',1,1 FROM core_contacts WHERE code='C-E2E'
   `);
   await connection.query(
-    "INSERT INTO work_orders (uuid,code,name,status) VALUES ('c0de0002','WO-E2E','Dummy persisted work order','active')"
+    "INSERT INTO core_work_orders (uuid,code,name,status) VALUES ('c0de0002','WO-E2E','Dummy persisted work order','active')"
   );
   await connection.query(`
-    INSERT INTO products (uuid,name,hsn_code_id,unit_id,gst_tax_id,status)
+    INSERT INTO core_products (uuid,name,hsn_code_id,unit_id,gst_tax_id,status)
     SELECT 'c0de0003','Dummy persisted product',
-      (SELECT id FROM hsn_codes WHERE status='active' AND code<>'-' ORDER BY id LIMIT 1),
-      (SELECT id FROM units WHERE status='active' AND LOWER(name)='nos' LIMIT 1),
-      (SELECT id FROM taxes WHERE status='active' AND rate_percent=18 LIMIT 1),
+      (SELECT id FROM core_hsn_codes WHERE status='active' AND code<>'-' ORDER BY id LIMIT 1),
+      (SELECT id FROM core_units WHERE status='active' AND LOWER(name)='nos' LIMIT 1),
+      (SELECT id FROM core_taxes WHERE status='active' AND rate_percent=18 LIMIT 1),
       'active'
   `);
 }
@@ -1426,19 +1428,19 @@ async function loadReferences(connection: typeof admin): Promise<References> {
       size.id AS size_id,
       unit.id AS unit_id,
       tax.id AS tax_id
-    FROM default_company_settings defaults
-    INNER JOIN financial_years financial_year ON financial_year.id=defaults.financial_year_id
-    INNER JOIN currencies currency ON UPPER(currency.name)='INR' AND currency.status='active'
-    INNER JOIN contacts contact ON contact.code='C-E2E'
-    INNER JOIN contacts_addresses address ON address.parent_id=contact.id AND address.is_default=1
-    INNER JOIN work_orders work_order ON work_order.code='WO-E2E'
-    INNER JOIN ledgers ledger ON ledger.status='active' AND ledger.name<>'-'
-    INNER JOIN products product ON product.name='Dummy persisted product'
-    INNER JOIN hsn_codes hsn ON hsn.id=product.hsn_code_id
-    INNER JOIN colours colour ON colour.status='active' AND colour.name<>'-'
-    INNER JOIN sizes size ON size.status='active' AND size.name<>'-'
-    INNER JOIN units unit ON unit.id=product.unit_id
-    INNER JOIN taxes tax ON tax.id=product.gst_tax_id
+    FROM core_default_company_settings defaults
+    INNER JOIN core_financial_years financial_year ON financial_year.id=defaults.financial_year_id
+    INNER JOIN core_currencies currency ON UPPER(currency.name)='INR' AND currency.status='active'
+    INNER JOIN core_contacts contact ON contact.code='C-E2E'
+    INNER JOIN core_contacts_addresses address ON address.parent_id=contact.id AND address.is_default=1
+    INNER JOIN core_work_orders work_order ON work_order.code='WO-E2E'
+    INNER JOIN core_ledgers ledger ON ledger.status='active' AND ledger.name<>'-'
+    INNER JOIN core_products product ON product.name='Dummy persisted product'
+    INNER JOIN core_hsn_codes hsn ON hsn.id=product.hsn_code_id
+    INNER JOIN core_colours colour ON colour.status='active' AND colour.name<>'-'
+    INNER JOIN core_sizes size ON size.status='active' AND size.name<>'-'
+    INNER JOIN core_units unit ON unit.id=product.unit_id
+    INNER JOIN core_taxes tax ON tax.id=product.gst_tax_id
     WHERE defaults.singleton_key=1
     LIMIT 1
   `);

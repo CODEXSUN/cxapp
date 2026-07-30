@@ -20,7 +20,7 @@ type Row = {
 export class DefaultCompanyRepository {
   async get() {
     const rows =
-      await sql<Row>`SELECT d.id,d.company_id,c.code AS company_code,c.name AS company_name,d.financial_year_id,f.name AS financial_year_name,DATE_FORMAT(f.start_date,'%Y-%m-%d') AS financial_year_start_date,DATE_FORMAT(f.end_date,'%Y-%m-%d') AS financial_year_end_date,d.landing_app,d.status,d.created_at,d.updated_at FROM default_company_settings d INNER JOIN companies c ON c.id=d.company_id INNER JOIN financial_years f ON f.id=d.financial_year_id WHERE d.singleton_key=1 LIMIT 1`.execute(
+      await sql<Row>`SELECT d.id,d.company_id,c.code AS company_code,c.name AS company_name,d.financial_year_id,f.name AS financial_year_name,DATE_FORMAT(f.start_date,'%Y-%m-%d') AS financial_year_start_date,DATE_FORMAT(f.end_date,'%Y-%m-%d') AS financial_year_end_date,d.landing_app,d.status,d.created_at,d.updated_at FROM core_default_company_settings d INNER JOIN core_companies c ON c.id=d.company_id INNER JOIN core_financial_years f ON f.id=d.financial_year_id WHERE d.singleton_key=1 LIMIT 1`.execute(
         getCoreDatabase()
       );
     return rows.rows[0] ? mapRow(rows.rows[0]) : null;
@@ -28,11 +28,11 @@ export class DefaultCompanyRepository {
   async save(input: DefaultCompanySavePayload) {
     const current = await this.get();
     if (current) {
-      await sql`UPDATE default_company_settings SET company_id=${input.companyId},financial_year_id=${input.financialYearId},landing_app=${input.landingApp.trim()},status=${input.status ?? "active"},updated_at=CURRENT_TIMESTAMP WHERE singleton_key=1`.execute(
+      await sql`UPDATE core_default_company_settings SET company_id=${input.companyId},financial_year_id=${input.financialYearId},landing_app=${input.landingApp.trim()},status=${input.status ?? "active"},updated_at=CURRENT_TIMESTAMP WHERE singleton_key=1`.execute(
         getCoreDatabase()
       );
     } else {
-      await sql`INSERT INTO default_company_settings (singleton_key,company_id,financial_year_id,landing_app,status) VALUES (1,${input.companyId},${input.financialYearId},${input.landingApp.trim()},${input.status ?? "active"})`.execute(
+      await sql`INSERT INTO core_default_company_settings (singleton_key,company_id,financial_year_id,landing_app,status) VALUES (1,${input.companyId},${input.financialYearId},${input.landingApp.trim()},${input.status ?? "active"})`.execute(
         getCoreDatabase()
       );
     }
@@ -43,7 +43,7 @@ export class DefaultCompanyRepository {
       id: number | string;
       name: string;
       code: string;
-    }>`SELECT id,name,code FROM companies WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name,code FROM core_companies WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ?? null;
@@ -52,7 +52,7 @@ export class DefaultCompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM financial_years WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name FROM core_financial_years WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ?? null;
@@ -62,7 +62,7 @@ export class DefaultCompanyRepository {
       id: number | string;
       name: string;
       code: string;
-    }>`SELECT id,name,code FROM companies WHERE status='active' AND name<>'-' ORDER BY id LIMIT 1`.execute(
+    }>`SELECT id,name,code FROM core_companies WHERE status='active' AND name<>'-' ORDER BY id LIMIT 1`.execute(
       getCoreDatabase()
     );
     const row = rows.rows[0];
@@ -72,7 +72,7 @@ export class DefaultCompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM financial_years WHERE status='active' ORDER BY is_current DESC,start_date DESC,id LIMIT 1`.execute(
+    }>`SELECT id,name FROM core_financial_years WHERE status='active' ORDER BY is_current DESC,start_date DESC,id LIMIT 1`.execute(
       getCoreDatabase()
     );
     const row = rows.rows[0];
@@ -83,7 +83,7 @@ export class DefaultCompanyRepository {
       id: number | string;
       name: string;
       code: string;
-    }>`SELECT id,name,code FROM companies WHERE status='active' AND name<>'-' ORDER BY name`.execute(
+    }>`SELECT id,name,code FROM core_companies WHERE status='active' AND name<>'-' ORDER BY name`.execute(
       getCoreDatabase()
     );
     return rows.rows.map((row) => ({ id: Number(row.id), label: row.name, code: row.code }));
@@ -92,7 +92,7 @@ export class DefaultCompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM financial_years WHERE status='active' ORDER BY start_date DESC`.execute(
+    }>`SELECT id,name FROM core_financial_years WHERE status='active' ORDER BY start_date DESC`.execute(
       getCoreDatabase()
     );
     return rows.rows.map((row) => ({ id: Number(row.id), label: row.name }));

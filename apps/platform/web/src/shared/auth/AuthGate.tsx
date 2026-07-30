@@ -4,19 +4,13 @@ import { GlobalLoader } from "@codexsun/ui/components/global-loader";
 import { StatusBadge } from "@codexsun/ui/components/StatusBadge";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { restoreSession, type Desk } from "../api/platform-api";
+import { redirectForExpiredSession } from "./session-expiry";
 
 const expectedUserType: Record<Desk, string> = {
   admin: "staff",
   sa: "super_admin",
   tenant: "tenant"
-};
-
-const loginPaths: Record<Desk, string> = {
-  admin: "/admin/login",
-  sa: "/sa/login",
-  tenant: "/login"
 };
 
 const deskLabels: Record<Desk, string> = {
@@ -26,7 +20,6 @@ const deskLabels: Record<Desk, string> = {
 };
 
 export function AuthGate({ children, desk }: { children: ReactElement; desk: Desk }) {
-  const navigate = useNavigate();
   const [serverValid, setServerValid] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -35,12 +28,15 @@ export function AuthGate({ children, desk }: { children: ReactElement; desk: Des
       try {
         const data = await restoreSession(desk);
         if (!cancelled) {
-          setServerValid(
-            data.authenticated && data.userType === expectedUserType[desk]
-          );
+          const valid = data.authenticated && data.userType === expectedUserType[desk];
+          if (!valid) redirectForExpiredSession(desk);
+          setServerValid(valid);
         }
       } catch {
-        if (!cancelled) setServerValid(false);
+        if (!cancelled) {
+          redirectForExpiredSession(desk);
+          setServerValid(false);
+        }
       }
     }
     checkSession();
@@ -66,7 +62,7 @@ export function AuthGate({ children, desk }: { children: ReactElement; desk: Des
         <p style={{ marginTop: "1rem", marginBottom: "1.5rem" }}>
           You need an active {deskLabels[desk]} session to view this page.
         </p>
-        <Button style={{ width: "100%" }} onClick={() => navigate({ to: loginPaths[desk] })}>
+        <Button style={{ width: "100%" }} onClick={() => redirectForExpiredSession(desk)}>
           Go to Login
         </Button>
       </Card>

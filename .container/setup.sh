@@ -33,12 +33,12 @@ run_preflight
 
 infrastructure_image() {
   stack="$1"
-  registry=$(env_value CODEXSUN_IMAGE_REGISTRY codexsun)
-  version=$(env_value CODEXSUN_VERSION 1.0.42)
+  registry=$(env_value CODEXSUN_IMAGE_REGISTRY)
+  version=$(env_value CODEXSUN_VERSION)
   case "$stack" in
-    mariadb) tag=$(env_value MARIADB_IMAGE_TAG "11.8-codexsun-${version}") ;;
-    redis) tag=$(env_value REDIS_IMAGE_TAG "7.4-codexsun-${version}") ;;
-    media) tag=$(env_value MEDIA_IMAGE_TAG "${version}-filebrowser2.63.5") ;;
+    mariadb) tag=$(env_value MARIADB_IMAGE_TAG) ;;
+    redis) tag=$(env_value REDIS_IMAGE_TAG) ;;
+    media) tag=$(env_value MEDIA_IMAGE_TAG) ;;
     *) echo "Unknown infrastructure image: $stack" >&2; exit 64 ;;
   esac
   printf '%s/%s:%s' "$registry" "$stack" "$tag"

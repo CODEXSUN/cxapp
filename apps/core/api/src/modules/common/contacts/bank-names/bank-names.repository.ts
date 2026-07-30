@@ -15,20 +15,20 @@ type BankNamesRow = {
 
 export class BankNamesRepository {
   async list(filters: BankNamesListFilters = {}) {
-    const rows = await sql<BankNamesRow>`SELECT id, name, status, sort_order FROM bank_names
+    const rows = await sql<BankNamesRow>`SELECT id, name, status, sort_order FROM core_bank_names
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toBankNames);
   }
 
   async find(id: string | number) {
-    const rows = await sql<BankNamesRow>`SELECT id, name, status, sort_order FROM bank_names
+    const rows = await sql<BankNamesRow>`SELECT id, name, status, sort_order FROM core_bank_names
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toBankNames(rows.rows[0]) : null;
   }
 
   async create(input: BankNamesSavePayload) {
-    const result = await sql`INSERT INTO bank_names (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_bank_names (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -38,7 +38,7 @@ export class BankNamesRepository {
   async update(id: string | number, input: BankNamesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE bank_names SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_bank_names SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -48,7 +48,7 @@ export class BankNamesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE bank_names SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_bank_names SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -57,7 +57,7 @@ export class BankNamesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM bank_names WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_bank_names WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

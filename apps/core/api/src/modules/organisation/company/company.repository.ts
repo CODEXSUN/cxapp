@@ -6,13 +6,13 @@ export class CompanyRepository {
   async list(search = "") {
     const term = search.trim().toLowerCase();
     const rows =
-      await sql<Row>`SELECT * FROM companies WHERE (${term}='' OR LOWER(name) LIKE ${`%${term}%`} OR LOWER(code) LIKE ${`%${term}%`}) ORDER BY code`.execute(
+      await sql<Row>`SELECT * FROM core_companies WHERE (${term}='' OR LOWER(name) LIKE ${`%${term}%`} OR LOWER(code) LIKE ${`%${term}%`}) ORDER BY code`.execute(
         getCoreDatabase()
       );
     return rows.rows.map(map);
   }
   async find(id: string | number) {
-    const rows = await sql<Row>`SELECT * FROM companies WHERE id=${Number(id)} LIMIT 1`.execute(
+    const rows = await sql<Row>`SELECT * FROM core_companies WHERE id=${Number(id)} LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ? map(rows.rows[0]) : null;
@@ -20,7 +20,7 @@ export class CompanyRepository {
   async create(input: CompanySaveInput) {
     const value = await normalize(input);
     const result =
-      await sql`INSERT INTO companies (code,name,legal_name,primary_phone,primary_email,gstin,pan,msme_no,msme_category,tan_no,tds_available,tcs_available,website,description,logo_path,logo_dark_path,industry_id,industry_name,status,emails_json,phones_json,addresses_json,bank_accounts_json,social_links_json) VALUES (${value.code},${value.name},${value.legalName},${value.primaryPhone},${value.primaryEmail},${value.gstin},${value.pan},${value.msmeNo},${value.msmeCategory},${value.tanNo},${value.tdsAvailable},${value.tcsAvailable},${value.website},${value.description},${value.logoPath},${value.logoDarkPath},${value.industryId},${value.industryName},${value.status},${JSON.stringify(value.emails)},${JSON.stringify(value.phones)},${JSON.stringify(value.addresses)},${JSON.stringify(value.bankAccounts)},${JSON.stringify(value.socialLinks)})`.execute(
+      await sql`INSERT INTO core_companies (code,name,legal_name,primary_phone,primary_email,gstin,pan,msme_no,msme_category,tan_no,tds_available,tcs_available,website,description,logo_path,logo_dark_path,industry_id,industry_name,status,emails_json,phones_json,addresses_json,bank_accounts_json,social_links_json) VALUES (${value.code},${value.name},${value.legalName},${value.primaryPhone},${value.primaryEmail},${value.gstin},${value.pan},${value.msmeNo},${value.msmeCategory},${value.tanNo},${value.tdsAvailable},${value.tcsAvailable},${value.website},${value.description},${value.logoPath},${value.logoDarkPath},${value.industryId},${value.industryName},${value.status},${JSON.stringify(value.emails)},${JSON.stringify(value.phones)},${JSON.stringify(value.addresses)},${JSON.stringify(value.bankAccounts)},${JSON.stringify(value.socialLinks)})`.execute(
         getCoreDatabase()
       );
     return (await this.find(Number(result.insertId)))!;
@@ -29,7 +29,7 @@ export class CompanyRepository {
     const current = await this.find(id);
     if (!current || current.name === "-") return null;
     const value = await normalize(input, current);
-    await sql`UPDATE companies SET code=${value.code},name=${value.name},legal_name=${value.legalName},primary_phone=${value.primaryPhone},primary_email=${value.primaryEmail},gstin=${value.gstin},pan=${value.pan},msme_no=${value.msmeNo},msme_category=${value.msmeCategory},tan_no=${value.tanNo},tds_available=${value.tdsAvailable},tcs_available=${value.tcsAvailable},website=${value.website},description=${value.description},logo_path=${value.logoPath},logo_dark_path=${value.logoDarkPath},industry_id=${value.industryId},industry_name=${value.industryName},status=${value.status},emails_json=${JSON.stringify(value.emails)},phones_json=${JSON.stringify(value.phones)},addresses_json=${JSON.stringify(value.addresses)},bank_accounts_json=${JSON.stringify(value.bankAccounts)},social_links_json=${JSON.stringify(value.socialLinks)},updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_companies SET code=${value.code},name=${value.name},legal_name=${value.legalName},primary_phone=${value.primaryPhone},primary_email=${value.primaryEmail},gstin=${value.gstin},pan=${value.pan},msme_no=${value.msmeNo},msme_category=${value.msmeCategory},tan_no=${value.tanNo},tds_available=${value.tdsAvailable},tcs_available=${value.tcsAvailable},website=${value.website},description=${value.description},logo_path=${value.logoPath},logo_dark_path=${value.logoDarkPath},industry_id=${value.industryId},industry_name=${value.industryName},status=${value.status},emails_json=${JSON.stringify(value.emails)},phones_json=${JSON.stringify(value.phones)},addresses_json=${JSON.stringify(value.addresses)},bank_accounts_json=${JSON.stringify(value.bankAccounts)},social_links_json=${JSON.stringify(value.socialLinks)},updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -37,7 +37,7 @@ export class CompanyRepository {
   async setActive(id: string | number, active: boolean) {
     const current = await this.find(id);
     if (!current || current.name.trim() === "-") return null;
-    await sql`UPDATE companies SET status=${active ? "active" : "suspend"},updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_companies SET status=${active ? "active" : "suspend"},updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -45,13 +45,13 @@ export class CompanyRepository {
   async forceDelete(id: string | number) {
     const current = await this.find(id);
     if (!current || current.name.trim() === "-") return null;
-    await sql`DELETE FROM companies WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_companies WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return current;
   }
   async isDefaultCompany(id: string | number) {
     const rows = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) AS count FROM default_company_settings WHERE company_id=${Number(id)}`.execute(
+    }>`SELECT COUNT(*) AS count FROM core_default_company_settings WHERE company_id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return Number(rows.rows[0]?.count ?? 0) > 0;
@@ -60,7 +60,7 @@ export class CompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM address_types WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name FROM core_address_types WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ? { id: Number(rows.rows[0].id), name: rows.rows[0].name } : null;
@@ -69,7 +69,7 @@ export class CompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM bank_names WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name FROM core_bank_names WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ? { id: Number(rows.rows[0].id), name: rows.rows[0].name } : null;
@@ -78,7 +78,7 @@ export class CompanyRepository {
     const rows = await sql<{
       id: number | string;
       name: string;
-    }>`SELECT id,name FROM countries WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name FROM core_countries WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0] ? { id: Number(rows.rows[0].id), name: rows.rows[0].name } : null;
@@ -88,7 +88,7 @@ export class CompanyRepository {
       country_id: number | string;
       id: number | string;
       name: string;
-    }>`SELECT id,name,country_id FROM states WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name,country_id FROM core_states WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0]
@@ -104,7 +104,7 @@ export class CompanyRepository {
       id: number | string;
       name: string;
       state_id: number | string;
-    }>`SELECT id,name,state_id FROM districts WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name,state_id FROM core_districts WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0]
@@ -120,7 +120,7 @@ export class CompanyRepository {
       district_id: number | string;
       id: number | string;
       name: string;
-    }>`SELECT id,name,district_id FROM cities WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name,district_id FROM core_cities WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0]
@@ -136,7 +136,7 @@ export class CompanyRepository {
       city_id: number | string;
       id: number | string;
       name: string;
-    }>`SELECT id,name,city_id FROM pincodes WHERE id=${id} AND status='active' LIMIT 1`.execute(
+    }>`SELECT id,name,city_id FROM core_pincodes WHERE id=${id} AND status='active' LIMIT 1`.execute(
       getCoreDatabase()
     );
     return rows.rows[0]

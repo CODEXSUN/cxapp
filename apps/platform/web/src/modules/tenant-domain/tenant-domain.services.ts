@@ -19,6 +19,10 @@ export function updateTenantDomain(id: number, payload: TenantDomainSavePayload)
   return apiPut<TenantDomainRecord>(`/admin/tenant-domains/${id}`, payload, "sa");
 }
 
+export function verifyTenantDomain(id: number) {
+  return apiPost<TenantDomainRecord>(`/admin/tenant-domains/${id}/verify`, {}, "sa");
+}
+
 export function listTenantDomains(tenantId: number | string) {
   return apiGet<TenantDomain[]>(`/admin/tenants/${tenantId}/domains`, "sa");
 }

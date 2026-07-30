@@ -11,7 +11,9 @@ export function migrateCityModule(database: Kysely<CoreDatabase>) {
   return sql
     .raw(
       `
-    CREATE TABLE IF NOT EXISTS cities (
+    CREATE TABLE IF NOT EXISTS core_cities (
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:migration',
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       district_id INT NOT NULL,
       name VARCHAR(200) NOT NULL,
@@ -21,7 +23,7 @@ export function migrateCityModule(database: Kysely<CoreDatabase>) {
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY cities_district_name_unique (district_id, name),
       INDEX cities_district_id_idx (district_id),
-      CONSTRAINT cities_district_id_fk FOREIGN KEY (district_id) REFERENCES districts(id) ON UPDATE CASCADE ON DELETE RESTRICT
+      CONSTRAINT cities_district_id_fk FOREIGN KEY (district_id) REFERENCES core_districts(id) ON UPDATE CASCADE ON DELETE RESTRICT
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
     )

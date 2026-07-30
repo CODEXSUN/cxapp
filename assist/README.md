@@ -2,9 +2,9 @@
 
 ## Working Repository
 
-The canonical local project repository is `E:\Workspace\prefiq\codexsun`.
+The canonical local project repository is `E:\Workspace\codexsun\cxapp`.
 Use it as the root for planning, implementation, verification, and release
-work. Older CODEXSUN/CXSUN checkouts outside `E:\Workspace\prefiq` are not
+work. Older CODEXSUN/CXSUN checkouts outside `E:\Workspace\codexsun\cxapp` are not
 project references.
 
 ## Purpose

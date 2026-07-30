@@ -13,7 +13,8 @@ import {
 
 type BillingSettingsRow = {
   created_at: string | null;
-  id: string;
+  id: number;
+  settings_key: string;
   settings_json: string | null;
   updated_at: string | null;
 };
@@ -49,7 +50,7 @@ export class BillingSettingsRepository {
     )
       .selectFrom("billing_settings")
       .selectAll()
-      .where("id", "=", "billing")
+      .where("settings_key", "=", "billing")
       .executeTakeFirst();
     const settings = row ? normalizeSettings(row.settings_json) : defaultBillingSettings;
     return this.saveBillingSettings(databaseName, companyId, settings);
@@ -109,7 +110,7 @@ export class BillingSettingsRepository {
 
   async defaultCompanyId(databaseName: string) {
     const result = await sql<{ company_id: number }>`
-      SELECT company_id FROM default_company_settings
+      SELECT company_id FROM core_default_company_settings
       WHERE singleton_key = 1 AND status = 'active'
       LIMIT 1
     `.execute(await database(databaseName));
@@ -124,7 +125,7 @@ export class BillingSettingsRepository {
       throw AppError.validation("x-company-id is required for Billing settings.");
     }
     const result = await sql<{ id: number }>`
-      SELECT id FROM companies WHERE id = ${companyId} AND status = 'active' LIMIT 1
+      SELECT id FROM core_companies WHERE id = ${companyId} AND status = 'active' LIMIT 1
     `.execute(await database(databaseName));
     if (!result.rows[0])
       throw AppError.validation("The selected company is not active or does not exist.");

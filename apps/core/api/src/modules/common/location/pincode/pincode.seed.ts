@@ -7,29 +7,34 @@ export const pincodeSeed = {
 };
 
 export async function seedPincodeModule() {
-  const defaultCities = await sql<{ id: number }>`SELECT cities.id FROM cities
-    INNER JOIN districts ON districts.id=cities.district_id
-    INNER JOIN states ON states.id=districts.state_id
-    INNER JOIN countries ON countries.id=states.country_id
-    WHERE countries.code='IN' AND states.code='UNKNOWN'
-      AND districts.name='-' AND cities.name='-' LIMIT 1`.execute(getCoreDatabase());
+  const defaultCities = await sql<{ id: number }>`SELECT core_cities.id FROM core_cities
+    INNER JOIN core_districts ON core_districts.id=core_cities.district_id
+    INNER JOIN core_states ON core_states.id=core_districts.state_id
+    INNER JOIN core_countries ON core_countries.id=core_states.country_id
+    WHERE core_countries.code='IN' AND core_states.code='UNKNOWN'
+      AND core_districts.name='-' AND core_cities.name='-' LIMIT 1`.execute(getCoreDatabase());
   const defaultCityId = defaultCities.rows[0]?.id;
-  const rows = await sql<{ id: number; name: string }>`SELECT cities.id, cities.name FROM cities
-    INNER JOIN districts ON districts.id = cities.district_id
-    INNER JOIN states ON states.id = districts.state_id
-    INNER JOIN countries ON countries.id = states.country_id
-    WHERE countries.code = 'IN' AND states.name = 'Tamil Nadu'`.execute(getCoreDatabase());
+  const rows = await sql<{
+    id: number;
+    name: string;
+  }>`SELECT core_cities.id, core_cities.name FROM core_cities
+    INNER JOIN core_districts ON core_districts.id = core_cities.district_id
+    INNER JOIN core_states ON core_states.id = core_districts.state_id
+    INNER JOIN core_countries ON core_countries.id = core_states.country_id
+    WHERE core_countries.code = 'IN' AND core_states.name = 'Tamil Nadu'`.execute(
+    getCoreDatabase()
+  );
   const cityIds = new Map(rows.rows.map((row) => [row.name, row.id]));
   if (!defaultCityId)
     throw new Error("Default city seed must exist before pincode seeds are applied.");
 
-  const fallback = await sql<{ id: number }>`SELECT id FROM pincodes
+  const fallback = await sql<{ id: number }>`SELECT id FROM core_pincodes
     WHERE name='-' AND area='-' ORDER BY id LIMIT 1`.execute(getCoreDatabase());
   if (fallback.rows[0]?.id) {
-    await sql`UPDATE pincodes SET city_id=${defaultCityId},name='-',area='-',sort_order=0,status='active'
+    await sql`UPDATE core_pincodes SET city_id=${defaultCityId},name='-',area='-',sort_order=0,status='active'
       WHERE id=${fallback.rows[0].id}`.execute(getCoreDatabase());
   } else {
-    await sql`INSERT INTO pincodes (city_id,name,area,sort_order,status)
+    await sql`INSERT INTO core_pincodes (city_id,name,area,sort_order,status)
       VALUES (${defaultCityId},'-','-',0,'active')`.execute(getCoreDatabase());
   }
 
@@ -37,11 +42,9 @@ export async function seedPincodeModule() {
     const cityId = cityIds.get(pincode.cityName);
     if (!cityId)
       throw new Error(`City seed must exist before pincode seed is applied: ${pincode.cityName}`);
-    await sql`INSERT INTO pincodes (city_id, name, area, sort_order, status)
+    await sql`INSERT INTO core_pincodes (city_id, name, area, sort_order, status)
       VALUES (${cityId}, ${pincode.code}, ${pincode.areaName}, ${pincode.sortOrder}, ${pincode.status})
-      ON DUPLICATE KEY UPDATE city_id=VALUES(city_id), name=VALUES(name), area=VALUES(area), sort_order=VALUES(sort_order), status=VALUES(status)`.execute(
-      getCoreDatabase()
-    );
+      ON DUPLICATE KEY UPDATE id=id`.execute(getCoreDatabase());
   }
 }
 

@@ -8,7 +8,7 @@ The goal is simple: every module should feel like the same product. Only the dat
 
 ## Source Of Truth
 
-- Working repository: `E:\Workspace\prefiq\codexsun`
+- Working repository: `E:\Workspace\codexsun\cxapp`
 - CODEXSUN UI package: `packages/ui/src`
 - Workspace primitives: `packages/ui/src/workspace`
 - Theme tokens and palettes: `packages/ui/src/design-system`

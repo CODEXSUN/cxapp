@@ -11,7 +11,7 @@ export async function recordTenantAccessAudit(input: {
   tenantId: string;
 }) {
   await getPlatformDatabase()
-    .insertInto("platform_activity")
+    .insertInto("app_platform_activity")
     .values({
       action: input.action,
       actor_email: input.actorEmail,

@@ -8,11 +8,13 @@ import {
   migratePlatformDatabase,
   platformDatabaseName,
   resetPlatformDatabases,
+  rollbackPlatformDatabase,
   seedPlatformDatabase
 } from "./platform-database.js";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import {
   migrateTenantDatabase,
+  rollbackTenantDatabase,
   seedDefaultTenant,
   seedTenantDatabase
 } from "../modules/tenant/tenant.seed.js";
@@ -27,6 +29,7 @@ type DbCommand =
   | "migrations:list"
   | "migrations:preflight"
   | "migrations:run"
+  | "migrations:rollback"
   | "migrations:test-local"
   | "dump:create"
   | "dump:download"
@@ -41,6 +44,7 @@ const validCommands: DbCommand[] = [
   "migrations:list",
   "migrations:preflight",
   "migrations:run",
+  "migrations:rollback",
   "migrations:test-local",
   "dump:create",
   "dump:download",
@@ -91,6 +95,11 @@ async function main() {
       await migrateAll();
     }
 
+    if (command === "migrations:rollback") {
+      await runMigrationPreflight();
+      await rollbackAll();
+    }
+
     if (command === "migrations:test-local") {
       await runLocalMigrationTest();
     }
@@ -118,6 +127,20 @@ async function migrateAll() {
   await createMasterDatabase();
   await migratePlatformDatabase();
   await migrateTenantAppDatabases();
+}
+
+async function rollbackAll() {
+  if (
+    env.NODE_ENV === "production" &&
+    process.env.CODEXSUN_MIGRATION_ROLLBACK_CONFIRM !== "ROLLBACK"
+  ) {
+    throw new Error(
+      "production rollback refused. Set CODEXSUN_MIGRATION_ROLLBACK_CONFIRM=ROLLBACK after verifying the backup and rollback plan."
+    );
+  }
+  const tenants = await new TenantRepository().list();
+  for (const tenant of [...tenants].reverse()) await rollbackTenantDatabase(tenant);
+  await rollbackPlatformDatabase();
 }
 
 async function seedAll() {
@@ -165,7 +188,7 @@ async function listMigrationState() {
 
   try {
     const [platformRows] = await connection.query(
-      "SELECT name, applied_at FROM codexsun_migrations ORDER BY applied_at, id"
+      "SELECT scope,batch,version,name,checksum,status,applied_at,rolled_back_at FROM app_migration_batches ORDER BY batch,id"
     );
     console.table(platformRows);
   } catch (error) {
@@ -187,7 +210,7 @@ async function listMigrationState() {
     });
     try {
       const [tenantRows] = await tenantConnection.query(
-        "SELECT name, applied_at FROM schema_migrations ORDER BY applied_at, id"
+        "SELECT scope,batch,version,name,checksum,status,applied_at,rolled_back_at FROM app_migration_batches ORDER BY scope,batch,id"
       );
       console.info(`[database] tenant "${tenant.tenantCode}" (${tenant.dbName})`);
       console.table(tenantRows);
@@ -322,6 +345,7 @@ Usage:
   tsx src/database/db-cli.ts migrations:list
   tsx src/database/db-cli.ts migrations:preflight
   tsx src/database/db-cli.ts migrations:run
+  tsx src/database/db-cli.ts migrations:rollback
   tsx src/database/db-cli.ts migrations:test-local
   tsx src/database/db-cli.ts dump:create
   tsx src/database/db-cli.ts dump:download
@@ -336,6 +360,7 @@ Root npm commands:
   npm run db:migrations:list
   npm run db:migrations:preflight
   npm run db:migrations:run
+  npm run db:migrations:rollback
   npm run db:migrations:test-local
   npm run db:dump:create
   npm run db:dump:download

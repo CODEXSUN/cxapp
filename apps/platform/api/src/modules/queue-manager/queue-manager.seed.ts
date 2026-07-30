@@ -4,7 +4,7 @@ import { env } from "../../env.js";
 
 export async function seedQueueManagerModule(db: Kysely<PlatformDatabase>) {
   await db
-    .insertInto("queue_runtime_settings")
+    .insertInto("app_queue_runtime_settings")
     .values({
       backend: env.CODEXSUN_QUEUE_BACKEND,
       singleton_key: 1,

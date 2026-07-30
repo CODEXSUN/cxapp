@@ -17,7 +17,7 @@ type HsnCodesRow = {
 export class HsnCodesRepository {
   async list(filters: HsnCodesListFilters = {}) {
     const rows =
-      await sql<HsnCodesRow>`SELECT id, code, description, status, sort_order FROM hsn_codes
+      await sql<HsnCodesRow>`SELECT id, code, description, status, sort_order FROM core_hsn_codes
       WHERE (${filters.search ?? ""} = '' OR LOWER(code) LIKE ${like(filters.search)} OR LOWER(description) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toHsnCodes);
@@ -25,13 +25,13 @@ export class HsnCodesRepository {
 
   async find(id: string | number) {
     const rows =
-      await sql<HsnCodesRow>`SELECT id, code, description, status, sort_order FROM hsn_codes
+      await sql<HsnCodesRow>`SELECT id, code, description, status, sort_order FROM core_hsn_codes
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toHsnCodes(rows.rows[0]) : null;
   }
 
   async create(input: HsnCodesSavePayload) {
-    const result = await sql`INSERT INTO hsn_codes (code, description, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_hsn_codes (code, description, status, sort_order) VALUES
       (${normalizeString(input.code)}, ${normalizeString(input.description)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -41,7 +41,7 @@ export class HsnCodesRepository {
   async update(id: string | number, input: HsnCodesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE hsn_codes SET code=${normalizeString(input.code)}, description=${normalizeString(input.description)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_hsn_codes SET code=${normalizeString(input.code)}, description=${normalizeString(input.description)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -51,7 +51,7 @@ export class HsnCodesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE hsn_codes SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_hsn_codes SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -60,7 +60,7 @@ export class HsnCodesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM hsn_codes WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_hsn_codes WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

@@ -4,14 +4,14 @@ import { sql, type Kysely } from "kysely";
 export async function seedMailModule(database: Kysely<Record<string, Record<string, unknown>>>) {
   const key = "mail.manage";
   await sql`
-    INSERT INTO permissions (uuid, \`key\`, label, description, status, is_protected)
+    INSERT INTO app_permissions (uuid, \`key\`, label, description, status, is_protected)
     VALUES (${stable(key)}, ${key}, 'Mail manage', 'Allows tenant mail settings, inbox, compose, and delivery.', 'active', TRUE)
     ON DUPLICATE KEY UPDATE label=VALUES(label), description=VALUES(description), status='active', is_protected=TRUE
   `.execute(database);
   await sql`
-    INSERT INTO role_permissions (uuid, role_id, permission_id, status, is_protected)
+    INSERT INTO app_role_permissions (uuid, role_id, permission_id, status, is_protected)
     SELECT ${stable(`role-permission:admin:${key}`)}, role.id, permission.id, 'active', TRUE
-    FROM roles role INNER JOIN permissions permission ON permission.\`key\`=${key}
+    FROM app_roles role INNER JOIN app_permissions permission ON permission.\`key\`=${key}
     WHERE role.\`key\`='admin'
     ON DUPLICATE KEY UPDATE status='active', is_protected=TRUE
   `.execute(database);

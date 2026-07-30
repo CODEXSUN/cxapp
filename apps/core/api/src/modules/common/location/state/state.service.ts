@@ -36,7 +36,7 @@ export class StateService {
     const count = await this.repository.dependentCount(id);
     if (count > 0) {
       throw AppError.conflict(
-        `State cannot be force deleted because it is referenced by ${count} districts.`,
+        `State cannot be force deleted because it is referenced by ${count} core_districts.`,
         { count }
       );
     }

@@ -30,8 +30,8 @@ Do not read historical blueprints, product plans, or runbooks by default when th
 
 ## Repository Rules
 
-- Treat `E:\Workspace\prefiq\codexsun` as the canonical local working repository and project root.
-- Do not use older CODEXSUN/CXSUN checkouts outside `E:\Workspace\prefiq` as project references.
+- Treat `E:\Workspace\codexsun\cxapp` as the canonical local working repository and project root.
+- Do not use older CODEXSUN/CXSUN checkouts outside `E:\Workspace\codexsun\cxapp` as project references.
 - Use npm only from the repository root.
 - Keep one root `node_modules`, one root `package-lock.json`, and one root `dist`.
 - Never create workspace-local `node_modules`, `dist`, `dist-types`, pnpm stores, or alternative lockfiles.
@@ -227,3 +227,15 @@ Report:
 - Any remaining concrete blocker
 
 Do not describe planned, inferred, or unexecuted verification as completed.
+
+## Shared-Domain Authentication Contract
+
+- Production application traffic uses `app.codexsun.com` as the canonical shared host.
+- On that host, an exact, unique Corporate ID selects the tenant before user credentials are checked. Tenant code and slug are not Corporate ID aliases.
+- A custom host may select a tenant only after its domain mapping is active and DNS-verified. The canonical host can never be assigned to one tenant.
+- The server owns tenant routing. Never trust browser-supplied tenant ID, database name, company ID, or financial-year headers without replacing and validating them from signed session claims and the tenant registry.
+- Tenant database secrets are server-only references and resolution fails closed. Never fall back to a global password for an unknown tenant secret reference.
+- Browser authentication uses one encrypted, `HttpOnly`, `Secure`, host-only, `SameSite=Strict` cookie. Never persist JWTs, refresh tokens, or session IDs in localStorage or sessionStorage.
+- Every login clears legacy browser auth material and revokes the current server session before establishing the new identity. A tenant switch must reload the desk and clear client query/runtime caches.
+- Cache only non-secret session context: tenant/company labels and IDs, default company, financial year, enabled modules, landing page, and safe settings. Never cache credentials, authorization decisions, permissions, secrets, or raw tokens. Clear this cache on login and logout.
+- Authorization and tenant status are checked live for protected requests; cached session context is a performance convenience, not an authority.

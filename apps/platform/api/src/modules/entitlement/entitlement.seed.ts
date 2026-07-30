@@ -9,12 +9,12 @@ export const entitlementSeed = {
 
 export async function seedEntitlementModule(db: Kysely<PlatformDatabase>) {
   const plans = await db
-    .selectFrom("plans")
+    .selectFrom("app_plans")
     .select(["id", "code"])
     .where("status", "=", "active")
     .execute();
   const apps = await db
-    .selectFrom("platform_apps")
+    .selectFrom("app_platform_apps")
     .select(["id", "module_key"])
     .where("always_enabled", "=", true)
     .execute();
@@ -22,7 +22,7 @@ export async function seedEntitlementModule(db: Kysely<PlatformDatabase>) {
   for (const plan of plans) {
     for (const app of apps) {
       await db
-        .insertInto("entitlements")
+        .insertInto("app_entitlements")
         .values({
           app_id: Number(app.id),
           ends_on: null,

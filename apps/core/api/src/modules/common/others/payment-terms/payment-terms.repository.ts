@@ -15,20 +15,20 @@ type PaymentTermsRow = {
 
 export class PaymentTermsRepository {
   async list(filters: PaymentTermsListFilters = {}) {
-    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM payment_terms
+    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toPaymentTerms);
   }
 
   async find(id: string | number) {
-    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM payment_terms
+    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toPaymentTerms(rows.rows[0]) : null;
   }
 
   async create(input: PaymentTermsSavePayload) {
-    const result = await sql`INSERT INTO payment_terms (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_payment_terms (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -38,7 +38,7 @@ export class PaymentTermsRepository {
   async update(id: string | number, input: PaymentTermsSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE payment_terms SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_payment_terms SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -48,7 +48,7 @@ export class PaymentTermsRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE payment_terms SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_payment_terms SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -57,7 +57,7 @@ export class PaymentTermsRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM payment_terms WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_payment_terms WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

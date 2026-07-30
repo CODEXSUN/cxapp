@@ -6,8 +6,11 @@ import { AppProviders } from "./providers";
 import { router } from "./router";
 import { applyDesignSystemPreference } from "./design-system";
 import { PageTitle } from "../shared/document/PageTitle";
+import { clearBrowserSession } from "../shared/api/platform-api";
+import { installSessionExpiryInterceptor } from "../shared/auth/session-expiry";
 
 applyDesignSystemPreference();
+installSessionExpiryInterceptor(clearBrowserSession);
 
 export function PlatformWebApp() {
   return (

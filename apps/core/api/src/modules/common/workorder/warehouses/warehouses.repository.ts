@@ -15,20 +15,20 @@ type WarehousesRow = {
 
 export class WarehousesRepository {
   async list(filters: WarehousesListFilters = {}) {
-    const rows = await sql<WarehousesRow>`SELECT id, name, status, sort_order FROM warehouses
+    const rows = await sql<WarehousesRow>`SELECT id, name, status, sort_order FROM core_warehouses
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toWarehouses);
   }
 
   async find(id: string | number) {
-    const rows = await sql<WarehousesRow>`SELECT id, name, status, sort_order FROM warehouses
+    const rows = await sql<WarehousesRow>`SELECT id, name, status, sort_order FROM core_warehouses
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toWarehouses(rows.rows[0]) : null;
   }
 
   async create(input: WarehousesSavePayload) {
-    const result = await sql`INSERT INTO warehouses (name, status, sort_order) VALUES
+    const result = await sql`INSERT INTO core_warehouses (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
       getCoreDatabase()
     );
@@ -38,7 +38,7 @@ export class WarehousesRepository {
   async update(id: string | number, input: WarehousesSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE warehouses SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_warehouses SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -48,7 +48,7 @@ export class WarehousesRepository {
   async setActive(id: string | number, isActive: boolean) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE warehouses SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
+    await sql`UPDATE core_warehouses SET status=${isActive ? "active" : "inactive"}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
     return this.find(id);
@@ -57,7 +57,7 @@ export class WarehousesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM warehouses WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_warehouses WHERE id=${Number(id)}`.execute(getCoreDatabase());
     return existing;
   }
 }

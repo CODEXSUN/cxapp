@@ -6,7 +6,7 @@ export async function seedLedgers() {
   const result = await sql<{
     id: number | string;
     name: string;
-  }>`SELECT id,name FROM ledger_groups WHERE name='-' OR LOWER(name)='general'`.execute(
+  }>`SELECT id,name FROM core_ledger_groups WHERE name='-' OR LOWER(name)='general'`.execute(
     getCoreDatabase()
   );
   const groups = new Map(result.rows.map((row) => [row.name.trim().toLowerCase(), Number(row.id)]));

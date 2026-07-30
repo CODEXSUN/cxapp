@@ -20,42 +20,42 @@ export class TenantRoleRepository {
   async list(filters: TenantRoleListFilters = {}) {
     const term = `%${(filters.search ?? "").trim().toLowerCase()}%`;
     const r =
-      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM roles WHERE (${filters.search ?? ""}='' OR LOWER(\`key\`) LIKE ${term} OR LOWER(label) LIKE ${term}) ORDER BY label`.execute(
+      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM app_roles WHERE (${filters.search ?? ""}='' OR LOWER(\`key\`) LIKE ${term} OR LOWER(label) LIKE ${term}) ORDER BY label`.execute(
         this.database
       );
     return r.rows.map(map);
   }
   async find(id: string | number) {
     const r =
-      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM roles WHERE id=${Number(id)} LIMIT 1`.execute(
+      await sql<Row>`SELECT id,uuid,\`key\`,label,description,status,is_protected FROM app_roles WHERE id=${Number(id)} LIMIT 1`.execute(
         this.database
       );
     return r.rows[0] ? map(r.rows[0]) : null;
   }
   async create(input: TenantRoleSavePayload, uuid: string) {
     const r =
-      await sql`INSERT INTO roles (uuid,\`key\`,label,description,status,is_protected) VALUES (${uuid},${input.key},${input.label},${input.description},${input.status},FALSE)`.execute(
+      await sql`INSERT INTO app_roles (uuid,\`key\`,label,description,status,is_protected) VALUES (${uuid},${input.key},${input.label},${input.description},${input.status},FALSE)`.execute(
         this.database
       );
     return (await this.find(Number(r.insertId)))!;
   }
   async update(id: number, input: TenantRoleSavePayload) {
-    await sql`UPDATE roles SET \`key\`=${input.key},label=${input.label},description=${input.description},status=${input.status} WHERE id=${id}`.execute(
+    await sql`UPDATE app_roles SET \`key\`=${input.key},label=${input.label},description=${input.description},status=${input.status} WHERE id=${id}`.execute(
       this.database
     );
     return this.find(id);
   }
   async setStatus(id: number, status: TenantRoleStatus) {
-    await sql`UPDATE roles SET status=${status} WHERE id=${id}`.execute(this.database);
+    await sql`UPDATE app_roles SET status=${status} WHERE id=${id}`.execute(this.database);
     return this.find(id);
   }
   async dependentCounts(id: number) {
     const a = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) count FROM user_roles WHERE role_id=${id}`.execute(this.database);
+    }>`SELECT COUNT(*) count FROM app_user_roles WHERE role_id=${id}`.execute(this.database);
     const b = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) count FROM role_permissions WHERE role_id=${id}`.execute(this.database);
+    }>`SELECT COUNT(*) count FROM app_role_permissions WHERE role_id=${id}`.execute(this.database);
     return {
       rolePermissions: Number(b.rows[0]?.count ?? 0),
       userRoles: Number(a.rows[0]?.count ?? 0)
@@ -64,7 +64,7 @@ export class TenantRoleRepository {
   async forceDelete(id: number) {
     const record = await this.find(id);
     if (!record) return null;
-    await sql`DELETE FROM roles WHERE id=${id}`.execute(this.database);
+    await sql`DELETE FROM app_roles WHERE id=${id}`.execute(this.database);
     return record;
   }
 }

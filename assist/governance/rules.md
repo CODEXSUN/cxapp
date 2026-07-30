@@ -211,3 +211,13 @@ Passing TypeScript or lint alone does not prove module ownership. The ownership 
 - Small focused changes are preferred.
 - Assumptions must be stated when business rules are unclear.
 - Generated code should be reviewed against quality gates before release.
+
+## Authentication And Domain Rules
+
+- `app.codexsun.com` is the shared application domain; Corporate ID is mandatory there for tenant login.
+- Custom tenant domains require ownership verification and an active mapping before they may resolve a tenant.
+- Host, Corporate ID, tenant status, tenant user, and tenant database secret must be verified in that order.
+- Browser sessions are encrypted, HttpOnly, Secure, SameSite Strict, host-only, and revocable. Browser-readable JWT storage is forbidden.
+- A new login replaces the current browser principal and clears old tokens, cookies, tenant context, and query caches.
+- Request tenant headers are inputs only at the edge; authenticated server claims and registry data must overwrite them before module routes execute.
+- Safe per-session metadata may be cached, but permissions, authorization outcomes, credentials, and secrets must always be resolved from authoritative server state.
