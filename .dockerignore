@@ -1,0 +1,16 @@
+node_modules
+.turbo
+.git
+.idea
+*.log
+.env
+.env.*
+.container/deploy.env
+.temp
+dist
+storage
+coverage
+apps/*/*/node_modules
+apps/*/*/dist
+packages/*/node_modules
+*.tsbuildinfo

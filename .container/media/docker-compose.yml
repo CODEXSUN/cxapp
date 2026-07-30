@@ -1,0 +1,56 @@
+name: codexsun-media
+
+services:
+  media:
+    build:
+      context: ../..
+      dockerfile: .container/media/Dockerfile
+      args:
+        CODEXSUN_VERSION: ${CODEXSUN_VERSION:-1.0.42}
+        FILEBROWSER_BASE_IMAGE: ${FILEBROWSER_BASE_IMAGE:-filebrowser/filebrowser:v2.63.5}
+    image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/media:${MEDIA_IMAGE_TAG:-1.0.42-filebrowser2.63.5}
+    container_name: codexsun-media
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - --address
+      - 0.0.0.0
+      - --port
+      - "80"
+      - --root
+      - /srv
+      - --database
+      - /database/filebrowser.db
+    ports:
+      - "${CODEXSUN_BIND_ADDRESS:?CODEXSUN_BIND_ADDRESS is required}:${MEDIA_HOST_PORT:?MEDIA_HOST_PORT is required}:80"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.codexsun-media.rule: "Host(`${CODEXSUN_MEDIA_HOST:?CODEXSUN_MEDIA_HOST is required}`)"
+      traefik.http.routers.codexsun-media.entrypoints: websecure
+      traefik.http.routers.codexsun-media.tls: "true"
+      traefik.http.routers.codexsun-media.tls.certresolver: letsencrypt
+      traefik.http.services.codexsun-media.loadbalancer.server.port: "80"
+    volumes:
+      - media-data:/srv
+      - media-db:/database
+    networks:
+      - codexsun-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 12
+
+volumes:
+  media-data:
+    name: ${MEDIA_DATA_VOLUME:-codexsun-media-data}
+    external: true
+  media-db:
+    name: ${MEDIA_DB_VOLUME:-codexsun-media-db}
+    external: true
+
+networks:
+  codexsun-network:
+    name: ${CODEXSUN_DOCKER_NETWORK:-codexsun-network}
+    external: true

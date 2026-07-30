@@ -1,0 +1,35 @@
+{
+  "name": "@codexsun/billing-web",
+  "version": "1.0.42",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./modules/entries": "./src/modules/entries/index.ts",
+    "./modules/dashboard": "./src/modules/dashboard/index.ts",
+    "./modules/export-sales": "./src/modules/export-sales/index.ts",
+    "./modules/payment": "./src/modules/payment/index.ts",
+    "./modules/purchase": "./src/modules/purchase/index.ts",
+    "./modules/quotation": "./src/modules/quotation/index.ts",
+    "./modules/reports": "./src/modules/reports/index.ts",
+    "./modules/receipt": "./src/modules/receipt/index.ts",
+    "./modules/sales": "./src/modules/sales/index.ts",
+    "./modules/settings/services": "./src/modules/settings/settings.services.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@codexsun/core-web": "^1.0.42",
+    "@codexsun/ui": "^1.0.42",
+    "@codexsun/mail-web": "^1.0.42",
+    "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-router": "^1.91.3",
+    "lucide-react": "^1.22.0",
+    "react": "^19.0.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
+  }
+}

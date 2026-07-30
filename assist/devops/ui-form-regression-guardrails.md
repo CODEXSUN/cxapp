@@ -1,0 +1,135 @@
+# UI Form Regression Guardrails
+
+These rules exist because tenant/common/master form changes recently caused avoidable runtime and UX failures. Treat this file as a strict checklist before changing shared form controls, common modules, relation lookups, switch cards, or tenant/master upsert pages.
+
+## Problems We Must Not Repeat
+
+1. Placeholder text returned after restart.
+   - Cause: hardcoded `placeholder` values remained in field definitions and shared input/autocomplete defaults.
+   - Risk: the UI looks clean during one manual test but comes back after reload because another shared path still forwards placeholders.
+
+2. Foreign relations showed raw ids.
+   - Cause: fields like `countryId`, `stateId`, and `districtId` were rendered as plain inputs/list cells.
+   - Risk: users see meaningless ids, type invalid values, and create broken relation data.
+
+3. Nested interactive elements caused React warnings.
+   - Cause: a clickable switch card was implemented as a `<button>` containing the Radix `Switch`, which is also a button.
+   - Risk: hydration warnings, invalid HTML, broken keyboard behavior, and e2e console failures.
+
+4. Autocomplete ref/update loop.
+   - Cause: a portal/ref-heavy lookup was reused inside common dialogs and triggered `Maximum update depth exceeded`.
+   - Risk: the route crashes and React recreates the tree.
+
+5. Optional props broke strict typecheck.
+   - Cause: passing `undefined` directly to optional props under `exactOptionalPropertyTypes`.
+   - Risk: unrelated forms fail to compile after small UI changes.
+
+6. Visual alignment changed without full form checks.
+   - Cause: individual rows were adjusted without checking all similar rows: communication, address, bank, social, tax.
+   - Risk: one row is fixed while another form section remains misaligned.
+
+7. E2E helpers typed old id values into fields that became autocompletes.
+   - Cause: test helpers were not updated when relation fields changed from text inputs to lookup inputs.
+   - Risk: tests pass for the wrong behavior or fail later in unrelated modules.
+
+## Strict Implementation Rules
+
+1. No hardcoded placeholders in tenant/common/master form inputs.
+   - Do not add `placeholder: "..."` in tenant field definitions.
+   - Do not forward field placeholder values from generic form renderers.
+   - Shared autocomplete/lookup defaults must be blank unless a specific page has an approved reason.
+
+2. Relation fields must be autocomplete fields.
+   - Any field ending in `Id` that references another common/master table must show a name label in the UI.
+   - The saved payload may store the id, but list/detail/form display must show the related name when available.
+   - Examples:
+     - `countryId` -> label `Country`, autocomplete `countries`
+     - `stateId` -> label `State`, autocomplete `states`
+     - `districtId` -> label `District`, autocomplete `districts`
+     - product fields -> Product Type, HSN Code, Unit, GST names/rates
+
+3. Switch cards must not be buttons wrapping switches.
+   - Use a non-button wrapper with `role="button"` and keyboard handling.
+   - The switch itself may remain interactive.
+   - Whole card click must toggle.
+   - Active/on card is green.
+   - Inactive/off card is grey.
+   - Height must match normal inputs (`h-11`).
+
+4. Avoid portal/ref-heavy lookups inside generic dialogs unless tested.
+   - For dialog relation fields, prefer a local dropdown or a component proven not to create ref update loops.
+   - Any lookup replacement must be tested with create, edit, clear, inline create, and reopen dialog.
+
+5. With exact optional props, only pass optional props when defined.
+   - Use `{...(value ? { prop: value } : {})}`.
+   - Do not pass `prop={maybeUndefined}` unless the prop type explicitly includes `undefined`.
+
+6. Form row alignment must be checked by section.
+   - If one switch/input row is aligned, check every comparable row in the same form.
+   - Required sections for contact/product/common changes:
+     - Details
+     - Tax Details
+     - Communication
+     - Addresses
+     - Finance
+     - More
+     - Generic common dialog
+
+7. E2E must match the real control type.
+   - Text inputs can be filled by index only when the form is stable and simple.
+   - Lookup fields must be tested by visible name, not by raw numeric/id fallback.
+   - Inline create should be covered for at least one lookup field in the tenant flow.
+
+## Required Test Commands
+
+Run these after any shared form, common module, master module, lookup, switch, layout, or button change:
+
+```bash
+npm run check
+npm run build
+npm run test:e2e:composed-runtime
+```
+
+For a faster first pass during active development:
+
+```bash
+npm run typecheck -w @codexsun/platform-web
+npm run lint -w @codexsun/platform-web
+```
+
+Complete browser verification against the root `npm run dev` runtime when the
+change affects interaction or layout behavior.
+
+## Manual Smoke Checklist
+
+Use this checklist when reviewing in browser:
+
+1. Open a common module with relations:
+   - Countries
+   - States
+   - Districts
+   - Cities
+2. Create/edit each relation record using names in autocomplete.
+3. Confirm list columns show names, not ids.
+4. Restart dev server or refresh browser.
+5. Confirm placeholders do not return.
+6. Toggle Active card by clicking:
+   - the switch
+   - the card body
+   - keyboard Enter/Space
+7. Confirm inactive card is grey and active card is green.
+8. Watch browser console:
+   - no `Maximum update depth exceeded`
+   - no nested `<button>` warnings
+   - no 403 except intentional tenant mismatch e2e checks
+
+## Review Rule
+
+Do not mark a tenant/common/master form task complete unless:
+
+- the relevant relation fields are name-based autocompletes,
+- no hardcoded placeholder is visible,
+- switch cards match the shared behavior,
+- typecheck passes,
+- tenant e2e passes,
+- and full platform e2e passes when a shared component changed.

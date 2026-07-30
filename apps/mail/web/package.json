@@ -1,0 +1,25 @@
+{
+  "name": "@codexsun/mail-web",
+  "version": "1.0.42",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./modules/mail": "./src/modules/mail/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@codexsun/ui": "^1.0.42",
+    "@tanstack/react-query": "^5.100.10",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^1.22.0",
+    "react": "^19.0.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
+  }
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" fill="none">
+  <rect width="96" height="96" rx="24" fill="#F8FAFC"/>
+  <path d="M65 29.5C59.8 24.7 53.3 22 46.3 22C30.7 22 18 34.7 18 50.3S30.7 78.6 46.3 78.6c7 0 13.5-2.6 18.5-7.2l-9.1-9.8a14.8 14.8 0 1 1 .2-22.3L65 29.5Z" fill="#059669"/>
+  <path d="M47 42h31v13H47z" fill="#0F172A"/>
+  <text x="120" y="59" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1">COMPANY</text>
+</svg>

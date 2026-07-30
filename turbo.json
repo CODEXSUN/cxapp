@@ -1,0 +1,37 @@
+{
+  "$schema": "https://v2-10-4.turborepo.dev/schema.json",
+  "globalEnv": [
+    "PLATFORM_API_PORT",
+    "PLATFORM_WEB_PORT",
+    "PLATFORM_API_URL",
+    "PLATFORM_WEB_ORIGIN",
+    "DEFAULT_TENANT_NAME",
+    "DEV_AUTO_TENANT_LOGIN",
+    "DB_HOST",
+    "DB_PORT",
+    "DB_USER",
+    "DB_PASSWORD",
+    "DB_MASTER_NAME",
+    "JWT_SECRET",
+    "CODEXSUN_REDIS_URL"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "../../../packages/ui/src/styles.css"],
+      "outputs": ["../../dist/**", "../../../dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "outputs": ["../../../dist/**", "../../dist/**"]
+    }
+  }
+}

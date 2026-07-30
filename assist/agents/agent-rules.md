@@ -1,0 +1,111 @@
+# Agent Rules
+
+## Purpose
+
+These rules guide all AI agents working on CODEXSUN.
+
+## General Rules
+
+- Read `assist/AGENT-GUIDE.md` first and use its routing table instead of loading all Assist documents.
+- Read relevant `assist/` docs before planning major work.
+- Preserve tenant isolation.
+- Respect module boundaries.
+- Prefer simple, explicit design.
+- Keep architecture decisions documented.
+- Do not invent product behavior without recording assumptions.
+- Keep compliance-related work conservative.
+- Treat offline sync as a first-class concern.
+
+## Mandatory npm Workspace Rule
+
+Every current and future CODEXSUN application must use the repository's single npm workspace installation. Run npm commands only from the repository root. There must be one root `node_modules`, one root `package-lock.json`, and one root `dist`; nested `node_modules`, `dist`, and `dist-types` folders are forbidden.
+
+Agents must not use pnpm or Yarn, create alternative lockfiles or package-manager stores, run `npm install` inside a workspace, or add workspace configuration that emits local dependency or build-output folders. After dependency, package, workspace, or build changes, agents must run `npm run dependencies:check` and scan `apps/`, `packages/`, and `tools/` for nested `node_modules`, `dist`, and `dist-types` directories before reporting completion.
+
+## Planning Rules
+
+Every significant feature plan should consider:
+
+- Tenant impact.
+- Subscription impact.
+- Permission impact.
+- Database impact.
+- API impact.
+- Event impact.
+- Queue impact.
+- Offline impact.
+- UI impact.
+- Mobile and desktop impact.
+- Reporting impact.
+- Test impact.
+- Migration impact.
+
+## Code Review Rules
+
+Reviewers should check:
+
+- Tenant context is present.
+- Permissions are enforced.
+- Events include required metadata.
+- Queue jobs are retry-safe.
+- Offline conflicts are considered.
+- Accounting entries are balanced.
+- Compliance records are auditable.
+- APIs do not leak data.
+- UI follows the design system.
+- Verification covers important behavior, and unavailable checks are reported explicitly.
+
+## Mandatory Application Boundary Audit
+
+Every AI agent that creates, refactors, reviews, or finalizes an application module must perform a full application boundary audit across its backend and frontend. This applies to every current application and every future application. It cannot be skipped because typecheck, lint, or tests pass.
+
+Before implementing CRUD, the agent must read and apply `Mandatory Module-Owned CRUD Pattern` in `assist/governance/rules.md`. Country, State, District, City, and Pincode are the reference ownership tone: one entity per leaf, fixed typed APIs, distinct form/list/workspace roles, public lookup relationships only, backend-enforced lifecycle rules, and no generic entity engine. A request to make modules “the same pattern” means consistent role behavior and interaction tone, not a shared business implementation, metadata registry, wrapper, or dynamic-path CRUD engine.
+
+Before changing code, inventory the application's module folders and identify each composition root, business module, owned entity, owned table, API surface, frontend workspace, and public export. After changing code, repeat the audit and fix every violation.
+
+The audit must detect and reject:
+
+- Wrapper or alias role files that rename or re-export another module's implementation.
+- Generic inherited repositories/services, shared CRUD factories, metadata-driven CRUD centers, and centralized master/common implementations used instead of module-owned behavior.
+- Cross-module imports of private business implementation. Consume another module only through an intentional public contract, injected dependency, lookup API, or approved event.
+- Business migrations, seeds, repositories, services, routes, validation, schemas, hooks, forms, lists, workspaces, settings, print logic, and tests outside the owning module.
+- Stale barrels, package exports, route/menu registrations, proxies, compatibility folders, and unused shared utilities left after a move.
+- Dummy, placeholder, scaffold-only, empty, reserved, wrapper, simplified, or borrowed role files.
+- Composition roots containing business CRUD logic. Composition roots may register, migrate, seed, and publicly export owned leaf modules only.
+
+Legitimate infrastructure must be distinguished from business logic. `shared/api` transport/session context, environment readers, observability, and reusable controls from `@codexsun/ui` may be shared only when they contain no module-specific fields, validation, persistence, lifecycle, routes, or workflows. Moving business logic into `shared`, `common`, `foundation`, `helpers`, or `utils` does not make it infrastructure.
+
+The task is not complete until the agent has:
+
+1. Verified every leaf module against its backend and frontend file contract.
+2. Verified composition roots contain references/composition only.
+3. Scanned for wrappers, aliases, private cross-module imports, centralized CRUD, stale exports, and misplaced business files.
+4. Removed unused legacy folders and export proxies.
+5. Run `node tools/check-module-boundaries.mjs <app>` for the application key.
+6. Run formatting, lint, TypeScript, application boundaries, production composition/build validation, and any configured database/E2E checks.
+7. Report skipped database/E2E checks explicitly; never describe skipped checks as passed.
+
+If the checker does not understand a new application's approved contract, update it when introducing that application. Never weaken or disable the checker merely to make violations pass.
+
+## Documentation Rules
+
+Docs should be updated when:
+
+- A module boundary changes.
+- A new industry pack is added.
+- A new event or queue is introduced.
+- A tenant isolation rule changes.
+- A subscription rule changes.
+- Offline sync behavior changes.
+- AI tools gain new capabilities.
+- Compliance behavior changes.
+
+## Decision Rule
+
+When uncertain, choose the option that protects:
+
+1. Tenant data.
+2. Accounting correctness.
+3. Compliance traceability.
+4. Module clarity.
+5. Future customization.

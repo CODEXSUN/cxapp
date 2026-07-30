@@ -1,0 +1,13 @@
+[server]
+bind-address = 0.0.0.0
+
+[mysqld]
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+innodb-file-per-table = 1
+max-connections = 200
+skip-name-resolve = 1
+
+[client]
+default-character-set = utf8mb4
+connect-timeout = 30

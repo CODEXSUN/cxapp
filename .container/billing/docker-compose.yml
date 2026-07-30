@@ -1,0 +1,189 @@
+name: codexsun-billing
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PLATFORM_API_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
+  CODEXSUN_ALLOW_MISSING_ENV: "1"
+  AUTH_MODE: ${AUTH_MODE:-hybrid}
+  AUTH_SESSION_TTL_HOURS: ${AUTH_SESSION_TTL_HOURS:-168}
+  AUTH_SESSION_RENEWAL_HOURS: ${AUTH_SESSION_RENEWAL_HOURS:-24}
+  DB_DRIVER: mariadb
+  DB_HOST: ${DB_HOST:-codexsun-mariadb}
+  DB_PORT: ${DB_PORT:-3306}
+  DB_USER: ${DB_USER:-root}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+  DB_MASTER_NAME: ${DB_MASTER_NAME:-codexsun_master}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+  PLATFORM_WEB_ORIGIN: ${PLATFORM_WEB_ORIGIN:?PLATFORM_WEB_ORIGIN is required}
+  PLATFORM_WEB_ORIGINS: ${PLATFORM_WEB_ORIGINS:-}
+  PLATFORM_WEB_PORT: ${PLATFORM_WEB_PORT:?PLATFORM_WEB_PORT is required}
+  PLATFORM_API_URL: ${PLATFORM_API_URL:?PLATFORM_API_URL is required}
+  CODEXSUN_QUEUE_BACKEND: ${CODEXSUN_QUEUE_BACKEND:-bullmq-redis}
+  CODEXSUN_REDIS_URL: ${CODEXSUN_REDIS_URL:?CODEXSUN_REDIS_URL is required}
+  CODEXSUN_QUEUE_WORKER_ENABLED: ${CODEXSUN_QUEUE_WORKER_ENABLED:-1}
+  MAIL_ENABLED: ${MAIL_ENABLED:-0}
+  MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:-}
+  MAIL_SMTP_PORT: ${MAIL_SMTP_PORT:-587}
+  MAIL_SMTP_SECURE: ${MAIL_SMTP_SECURE:-0}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-CODEXSUN}
+  MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
+  CODEXSUN_DB_FRESH_ON_START: ${CODEXSUN_DB_FRESH_ON_START:-0}
+  CODEXSUN_ALLOW_PRODUCTION_DB_RESET: ${CODEXSUN_ALLOW_PRODUCTION_DB_RESET:-0}
+  CODEXSUN_VERIFIED_BACKUP_ID: ${CODEXSUN_VERIFIED_BACKUP_ID:-}
+  CODEXSUN_BACKUP_DIR: /storage/backups/database
+  STORAGE_ROOT: /storage/app
+  STORAGE_PUBLIC_ROOT: /storage/public
+  ENABLE_DEFAULT_TENANT_SEED: ${ENABLE_DEFAULT_TENANT_SEED:-0}
+  DEFAULT_TENANT_CORPORATE_ID: ${DEFAULT_TENANT_CORPORATE_ID:-}
+  DEFAULT_TENANT_DB_NAME: ${DEFAULT_TENANT_DB_NAME:-}
+  DEFAULT_TENANT_DOMAIN: ${DEFAULT_TENANT_DOMAIN:-localhost}
+  DEFAULT_TENANT_NAME: ${DEFAULT_TENANT_NAME:-}
+  DEFAULT_TENANT_SLUG: ${DEFAULT_TENANT_SLUG:-}
+  DEFAULT_TENANT_ADMIN_NAME: ${DEFAULT_TENANT_ADMIN_NAME:-}
+  DEFAULT_TENANT_ADMIN_EMAIL: ${DEFAULT_TENANT_ADMIN_EMAIL:-}
+  DEFAULT_TENANT_ADMIN_PASSWORD: ${DEFAULT_TENANT_ADMIN_PASSWORD:-}
+  TENANT_DOMAIN_BASE: ${TENANT_DOMAIN_BASE:-localhost}
+  SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-}
+  SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
+  SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+  SOFTWARE_ADMIN_NAME: ${SOFTWARE_ADMIN_NAME:-}
+  SOFTWARE_ADMIN_EMAIL: ${SOFTWARE_ADMIN_EMAIL:-}
+  SOFTWARE_ADMIN_PASSWORD: ${SOFTWARE_ADMIN_PASSWORD:-}
+  TENANT_ADMIN_NAME: ${TENANT_ADMIN_NAME:-}
+  TENANT_ADMIN_EMAIL: ${TENANT_ADMIN_EMAIL:-}
+  TENANT_ADMIN_PASSWORD: ${TENANT_ADMIN_PASSWORD:-}
+  GSP_ENVIRONMENT: ${GSP_ENVIRONMENT:-sandbox}
+  GSP_SANDBOX_BASE_URL: ${GSP_SANDBOX_BASE_URL:?GSP_SANDBOX_BASE_URL is required}
+  GSP_BASE_URL: ${GSP_BASE_URL:?GSP_BASE_URL is required}
+  GSP_EMAIL: ${GSP_EMAIL:-}
+  GSP_USERNAME: ${GSP_USERNAME:-}
+  GSP_PASSWORD: ${GSP_PASSWORD:-}
+  GSP_CLIENT_ID: ${GSP_CLIENT_ID:-}
+  GSP_CLIENT_SECRET: ${GSP_CLIENT_SECRET:-}
+  GSP_GSTIN: ${GSP_GSTIN:-}
+  GSP_IP_ADDRESS: ${GSP_IP_ADDRESS:-0.0.0.0}
+
+x-api-service: &api-service
+  image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:-1.0.42}
+  restart: unless-stopped
+  volumes:
+    - billing-stack-data:/storage
+    - media-data:/storage/media
+  networks:
+    - codexsun-network
+
+x-web-service: &web-service
+  image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/billing-stack-web:${BILLING_STACK_WEB_IMAGE_TAG:-1.0.42}
+  restart: unless-stopped
+  networks:
+    - codexsun-network
+
+services:
+  storage-init:
+    image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/billing-stack-api:${BILLING_STACK_API_IMAGE_TAG:-1.0.42}
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /storage/app /storage/public /storage/tenants /storage/backups/database
+        chown -R 1000:1000 /storage/app /storage/public /storage/tenants /storage/backups
+    volumes:
+      - billing-stack-data:/storage
+      - media-data:/storage/media
+    networks:
+      - codexsun-network
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  platform-api:
+    <<: *api-service
+    build:
+      context: ../..
+      dockerfile: .container/billing/Dockerfile.api
+      target: runtime
+      args:
+        CODEXSUN_VERSION: ${CODEXSUN_VERSION:-1.0.42}
+        NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:-26.5.0}
+        NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:-12.0.1}
+        PLATFORM_API_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
+    container_name: codexsun-platform-api
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *api-env
+      HEALTH_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
+    ports:
+      - "${CODEXSUN_BIND_ADDRESS:?CODEXSUN_BIND_ADDRESS is required}:${PLATFORM_API_PORT}:${PLATFORM_API_PORT}"
+
+  platform-web:
+    <<: *web-service
+    build:
+      context: ../..
+      dockerfile: .container/billing/Dockerfile.web
+      args:
+        CODEXSUN_VERSION: ${CODEXSUN_VERSION:-1.0.42}
+        NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:-26.5.0}
+        NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:-12.0.1}
+        DEFAULT_TENANT_NAME: ${DEFAULT_TENANT_NAME:-Codexsun}
+        DEV_AUTO_TENANT_LOGIN: ${DEV_AUTO_TENANT_LOGIN:-0}
+    container_name: codexsun-platform-web
+    environment:
+      PLATFORM_API_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    ports:
+      - "${CODEXSUN_BIND_ADDRESS:?CODEXSUN_BIND_ADDRESS is required}:${PLATFORM_WEB_PORT:?PLATFORM_WEB_PORT is required}:80"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.codexsun-web.rule: "Host(`${CODEXSUN_WEB_HOST:?CODEXSUN_WEB_HOST is required}`)"
+      traefik.http.routers.codexsun-web.entrypoints: websecure
+      traefik.http.routers.codexsun-web.tls: "true"
+      traefik.http.routers.codexsun-web.tls.certresolver: letsencrypt
+      traefik.http.services.codexsun-web.loadbalancer.server.port: "80"
+      traefik.http.routers.codexsun-web-www.rule: "Host(`${CODEXSUN_WEB_HOST_ALT:?CODEXSUN_WEB_HOST_ALT is required}`)"
+      traefik.http.routers.codexsun-web-www.entrypoints: websecure
+      traefik.http.routers.codexsun-web-www.tls: "true"
+      traefik.http.routers.codexsun-web-www.tls.certresolver: letsencrypt
+      traefik.http.routers.codexsun-web-www.middlewares: codexsun-www-redirect
+      traefik.http.middlewares.codexsun-www-redirect.redirectregex.regex: "^https://www\\.codexsun\\.com/(.*)"
+      traefik.http.middlewares.codexsun-www-redirect.redirectregex.replacement: "https://codexsun.com/$${1}"
+      traefik.http.middlewares.codexsun-www-redirect.redirectregex.permanent: "true"
+
+  platform-migrate:
+    build:
+      context: ../..
+      dockerfile: .container/billing/Dockerfile.api
+      target: migrations
+      args:
+        CODEXSUN_VERSION: ${CODEXSUN_VERSION:-1.0.42}
+        NODE_RUNTIME_VERSION: ${NODE_RUNTIME_VERSION:-26.5.0}
+        NPM_RUNTIME_VERSION: ${NPM_RUNTIME_VERSION:-12.0.1}
+    image: ${CODEXSUN_IMAGE_REGISTRY:-codexsun}/billing-stack-migrations:${BILLING_STACK_MIGRATIONS_IMAGE_TAG:-1.0.42}
+    profiles:
+      - tools
+    environment:
+      <<: *api-env
+      PLATFORM_API_PORT: ${PLATFORM_API_PORT:?PLATFORM_API_PORT is required}
+    volumes:
+      - billing-stack-data:/storage
+      - media-data:/storage/media
+    networks:
+      - codexsun-network
+
+volumes:
+  billing-stack-data:
+    name: ${BILLING_STACK_DATA_VOLUME:-codexsun-billing-stack-data}
+  media-data:
+    name: ${MEDIA_DATA_VOLUME:-codexsun-media-data}
+    external: true
+
+networks:
+  codexsun-network:
+    name: ${CODEXSUN_DOCKER_NETWORK:-codexsun-network}
+    external: true

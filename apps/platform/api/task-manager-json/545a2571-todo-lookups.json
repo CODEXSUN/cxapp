@@ -1,0 +1,107 @@
+[
+  {
+    "kind": "category",
+    "name": "Work",
+    "value": "work",
+    "id": "lookup-default-0",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "category",
+    "name": "Personal",
+    "value": "personal",
+    "id": "lookup-default-1",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "category",
+    "name": "Other",
+    "value": "other",
+    "id": "lookup-default-2",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "Backlog",
+    "value": "backlog",
+    "id": "lookup-default-3",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "Open",
+    "value": "open",
+    "id": "lookup-default-4",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "In progress",
+    "value": "in-progress",
+    "id": "lookup-default-5",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "In review",
+    "value": "review",
+    "id": "lookup-default-6",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "Blocked",
+    "value": "blocked",
+    "id": "lookup-default-7",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "Completed",
+    "value": "completed",
+    "id": "lookup-default-8",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "status",
+    "name": "Cancelled",
+    "value": "cancelled",
+    "id": "lookup-default-9",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "priority",
+    "name": "Low",
+    "value": "low",
+    "id": "lookup-default-10",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "priority",
+    "name": "Medium",
+    "value": "medium",
+    "id": "lookup-default-11",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "priority",
+    "name": "High",
+    "value": "high",
+    "id": "lookup-default-12",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "kind": "priority",
+    "name": "Urgent",
+    "value": "urgent",
+    "id": "lookup-default-13",
+    "createdAt": "2026-07-11T07:13:52.740Z"
+  },
+  {
+    "id": "lookup-b0d1a2f2",
+    "kind": "group",
+    "name": "sundar",
+    "value": "sundar",
+    "createdAt": "2026-07-11T07:31:17.692Z"
+  }
+]
