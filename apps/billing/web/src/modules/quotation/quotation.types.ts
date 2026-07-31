@@ -1,5 +1,6 @@
 export type QuotationStatus = "draft" | "confirmed" | "cancelled";
 export type QuotationTaxType = "cgst-sgst" | "igst";
+export type QuotationDecimalInput = string | number;
 
 export type QuotationContext = {
   companyId: number;
@@ -20,17 +21,17 @@ export type QuotationLineItemInput = {
   poNo: string;
   productId: number | null;
   productName: string;
-  quantity: number;
-  rate: number;
+  quantity: QuotationDecimalInput;
+  rate: QuotationDecimalInput;
   size: string;
   sizeId: number | null;
   taxId: number | null;
-  taxRate: number;
+  taxRate: QuotationDecimalInput;
   unit: string;
   unitId: number;
 };
 
-export type QuotationLineItem = QuotationLineItemInput & {
+export type QuotationLineItem = Omit<QuotationLineItemInput, "quantity" | "rate" | "taxRate"> & {
   cgstAmount: number;
   id: string;
   igstAmount: number;
@@ -39,6 +40,9 @@ export type QuotationLineItem = QuotationLineItemInput & {
   sgstAmount: number;
   taxableAmount: number;
   taxAmount: number;
+  quantity: number;
+  rate: number;
+  taxRate: number;
 };
 
 export type QuotationAddressDetails = {
@@ -111,7 +115,7 @@ export type QuotationSavePayload = {
   ledgerId: number | null;
   notes: string;
   quotationNumber: string;
-  roundOff?: number;
+  roundOff?: QuotationDecimalInput;
   salesLedger: string;
   shippingAddress: string;
   shippingAddressId: number;
@@ -144,7 +148,7 @@ export function createEmptyQuotation(): QuotationSavePayload {
     ledgerId: null,
     notes: "",
     quotationNumber: "",
-    roundOff: 0,
+    roundOff: "",
     salesLedger: "",
     shippingAddress: "",
     shippingAddressId: 0,
@@ -167,12 +171,12 @@ export function createEmptyQuotationItem(): QuotationLineItemInput {
     poNo: "",
     productId: null,
     productName: "",
-    quantity: 1,
-    rate: 0,
+    quantity: "1",
+    rate: "",
     size: "",
     sizeId: null,
     taxId: null,
-    taxRate: 18,
+    taxRate: "18",
     unit: "Nos",
     unitId: 0
   };

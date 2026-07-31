@@ -148,7 +148,6 @@ function emptyQueueFilters(): QueueJobFilters {
 }
 
 function backendLabel(backend: QueueBackend) {
-  if (backend === "memory") return "In-memory";
   if (backend === "bullmq-redis") return "BullMQ + Redis";
   return "Database";
 }

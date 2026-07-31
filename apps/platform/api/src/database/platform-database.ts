@@ -55,6 +55,10 @@ import { assertDatabaseName, quoteIdentifier } from "./database-utils.js";
 import type { PlatformDatabase } from "./schema.js";
 import { authSessionMigration, migrateAuthSession } from "../auth/auth-session.migration.js";
 import {
+  authLoginAttemptMigration,
+  migrateAuthLoginAttempt
+} from "../auth/auth-login-attempt.migration.js";
+import {
   migrateDevkitDatabase,
   rollbackDevkitDatabase,
   seedDevkitDatabase,
@@ -84,6 +88,11 @@ const platformMasterMigrationSteps = [
     description: authSessionMigration.description,
     migrate: migrateAuthSession,
     name: authSessionMigration.key
+  },
+  {
+    description: authLoginAttemptMigration.description,
+    migrate: migrateAuthLoginAttempt,
+    name: authLoginAttemptMigration.key
   },
   { description: "Platform plans.", migrate: migratePlanModule, name: "platform.plan.foundation" },
   {
@@ -133,7 +142,7 @@ const platformMasterMigrationSteps = [
   },
   {
     description: taskManagerMigration.description,
-    migrate: async (_database: Kysely<PlatformDatabase>) => migrateTaskManagerModule(),
+    migrate: migrateTaskManagerModule,
     name: taskManagerMigration.key
   },
   {
@@ -246,7 +255,7 @@ const platformMasterSeedSteps = [
   { name: "platform.storage-manager", seed: seedStorageManagerModule },
   {
     name: "platform.task-manager",
-    seed: async (_database: Kysely<PlatformDatabase>) => seedTaskManagerModule()
+    seed: seedTaskManagerModule
   },
   {
     name: "platform.app-orchestration",

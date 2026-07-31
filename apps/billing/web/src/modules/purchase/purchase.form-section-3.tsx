@@ -10,14 +10,19 @@ import {
   TotalRow,
   computePurchaseLine,
   computePurchaseTotals,
-  numericId
+  numericId,
+  purchaseDecimalValue
 } from "./purchase.form-section-4";
 import {
   formatMoney,
   type PurchaseLookupOption,
   type PurchaseLookupRecord
 } from "./purchase.services";
-import { type PurchaseSavePayload, type PurchaseTaxType } from "./purchase.types";
+import {
+  type PurchaseDecimalInput,
+  type PurchaseSavePayload,
+  type PurchaseTaxType
+} from "./purchase.types";
 
 export function PurchaseItemsSection({
   colourOptions,
@@ -61,7 +66,7 @@ export function PurchaseItemsSection({
   sizeOptions: PurchaseLookupOption[];
   sizesLoading: boolean;
   taxType: PurchaseTaxType;
-  roundOff: number;
+  roundOff: PurchaseDecimalInput;
   roundOffManual: boolean;
   suggestedRoundOff: number;
   onAdd: () => void;
@@ -89,7 +94,7 @@ export function PurchaseItemsSection({
   const showSize = settings.useSize;
   const splitTax = taxType === "cgst-sgst";
   const totals = computePurchaseTotals(items, taxType);
-  const grandTotal = totals.amount + roundOff;
+  const grandTotal = totals.amount + purchaseDecimalValue(roundOff);
   const templateColumns = [
     ...(showPo ? ["minmax(6.5rem,0.7fr)"] : []),
     ...(showDc ? ["minmax(6.5rem,0.7fr)"] : []),
@@ -235,10 +240,10 @@ export function PurchaseItemsSection({
               <Field label="Quantity">
                 <Input
                   className="text-center"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   type="text"
-                  value={String(draft.quantity)}
-                  onChange={(event) => onDraftChange({ quantity: Number(event.target.value || 0) })}
+                  value={draft.quantity}
+                  onChange={(event) => onDraftChange({ quantity: event.target.value })}
                 />
               </Field>
               <Field label="Price">
@@ -246,8 +251,8 @@ export function PurchaseItemsSection({
                   className="text-right"
                   inputMode="decimal"
                   type="text"
-                  value={String(draft.rate)}
-                  onChange={(event) => onDraftChange({ rate: Number(event.target.value || 0) })}
+                  value={draft.rate}
+                  onChange={(event) => onDraftChange({ rate: event.target.value })}
                 />
               </Field>
               <div className="flex items-end gap-2 pb-0.5">
@@ -339,7 +344,7 @@ export function PurchaseItemsSection({
                       {item.quantity}
                     </td>
                     <td className="border-r border-border/70 px-3 py-2 text-right">
-                      {formatMoney(item.rate)}
+                      {formatMoney(purchaseDecimalValue(item.rate))}
                     </td>
                     <td className="border-r border-border/70 px-3 py-2">{item.unit || "Nos"}</td>
                     <td className="border-r border-border/70 px-3 py-2 text-right">

@@ -1,5 +1,6 @@
 export type PurchaseStatus = "draft" | "confirmed" | "cancelled";
 export type PurchaseTaxType = "cgst-sgst" | "igst";
+export type PurchaseDecimalInput = string | number;
 
 export type PurchaseEwayDetails = {
   billDate: string;
@@ -36,17 +37,17 @@ export type PurchaseLineItemInput = {
   poNo: string;
   productId: number | null;
   productName: string;
-  quantity: number;
-  rate: number;
+  quantity: PurchaseDecimalInput;
+  rate: PurchaseDecimalInput;
   size: string;
   sizeId: number | null;
   taxId: number | null;
-  taxRate: number;
+  taxRate: PurchaseDecimalInput;
   unit: string;
   unitId: number;
 };
 
-export type PurchaseLineItem = PurchaseLineItemInput & {
+export type PurchaseLineItem = Omit<PurchaseLineItemInput, "quantity" | "rate" | "taxRate"> & {
   cgstAmount: number;
   id: string;
   igstAmount: number;
@@ -55,6 +56,9 @@ export type PurchaseLineItem = PurchaseLineItemInput & {
   sgstAmount: number;
   taxableAmount: number;
   taxAmount: number;
+  quantity: number;
+  rate: number;
+  taxRate: number;
 };
 
 export type Purchase = {
@@ -118,7 +122,7 @@ export type PurchaseSavePayload = {
   ledgerId: number | null;
   notes: string;
   invoiceNumber: string;
-  roundOff?: number;
+  roundOff?: PurchaseDecimalInput;
   salesLedger: string;
   shippingAddress: string;
   shippingAddressId: number;
@@ -155,7 +159,7 @@ export function createEmptyPurchase(): PurchaseSavePayload {
     ledgerId: null,
     notes: "",
     invoiceNumber: "",
-    roundOff: 0,
+    roundOff: "",
     salesLedger: "",
     shippingAddress: "",
     shippingAddressId: 0,
@@ -178,12 +182,12 @@ export function createEmptyPurchaseItem(): PurchaseLineItemInput {
     poNo: "",
     productId: null,
     productName: "",
-    quantity: 1,
-    rate: 0,
+    quantity: "1",
+    rate: "",
     size: "",
     sizeId: null,
     taxId: null,
-    taxRate: 18,
+    taxRate: "18",
     unit: "Nos",
     unitId: 0
   };

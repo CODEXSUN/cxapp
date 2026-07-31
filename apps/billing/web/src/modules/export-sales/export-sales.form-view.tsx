@@ -29,7 +29,7 @@ import { ExportSaleAddressDialog, ExportSaleAddressField } from "./export-sales-
 import type { useExportSalesFormController } from "./export-sales.form-controller";
 import { ExportSaleContactQuickForm } from "./export-sales.form-section-1";
 import {
-  ExportSaleMasterQuickForm,
+  ExportSaleWorkOrderQuickForm,
   contactDraftFromRecord,
   exportSaleCommonOption,
   exportSaleContactOption,
@@ -141,8 +141,7 @@ export function ExportSalesFormView({
                     })
                   }
                   renderCreateForm={({ initialName, onCancel, onCreated }) => (
-                    <ExportSaleMasterQuickForm
-                      kind="workOrders"
+                    <ExportSaleWorkOrderQuickForm
                       initialValue={masterDraftFromRecord(undefined, initialName)}
                       loading={masterSaveMutation.isPending}
                       onCancel={onCancel}
@@ -219,7 +218,7 @@ export function ExportSalesFormView({
             sizeOptions={sizesQuery.data ?? []}
             sizesLoading={sizesQuery.isLoading}
             taxType={form.taxType}
-            roundOff={Number(form.roundOff ?? 0)}
+            roundOff={form.roundOff ?? ""}
             roundOffManual={roundOffManual}
             suggestedRoundOff={suggestedRoundOff}
             onAdd={addOrUpdateItem}
@@ -230,7 +229,7 @@ export function ExportSalesFormView({
             onRemove={removeItem}
             onResetRoundOff={() => {
               setRoundOffManual(false);
-              patch({ roundOff: suggestedRoundOff });
+              patch({ roundOff: String(suggestedRoundOff) });
             }}
             onReset={resetDraft}
             onCreateColour={async (name) => {
@@ -580,8 +579,7 @@ export function ExportSalesFormView({
             onInteractOutside={(event) => event.preventDefault()}
           >
             {editingWorkOrder ? (
-              <ExportSaleMasterQuickForm
-                kind="workOrders"
+              <ExportSaleWorkOrderQuickForm
                 initialValue={masterDraftFromRecord(editingWorkOrder)}
                 loading={masterSaveMutation.isPending}
                 onCancel={() => setEditingWorkOrder(null)}

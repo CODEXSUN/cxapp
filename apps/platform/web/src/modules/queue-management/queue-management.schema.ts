@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const queueBackendSchema = z.enum(["memory", "database", "bullmq-redis"]);
+export const queueBackendSchema = z.enum(["database", "bullmq-redis"]);
 
 export const queueJobActionSchema = z.object({
   id: z.number().int().positive()

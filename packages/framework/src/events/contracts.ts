@@ -19,11 +19,3 @@ export type DomainEvent<TPayload = unknown> = {
 export type EventPublisher = {
   publish<TPayload>(event: DomainEvent<TPayload>): Promise<void>;
 };
-
-export class InMemoryEventPublisher implements EventPublisher {
-  readonly events: DomainEvent[] = [];
-
-  async publish<TPayload>(event: DomainEvent<TPayload>) {
-    this.events.push(event);
-  }
-}

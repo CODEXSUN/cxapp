@@ -16,6 +16,12 @@ export async function seedTaxes() {
     );
     const payload = { ...seed, isActive: true, sortOrder: index + 1 };
     if (!match) await repository.create(payload);
+    else if (
+      match.description !== payload.description ||
+      !match.isActive ||
+      match.sortOrder !== payload.sortOrder
+    )
+      await repository.update(match.id, payload);
   }
 }
 
@@ -26,19 +32,19 @@ const seeds: TaxesSavePayload[] = [
   },
   {
     ratePercent: 0,
-    description: "GST 0%"
+    description: "0"
   },
   {
     ratePercent: 5,
-    description: "GST 5%"
+    description: "5"
   },
   {
     ratePercent: 12,
-    description: "GST 12%"
+    description: "12"
   },
   {
     ratePercent: 18,
-    description: "GST 18%"
+    description: "18"
   }
 ];
 

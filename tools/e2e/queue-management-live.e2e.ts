@@ -19,7 +19,6 @@ try {
     "Queue live test refuses to run while unrelated pending jobs exist."
   );
 
-  await verifyInlineBackend("memory");
   await verifyInlineBackend("database");
 
   try {
@@ -45,7 +44,7 @@ try {
   await closePlatformDatabase();
 }
 
-async function verifyInlineBackend(backend: "database" | "memory") {
+async function verifyInlineBackend(backend: "database") {
   await service.switchBackend(backend, actorEmail);
   const job = await enqueueProbe(backend);
   assert.ok(job, `${backend} did not persist the probe job.`);
@@ -56,7 +55,7 @@ async function verifyInlineBackend(backend: "database" | "memory") {
   results[backend] = "delivered";
 }
 
-async function enqueueProbe(backend: "bullmq-redis" | "database" | "memory") {
+async function enqueueProbe(backend: "bullmq-redis" | "database") {
   const job = await service.enqueue({
     correlationId: `queue-live:${backend}:${Date.now()}`,
     idempotencyKey: `queue-live:${backend}:${Date.now()}`,

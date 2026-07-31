@@ -1,4 +1,4 @@
-export type QueueBackend = "bullmq-redis" | "database" | "memory";
+export type QueueBackend = "bullmq-redis" | "database";
 export type QueueJobStatus = "cancelled" | "completed" | "failed" | "pending" | "running";
 
 export type QueueJobPayload = {

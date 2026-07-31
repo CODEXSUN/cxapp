@@ -53,7 +53,8 @@ import {
   listTodos,
   reorderTodos,
   setTodoStatus,
-  updateTodo
+  updateTodo,
+  type TaskManagerDesk
 } from "./task-manager.services";
 import type {
   Todo,
@@ -64,18 +65,20 @@ import type {
   TodoStatus
 } from "./task-manager.types";
 
-export function TaskManagerWorkspace() {
+export function TaskManagerWorkspace({ desk = "sa" }: { desk?: TaskManagerDesk }) {
   const client = useQueryClient();
+  const todoQueryKey = ["task-manager", desk, "todos"] as const;
+  const lookupQueryKey = ["task-manager", desk, "lookups"] as const;
   const query = useQuery({
-    queryKey: ["task-manager", "todos"],
-    queryFn: listTodos,
+    queryKey: todoQueryKey,
+    queryFn: () => listTodos(desk),
     refetchInterval: 3000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true
   });
   const lookupQuery = useQuery({
-    queryKey: ["task-manager", "lookups"],
-    queryFn: listTodoLookups
+    queryKey: lookupQueryKey,
+    queryFn: () => listTodoLookups(desk)
   });
   const [editing, setEditing] = useState<Todo | null>(null);
   const [search, setSearch] = useState("");
@@ -90,16 +93,16 @@ export function TaskManagerWorkspace() {
     useSensor(TouchSensor),
     useSensor(KeyboardSensor)
   );
-  const refresh = () => client.invalidateQueries({ queryKey: ["task-manager", "todos"] });
+  const refresh = () => client.invalidateQueries({ queryKey: todoQueryKey });
   const lookupOptions = (kind: TodoLookupKind) => toLookupOptions(lookupQuery.data ?? [], kind);
   const addLookup = async (kind: TodoLookupKind, name: string) => {
-    const created = await createTodoLookup(kind, name);
-    await client.invalidateQueries({ queryKey: ["task-manager", "lookups"] });
+    const created = await createTodoLookup(desk, kind, name);
+    await client.invalidateQueries({ queryKey: lookupQueryKey });
     return { label: created.name, value: kind === "group" ? created.name : created.value };
   };
   const save = useMutation({
     mutationFn: (input: TodoInput) =>
-      editing?.id ? updateTodo(editing.id, input) : createTodo(input),
+      editing?.id ? updateTodo(desk, editing.id, input) : createTodo(desk, input),
     onSuccess: async (todo) => {
       await refresh();
       setEditing(null);
@@ -111,11 +114,12 @@ export function TaskManagerWorkspace() {
       })
   });
   const status = useMutation({
-    mutationFn: ({ id, value }: { id: string; value: TodoStatus }) => setTodoStatus(id, value),
+    mutationFn: ({ id, value }: { id: string; value: TodoStatus }) =>
+      setTodoStatus(desk, id, value),
     onSuccess: refresh
   });
   const remove = useMutation({
-    mutationFn: deleteTodo,
+    mutationFn: (id: string) => deleteTodo(desk, id),
     onSuccess: async ({ id }) => {
       await refresh();
       toast.success("Todo deleted");
@@ -127,7 +131,7 @@ export function TaskManagerWorkspace() {
       })
   });
   const reorder = useMutation({
-    mutationFn: reorderTodos,
+    mutationFn: (orderedIds: string[]) => reorderTodos(desk, orderedIds),
     onSuccess: refresh,
     onError: () => toast.error("Todo order could not be saved")
   });
@@ -162,7 +166,11 @@ export function TaskManagerWorkspace() {
   return (
     <WorkspacePage
       title="Task Manager"
-      description="Plan and complete Super Admin Todos in a lightweight workspace."
+      description={
+        desk === "tenant"
+          ? "Plan and complete tenant-owned Todos stored in the live tenant database."
+          : "Plan and complete Super Admin Todos stored in the live platform database."
+      }
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => void query.refetch()}>
@@ -236,6 +244,7 @@ export function TaskManagerWorkspace() {
           value={editing}
           lookups={lookupQuery.data ?? []}
           saving={save.isPending}
+          desk={desk}
           onCreateLookup={addLookup}
           onCancel={() => setEditing(null)}
           onSave={(value) => save.mutate(value)}
@@ -439,6 +448,7 @@ function SortableTodoRow({
   );
 }
 function TodoForm({
+  desk,
   value,
   lookups,
   saving,
@@ -446,6 +456,7 @@ function TodoForm({
   onCancel,
   onSave
 }: {
+  desk: TaskManagerDesk;
   value: Todo;
   lookups: TodoLookup[];
   saving: boolean;
@@ -467,7 +478,7 @@ function TodoForm({
   return (
     <WorkspaceUpsertDialog
       className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
-      description="Capture a Super Admin task with its status and priority."
+      description={`Capture a ${desk === "tenant" ? "tenant" : "Super Admin"} task with its status and priority.`}
       open
       onClose={onCancel}
       title={`${value.id ? "Edit" : "New"} Todo`}

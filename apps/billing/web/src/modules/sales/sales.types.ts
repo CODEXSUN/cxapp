@@ -1,5 +1,6 @@
 export type SaleStatus = "draft" | "confirmed" | "cancelled";
 export type SaleTaxType = "cgst-sgst" | "igst";
+export type SaleDecimalInput = string | number;
 export type SaleGstDocumentStatus = "not-generated" | "generated";
 
 export type SaleEwayDetails = {
@@ -41,17 +42,17 @@ export type SaleLineItemInput = {
   poNo: string;
   productName: string;
   productId: number | null;
-  quantity: number;
-  rate: number;
+  quantity: SaleDecimalInput;
+  rate: SaleDecimalInput;
   size: string;
   sizeId: number | null;
   taxId: number | null;
-  taxRate: number;
+  taxRate: SaleDecimalInput;
   unit: string;
   unitId: number;
 };
 
-export type SaleLineItem = SaleLineItemInput & {
+export type SaleLineItem = Omit<SaleLineItemInput, "quantity" | "rate" | "taxRate"> & {
   cgstAmount: number;
   id: string;
   lineNumber: number;
@@ -60,6 +61,9 @@ export type SaleLineItem = SaleLineItemInput & {
   sgstAmount: number;
   taxableAmount: number;
   taxAmount: number;
+  quantity: number;
+  rate: number;
+  taxRate: number;
 };
 
 export type Sale = {
@@ -121,7 +125,7 @@ export type SaleSavePayload = {
   items: SaleLineItemInput[];
   notes: string;
   ledgerId: number | null;
-  roundOff?: number;
+  roundOff?: SaleDecimalInput;
   saleNumber: string;
   salesLedger: string;
   shippingAddress: string;
@@ -165,7 +169,7 @@ export function createEmptySale(): SaleSavePayload {
     items: [],
     notes: "",
     ledgerId: null,
-    roundOff: 0,
+    roundOff: "",
     saleNumber: "",
     salesLedger: "",
     shippingAddress: "",
@@ -207,12 +211,12 @@ export function createEmptySaleItem(): SaleLineItemInput {
     poNo: "",
     productName: "",
     productId: null,
-    quantity: 1,
-    rate: 0,
+    quantity: "1",
+    rate: "",
     size: "",
     sizeId: null,
     taxId: null,
-    taxRate: 18,
+    taxRate: "18",
     unit: "Nos",
     unitId: 0
   };

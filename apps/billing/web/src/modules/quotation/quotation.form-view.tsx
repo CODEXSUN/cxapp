@@ -29,7 +29,7 @@ import { QuotationAddressDialog, QuotationAddressField } from "./quotation-addre
 import type { useQuotationFormController } from "./quotation.form-controller";
 import { QuotationContactQuickForm } from "./quotation.form-section-1";
 import {
-  QuotationMasterQuickForm,
+  QuotationWorkOrderQuickForm,
   contactDraftFromRecord,
   masterDraftFromRecord,
   quotationCommonOption,
@@ -182,8 +182,7 @@ export function QuotationFormView({
                     })
                   }
                   renderCreateForm={({ initialName, onCancel, onCreated }) => (
-                    <QuotationMasterQuickForm
-                      kind="workOrders"
+                    <QuotationWorkOrderQuickForm
                       initialValue={masterDraftFromRecord(undefined, initialName)}
                       loading={masterSaveMutation.isPending}
                       onCancel={onCancel}
@@ -260,7 +259,7 @@ export function QuotationFormView({
             sizeOptions={sizesQuery.data ?? []}
             sizesLoading={sizesQuery.isLoading}
             taxType={form.taxType}
-            roundOff={Number(form.roundOff ?? 0)}
+            roundOff={form.roundOff ?? ""}
             roundOffManual={roundOffManual}
             suggestedRoundOff={suggestedRoundOff}
             onAdd={addOrUpdateItem}
@@ -271,7 +270,7 @@ export function QuotationFormView({
             onRemove={removeItem}
             onResetRoundOff={() => {
               setRoundOffManual(false);
-              patch({ roundOff: suggestedRoundOff });
+              patch({ roundOff: String(suggestedRoundOff) });
             }}
             onReset={resetDraft}
             onCreateColour={async (name) => {
@@ -569,8 +568,7 @@ export function QuotationFormView({
             onInteractOutside={(event) => event.preventDefault()}
           >
             {editingWorkOrder ? (
-              <QuotationMasterQuickForm
-                kind="workOrders"
+              <QuotationWorkOrderQuickForm
                 initialValue={masterDraftFromRecord(editingWorkOrder)}
                 loading={masterSaveMutation.isPending}
                 onCancel={() => setEditingWorkOrder(null)}

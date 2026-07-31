@@ -155,18 +155,16 @@ export function QueueManagementForm({
 }
 
 function backendOptions(availableBackends: QueueBackend[] | undefined) {
-  const available = availableBackends ?? ["memory", "database", "bullmq-redis"];
+  const available = availableBackends ?? ["database", "bullmq-redis"];
   return available.map((backend) => ({ label: backendLabel(backend), value: backend }));
 }
 
 function backendLabel(backend: QueueBackend) {
-  if (backend === "memory") return "In-memory";
   if (backend === "bullmq-redis") return "BullMQ + Redis";
   return "Database";
 }
 
 function backendDescription(backend: QueueBackend) {
-  if (backend === "memory") return "Fast local processing; pending memory state resets on restart.";
   if (backend === "bullmq-redis")
     return "Distributed workers with Redis-backed delivery and retries.";
   return "Durable processing from the platform database; recommended for one runtime.";

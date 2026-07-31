@@ -35,14 +35,10 @@ export class QueueManagerRepository {
       .executeTakeFirst();
     const backend = normalizeBackend(selected?.backend ?? env.CXAPP_QUEUE_BACKEND);
     return {
-      availableBackends: ["memory", "database", "bullmq-redis"],
+      availableBackends: ["database", "bullmq-redis"],
       backend,
       backendLabel:
-        backend === "bullmq-redis"
-          ? "BullMQ + Redis"
-          : backend === "memory"
-            ? "In-memory queue"
-            : "Database queue",
+        backend === "bullmq-redis" ? "BullMQ + Redis" : "Database queue",
       canRunInline: backend !== "bullmq-redis",
       completed: jobs.filter((job) => job.status === "completed").length,
       failed: jobs.filter((job) => job.status === "failed").length,
@@ -240,7 +236,7 @@ export class QueueManagerRepository {
 }
 
 function normalizeBackend(value: string): QueueBackend {
-  return value === "memory" || value === "bullmq-redis" ? value : "database";
+  return value === "bullmq-redis" ? value : "database";
 }
 
 function toQueueJob(row: {

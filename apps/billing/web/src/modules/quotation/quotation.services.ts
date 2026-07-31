@@ -100,12 +100,12 @@ export type QuotationMasterSavePayload = {
   hsnCode: string;
   hsnCodeId?: string;
   name: string;
-  openingRate: number;
+  openingRate: string | number;
   productCategoryId?: string;
   productCategoryName?: string;
   taxId?: string;
   taxName?: string;
-  taxRate?: number;
+  taxRate?: number | undefined;
   typeName: string;
   unitId?: string;
   unitName: string;
@@ -391,19 +391,19 @@ export function quotationToPayload(quotation: Quotation): QuotationSavePayload {
       poNo: item.poNo,
       productName: item.productName,
       productId: item.productId,
-      quantity: item.quantity,
-      rate: item.rate,
+      quantity: String(item.quantity),
+      rate: String(item.rate),
       size: item.size,
       sizeId: item.sizeId,
       taxId: item.taxId,
-      taxRate: item.taxRate,
+      taxRate: String(item.taxRate),
       unit: item.unit,
       unitId: item.unitId
     })),
     notes: quotation.notes,
     ledgerId: quotation.ledgerId,
     quotationNumber: quotation.quotationNumber,
-    roundOff: quotation.roundOff,
+    roundOff: String(quotation.roundOff),
     salesLedger: quotation.salesLedger,
     shippingAddress: quotation.shippingAddress,
     shippingAddressId: quotation.shippingAddressId,

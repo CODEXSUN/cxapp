@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import type { Kysely } from "kysely";
 import type { TenantDatabase } from "../../database/schema.js";
 const seeds = [
-  "devkit.access",
   "user.view",
   "user.create",
   "user.update",
@@ -25,20 +24,31 @@ const seeds = [
   "role-permission.view",
   "role-permission.assign",
   "role-permission.update",
-  "role-permission.remove"
+  "role-permission.remove",
+  "task-manager.access"
 ].map((key) => ({
-  key: key === "devkit.access" ? key : `platform.application.${key}`,
+  description:
+    key === "task-manager.access" ? "Allows access to the tenant-owned Task Manager." : undefined,
+  key:
+    key === "task-manager.access" ? "platform.task-manager.access" : `platform.application.${key}`,
   label: key
     .split(".")
     .map((x) => x.replace("-", " "))
     .join(" · ")
 }));
 export async function seedTenantPermissionModule(database: Kysely<TenantDatabase>) {
+  await database
+    .updateTable("app_permissions")
+    .set({ status: "inactive" })
+    .where("key", "=", "devkit.access")
+    .execute();
+
   for (const p of seeds)
     await database
       .insertInto("app_permissions")
       .values({
-        description: `Allows ${p.label.toLowerCase()} in the tenant Application desk.`,
+        description:
+          p.description ?? `Allows ${p.label.toLowerCase()} in the tenant Application desk.`,
         is_protected: true,
         key: p.key,
         label: p.label,
@@ -46,7 +56,8 @@ export async function seedTenantPermissionModule(database: Kysely<TenantDatabase
         uuid: stable(p.key)
       })
       .onDuplicateKeyUpdate({
-        description: `Allows ${p.label.toLowerCase()} in the tenant Application desk.`,
+        description:
+          p.description ?? `Allows ${p.label.toLowerCase()} in the tenant Application desk.`,
         is_protected: true,
         label: p.label,
         status: "active"

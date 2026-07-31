@@ -16,6 +16,7 @@ const platformMasterTables = new Set([
   "access_roles",
   "access_users",
   "auth_sessions",
+  "auth_login_attempts",
   "database_maintenance_runs",
   "entitlements",
   "industries",
@@ -28,6 +29,8 @@ const platformMasterTables = new Set([
   "queue_runtime_settings",
   "storage_objects",
   "subscriptions",
+  "task_manager_lookups",
+  "task_manager_todos",
   "tenant_audit_events",
   "tenant_domains",
   "tenants"

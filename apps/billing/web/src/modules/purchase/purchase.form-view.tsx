@@ -29,7 +29,7 @@ import { PurchaseAddressDialog, PurchaseAddressField } from "./purchase-address-
 import type { usePurchaseFormController } from "./purchase.form-controller";
 import { PurchaseContactQuickForm } from "./purchase.form-section-1";
 import {
-  PurchaseMasterQuickForm,
+  PurchaseWorkOrderQuickForm,
   contactDraftFromRecord,
   masterDraftFromRecord,
   purchaseCommonOption,
@@ -144,8 +144,7 @@ export function PurchaseFormView({
                     })
                   }
                   renderCreateForm={({ initialName, onCancel, onCreated }) => (
-                    <PurchaseMasterQuickForm
-                      kind="workOrders"
+                    <PurchaseWorkOrderQuickForm
                       initialValue={masterDraftFromRecord(undefined, initialName)}
                       loading={masterSaveMutation.isPending}
                       onCancel={onCancel}
@@ -222,7 +221,7 @@ export function PurchaseFormView({
             sizeOptions={sizesQuery.data ?? []}
             sizesLoading={sizesQuery.isLoading}
             taxType={form.taxType}
-            roundOff={Number(form.roundOff ?? 0)}
+            roundOff={form.roundOff ?? ""}
             roundOffManual={roundOffManual}
             suggestedRoundOff={suggestedRoundOff}
             onAdd={addOrUpdateItem}
@@ -233,7 +232,7 @@ export function PurchaseFormView({
             onRemove={removeItem}
             onResetRoundOff={() => {
               setRoundOffManual(false);
-              patch({ roundOff: suggestedRoundOff });
+              patch({ roundOff: String(suggestedRoundOff) });
             }}
             onReset={resetDraft}
             onCreateColour={async (name) => {
@@ -619,8 +618,7 @@ export function PurchaseFormView({
             onInteractOutside={(event) => event.preventDefault()}
           >
             {editingWorkOrder ? (
-              <PurchaseMasterQuickForm
-                kind="workOrders"
+              <PurchaseWorkOrderQuickForm
                 initialValue={masterDraftFromRecord(editingWorkOrder)}
                 loading={masterSaveMutation.isPending}
                 onCancel={() => setEditingWorkOrder(null)}

@@ -20,7 +20,10 @@ const envSchema = z
     CXAPP_DB_RESET_CONFIRM: z.string(),
     CXAPP_ALLOW_PRODUCTION_DB_RESET: z.enum(["0", "1"]),
     CXAPP_BACKUP_DIR: z.string().min(1),
-    CXAPP_QUEUE_BACKEND: z.enum(["memory", "database", "bullmq-redis"]),
+    CXAPP_QUEUE_BACKEND: z.preprocess(
+      (value) => (value === "memory" ? "database" : value),
+      z.enum(["database", "bullmq-redis"])
+    ),
     CXAPP_QUEUE_COMPLETED_RETENTION_DAYS: z.coerce.number().int().positive(),
     CXAPP_QUEUE_FAILED_RETENTION_DAYS: z.coerce.number().int().positive(),
     CXAPP_QUEUE_WORKER_ENABLED: z.enum(["0", "1"]),

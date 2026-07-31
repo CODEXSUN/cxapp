@@ -63,30 +63,40 @@ const locationMutationSchema = z.object({
   status: activeStatusSchema
 });
 
-const namedLookupMutationSchema = z.object({
-  address: z.string().optional(),
-  code: z.string().optional(),
-  contactNo: z.string().optional(),
-  contactPerson: z.string().optional(),
-  description: z.string().optional(),
-  gst: z.string().optional(),
-  hsnCode: z.string().optional(),
-  hsnCodeId: nullableLookupIdSchema.optional(),
-  isActive: z.boolean(),
-  name: z.string().min(1),
-  openingRate: z.number().nonnegative().optional(),
-  productCategoryId: nullableLookupIdSchema.optional(),
-  productCategoryName: z.string().nullable().optional(),
-  ratePercent: z.number().nonnegative().optional(),
-  sortOrder: z.number().int().optional(),
-  taxId: nullableLookupIdSchema.optional(),
-  taxName: z.string().nullable().optional(),
-  taxRate: z.number().nonnegative().optional(),
-  typeName: z.string().optional(),
-  unitId: nullableLookupIdSchema.optional(),
-  unitName: z.string().optional(),
-  vehicleNo: z.string().optional()
-});
+const namedLookupMutationSchema = z
+  .object({
+    address: z.string().optional(),
+    code: z.string().optional(),
+    contactNo: z.string().optional(),
+    contactPerson: z.string().optional(),
+    description: z.string().optional(),
+    gst: z.string().optional(),
+    hsnCode: z.string().optional(),
+    hsnCodeId: nullableLookupIdSchema.optional(),
+    isActive: z.boolean(),
+    name: z.string().min(1).optional(),
+    openingRate: z.number().nonnegative().optional(),
+    productCategoryId: nullableLookupIdSchema.optional(),
+    productCategoryName: z.string().nullable().optional(),
+    ratePercent: z.number().nonnegative().optional(),
+    sortOrder: z.number().int().optional(),
+    taxId: nullableLookupIdSchema.optional(),
+    taxName: z.string().nullable().optional(),
+    taxRate: z.number().nonnegative().optional(),
+    typeName: z.string().optional(),
+    unitId: nullableLookupIdSchema.optional(),
+    unitName: z.string().optional(),
+    vehicleNo: z.string().optional()
+  })
+  .refine(
+    (value) =>
+      Boolean(value.name?.trim()) ||
+      Boolean(value.code?.trim()) ||
+      Number.isFinite(value.ratePercent),
+    {
+      message: "A name, code, or tax rate is required."
+    }
+  );
 
 export const coreLookupMutationSchema = z.union([
   contactMutationSchema,

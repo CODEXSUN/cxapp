@@ -18,10 +18,10 @@ export async function registerQueueManagerRoutes(app: FastifyInstance) {
     url: "/admin/queue/settings/backend",
     preHandler: requireSuperAdmin,
     schemas: {
-      body: z.object({ backend: z.enum(["memory", "database", "bullmq-redis"]) }).strict(),
+      body: z.object({ backend: z.enum(["database", "bullmq-redis"]) }).strict(),
       response: z.object({
-        availableBackends: z.array(z.enum(["memory", "database", "bullmq-redis"])),
-        backend: z.enum(["memory", "database", "bullmq-redis"]),
+        availableBackends: z.array(z.enum(["database", "bullmq-redis"])),
+        backend: z.enum(["database", "bullmq-redis"]),
         backendLabel: z.string(),
         canRunInline: z.boolean(),
         completed: z.number(),

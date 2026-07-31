@@ -8,11 +8,12 @@ import { enforceBrowserRequestOrigin, requestHost } from "./auth-request-context
 import { isSharedApplicationHost } from "../modules/tenant-domain/tenant-domain.repository.js";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import { env } from "../env.js";
+import { AuthLoginAttemptRepository } from "./auth-login-attempt.repository.js";
 
 const authService = new AuthService();
 const sessions = new AuthSessionRepository();
 const tenants = new TenantRepository();
-const attempts = new Map<string, { count: number; resetAt: number }>();
+const attempts = new AuthLoginAttemptRepository();
 
 export async function registerAuthRoutes(app: FastifyInstance) {
   app.get("/auth/tenant-context", async (request) => {
@@ -71,7 +72,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     enforceBrowserRequestOrigin(request);
     const body = loginSchema.parse(request.body);
     const key = `${request.ip}:${requestHost(request)}:${body.desk}:${body.email.toLowerCase()}`;
-    if (isRateLimited(key)) {
+    if (await attempts.isRateLimited(key)) {
       return reply
         .code(429)
         .send(
@@ -110,10 +111,10 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     if (corporateId) loginInput.corporateId = corporateId;
     const result = await authService.login(loginInput);
     if (!result) {
-      recordFailure(key);
+      await attempts.recordFailure(key);
       return reply.code(401).send(invalidCredentials(request));
     }
-    attempts.delete(key);
+    await attempts.clear(key);
     writeEncryptedSessionCookie(reply, result.accessToken);
     return ok(publicResult(request, result), {
       requestId: request.id,
@@ -186,22 +187,4 @@ function publicResult<T extends { accessToken: string }>(request: FastifyRequest
 
 async function replaceCurrentSession(request: FastifyRequest) {
   if (request.authContext?.payload.jti) await sessions.revoke(request.authContext.payload.jti);
-}
-
-function isRateLimited(key: string) {
-  const entry = attempts.get(key);
-  if (!entry) return false;
-  if (entry.resetAt <= Date.now()) {
-    attempts.delete(key);
-    return false;
-  }
-  return entry.count >= 5;
-}
-
-function recordFailure(key: string) {
-  const current = attempts.get(key);
-  attempts.set(key, {
-    count: current && current.resetAt > Date.now() ? current.count + 1 : 1,
-    resetAt: current && current.resetAt > Date.now() ? current.resetAt : Date.now() + 15 * 60 * 1000
-  });
 }

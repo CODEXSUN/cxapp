@@ -8,15 +8,12 @@ import {
 } from "@cxapp/devkit-api";
 import { AppError } from "@cxapp/framework/errors";
 import { getPlatformDatabase } from "./database/platform-database.js";
-import { tenantAccessContext } from "./auth/tenant-access-context.js";
-import type { PlatformDatabase, TenantDatabase } from "./database/schema.js";
+import type { PlatformDatabase } from "./database/schema.js";
 
 export const devkitHostAdapter: DevkitHostAdapter = {
   async authorize({ context }) {
     if (context.actor.roles.includes("super_admin")) return;
-    if (!context.actor.permissions.includes("devkit.access")) {
-      throw AppError.forbidden("DevKit access is not enabled for this tenant user.");
-    }
+    throw AppError.forbidden("DevKit is available only to Super Admin.");
   },
   async resolve(request) {
     return resolveDevkitContext(request);
@@ -41,34 +38,9 @@ async function resolveDevkitContext(request: FastifyRequest): Promise<DevkitHost
       database: devkitDatabase(getPlatformDatabase())
     };
   }
-  if (payload?.userType !== "tenant") {
-    throw AppError.forbidden("DevKit requires a Super Admin or tenant session.");
-  }
-
-  const tenant = tenantAccessContext(request);
-  const module = await tenant.database
-    .selectFrom("app_module_settings")
-    .select(["enabled", "status"])
-    .where("module_key", "=", "devkit")
-    .executeTakeFirst();
-  if (!module || !module.enabled || module.status !== "active") {
-    throw AppError.forbidden("DevKit is not enabled for this tenant.");
-  }
-  await tenant.authorize("devkit.access");
-  return {
-    actor: {
-      email: tenant.actorEmail,
-      id: payload.userId,
-      permissions: ["devkit.access"],
-      roles: ["tenant"],
-      storageScope: `tenant-${tenant.tenantId}`
-    },
-    database: devkitDatabase(tenant.database)
-  };
+  throw AppError.forbidden("DevKit is available only to Super Admin.");
 }
 
-function devkitDatabase(
-  database: Kysely<PlatformDatabase> | Kysely<TenantDatabase>
-): Kysely<DevkitDatabase> {
+function devkitDatabase(database: Kysely<PlatformDatabase>): Kysely<DevkitDatabase> {
   return database as unknown as Kysely<DevkitDatabase>;
 }

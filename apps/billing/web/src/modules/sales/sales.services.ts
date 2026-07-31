@@ -104,12 +104,12 @@ export type SaleMasterSavePayload = {
   hsnCode: string;
   hsnCodeId?: string;
   name: string;
-  openingRate: number;
+  openingRate: string | number;
   productCategoryId?: string;
   productCategoryName?: string;
   taxId?: string;
   taxName?: string;
-  taxRate?: number;
+  taxRate?: number | undefined;
   typeName: string;
   unitId?: string;
   unitName: string;
@@ -406,19 +406,19 @@ export function saleToPayload(sale: Sale): SaleSavePayload {
       poNo: item.poNo,
       productName: item.productName,
       productId: item.productId,
-      quantity: item.quantity,
-      rate: item.rate,
+      quantity: String(item.quantity),
+      rate: String(item.rate),
       size: item.size,
       sizeId: item.sizeId,
       taxId: item.taxId,
-      taxRate: item.taxRate,
+      taxRate: String(item.taxRate),
       unit: item.unit,
       unitId: item.unitId
     })),
     notes: sale.notes,
     ledgerId: sale.ledgerId,
     saleNumber: sale.saleNumber || sale.invoiceNumber,
-    roundOff: sale.roundOff,
+    roundOff: String(sale.roundOff),
     salesLedger: sale.salesLedger,
     shippingAddress: sale.shippingAddress,
     shippingAddressId: sale.shippingAddressId,

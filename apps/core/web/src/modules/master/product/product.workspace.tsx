@@ -73,8 +73,7 @@ export function ProductWorkspace() {
     productCategory: (name) => refreshLookups(() => createProductCategoryLookup(name)),
     hsnCode: (code, description) => refreshLookups(() => createHsnCodeLookup(code, description)),
     unit: (name) => refreshLookups(() => createUnitLookup(name)),
-    tax: (ratePercent, description) =>
-      refreshLookups(() => createTaxLookup(ratePercent, description))
+    tax: (ratePercent) => refreshLookups(() => createTaxLookup(ratePercent))
   };
   if (editing !== undefined)
     return (

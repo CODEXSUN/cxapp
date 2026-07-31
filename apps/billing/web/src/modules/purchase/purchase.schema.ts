@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const decimalInput = z
+  .union([z.string(), z.number()])
+  .refine((value) => String(value).trim() !== "" && Number.isFinite(Number(value)), {
+    message: "Enter a valid decimal value."
+  });
+
 export const purchaseLineSchema = z.object({
   colour: z.string(),
   colourId: z.number().int().positive().nullable(),
@@ -10,12 +16,18 @@ export const purchaseLineSchema = z.object({
   poNo: z.string(),
   productId: z.number().int().positive().nullable(),
   productName: z.string(),
-  quantity: z.number().positive("Quantity must be greater than zero."),
-  rate: z.number().nonnegative("Rate cannot be negative."),
+  quantity: decimalInput.refine((value) => Number(value) > 0, {
+    message: "Quantity must be greater than zero."
+  }),
+  rate: decimalInput.refine((value) => Number(value) >= 0, {
+    message: "Rate cannot be negative."
+  }),
   size: z.string(),
   sizeId: z.number().int().positive().nullable(),
   taxId: z.number().int().positive().nullable(),
-  taxRate: z.number().nonnegative("Tax cannot be negative."),
+  taxRate: decimalInput.refine((value) => Number(value) >= 0, {
+    message: "Tax cannot be negative."
+  }),
   unit: z.string().trim().min(1, "Unit is required."),
   unitId: z.number().int().positive("Select a persisted unit.")
 });
@@ -50,7 +62,7 @@ export const purchaseSchema = z.object({
   ledgerId: z.number().int().positive().nullable(),
   notes: z.string(),
   invoiceNumber: z.string().trim().min(1, "Purchase number is required."),
-  roundOff: z.number().optional(),
+  roundOff: z.union([decimalInput, z.literal("")]).optional(),
   salesLedger: z.string(),
   shippingAddress: z.string(),
   shippingAddressId: z.number().int().positive("Select a persisted shipping address."),

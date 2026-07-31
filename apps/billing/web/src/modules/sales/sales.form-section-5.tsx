@@ -4,7 +4,7 @@ import { cn } from "@cxapp/ui/lib/utils";
 import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
 import { saleCommonOption } from "./sales.form-section-2";
 import { formatMoney, type SaleLookupOption, type SaleLookupRecord } from "./sales.services";
-import { type SaleSavePayload, type SaleTaxType } from "./sales.types";
+import { type SaleDecimalInput, type SaleSavePayload, type SaleTaxType } from "./sales.types";
 
 export function ProductPopupLookup({
   label,
@@ -40,18 +40,24 @@ export function ProductPopupLookup({
         placeholder={placeholder}
         value={value}
         {...(sanitize ? { sanitizeInput: sanitize } : {})}
-        onCreate={async (name) =>
-          saleCommonOption(await onCreate(sanitize ? sanitize(name) : name))
-        }
+        onCreate={async (name) => {
+          const record = await onCreate(sanitize ? sanitize(name) : name);
+          return { ...saleCommonOption(record), value: String(record.id) };
+        }}
         onValueChange={onValueChange}
       />
     </label>
   );
 }
 
+export function saleDecimalValue(value: string | number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function computeSaleLine(item: SaleSavePayload["items"][number], taxType: SaleTaxType) {
-  const taxableAmount = Number(item.quantity || 0) * Number(item.rate || 0);
-  const taxAmount = (taxableAmount * Number(item.taxRate || 0)) / 100;
+  const taxableAmount = saleDecimalValue(item.quantity) * saleDecimalValue(item.rate);
+  const taxAmount = (taxableAmount * saleDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
   const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
   const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
@@ -114,7 +120,7 @@ export function RoundOffRow({
 }: {
   manual: boolean;
   suggestedValue: number;
-  value: number;
+  value: SaleDecimalInput;
   onChange: (value: string) => void;
   onReset: () => void;
 }) {

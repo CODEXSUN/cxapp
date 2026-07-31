@@ -12,5 +12,14 @@ export async function seedQueueManagerModule(db: Kysely<PlatformDatabase>) {
     })
     .ignore()
     .execute();
+  await db
+    .updateTable("queue_runtime_settings")
+    .set({
+      backend: "database",
+      updated_at: new Date(),
+      updated_by: "system:memory-backend-retirement"
+    })
+    .where("backend", "=", "memory" as never)
+    .execute();
   return { backend: env.CXAPP_QUEUE_BACKEND, seeded: 1 } as const;
 }

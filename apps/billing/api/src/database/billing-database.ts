@@ -4,7 +4,7 @@ import {
   runMigrationBatch,
   type MigrationBatch
 } from "@cxapp/framework/db";
-import { Kysely, MysqlDialect } from "kysely";
+import { Kysely, MysqlDialect, type Generated } from "kysely";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
 import { AppError } from "@cxapp/framework/errors";
@@ -42,10 +42,53 @@ import {
   migrateDashboardModule
 } from "../modules/dashboard/dashboard.migration.js";
 import { seedDashboardModule } from "../modules/dashboard/dashboard.seed.js";
+import {
+  billingRuntimePersistenceMigration,
+  migrateBillingRuntimePersistence
+} from "../modules/runtime-persistence/runtime-persistence.migration.js";
 
 export type BillingDatabase = {
+  billing_domain_events: BillingDomainEventsTable;
+  billing_outbox_jobs: BillingOutboxJobsTable;
   billing_quotations: BillingQuotationTable;
   billing_sales: BillingSalesTable;
+};
+
+export type BillingDomainEventsTable = {
+  actor_email: string | null;
+  actor_id: string | null;
+  correlation_id: string | null;
+  created_at: Generated<Date | string>;
+  created_by: Generated<string>;
+  event_name: string;
+  event_version: number;
+  id: Generated<number>;
+  occurred_at: Date | string;
+  payload_json: string;
+  request_id: string | null;
+  source_module: string;
+  status: "published";
+  updated_at: Generated<Date | string>;
+  uuid: string;
+};
+
+export type BillingOutboxJobsTable = {
+  attempts: number;
+  available_at: Date | string;
+  correlation_id: string | null;
+  created_at: Generated<Date | string>;
+  created_by: Generated<string>;
+  id: Generated<number>;
+  idempotency_key: string | null;
+  job_name: string;
+  max_attempts: number;
+  payload_json: string;
+  queue_name: string;
+  request_id: string | null;
+  source_module: string;
+  status: "pending" | "running" | "completed" | "failed";
+  updated_at: Generated<Date | string>;
+  uuid: string;
 };
 
 export type BillingQuotationTable = {
@@ -131,6 +174,11 @@ const billingMigrationSteps = [
     description: "Billing dashboard snapshots.",
     key: dashboardMigration.key,
     migrate: migrateDashboardModule
+  },
+  {
+    description: billingRuntimePersistenceMigration.description,
+    key: billingRuntimePersistenceMigration.key,
+    migrate: migrateBillingRuntimePersistence
   }
 ] as const;
 

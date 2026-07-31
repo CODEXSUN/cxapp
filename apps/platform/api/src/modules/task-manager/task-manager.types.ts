@@ -24,4 +24,5 @@ export type TodoLookup = {
   name: string;
   value: string;
   createdAt: string;
+  updatedAt: string;
 };

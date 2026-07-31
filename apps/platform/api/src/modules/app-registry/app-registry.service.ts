@@ -8,8 +8,8 @@ import { AppRegistryRepository } from "./app-registry.repository.js";
 export const defaultTenantModuleKeys = [
   "platform.application",
   "billing.sales",
-  "devkit",
-  "mail"
+  "mail",
+  "platform.task-manager"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -61,7 +61,7 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
   {
     alwaysEnabled: false,
     defaultLanding: false,
-    description: "Tenant-owned Todo planning with a lightweight JSON workspace.",
+    description: "Tenant-owned Todo planning backed by the live tenant database.",
     appId: "task-manager",
     id: 0,
     label: "Task Manager",
@@ -73,10 +73,12 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
 
 export function resolveEnabledApps(enabledModuleKeys: string[]) {
   const enabled = new Set(["platform.application", ...enabledModuleKeys]);
-  return platformAppRegistry.map((app) => ({
-    ...app,
-    enabled: app.alwaysEnabled || enabled.has(app.moduleKey)
-  }));
+  return platformAppRegistry
+    .filter((app) => app.appId !== "devkit")
+    .map((app) => ({
+      ...app,
+      enabled: app.alwaysEnabled || enabled.has(app.moduleKey)
+    }));
 }
 
 export function resolveLandingApp(value: unknown, enabledModuleKeys: string[]): PlatformAppId {

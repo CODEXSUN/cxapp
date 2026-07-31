@@ -55,5 +55,5 @@ export type ProductLookupCreate = {
   productCategory: (name: string) => Promise<ProductNamedLookup>;
   hsnCode: (code: string, description: string) => Promise<ProductHsnCodeLookup>;
   unit: (name: string) => Promise<ProductNamedLookup>;
-  tax: (ratePercent: number, description: string) => Promise<ProductTaxLookup>;
+  tax: (ratePercent: number) => Promise<ProductTaxLookup>;
 };

@@ -1,13 +1,14 @@
-import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
+import type { EventPublisher } from "@cxapp/framework/events";
 import { createDashboardProjectionEvent } from "./dashboard.events.js";
 import { DashboardRepository } from "./dashboard.repository.js";
 import type { DashboardProjectionRequest } from "./dashboard.types.js";
 import { DashboardProjectionWorker } from "./dashboard.worker.js";
+import { BillingDatabaseEventPublisher } from "../runtime-persistence/runtime-persistence.repository.js";
 
 export class DashboardService {
   constructor(
     private readonly repository = new DashboardRepository(),
-    private readonly events: EventPublisher = new InMemoryEventPublisher(),
+    private readonly events: EventPublisher = new BillingDatabaseEventPublisher(),
     private readonly worker = new DashboardProjectionWorker(repository)
   ) {}
 

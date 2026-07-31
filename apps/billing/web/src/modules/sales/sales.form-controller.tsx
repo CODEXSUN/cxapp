@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { productsQueryKey } from "@cxapp/core-web/modules/master/product";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -107,12 +108,12 @@ export function useSalesFormController({
         poNo: "",
         productName: "",
         productId: null,
-        quantity: 1,
-        rate: 0,
+        quantity: "1",
+        rate: "",
         size: "",
         sizeId: null,
         taxId: null,
-        taxRate: 18,
+        taxRate: "18",
         unit: "Nos",
         unitId: 0
       }
@@ -187,6 +188,7 @@ export function useSalesFormController({
         ? updateSaleContactAddress(contactId, addressId, payload)
         : createSaleContactAddress(contactId, payload)
   });
+  const queryClient = useQueryClient();
   const masterSaveMutation = useMutation({
     mutationFn: ({
       id,
@@ -199,7 +201,12 @@ export function useSalesFormController({
     }) =>
       id
         ? updateSaleLookup(kind, id, masterPayload(kind, payload))
-        : createSaleLookup(kind, masterPayload(kind, payload))
+        : createSaleLookup(kind, masterPayload(kind, payload)),
+    onSuccess: async (_record, variables) => {
+      if (variables.kind === "products") {
+        await queryClient.invalidateQueries({ queryKey: productsQueryKey });
+      }
+    }
   });
   const transportSaveMutation = useMutation({ mutationFn: createSaleTransport });
   const complianceMutation = useMutation({
@@ -278,7 +285,9 @@ export function useSalesFormController({
   useEffect(() => {
     if (roundOffManual) return;
     setForm((current) =>
-      current.roundOff === suggestedRoundOff ? current : { ...current, roundOff: suggestedRoundOff }
+      Number(current.roundOff || 0) === suggestedRoundOff
+        ? current
+        : { ...current, roundOff: String(suggestedRoundOff) }
     );
   }, [roundOffManual, suggestedRoundOff]);
 
@@ -325,13 +334,11 @@ export function useSalesFormController({
     const trimmed = value.trim();
     if (!trimmed) {
       setRoundOffManual(false);
-      patch({ roundOff: suggestedRoundOff });
+      patch({ roundOff: String(suggestedRoundOff) });
       return;
     }
-    const parsed = Number(trimmed);
-    if (Number.isNaN(parsed)) return;
     setRoundOffManual(true);
-    patch({ roundOff: parsed });
+    patch({ roundOff: value });
   }
 
   function patchEway(next: Partial<SaleEwayDetails>) {
@@ -393,12 +400,12 @@ export function useSalesFormController({
       poNo: "",
       productName: "",
       productId: null,
-      quantity: 1,
-      rate: 0,
+      quantity: "1",
+      rate: "",
       size: "",
       sizeId: null,
       taxId: null,
-      taxRate: 18,
+      taxRate: "18",
       unit: "Nos",
       unitId: 0
     });
@@ -445,8 +452,8 @@ export function useSalesFormController({
       hsnCodeId: numericId(record?.hsnCodeId),
       productId: numericId(record?.id),
       productName: option?.label ?? value,
-      rate: Number(record?.price ?? record?.openingRate ?? itemDraft.rate ?? 0),
-      taxRate: Math.max(0, Number(record?.taxRate ?? itemDraft.taxRate ?? 0)),
+      rate: String(record?.price ?? record?.openingRate ?? itemDraft.rate ?? ""),
+      taxRate: String(Math.max(0, Number(record?.taxRate ?? itemDraft.taxRate ?? 0))),
       taxId: numericId(record?.taxId),
       unit: record?.unitName ?? itemDraft.unit,
       unitId: Number(record?.unitId ?? itemDraft.unitId ?? 0)

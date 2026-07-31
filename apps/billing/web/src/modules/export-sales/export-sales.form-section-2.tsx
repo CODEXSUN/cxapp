@@ -1,5 +1,6 @@
 import { Button } from "@cxapp/ui/components/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@cxapp/ui/components/dialog";
+import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import { Save, X } from "lucide-react";
 import { useState } from "react";
 import { ContactQuickField } from "./export-sales.form-section-1";
@@ -152,81 +153,82 @@ export function exportSalePersistedOption(record: ExportSaleLookupRecord): Expor
   return { label, record, value: String(record.id) };
 }
 
-export function ExportSaleMasterQuickForm({
+export function ExportSaleWorkOrderQuickForm({
   initialValue,
-  kind,
   loading,
   onCancel,
   onSave,
   title
 }: {
   initialValue: ExportSaleMasterSavePayload;
-  kind: "products" | "workOrders";
   loading: boolean;
   onCancel: () => void;
   onSave: (payload: ExportSaleMasterSavePayload) => Promise<void>;
   title: string;
 }) {
   const [form, setForm] = useState(initialValue);
-  const product = kind === "products";
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const nameMissing = !form.name.trim();
+  const codeMissing = !form.code.trim();
   return (
     <form
       className="grid gap-0"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        void onSave(form);
+        setSaveAttempted(true);
+        if (nameMissing || codeMissing) {
+          setSaveError(
+            nameMissing && codeMissing
+              ? "Work order name and code are required."
+              : nameMissing
+                ? "Work order name is required."
+                : "Work order code is required."
+          );
+          return;
+        }
+        setSaveError("");
+        void onSave(form).catch((error: unknown) => {
+          setSaveError(error instanceof Error ? error.message : "Unable to save work order.");
+        });
       }}
     >
       <DialogHeader className="border-b border-border/80 px-5 py-4 pr-12">
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
       <div className="grid gap-4 px-5 py-5">
+        {saveError ? (
+          <WorkspaceFormBanner className="mb-0" title="Unable to save work order">
+            {saveError}
+          </WorkspaceFormBanner>
+        ) : null}
         <ContactQuickField
-          label={product ? "Product name" : "Work order name"}
+          invalid={saveAttempted && nameMissing}
+          label="Work order name"
           required
           value={form.name}
           onChange={(name) => setForm((current) => ({ ...current, name }))}
         />
         <ContactQuickField
+          invalid={saveAttempted && codeMissing}
           label="Code"
+          required
           value={form.code}
           onChange={(code) => setForm((current) => ({ ...current, code: code.toUpperCase() }))}
         />
-        {product ? (
-          <>
-            <ContactQuickField
-              label="HSN code"
-              value={form.hsnCode}
-              onChange={(hsnCode) => setForm((current) => ({ ...current, hsnCode }))}
-            />
-            <ContactQuickField
-              label="Unit"
-              value={form.unitName}
-              onChange={(unitName) => setForm((current) => ({ ...current, unitName }))}
-            />
-            <ContactQuickField
-              label="Opening rate"
-              type="number"
-              value={String(form.openingRate)}
-              onChange={(openingRate) =>
-                setForm((current) => ({ ...current, openingRate: Number(openingRate || 0) }))
-              }
-            />
-          </>
-        ) : (
-          <ContactQuickField
-            label="Work order type"
-            value={form.typeName}
-            onChange={(typeName) => setForm((current) => ({ ...current, typeName }))}
-          />
-        )}
+        <ContactQuickField
+          label="Work order type"
+          value={form.typeName}
+          onChange={(typeName) => setForm((current) => ({ ...current, typeName }))}
+        />
       </div>
       <DialogFooter className="border-t border-border/80 px-5 py-4">
         <Button disabled={loading} type="button" variant="outline" onClick={onCancel}>
           <X className="size-4" />
           Cancel
         </Button>
-        <Button disabled={loading || !form.name.trim()} type="submit">
+        <Button disabled={loading} type="submit">
           <Save className="size-4" />
           Save
         </Button>
@@ -244,12 +246,18 @@ export function masterDraftFromRecord(
     hsnCode: record?.hsnCode ?? "",
     hsnCodeId: record?.hsnCodeId ?? "",
     name: record?.name ?? initialName,
-    openingRate: Number(record?.openingRate ?? record?.price ?? 0),
+    openingRate:
+      record?.openingRate !== undefined || record?.price !== undefined
+        ? String(record.openingRate ?? record.price ?? "")
+        : "",
     productCategoryId: record?.productCategoryId ?? "",
     productCategoryName: record?.productCategoryName ?? "",
     taxId: record?.taxId ?? "",
     taxName: record?.taxName ?? "",
-    taxRate: Number(record?.taxRate ?? record?.ratePercent ?? 0),
+    taxRate:
+      record?.taxRate !== undefined || record?.ratePercent !== undefined
+        ? Number(record.taxRate ?? record.ratePercent)
+        : undefined,
     typeName: record?.typeName ?? "",
     unitId: record?.unitId ?? "",
     unitName: record?.unitName ?? ""
@@ -262,19 +270,13 @@ export function masterPayload(
 ) {
   return kind === "products"
     ? {
-        code: payload.code.trim(),
-        hsnCode: payload.hsnCode.trim(),
         hsnCodeId: numericId(payload.hsnCodeId),
         isActive: true,
         name: payload.name.trim(),
         openingRate: Number(payload.openingRate || 0),
         productCategoryId: numericId(payload.productCategoryId),
-        productCategoryName: payload.productCategoryName?.trim() || null,
         taxId: numericId(payload.taxId),
-        taxName: payload.taxName?.trim() || null,
-        taxRate: Number(payload.taxRate || 0),
-        unitId: numericId(payload.unitId),
-        unitName: payload.unitName.trim()
+        unitId: numericId(payload.unitId)
       }
     : {
         code: payload.code.trim(),

@@ -1,6 +1,6 @@
 import { AppError } from "@cxapp/framework/errors";
-import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
-import { InMemoryQueueAdapter, type QueueAdapter } from "@cxapp/framework/queue";
+import type { EventPublisher } from "@cxapp/framework/events";
+import type { QueueAdapter } from "@cxapp/framework/queue";
 import { SalesService } from "../sales/index.js";
 import type { SaleLineItemInput } from "../sales/index.js";
 import { BillingSettingsRepository } from "../settings/settings.repository.js";
@@ -16,14 +16,18 @@ import type {
   QuotationSavePayload
 } from "./quotation.types.js";
 import { createQuotationEvent } from "./quotation.events.js";
+import {
+  BillingDatabaseEventPublisher,
+  BillingDatabaseQueueAdapter
+} from "../runtime-persistence/runtime-persistence.repository.js";
 
 export class QuotationService {
   constructor(
     private readonly repository = new QuotationRepository(),
     private readonly settings = new BillingSettingsRepository(),
     private readonly sales = new SalesService(),
-    private readonly events: EventPublisher = new InMemoryEventPublisher(),
-    private readonly queue: QueueAdapter = new InMemoryQueueAdapter()
+    private readonly events: EventPublisher = new BillingDatabaseEventPublisher(),
+    private readonly queue: QueueAdapter = new BillingDatabaseQueueAdapter()
   ) {}
 
   list(databaseName: string) {

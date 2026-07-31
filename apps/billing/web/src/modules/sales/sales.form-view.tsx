@@ -29,7 +29,7 @@ import { SaleAddressDialog, SaleAddressField } from "./sales-address-editor";
 import type { useSalesFormController } from "./sales.form-controller";
 import { SaleContactQuickForm } from "./sales.form-section-1";
 import {
-  SaleMasterQuickForm,
+  SaleWorkOrderQuickForm,
   contactDraftFromRecord,
   masterDraftFromRecord,
   saleCommonOption,
@@ -186,8 +186,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
                     })
                   }
                   renderCreateForm={({ initialName, onCancel, onCreated }) => (
-                    <SaleMasterQuickForm
-                      kind="workOrders"
+                    <SaleWorkOrderQuickForm
                       initialValue={masterDraftFromRecord(undefined, initialName)}
                       loading={masterSaveMutation.isPending}
                       onCancel={onCancel}
@@ -264,7 +263,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
             sizeOptions={sizesQuery.data ?? []}
             sizesLoading={sizesQuery.isLoading}
             taxType={form.taxType}
-            roundOff={Number(form.roundOff ?? 0)}
+            roundOff={form.roundOff ?? ""}
             roundOffManual={roundOffManual}
             suggestedRoundOff={suggestedRoundOff}
             onAdd={addOrUpdateItem}
@@ -275,7 +274,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
             onRemove={removeItem}
             onResetRoundOff={() => {
               setRoundOffManual(false);
-              patch({ roundOff: suggestedRoundOff });
+              patch({ roundOff: String(suggestedRoundOff) });
             }}
             onReset={resetDraft}
             onCreateColour={async (name) => {
@@ -620,8 +619,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
             onInteractOutside={(event) => event.preventDefault()}
           >
             {editingWorkOrder ? (
-              <SaleMasterQuickForm
-                kind="workOrders"
+              <SaleWorkOrderQuickForm
                 initialValue={masterDraftFromRecord(editingWorkOrder)}
                 loading={masterSaveMutation.isPending}
                 onCancel={() => setEditingWorkOrder(null)}

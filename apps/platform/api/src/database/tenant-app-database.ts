@@ -18,16 +18,15 @@ import {
   seedMailModule
 } from "@cxapp/mail-api";
 import type { Kysely } from "kysely";
-import {
-  devkitTenantMigrations,
-  migrateDevkitDatabase,
-  rollbackDevkitDatabase,
-  seedDevkitDatabase,
-  type DevkitDatabase
-} from "@cxapp/devkit-api";
 import type { TenantDatabase } from "./schema.js";
 import type { Tenant } from "../modules/tenant/tenant.types.js";
 import { tenantRuntimeMigrations } from "../modules/tenant/tenant.migration.js";
+import {
+  migrateTaskManagerModule,
+  rollbackTaskManagerModule,
+  taskManagerMigration
+} from "../modules/task-manager/task-manager.migration.js";
+import { seedTaskManagerModule } from "../modules/task-manager/task-manager.seed.js";
 
 const mailTenantMigrations = mailMigrationBatch.steps.map(({ description, name }) => ({
   description,
@@ -46,13 +45,6 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
-    ...(enabled.has("devkit")
-      ? devkitTenantMigrations.map((migration) => ({
-          description: migration.description,
-          name: migration.name,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
     ...(enabled.has("billing.sales")
       ? billingTenantMigrations.map((migration) => ({
           ...migration,
@@ -64,6 +56,15 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
           ...migration,
           statements: [`RUN ${migration.name}`]
         }))
+      : []),
+    ...(enabled.has("platform.task-manager")
+      ? [
+          {
+            description: taskManagerMigration.description,
+            name: taskManagerMigration.key,
+            statements: [`RUN ${taskManagerMigration.key}`]
+          }
+        ]
       : [])
   ];
 }
@@ -73,11 +74,6 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   const provisionedApps = ["application"];
 
   await migrateCoreTenantDatabase(tenant.dbName);
-
-  if (enabled.has("devkit")) {
-    await migrateDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
-    provisionedApps.push("devkit");
-  }
 
   if (enabled.has("billing.sales")) {
     await migrateBillingTenantDatabase(tenant.dbName);
@@ -90,6 +86,7 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   }
 
   if (enabled.has("platform.task-manager")) {
+    await migrateTaskManagerModule(database);
     provisionedApps.push("task-manager");
   }
 
@@ -106,11 +103,6 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   await seedCoreTenantDatabase(tenant.dbName);
   await setDefaultCompanyLandingAppForDatabase(tenant.dbName, tenant.defaultLandingApp);
 
-  if (enabled.has("devkit")) {
-    await seedDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
-    seededApps.push("devkit");
-  }
-
   if (enabled.has("billing.sales")) {
     await seedBillingTenantDatabase(tenant.dbName);
     seededApps.push("billing");
@@ -121,17 +113,21 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     seededApps.push("mail");
   }
 
-  if (enabled.has("platform.task-manager")) seededApps.push("task-manager");
+  if (enabled.has("platform.task-manager")) {
+    await seedTaskManagerModule(database, {
+      importLegacyJson: false,
+      scopeKey: taskManagerTenantScope(tenant)
+    });
+    seededApps.push("task-manager");
+  }
   return { seededApps };
 }
 
 export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
+  if (enabled.has("platform.task-manager")) await rollbackTaskManagerModule(database);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
-  if (enabled.has("devkit")) {
-    await rollbackDevkitDatabase(database as unknown as Kysely<DevkitDatabase>);
-  }
   await rollbackCoreTenantDatabase(tenant.dbName);
 }
 
@@ -142,4 +138,8 @@ export async function provisionSelectedTenantApps(
   const migrated = await migrateSelectedTenantApps(database, tenant);
   const seeded = await seedSelectedTenantApps(database, tenant);
   return { ...migrated, ...seeded };
+}
+
+export function taskManagerTenantScope(tenant: Pick<Tenant, "uuid">) {
+  return `tenant:${tenant.uuid}`;
 }

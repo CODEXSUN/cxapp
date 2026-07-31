@@ -354,6 +354,8 @@ export function ExportSaleContactQuickForm({
 export function ContactQuickField({
   className,
   forceUppercase = false,
+  inputMode,
+  invalid = false,
   label,
   onChange,
   onMagic,
@@ -363,6 +365,8 @@ export function ContactQuickField({
 }: {
   className?: string;
   forceUppercase?: boolean;
+  inputMode?: "decimal" | "email" | "numeric" | "search" | "tel" | "text" | "url";
+  invalid?: boolean;
   label: string;
   onChange: (value: string) => void;
   onMagic?: () => void;
@@ -394,9 +398,11 @@ export function ContactQuickField({
         ) : null}
       </div>
       <Input
+        aria-invalid={invalid}
         autoCapitalize={forceUppercase ? "characters" : "none"}
         autoFocus={label === "Contact name"}
         className={cn("h-11 rounded-md", forceUppercase && "uppercase")}
+        inputMode={inputMode}
         required={required}
         type={type}
         value={value}

@@ -1,10 +1,14 @@
 import { AppError } from "@cxapp/framework/errors";
-import { InMemoryEventPublisher, type EventPublisher } from "@cxapp/framework/events";
-import { InMemoryQueueAdapter, type QueueAdapter } from "@cxapp/framework/queue";
+import type { EventPublisher } from "@cxapp/framework/events";
+import type { QueueAdapter } from "@cxapp/framework/queue";
 import { billingDashboardProjection } from "../dashboard/index.js";
 import { formatBillingDocumentNumber, nextBillingDocumentNumber } from "../settings/index.js";
 import { BillingSettingsRepository } from "../settings/settings.repository.js";
 import { createPaymentEvent } from "./payment.events.js";
+import {
+  BillingDatabaseEventPublisher,
+  BillingDatabaseQueueAdapter
+} from "../runtime-persistence/runtime-persistence.repository.js";
 import { PaymentRepository } from "./payment.repository.js";
 import type { Payment, PaymentJob, PaymentSavePayload } from "./payment.types.js";
 
@@ -12,8 +16,8 @@ export class PaymentService {
   constructor(
     private readonly repository = new PaymentRepository(),
     private readonly settings = new BillingSettingsRepository(),
-    private readonly events: EventPublisher = new InMemoryEventPublisher(),
-    private readonly queue: QueueAdapter = new InMemoryQueueAdapter()
+    private readonly events: EventPublisher = new BillingDatabaseEventPublisher(),
+    private readonly queue: QueueAdapter = new BillingDatabaseQueueAdapter()
   ) {}
   list(databaseName: string) {
     return this.repository.list(databaseName);

@@ -11,6 +11,7 @@ import {
   WorkspaceAnimatedTabs,
   type WorkspaceAnimatedTab
 } from "@cxapp/ui/workspace/animated-tabs";
+import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import {
   createSaleAddressType,
   createSaleLocation,
@@ -171,11 +172,13 @@ export function SaleAddressDialog({
   draft: SaleAddressDraft;
   loading?: boolean;
   onCancel: () => void;
-  onSave: (draft: SaleAddressDraft) => void;
+  onSave: (draft: SaleAddressDraft) => Promise<void> | void;
   title: string;
 }) {
   const [form, setForm] = useState(draft);
   const [activeTab, setActiveTab] = useState("address");
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const addressTypesQuery = useQuery({
     queryFn: listSaleAddressTypes,
     queryKey: ["billing", "sale", "lookups", "address-types"]
@@ -203,6 +206,8 @@ export function SaleAddressDialog({
 
   useEffect(() => {
     setForm(draft);
+    setSaveAttempted(false);
+    setSaveError("");
   }, [draft]);
 
   useEffect(() => {
@@ -248,8 +253,19 @@ export function SaleAddressDialog({
           : kind === "cities"
             ? form.districtId
             : form.cityId;
-    if (!dependency) return undefined;
-    const created = await createSaleLocation(kind, saleAddressLocationPayload(kind, name, form));
+    if (!dependency) {
+      setSaveError(
+        `Select ${kind === "states" ? "a country" : kind === "districts" ? "a state" : kind === "cities" ? "a district" : "a city"} before creating ${kind === "pincodes" ? "a pincode" : kind.slice(0, -1)}.`
+      );
+      return undefined;
+    }
+    const created = await createSaleLocation(
+      kind,
+      saleAddressLocationPayload(kind, name, form)
+    ).catch((error: unknown) => {
+      setSaveError(error instanceof Error ? error.message : "Unable to create location.");
+      throw error;
+    });
     await {
       cities: citiesQuery,
       districts: districtsQuery,
@@ -267,19 +283,27 @@ export function SaleAddressDialog({
       content: (
         <div className="grid gap-4">
           <label className="grid gap-2">
-            <Label>Address type</Label>
+            <Label>
+              Address type <span className="text-destructive">*</span>
+            </Label>
             <WorkspaceLookup
               createLabel="Save address type"
               createMode="inline"
               emptyLabel="No address types found. Type a value to create it."
               loading={addressTypesQuery.isLoading}
+              invalid={saveAttempted && !form.addressTypeId}
               options={(addressTypesQuery.data ?? [])
                 .filter((record) => record.isActive !== false)
                 .map(saleLookupOption)}
               placeholder="Search address type"
               value={form.addressTypeId || form.addressTypeName}
               onCreate={async (name) => {
-                const created = await createSaleAddressType(name);
+                const created = await createSaleAddressType(name).catch((error: unknown) => {
+                  setSaveError(
+                    error instanceof Error ? error.message : "Unable to create address type."
+                  );
+                  throw error;
+                });
                 await addressTypesQuery.refetch();
                 toast.success("Address type saved", { description: name });
                 return saleLookupOption(created);
@@ -294,7 +318,9 @@ export function SaleAddressDialog({
             />
           </label>
           <AddressEditorField
+            invalid={saveAttempted && !form.addressLine1.trim()}
             label="Address line 1"
+            required
             value={form.addressLine1}
             onChange={(addressLine1) => setForm((current) => ({ ...current, addressLine1 }))}
           />
@@ -304,11 +330,14 @@ export function SaleAddressDialog({
             onChange={(addressLine2) => setForm((current) => ({ ...current, addressLine2 }))}
           />
           <label className="grid gap-2">
-            <Label>Country</Label>
+            <Label>
+              Country <span className="text-destructive">*</span>
+            </Label>
             <WorkspaceLookup
               allowTextValue={false}
               emptyLabel="No countries found."
               loading={countriesQuery.isLoading}
+              invalid={saveAttempted && !form.countryId}
               options={locations.countries.map(saleLocationOption)}
               placeholder="Search country"
               value={form.countryId || form.countryName}
@@ -395,14 +424,30 @@ export function SaleAddressDialog({
   return (
     <form
       className="grid gap-0"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(form);
+        setSaveAttempted(true);
+        if (!form.addressTypeId || !form.addressLine1.trim() || !form.countryId) {
+          setSaveError("Complete the highlighted mandatory fields.");
+          return;
+        }
+        setSaveError("");
+        void Promise.resolve(onSave(form)).catch((error: unknown) =>
+          setSaveError(error instanceof Error ? error.message : "Unable to save address.")
+        );
       }}
     >
       <DialogHeader className="border-b border-border/80 px-5 py-4 pr-12">
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
+      {saveError ? (
+        <div className="px-5 pt-4">
+          <WorkspaceFormBanner className="mb-0" title="Unable to save address">
+            {saveError}
+          </WorkspaceFormBanner>
+        </div>
+      ) : null}
       <WorkspaceAnimatedTabs
         contentClassName="h-[26rem] overflow-y-auto px-5 pb-5"
         listClassName="rounded-none border-x-0 border-t-0 px-5 shadow-none"
@@ -417,7 +462,7 @@ export function SaleAddressDialog({
         </Button>
         <Button disabled={loading} type="submit">
           <Save className="size-4" />
-          Save contact
+          Save address
         </Button>
       </DialogFooter>
     </form>
@@ -452,18 +497,25 @@ function saleLookupOption(record: SaleLookupRecord): SaleLookupOption {
 }
 
 function AddressEditorField({
+  invalid = false,
   label,
   onChange,
+  required = false,
   value
 }: {
+  invalid?: boolean;
   label: string;
   onChange: (value: string) => void;
+  required?: boolean;
   value: string;
 }) {
   return (
     <label className="grid gap-2">
-      <Label>{label}</Label>
+      <Label>
+        {label} {required ? <span className="text-destructive">*</span> : null}
+      </Label>
       <Input
+        aria-invalid={invalid}
         className="h-11 rounded-md"
         value={value}
         onChange={(event) => onChange(event.target.value)}

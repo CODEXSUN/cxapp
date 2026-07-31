@@ -41,6 +41,11 @@ const modes = [
   { label: "NEFT / RTGS", value: "transfer" }
 ];
 
+function decimalValue(value: string | number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function ReceiptForm({
   context,
   error,
@@ -66,9 +71,13 @@ export function ReceiptForm({
     () => mergeCandidates(lookups.allocations.data ?? [], receipt),
     [lookups.allocations.data, receipt]
   );
-  const total = form.amount + form.tdsAmount - form.discountAmount + form.roundOff;
+  const total =
+    decimalValue(form.amount) +
+    decimalValue(form.tdsAmount) -
+    decimalValue(form.discountAmount) +
+    decimalValue(form.roundOff);
   const allocated = form.allocations.reduce(
-    (sum, item) => sum + Number(item.allocatedAmount || 0),
+    (sum, item) => sum + decimalValue(item.allocatedAmount),
     0
   );
   const patch = <Key extends keyof ReceiptSavePayload>(key: Key, value: ReceiptSavePayload[Key]) =>
@@ -78,13 +87,13 @@ export function ReceiptForm({
     patch("allocations", []);
   }
   function allocationAmount(saleId: string) {
-    return form.allocations.find((item) => item.saleId === saleId)?.allocatedAmount ?? 0;
+    return form.allocations.find((item) => item.saleId === saleId)?.allocatedAmount ?? "";
   }
-  function setAllocation(saleId: string, amount: number) {
+  function setAllocation(saleId: string, amount: string) {
     setForm((current) => ({
       ...current,
       allocations:
-        amount > 0
+        amount.trim() !== ""
           ? [
               ...current.allocations.filter((item) => item.saleId !== saleId),
               { saleId, allocatedAmount: amount }
@@ -140,11 +149,10 @@ export function ReceiptForm({
       <WorkspaceFormField label="Amount" required>
         <Input
           className={invalidClass(errors.amount)}
-          min="0"
-          step="0.01"
-          type="number"
+          inputMode="decimal"
+          type="text"
           value={form.amount}
-          onChange={(event) => patch("amount", Number(event.target.value))}
+          onChange={(event) => patch("amount", event.target.value)}
         />
         {errors.amount ? <FieldError>{errors.amount}</FieldError> : null}
       </WorkspaceFormField>
@@ -210,28 +218,26 @@ export function ReceiptForm({
       </WorkspaceFormField>
       <WorkspaceFormField label="TDS amount">
         <Input
-          min="0"
-          step="0.01"
-          type="number"
+          inputMode="decimal"
+          type="text"
           value={form.tdsAmount}
-          onChange={(event) => patch("tdsAmount", Number(event.target.value))}
+          onChange={(event) => patch("tdsAmount", event.target.value)}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="Discount amount">
         <Input
-          min="0"
-          step="0.01"
-          type="number"
+          inputMode="decimal"
+          type="text"
           value={form.discountAmount}
-          onChange={(event) => patch("discountAmount", Number(event.target.value))}
+          onChange={(event) => patch("discountAmount", event.target.value)}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="Round off">
         <Input
-          step="0.01"
-          type="number"
+          inputMode="decimal"
+          type="text"
           value={form.roundOff}
-          onChange={(event) => patch("roundOff", Number(event.target.value))}
+          onChange={(event) => patch("roundOff", event.target.value)}
         />
       </WorkspaceFormField>
     </WorkspaceFormGrid>
@@ -273,14 +279,10 @@ export function ReceiptForm({
                   <td className="px-4 py-3">
                     <Input
                       className="w-36"
-                      max={candidate.outstandingAmount}
-                      min="0"
-                      step="0.01"
-                      type="number"
+                      inputMode="decimal"
+                      type="text"
                       value={allocationAmount(candidate.saleId)}
-                      onChange={(event) =>
-                        setAllocation(candidate.saleId, Number(event.target.value))
-                      }
+                      onChange={(event) => setAllocation(candidate.saleId, event.target.value)}
                     />
                   </td>
                 </tr>
@@ -315,7 +317,10 @@ export function ReceiptForm({
           setErrors(result.errors);
           if (!result.data) return;
           if (
-            result.data.allocations.reduce((sum, item) => sum + item.allocatedAmount, 0) > total
+            result.data.allocations.reduce(
+              (sum, item) => sum + decimalValue(item.allocatedAmount),
+              0
+            ) > total
           ) {
             setErrors({ allocations: "Allocated amount cannot exceed the receipt total." });
             setTab("allocations");

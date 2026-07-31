@@ -39,11 +39,14 @@ import type { LandingAppOption } from "@cxapp/core-web/modules/organisation/defa
 import { listFinancialYears } from "@cxapp/core-web/modules/organisation/financial-year/services";
 import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
-import { DevkitWorkspaceHost, devkitWebBundle } from "@cxapp/devkit-web";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
 }
+
+const TaskManagerWorkspace = lazyWorkspace(() =>
+  import("../../modules/task-manager").then((module) => module.TaskManagerWorkspace)
+);
 
 const AddressTypesWorkspace = lazyWorkspace(() =>
   import("@cxapp/core-web/modules/common/contacts/address-types").then(
@@ -321,7 +324,6 @@ type AppPage =
   | "mail.trash"
   | "task-manager.overview"
   | "task-manager.todos"
-  | "devkit.registry"
   | "core.common.location.countries"
   | "core.common.location.states"
   | "core.common.location.districts"
@@ -397,10 +399,11 @@ export function AppDesk() {
     },
     queryKey: ["billing", "settings", companyContextId]
   });
-  const appSafePage =
-    (page.startsWith("billing") ||
-      (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
-    !switchableApps.includes("billing")
+  const appSafePage = page.startsWith("devkit")
+    ? pageForApp(landingApp)
+    : (page.startsWith("billing") ||
+          (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
+        !switchableApps.includes("billing")
       ? pageForApp(landingApp)
       : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
@@ -513,11 +516,9 @@ export function AppDesk() {
       ? "Billing"
       : activeApp === "mail"
         ? "Mail"
-        : activeApp === "devkit"
-          ? "DevKit"
-          : activeApp === "task-manager"
-            ? "Task Manager"
-            : "Application";
+        : activeApp === "task-manager"
+          ? "Task Manager"
+          : "Application";
   const menuItems = appMenuItemsFor(
     activeApp,
     safePage,
@@ -534,9 +535,7 @@ export function AppDesk() {
             ? "billing.overview"
             : item.title === "Mail"
               ? "mail.inbox"
-              : item.title === "DevKit"
-                ? "devkit.registry"
-                : "task-manager.overview"
+              : "task-manager.overview"
       ),
     url:
       item.title === "Application"
@@ -545,9 +544,7 @@ export function AppDesk() {
           ? "/app/billing/overview"
           : item.title === "Mail"
             ? "/app/mail/inbox"
-            : item.title === "DevKit"
-              ? "/app/devkit/registry"
-              : "/app/task-manager/overview"
+            : "/app/task-manager/overview"
   }));
 
   const contextError =
@@ -600,11 +597,9 @@ export function AppDesk() {
               ? "/app/billing/overview"
               : activeApp === "mail"
                 ? "/app/mail/inbox"
-                : activeApp === "devkit"
-                  ? "/app/devkit/registry"
-                  : activeApp === "task-manager"
-                    ? "/app/task-manager/overview"
-                    : "/app/application/overview",
+                : activeApp === "task-manager"
+                  ? "/app/task-manager/overview"
+                  : "/app/application/overview",
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
           ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
           logoAlt: `${selectedCompany?.name ?? "Company"} logo`,
@@ -703,8 +698,8 @@ export function AppDesk() {
           {safePage.startsWith("mail.") ? (
             <MailWorkspace mailbox={mailboxForPage(safePage)} />
           ) : null}
-          {safePage.startsWith("devkit.") ? (
-            <DevkitWorkspaceHost workspaceId={safePage.slice("devkit.".length)} />
+          {safePage === "task-manager.overview" || safePage === "task-manager.todos" ? (
+            <TaskManagerWorkspace desk="tenant" />
           ) : null}
           {safePage === "core.organisation.company" ? <CompanyWorkspace /> : null}
           {safePage === "core.organisation.financial-year" ? <FinancialYearWorkspace /> : null}
@@ -769,11 +764,6 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
   if (!app) return pageForApp(landingApp ?? "application");
 
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
-  const devkitWorkspace =
-    app === "devkit" ? devkitWebBundle.resolveWorkspace(window.location.pathname) : undefined;
-  if (devkitWorkspace) {
-    return `devkit.${devkitWorkspace.id}` as AppPage;
-  }
   if (
     key === "application.overview" ||
     key === "application.landing" ||
@@ -852,40 +842,32 @@ function LandingDesk({
         ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
         : appId === "mail"
           ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-          : appId === "devkit"
-            ? "Platform application and module registry."
-            : "Shared workspace, company setup, roles, and cross-app launch desk.",
+          : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
       appId === "billing"
         ? CreditCardIcon
         : appId === "mail"
           ? MailIcon
-          : appId === "devkit"
-            ? RocketIcon
-            : appId === "task-manager"
-              ? ListChecksIcon
-              : LayoutDashboardIcon,
+          : appId === "task-manager"
+            ? ListChecksIcon
+            : LayoutDashboardIcon,
     iconClass:
       appId === "billing"
         ? "bg-emerald-600 text-white"
         : appId === "mail"
           ? "bg-sky-600 text-white"
-          : appId === "devkit"
-            ? "bg-violet-700 text-white"
-            : appId === "task-manager"
-              ? "bg-violet-600 text-white"
-              : "bg-slate-950 text-white",
+          : appId === "task-manager"
+            ? "bg-violet-600 text-white"
+            : "bg-slate-950 text-white",
     id: appId,
     label:
       appId === "billing"
         ? "Billing"
         : appId === "mail"
           ? "Mail"
-          : appId === "devkit"
-            ? "DevKit"
-            : appId === "task-manager"
-              ? "Task Manager"
-              : "Application"
+          : appId === "task-manager"
+            ? "Task Manager"
+            : "Application"
   })) satisfies Array<{
     description: string;
     icon: typeof LayoutDashboardIcon;
@@ -1285,7 +1267,6 @@ function titleForPage(page: AppPage) {
     "mail.trash": "Trash",
     "task-manager.overview": "Task Manager",
     "task-manager.todos": "Todo",
-    "devkit.registry": "Platform Registry",
     "core.common.location.cities": "Cities",
     "core.common.location.countries": "Countries",
     "core.common.location.districts": "Districts",
@@ -1370,7 +1351,7 @@ function appFromPage(
     return enabledApps.includes("billing") ? "billing" : landingApp;
   if (page.startsWith("task-manager"))
     return enabledApps.includes("task-manager") ? "task-manager" : landingApp;
-  if (page.startsWith("devkit")) return enabledApps.includes("devkit") ? "devkit" : landingApp;
+  if (page.startsWith("devkit")) return landingApp;
   if (page.startsWith("mail")) return enabledApps.includes("mail") ? "mail" : landingApp;
   return "application";
 }
@@ -1388,7 +1369,7 @@ function mailboxForPage(page: AppPage) {
 }
 
 function pageForApp(app: PlatformAppId): AppPage {
-  if (app === "devkit") return "devkit.registry";
+  if (app === "devkit") return "application.overview";
   if (app === "task-manager") return "task-manager.overview";
   if (app === "mail") return "mail.inbox";
   return app === "billing" ? "billing.overview" : "application.overview";

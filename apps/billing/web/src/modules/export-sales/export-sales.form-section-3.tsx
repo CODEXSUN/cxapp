@@ -11,6 +11,7 @@ import {
   TotalRow,
   computeExportSaleLine,
   computeExportSaleTotals,
+  exportSaleDecimalValue,
   numericId
 } from "./export-sales.form-section-5";
 import {
@@ -18,7 +19,11 @@ import {
   type ExportSaleLookupOption,
   type ExportSaleLookupRecord
 } from "./export-sales.services";
-import { type ExportSaleSavePayload, type ExportSaleTaxType } from "./export-sales.types";
+import {
+  type ExportSaleDecimalInput,
+  type ExportSaleSavePayload,
+  type ExportSaleTaxType
+} from "./export-sales.types";
 
 export function ExportSaleItemsSection({
   colourOptions,
@@ -62,7 +67,7 @@ export function ExportSaleItemsSection({
   sizeOptions: ExportSaleLookupOption[];
   sizesLoading: boolean;
   taxType: ExportSaleTaxType;
-  roundOff: number;
+  roundOff: ExportSaleDecimalInput;
   roundOffManual: boolean;
   suggestedRoundOff: number;
   onAdd: () => void;
@@ -90,7 +95,7 @@ export function ExportSaleItemsSection({
   const showSize = settings.useSize;
   const splitTax = taxType === "cgst-sgst";
   const totals = computeExportSaleTotals(items, taxType);
-  const grandTotal = totals.amount + roundOff;
+  const grandTotal = totals.amount + exportSaleDecimalValue(roundOff);
   const templateColumns = [
     ...(showPo ? ["minmax(6.5rem,0.7fr)"] : []),
     ...(showDc ? ["minmax(6.5rem,0.7fr)"] : []),
@@ -238,10 +243,10 @@ export function ExportSaleItemsSection({
               <Field label="Quantity">
                 <Input
                   className="text-center"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   type="text"
-                  value={String(draft.quantity)}
-                  onChange={(event) => onDraftChange({ quantity: Number(event.target.value || 0) })}
+                  value={draft.quantity}
+                  onChange={(event) => onDraftChange({ quantity: event.target.value })}
                 />
               </Field>
               <Field label="Price">
@@ -249,8 +254,8 @@ export function ExportSaleItemsSection({
                   className="text-right"
                   inputMode="decimal"
                   type="text"
-                  value={String(draft.rate)}
-                  onChange={(event) => onDraftChange({ rate: Number(event.target.value || 0) })}
+                  value={draft.rate}
+                  onChange={(event) => onDraftChange({ rate: event.target.value })}
                 />
               </Field>
               <div className="flex items-end gap-2 pb-0.5">
@@ -342,7 +347,7 @@ export function ExportSaleItemsSection({
                       {item.quantity}
                     </td>
                     <td className="border-r border-border/70 px-3 py-2 text-right">
-                      {formatMoney(item.rate)}
+                      {formatMoney(exportSaleDecimalValue(item.rate))}
                     </td>
                     <td className="border-r border-border/70 px-3 py-2">{item.unit || "Nos"}</td>
                     <td className="border-r border-border/70 px-3 py-2 text-right">

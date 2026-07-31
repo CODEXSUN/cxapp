@@ -13,6 +13,7 @@ export type PlatformDatabase = {
   access_roles: AccessRolesTable;
   access_users: AccessUsersTable;
   auth_sessions: AuthSessionsTable;
+  auth_login_attempts: AuthLoginAttemptsTable;
   database_maintenance_runs: DatabaseMaintenanceRunsTable;
   entitlements: EntitlementsTable;
   industries: IndustriesTable;
@@ -25,9 +26,24 @@ export type PlatformDatabase = {
   password_reset_requests: PasswordResetRequestsTable;
   storage_objects: StorageObjectsTable;
   subscriptions: SubscriptionsTable;
+  task_manager_lookups: TaskManagerLookupsTable;
+  task_manager_todos: TaskManagerTodosTable;
   tenant_domains: TenantDomainsTable;
   tenant_audit_events: TenantAuditEventsTable;
   tenants: TenantsTable;
+};
+
+export type AuthLoginAttemptsTable = {
+  attempt_key_hash: string;
+  blocked_until: TimestampColumn;
+  created_at: TimestampColumn;
+  created_by: Generated<string>;
+  failure_count: number;
+  id: Generated<number>;
+  last_failed_at: TimestampColumn;
+  status: "active";
+  updated_at: TimestampColumn;
+  uuid: string;
 };
 
 export type TenantDatabase = {
@@ -37,6 +53,8 @@ export type TenantDatabase = {
   app_roles: TenantRolesTable;
   app_user_roles: TenantUserRolesTable;
   app_users: TenantUsersTable;
+  task_manager_lookups: TaskManagerLookupsTable;
+  task_manager_todos: TaskManagerTodosTable;
 };
 
 export type PlatformAppsTable = {
@@ -138,11 +156,41 @@ export type QueueJobsTable = {
 };
 
 export type QueueRuntimeSettingsTable = {
-  backend: "bullmq-redis" | "database" | "memory";
+  backend: "bullmq-redis" | "database";
   id: Generated<number>;
   singleton_key: number;
   updated_at: TimestampColumn;
   updated_by: string;
+};
+
+export type TaskManagerTodosTable = {
+  category: string;
+  created_at: TimestampColumn;
+  created_by: string;
+  description: string;
+  due_date: string;
+  group_name: string;
+  id: Generated<number>;
+  position: number;
+  priority: string;
+  scope_key: string;
+  status: string;
+  title: string;
+  updated_at: TimestampColumn;
+  uuid: string;
+};
+
+export type TaskManagerLookupsTable = {
+  created_at: TimestampColumn;
+  created_by: string;
+  id: Generated<number>;
+  kind: "category" | "group" | "status" | "priority";
+  name: string;
+  scope_key: string;
+  status: "active" | "inactive";
+  updated_at: TimestampColumn;
+  uuid: string;
+  value: string;
 };
 
 export type PlatformAuthUsersTable = {

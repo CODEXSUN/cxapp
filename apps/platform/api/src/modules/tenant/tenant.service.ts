@@ -127,9 +127,9 @@ export class TenantService {
     const disabledModuleKeys = parseStringArray(incomingApps.disabled).filter(
       (key) => key !== "platform.application"
     );
-    const legacyKeys = input.enabledModuleKeys.map((key) =>
-      key === "platform.tenant" ? "platform.application" : key
-    );
+    const legacyKeys = input.enabledModuleKeys
+      .map((key) => (key === "platform.tenant" ? "platform.application" : key))
+      .filter((key) => key !== "devkit");
     const defaultKeys = includeDefaults
       ? defaultTenantModuleKeys.filter((key) => !disabledModuleKeys.includes(key))
       : ["platform.application"];

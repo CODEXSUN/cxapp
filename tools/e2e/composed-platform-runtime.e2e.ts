@@ -177,15 +177,10 @@ try {
     method: "GET",
     url: "/devkit/admin/platform-registry/result"
   });
-  assert.equal(authenticatedDevkitResponse.statusCode, 200, authenticatedDevkitResponse.body);
-  const devkit = authenticatedDevkitResponse.json() as {
-    data?: { summary?: { totalModules?: number } };
-    success?: boolean;
-  };
-  assert.equal(devkit.success, true);
-  assert.ok(
-    (devkit.data?.summary?.totalModules ?? 0) > 0,
-    "DevKit returned no tenant registry modules."
+  assert.equal(
+    authenticatedDevkitResponse.statusCode,
+    403,
+    "A tenant session was allowed to access the Super Admin-only DevKit API."
   );
   for (const retiredPath of [
     "/devkit/admin/project-manager/result",
@@ -205,6 +200,26 @@ try {
     });
     assert.equal(retiredResponse.statusCode, 404, `${retiredPath} remains registered.`);
   }
+
+  const tenantTaskLookups = await app.inject({
+    headers: {
+      cookie: cookies,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    },
+    method: "GET",
+    url: "/task-manager/lookups"
+  });
+  assert.equal(tenantTaskLookups.statusCode, 200, tenantTaskLookups.body);
+  assert.ok(
+    tenantTaskLookups
+      .json()
+      .data.some(
+        (lookup: { kind: string; value: string }) =>
+          lookup.kind === "status" && lookup.value === "open"
+      ),
+    "Tenant Task Manager defaults were not available through the composed API."
+  );
 
   const superAdminLoginResponse = await app.inject({
     headers: {

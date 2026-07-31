@@ -1,7 +1,7 @@
 import type { QueueJobRecord } from "./queue-manager.types.js";
 
 export const queueManagerWorker = {
-  backends: ["memory", "database", "bullmq-redis"],
+  backends: ["database", "bullmq-redis"],
   jobs: ["database-maintenance.run", "mail.send", "mail.sync", "mail.system-send", "queue.probe"],
   queues: ["maintenance", "mail", "system"]
 } as const;

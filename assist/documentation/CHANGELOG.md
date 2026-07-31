@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.44
+Current version: 1.0.45
 
-Release tag: v-1.0.44
+Release tag: v-1.0.45
 
-Changelog label: v 1.0.44
+Changelog label: v 1.0.45
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,12 +20,56 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.45
+
+### [v 1.0.45] 2026-07-31 8:54 am - Tenant Task Manager Live Persistence
+
+#### Database Changes
+
+- Added module-owned Task Manager tables, indexes, lookup defaults, and
+  rollback wiring to enabled tenant databases while preserving the separate
+  Super Admin scope in the Platform database.
+- Added the protected `platform.task-manager.access` tenant permission and
+  tenant-specific scope keys so todos and lookups remain isolated even inside
+  their owning database.
+- Enabled and provisioned Task Manager for the CODEXSUN tenant in
+  `codexsun_db`; the live tenant now has active module settings, both Task
+  Manager tables, and all 14 default lookup records.
+- Database update: Yes (tenant migration and seed required).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.45.
+- Added Task Manager to the tenant app registry, breadcrumb app switcher,
+  landing choices, and tenant desk navigation with Overview and Todo entries.
+- Routed the shared Task Manager workspace through desk-aware API calls and
+  database-injected services, with enabled-module and role-permission checks
+  for tenant requests.
+- Added request validation plus live regression coverage for platform and
+  tenant restart persistence, two-database isolation, default seeding, and
+  rollback cleanup.
+
 ## v-1.0.44
 
 ### [v 1.0.44] 2026-07-30 11:29 pm - DevKit Platform Registry Consolidation
 
 #### Database Changes
 
+- Migrated Super Admin Task Manager todos and lookup values from runtime JSON
+  persistence to module-owned `task_manager_todos` and
+  `task_manager_lookups` Platform MariaDB tables with integer identities,
+  8-character UUIDs, audit fields, indexes, and repeatable default lookup
+  seeding. Existing Task Manager JSON files are imported idempotently as
+  read-only legacy input.
+- Retired the process-memory queue backend. Existing `memory` runtime settings
+  and environment values safely normalize to the durable database queue, while
+  BullMQ with Redis remains available for distributed processing.
+- Replaced Billing's process-memory domain-event and queue arrays with
+  tenant-owned `billing_domain_events` and `billing_outbox_jobs` tables for
+  Quotation, Purchase, Payment, and Dashboard runtime records.
+- Moved sign-in throttling counters to the Platform
+  `auth_login_attempts` table using hashed attempt keys so limits survive
+  restarts and apply consistently across API processes.
 - Database update: Yes (manual).
 - Added forward migrations that preserve existing registry data while renaming
   retained tables to the `devkit_platform_registry_*` ownership namespace.
@@ -35,6 +79,17 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 
 #### App Codebase Changes
 
+- Restricted DevKit to the Super Admin desk and master database. Tenant desks
+  no longer expose DevKit in the breadcrumb app switcher, landing choices,
+  routes, app assignments, permissions, migrations, or seeds; direct tenant
+  API access now fails with a Super Admin-only response while the Super Admin
+  Platform Registry remains available.
+- Replaced Task Manager JSON stores with repository and service paths backed by
+  the Platform database, and added persistence regression coverage that
+  prevents JSON writes or the in-memory queue backend from returning.
+- Classified remaining maps and browser storage as transient connection pools,
+  migration guards, request de-duplication, UI selections, or non-authoritative
+  client context; these are intentionally not business persistence.
 - Bumped workspace version to 1.0.44.
 - Released DevKit as a Platform Registry-only application across its API,
   frontend workspace, Platform navigation, package exports, and production
@@ -44,6 +99,37 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   environment settings, seeds, and empty directories.
 - Updated module-boundary enforcement, repository inventory, and composed E2E
   coverage; retired DevKit endpoints are explicitly verified as unavailable.
+- Changed Quotation, Sales, Purchase, Receipt, Payment, and Export Sales
+  quantity, price/rate, amount, allocation, adjustment, and round-off controls
+  to decimal-friendly text inputs. Editable text is preserved while typing,
+  owner API routes parse finite decimals before service processing, and
+  regression tests prevent native number boxes and keystroke coercion from
+  returning.
+- Fixed Quotation, Sales, Purchase, and Export Sales product popups so inline
+  Product Category, HSN Code, Unit, and GST Tax creation reaches the correct
+  Core owner contract, refreshes and selects the persisted option, and works
+  during both product creation and editing. Product and address popups now show
+  save/API failures in a compact top banner, mark mandatory fields, and use red
+  invalid rings without per-field helper text. Refreshed and newly created
+  product lookup options now share the same persisted ID, preventing duplicate
+  dropdown rows while retaining Core uniqueness enforcement. Successful
+  product creation or editing from a Billing document now invalidates Core's
+  public Product Master query so the master list is current on navigation.
+- Fixed Billing product editing for Core's persisted no-tax sentinel. Product
+  popup writes now submit only Core-owned Product fields, so the sentinel's
+  internal `-1` tax rate is not rejected by Billing validation, and dropdowns
+  display its `-` description instead of `-1%`.
+- Canonicalized newly created Core GST tax records to store only their numeric
+  rate (for example `34`) while Billing product popups and Product Master
+  consistently render the presentation label as `34%`. Existing default tax
+  seed descriptions are normalized repeatably, and the protected no-tax
+  sentinel continues to display as `-`.
+- Made Work Order code mandatory in Quotation, Sales, Purchase, and Export
+  Sales quick-create and edit popups. Missing names or codes now keep the popup
+  open, show a compact top error banner, and highlight the invalid controls
+  without adding per-field helper text. Invalid inputs retain their red border
+  and focus ring while empty, then return to the normal input style as soon as
+  the user enters a valid value.
 
 ## v-1.0.43
 

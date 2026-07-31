@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { productsQueryKey } from "@cxapp/core-web/modules/master/product";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -163,6 +164,7 @@ export function usePurchaseFormController({
         ? updatePurchaseContactAddress(contactId, addressId, payload)
         : createPurchaseContactAddress(contactId, payload)
   });
+  const queryClient = useQueryClient();
   const masterSaveMutation = useMutation({
     mutationFn: ({
       id,
@@ -175,7 +177,12 @@ export function usePurchaseFormController({
     }) =>
       id
         ? updatePurchaseLookup(kind, id, masterPayload(kind, payload))
-        : createPurchaseLookup(kind, masterPayload(kind, payload))
+        : createPurchaseLookup(kind, masterPayload(kind, payload)),
+    onSuccess: async (_record, variables) => {
+      if (variables.kind === "products") {
+        await queryClient.invalidateQueries({ queryKey: productsQueryKey });
+      }
+    }
   });
   const selectedContact = (contactsQuery.data ?? []).find(
     (option) =>
@@ -231,7 +238,9 @@ export function usePurchaseFormController({
   useEffect(() => {
     if (roundOffManual) return;
     setForm((current) =>
-      current.roundOff === suggestedRoundOff ? current : { ...current, roundOff: suggestedRoundOff }
+      Number(current.roundOff || 0) === suggestedRoundOff
+        ? current
+        : { ...current, roundOff: String(suggestedRoundOff) }
     );
   }, [roundOffManual, suggestedRoundOff]);
 
@@ -278,13 +287,11 @@ export function usePurchaseFormController({
     const trimmed = value.trim();
     if (!trimmed) {
       setRoundOffManual(false);
-      patch({ roundOff: suggestedRoundOff });
+      patch({ roundOff: String(suggestedRoundOff) });
       return;
     }
-    const parsed = Number(trimmed);
-    if (Number.isNaN(parsed)) return;
     setRoundOffManual(true);
-    patch({ roundOff: parsed });
+    patch({ roundOff: value });
   }
 
   function resetDraft() {
@@ -332,8 +339,8 @@ export function usePurchaseFormController({
       hsnCodeId: numericId(record?.hsnCodeId),
       productId: numericId(record?.id),
       productName: option?.label ?? value,
-      rate: Number(record?.price ?? record?.openingRate ?? itemDraft.rate ?? 0),
-      taxRate: Math.max(0, Number(record?.taxRate ?? itemDraft.taxRate ?? 0)),
+      rate: String(record?.price ?? record?.openingRate ?? itemDraft.rate ?? ""),
+      taxRate: String(Math.max(0, Number(record?.taxRate ?? itemDraft.taxRate ?? 0))),
       taxId: numericId(record?.taxId),
       unit: record?.unitName ?? itemDraft.unit,
       unitId: Number(record?.unitId ?? itemDraft.unitId ?? 0)

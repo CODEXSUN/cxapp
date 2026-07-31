@@ -1,5 +1,6 @@
 export type PaymentStatus = "draft" | "posted" | "cancelled";
 export type PaymentMode = "cash" | "bank" | "upi" | "transfer";
+export type PaymentDecimalInput = string | number;
 export type PaymentContext = {
   companyId: number;
   companyName: string;
@@ -9,8 +10,12 @@ export type PaymentContext = {
   financialYearName: string;
   suggestedPaymentNumber: string;
 };
-export type PaymentAllocationInput = { allocatedAmount: number; purchaseId: string };
-export type PaymentAllocation = PaymentAllocationInput & {
+export type PaymentAllocationInput = {
+  allocatedAmount: PaymentDecimalInput;
+  purchaseId: string;
+};
+export type PaymentAllocation = Omit<PaymentAllocationInput, "allocatedAmount"> & {
+  allocatedAmount: number;
   documentDate: string;
   documentNo: string;
   documentTotal: number;
@@ -50,11 +55,11 @@ export type Payment = {
 };
 export type PaymentSavePayload = {
   allocations: PaymentAllocationInput[];
-  amount: number;
+  amount: PaymentDecimalInput;
   companyId: number;
   currencyId: number;
   supplierId: number;
-  discountAmount: number;
+  discountAmount: PaymentDecimalInput;
   financialYearId: number;
   ledgerId: number;
   notes: string;
@@ -63,8 +68,8 @@ export type PaymentSavePayload = {
   paymentNumber: string;
   referenceDate: string;
   referenceNo: string;
-  roundOff: number;
-  tdsAmount: number;
+  roundOff: PaymentDecimalInput;
+  tdsAmount: PaymentDecimalInput;
 };
 export type PaymentAllocationCandidate = {
   supplierId: number;
@@ -151,11 +156,11 @@ export type PaymentPageResult = { items: Payment[]; page: number; pageSize: numb
 export function emptyPayment(context?: PaymentContext | null): PaymentSavePayload {
   return {
     allocations: [],
-    amount: 0,
+    amount: "",
     companyId: context?.companyId ?? 0,
     currencyId: context?.currencyId ?? 0,
     supplierId: 0,
-    discountAmount: 0,
+    discountAmount: "",
     financialYearId: context?.financialYearId ?? 0,
     ledgerId: 0,
     notes: "",
@@ -164,22 +169,22 @@ export function emptyPayment(context?: PaymentContext | null): PaymentSavePayloa
     paymentNumber: context?.suggestedPaymentNumber ?? "",
     referenceDate: "",
     referenceNo: "",
-    roundOff: 0,
-    tdsAmount: 0
+    roundOff: "",
+    tdsAmount: ""
   };
 }
 
 export function paymentToPayload(payment: Payment): PaymentSavePayload {
   return {
     allocations: payment.allocations.map(({ allocatedAmount, purchaseId }) => ({
-      allocatedAmount,
+      allocatedAmount: String(allocatedAmount),
       purchaseId
     })),
-    amount: payment.amount,
+    amount: String(payment.amount),
     companyId: payment.companyId,
     currencyId: payment.currencyId,
     supplierId: payment.supplierId,
-    discountAmount: payment.discountAmount,
+    discountAmount: String(payment.discountAmount),
     financialYearId: payment.financialYearId,
     ledgerId: payment.ledgerId,
     notes: payment.notes,
@@ -188,7 +193,7 @@ export function paymentToPayload(payment: Payment): PaymentSavePayload {
     paymentNumber: payment.paymentNumber,
     referenceDate: payment.referenceDate,
     referenceNo: payment.referenceNo,
-    roundOff: payment.roundOff,
-    tdsAmount: payment.tdsAmount
+    roundOff: String(payment.roundOff),
+    tdsAmount: String(payment.tdsAmount)
   };
 }

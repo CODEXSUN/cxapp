@@ -12,12 +12,12 @@ export class TaxesService {
   }
   create(input: TaxesSavePayload) {
     this.validate(input);
-    return this.save(() => this.repository.create(input));
+    return this.save(() => this.repository.create(canonicalTaxPayload(input)));
   }
   async update(id: string, input: TaxesSavePayload) {
     await this.mutable(id);
     this.validate(input);
-    return this.save(() => this.repository.update(id, input));
+    return this.save(() => this.repository.update(id, canonicalTaxPayload(input)));
   }
   async setActive(id: string, isActive: boolean) {
     await this.mutable(id);
@@ -33,9 +33,13 @@ export class TaxesService {
     return record;
   }
   private validate(input: TaxesSavePayload) {
-    if (input.ratePercent === undefined || input.ratePercent === null)
+    if (
+      input.ratePercent === undefined ||
+      input.ratePercent === null ||
+      !Number.isFinite(Number(input.ratePercent)) ||
+      Number(input.ratePercent) < 0
+    )
       throw new Error("Rate percent is required.");
-    if (!String(input.description ?? "").trim()) throw new Error("Description is required.");
   }
   private async save<T>(work: () => Promise<T>) {
     try {
@@ -45,6 +49,11 @@ export class TaxesService {
       throw error;
     }
   }
+}
+
+function canonicalTaxPayload(input: TaxesSavePayload): TaxesSavePayload {
+  const ratePercent = Number(input.ratePercent);
+  return { ...input, description: String(ratePercent), ratePercent };
 }
 
 function isDuplicate(error: unknown): error is { code: string } {

@@ -38,7 +38,7 @@ export type QueueRuntimeSettings = {
   updatedBy: string;
 };
 
-export type QueueBackend = "bullmq-redis" | "database" | "memory";
+export type QueueBackend = "bullmq-redis" | "database";
 
 export type QueueJobFilters = {
   correlationId: string;

@@ -1,5 +1,6 @@
 export type ExportSaleStatus = "draft" | "confirmed" | "cancelled";
 export type ExportSaleTaxType = "cgst-sgst" | "igst";
+export type ExportSaleDecimalInput = string | number;
 export type ExportSaleGstDocumentStatus = "not-generated" | "generated";
 
 export type ExportSaleEwayDetails = {
@@ -41,17 +42,17 @@ export type ExportSaleLineItemInput = {
   poNo: string;
   productName: string;
   productId: number | null;
-  quantity: number;
-  rate: number;
+  quantity: ExportSaleDecimalInput;
+  rate: ExportSaleDecimalInput;
   size: string;
   sizeId: number | null;
   taxId: number | null;
-  taxRate: number;
+  taxRate: ExportSaleDecimalInput;
   unit: string;
   unitId: number;
 };
 
-export type ExportSaleLineItem = ExportSaleLineItemInput & {
+export type ExportSaleLineItem = Omit<ExportSaleLineItemInput, "quantity" | "rate" | "taxRate"> & {
   cgstAmount: number;
   id: string;
   lineNumber: number;
@@ -60,6 +61,9 @@ export type ExportSaleLineItem = ExportSaleLineItemInput & {
   sgstAmount: number;
   taxableAmount: number;
   taxAmount: number;
+  quantity: number;
+  rate: number;
+  taxRate: number;
 };
 
 export type ExportSale = {
@@ -118,7 +122,7 @@ export type ExportSaleSavePayload = {
   items: ExportSaleLineItemInput[];
   notes: string;
   ledgerId: number | null;
-  roundOff?: number;
+  roundOff?: ExportSaleDecimalInput;
   salesLedger: string;
   shippingAddress: string;
   shippingAddressId: number;
@@ -154,7 +158,7 @@ export function createEmptyExportSale(): ExportSaleSavePayload {
     items: [],
     notes: "",
     ledgerId: null,
-    roundOff: 0,
+    roundOff: "",
     invoiceNumber: "",
     salesLedger: "",
     shippingAddress: "",
@@ -196,12 +200,12 @@ export function createEmptyExportSaleItem(): ExportSaleLineItemInput {
     poNo: "",
     productName: "",
     productId: null,
-    quantity: 1,
-    rate: 0,
+    quantity: "1",
+    rate: "",
     size: "",
     sizeId: null,
     taxId: null,
-    taxRate: 18,
+    taxRate: "18",
     unit: "Nos",
     unitId: 0
   };

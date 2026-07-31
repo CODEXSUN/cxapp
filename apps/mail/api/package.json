@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/mail-api",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "private": true,
   "type": "module",
   "exports": {
@@ -14,7 +14,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@cxapp/framework": "^1.0.44",
+    "@cxapp/framework": "^1.0.45",
     "fastify": "^5.2.1",
     "imapflow": "^1.0.195",
     "kysely": "^0.29.0",

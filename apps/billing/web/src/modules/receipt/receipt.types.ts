@@ -1,5 +1,6 @@
 export type ReceiptStatus = "draft" | "posted" | "cancelled";
 export type ReceiptMode = "cash" | "bank" | "upi" | "transfer";
+export type ReceiptDecimalInput = string | number;
 export type ReceiptContext = {
   companyId: number;
   companyName: string;
@@ -9,8 +10,12 @@ export type ReceiptContext = {
   financialYearName: string;
   suggestedReceiptNumber: string;
 };
-export type ReceiptAllocationInput = { allocatedAmount: number; saleId: string };
-export type ReceiptAllocation = ReceiptAllocationInput & {
+export type ReceiptAllocationInput = {
+  allocatedAmount: ReceiptDecimalInput;
+  saleId: string;
+};
+export type ReceiptAllocation = Omit<ReceiptAllocationInput, "allocatedAmount"> & {
+  allocatedAmount: number;
   documentDate: string;
   documentNo: string;
   documentTotal: number;
@@ -50,11 +55,11 @@ export type Receipt = {
 };
 export type ReceiptSavePayload = {
   allocations: ReceiptAllocationInput[];
-  amount: number;
+  amount: ReceiptDecimalInput;
   companyId: number;
   currencyId: number;
   customerId: number;
-  discountAmount: number;
+  discountAmount: ReceiptDecimalInput;
   financialYearId: number;
   ledgerId: number;
   notes: string;
@@ -63,8 +68,8 @@ export type ReceiptSavePayload = {
   receiptNumber: string;
   referenceDate: string;
   referenceNo: string;
-  roundOff: number;
-  tdsAmount: number;
+  roundOff: ReceiptDecimalInput;
+  tdsAmount: ReceiptDecimalInput;
 };
 export type ReceiptAllocationCandidate = {
   customerId: number;
@@ -151,11 +156,11 @@ export type ReceiptPageResult = { items: Receipt[]; page: number; pageSize: numb
 export function emptyReceipt(context?: ReceiptContext | null): ReceiptSavePayload {
   return {
     allocations: [],
-    amount: 0,
+    amount: "",
     companyId: context?.companyId ?? 0,
     currencyId: context?.currencyId ?? 0,
     customerId: 0,
-    discountAmount: 0,
+    discountAmount: "",
     financialYearId: context?.financialYearId ?? 0,
     ledgerId: 0,
     notes: "",
@@ -164,22 +169,22 @@ export function emptyReceipt(context?: ReceiptContext | null): ReceiptSavePayloa
     receiptNumber: context?.suggestedReceiptNumber ?? "",
     referenceDate: "",
     referenceNo: "",
-    roundOff: 0,
-    tdsAmount: 0
+    roundOff: "",
+    tdsAmount: ""
   };
 }
 
 export function receiptToPayload(receipt: Receipt): ReceiptSavePayload {
   return {
     allocations: receipt.allocations.map(({ allocatedAmount, saleId }) => ({
-      allocatedAmount,
+      allocatedAmount: String(allocatedAmount),
       saleId
     })),
-    amount: receipt.amount,
+    amount: String(receipt.amount),
     companyId: receipt.companyId,
     currencyId: receipt.currencyId,
     customerId: receipt.customerId,
-    discountAmount: receipt.discountAmount,
+    discountAmount: String(receipt.discountAmount),
     financialYearId: receipt.financialYearId,
     ledgerId: receipt.ledgerId,
     notes: receipt.notes,
@@ -188,7 +193,7 @@ export function receiptToPayload(receipt: Receipt): ReceiptSavePayload {
     receiptNumber: receipt.receiptNumber,
     referenceDate: receipt.referenceDate,
     referenceNo: receipt.referenceNo,
-    roundOff: receipt.roundOff,
-    tdsAmount: receipt.tdsAmount
+    roundOff: String(receipt.roundOff),
+    tdsAmount: String(receipt.tdsAmount)
   };
 }

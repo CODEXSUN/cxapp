@@ -153,7 +153,7 @@ export function ProductForm({
                 loading={lookupsLoading}
                 options={lookups.taxes.map((item) => ({
                   description: item.description,
-                  label: `${item.ratePercent}%`,
+                  label: taxRateLabel(item),
                   meta: "GST",
                   value: String(item.id)
                 }))}
@@ -164,14 +164,13 @@ export function ProductForm({
                     initialName={initialName.replace(/%/g, "")}
                     inputType="number"
                     nameLabel="Tax rate (%)"
-                    secondaryLabel="Description"
                     title="Create GST tax"
                     onCancel={onCancel}
-                    onCreate={async (rate, description) => {
-                      const created = await createLookup.tax(Number(rate), description);
+                    onCreate={async (rate) => {
+                      const created = await createLookup.tax(Number(rate));
                       onCreated({
                         description: created.description,
-                        label: `${created.ratePercent}%`,
+                        label: taxRateLabel(created),
                         meta: "GST",
                         value: String(created.id)
                       });
@@ -286,7 +285,7 @@ function ReferenceCreateForm({
   nameLabel: string;
   onCancel: () => void;
   onCreate: (name: string, secondary: string) => Promise<void>;
-  secondaryLabel: string;
+  secondaryLabel?: string;
   title: string;
 }) {
   const [name, setName] = useState(initialName);
@@ -321,9 +320,11 @@ function ReferenceCreateForm({
             onChange={(event) => setName(event.target.value)}
           />
         </WorkspaceFormField>
-        <WorkspaceFormField label={secondaryLabel} required>
-          <Input value={secondary} onChange={(event) => setSecondary(event.target.value)} />
-        </WorkspaceFormField>
+        {secondaryLabel ? (
+          <WorkspaceFormField label={secondaryLabel} required>
+            <Input value={secondary} onChange={(event) => setSecondary(event.target.value)} />
+          </WorkspaceFormField>
+        ) : null}
         {error ? (
           <WorkspaceFormBanner title={`Unable to ${title.toLowerCase()}`}>
             {error}
@@ -339,7 +340,7 @@ function ReferenceCreateForm({
           disabled={
             saving ||
             !name.trim() ||
-            !secondary.trim() ||
+            (Boolean(secondaryLabel) && !secondary.trim()) ||
             (inputType === "number" && !Number.isFinite(Number(name)))
           }
         >
@@ -403,4 +404,9 @@ function toNamedOption(item: { id: number; name: string }): WorkspaceLookupOptio
 }
 function numberOrNull(value: string) {
   return value ? Number(value) : null;
+}
+
+function taxRateLabel(item: { description: string; ratePercent: number }) {
+  if (item.ratePercent < 0 || item.description.trim() === "-") return "-";
+  return `${item.ratePercent}%`;
 }

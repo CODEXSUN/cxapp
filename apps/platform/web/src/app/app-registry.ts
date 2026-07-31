@@ -21,11 +21,9 @@ import {
   SendIcon,
   ShieldCheckIcon,
   Trash2Icon,
-  WrenchIcon,
   type LucideIcon
 } from "lucide-react";
 import type { SidemenuItem } from "@cxapp/ui/blocks/menu/sidemenu/sub/sidemenu-section";
-import { devkitWebBundle } from "@cxapp/devkit-web";
 
 export type PlatformAppId = "application" | "billing" | "devkit" | "mail" | "task-manager";
 
@@ -43,28 +41,17 @@ export type PlatformAppDefinition = {
   icon: LucideIcon;
   label: string;
   moduleKey: string;
-  stack: "platform" | "billing" | "devkit" | "mail";
+  stack: "platform" | "billing" | "devkit" | "mail" | "platform-task-manager";
 };
 
 export const defaultTenantModuleKeys = [
   "platform.application",
   "billing.sales",
-  "devkit",
-  "mail"
+  "mail",
+  "platform.task-manager"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
-  {
-    accentClass: "bg-violet-700",
-    alwaysEnabled: false,
-    defaultLanding: false,
-    description: "Platform application and module registry.",
-    icon: WrenchIcon,
-    id: "devkit",
-    label: "DevKit",
-    moduleKey: "devkit",
-    stack: "devkit"
-  },
   {
     accentClass: "bg-slate-950",
     alwaysEnabled: true,
@@ -98,6 +85,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Mail",
     moduleKey: "mail",
     stack: "mail"
+  },
+  {
+    accentClass: "bg-violet-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant-owned Todo planning backed by the live tenant database.",
+    icon: ClipboardListIcon,
+    id: "task-manager",
+    label: "Task Manager",
+    moduleKey: "platform.task-manager",
+    stack: "platform-task-manager"
   }
 ];
 
@@ -113,7 +111,7 @@ export function normalizeModuleKeys(moduleKeys: string[]) {
 export function enabledAppIds(moduleKeys: string[]) {
   const enabled = new Set(normalizeModuleKeys(moduleKeys));
   return platformAppRegistry
-    .filter((app) => app.alwaysEnabled || enabled.has(app.moduleKey))
+    .filter((app) => app.id !== "devkit" && (app.alwaysEnabled || enabled.has(app.moduleKey)))
     .map((app) => app.id);
 }
 
@@ -364,12 +362,21 @@ export function appMenuItemsFor(
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures
 ): SidemenuItem[] {
-  if (appId === "devkit") {
-    const activeWorkspace = activePage
-      .replace(/^devkit\./u, "")
-      .replace("design-system.components", "design-system-components")
-      .replace("design-system.templates", "design-system-templates");
-    return devkitWebBundle.menuItems(activeWorkspace);
+  if (appId === "task-manager") {
+    return [
+      {
+        icon: CircleGaugeIcon,
+        isActive: activePage === "task-manager.overview",
+        onSelect: () => onSelect("task-manager.overview"),
+        title: "Overview"
+      },
+      {
+        icon: ClipboardListIcon,
+        isActive: activePage === "task-manager.todos",
+        onSelect: () => onSelect("task-manager.todos"),
+        title: "Todo"
+      }
+    ];
   }
   if (appId === "mail") {
     return [
@@ -692,8 +699,8 @@ export function appWorkspaceItems(enabledApps: PlatformAppId[], activeApp: Platf
 export const applicationPageIcons = {
   application: Building2Icon,
   billing: CreditCardIcon,
-  devkit: WrenchIcon,
-  mail: MailIcon
+  mail: MailIcon,
+  taskManager: ClipboardListIcon
 };
 
 function commonMasterMenuGroups(

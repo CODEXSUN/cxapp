@@ -21,16 +21,16 @@ const lookupBodySchema = coreLookupMutationSchema;
 const modeSchema = z.enum(["cash", "bank", "upi", "transfer"]);
 const statusSchema = z.enum(["draft", "posted", "cancelled"]);
 const allocationInputSchema = z.object({
-  allocatedAmount: z.number().positive(),
+  allocatedAmount: z.coerce.number().finite().positive(),
   purchaseId: z.string().regex(/^[0-9a-f]{8}$/)
 });
 const payloadSchema = z.object({
   allocations: z.array(allocationInputSchema),
-  amount: z.number().nonnegative(),
+  amount: z.coerce.number().finite().nonnegative(),
   companyId: z.number().int().positive(),
   currencyId: z.number().int().positive(),
   supplierId: z.number().int().positive(),
-  discountAmount: z.number().nonnegative(),
+  discountAmount: z.coerce.number().finite().nonnegative(),
   financialYearId: z.number().int().positive(),
   ledgerId: z.number().int().nonnegative(),
   notes: z.string(),
@@ -39,8 +39,8 @@ const payloadSchema = z.object({
   paymentNumber: z.string(),
   referenceDate: z.union([z.iso.date(), z.literal("")]),
   referenceNo: z.string(),
-  roundOff: z.number(),
-  tdsAmount: z.number().nonnegative()
+  roundOff: z.coerce.number().finite(),
+  tdsAmount: z.coerce.number().finite().nonnegative()
 });
 const allocationSchema = allocationInputSchema.extend({
   documentDate: z.string(),

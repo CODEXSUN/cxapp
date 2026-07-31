@@ -4,6 +4,7 @@ import { Input } from "@cxapp/ui/components/input";
 import { Label } from "@cxapp/ui/components/label";
 import { cn } from "@cxapp/ui/lib/utils";
 import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
+import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { useState } from "react";
@@ -21,7 +22,11 @@ import {
   type QuotationLookupRecord,
   type QuotationMasterSavePayload
 } from "./quotation.services";
-import { type QuotationSavePayload, type QuotationTaxType } from "./quotation.types";
+import {
+  type QuotationDecimalInput,
+  type QuotationSavePayload,
+  type QuotationTaxType
+} from "./quotation.types";
 
 export function QuotationProductQuickForm({
   initialValue,
@@ -37,6 +42,8 @@ export function QuotationProductQuickForm({
   title: string;
 }) {
   const [form, setForm] = useState(initialValue);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [validationError, setValidationError] = useState("");
   const categoriesQuery = useQuery({
     queryFn: listQuotationProductCategories,
     queryKey: ["billing", "quotation", "lookups", "product-categories"]
@@ -55,7 +62,25 @@ export function QuotationProductQuickForm({
   });
 
   function patchProduct(next: Partial<QuotationMasterSavePayload>) {
+    if (next.name !== undefined) setValidationError("");
     setForm((current) => ({ ...current, ...next }));
+  }
+
+  function submitProduct() {
+    setSaveAttempted(true);
+    if (!form.name.trim()) {
+      setValidationError("Product name is required.");
+      return;
+    }
+    const openingRate = String(form.openingRate).trim();
+    if (openingRate && (!Number.isFinite(Number(openingRate)) || Number(openingRate) < 0)) {
+      setValidationError("Opening price must be a valid non-negative decimal.");
+      return;
+    }
+    setValidationError("");
+    void onSave(form).catch((error: unknown) =>
+      setValidationError(error instanceof Error ? error.message : "Unable to save product.")
+    );
   }
 
   async function createOption(
@@ -63,17 +88,28 @@ export function QuotationProductQuickForm({
     name: string
   ) {
     const value = name.trim();
+    const taxRate = kind === "taxes" ? parseTaxRate(value) : null;
+    if (kind === "taxes" && taxRate === null) {
+      const error = new Error("Enter a valid non-negative GST tax rate.");
+      setValidationError(error.message);
+      throw error;
+    }
     const payload =
       kind === "hsnCodes"
         ? { code: value.toUpperCase(), description: value, isActive: true }
         : kind === "taxes"
           ? {
-              description: `GST ${Number(value.replace(/%/g, "")) || 0}%`,
+              description: String(taxRate),
               isActive: true,
-              ratePercent: Number(value.replace(/%/g, "")) || 0
+              ratePercent: taxRate
             }
           : { isActive: true, name: value };
-    const created = await createQuotationLookup(kind, payload);
+    const created = await createQuotationLookup(kind, payload).catch((error: unknown) => {
+      setValidationError(
+        error instanceof Error ? error.message : "Unable to create the selected lookup."
+      );
+      throw error;
+    });
     const query = {
       productCategories: categoriesQuery,
       hsnCodes: hsnCodesQuery,
@@ -85,35 +121,48 @@ export function QuotationProductQuickForm({
       `${kind === "productCategories" ? "Product category" : kind === "hsnCodes" ? "HSN code" : kind === "units" ? "Unit" : "GST tax rate"} saved`,
       { description: value }
     );
-    return created;
+    return kind === "taxes" ? { ...created, name: taxRateLabel(created) } : created;
   }
 
-  const categoryOptions = (categoriesQuery.data ?? []).map(quotationCommonOption);
+  const categoryOptions = (categoriesQuery.data ?? []).map((record) => ({
+    ...quotationCommonOption(record),
+    value: String(record.id)
+  }));
   const hsnOptions = (hsnCodesQuery.data ?? []).map((record) => ({
     ...quotationCommonOption(record),
     label: record.code || record.name || record.id,
     value: String(record.id)
   }));
-  const unitOptions = (unitsQuery.data ?? []).map(quotationCommonOption);
+  const unitOptions = (unitsQuery.data ?? []).map((record) => ({
+    ...quotationCommonOption(record),
+    value: String(record.id)
+  }));
   const taxOptions = (taxesQuery.data ?? []).map((record) => ({
     ...quotationCommonOption(record),
-    label: record.name || record.code || `${record.ratePercent ?? record.taxRate ?? 0}%`,
+    label: taxRateLabel(record),
     value: String(record.id)
   }));
 
   return (
     <form
       className="grid gap-0"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        void onSave(form);
+        submitProduct();
       }}
     >
       <DialogHeader className="border-b border-border/80 px-5 py-4 pr-12">
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
       <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
+        {validationError ? (
+          <WorkspaceFormBanner className="mb-0 sm:col-span-2" title="Unable to save product">
+            {validationError}
+          </WorkspaceFormBanner>
+        ) : null}
         <ContactQuickField
+          invalid={saveAttempted && !form.name.trim()}
           label="Product name"
           required
           value={form.name}
@@ -173,10 +222,18 @@ export function QuotationProductQuickForm({
           }}
         />
         <ContactQuickField
+          inputMode="decimal"
+          invalid={
+            saveAttempted &&
+            Boolean(
+              String(form.openingRate).trim() &&
+              (!Number.isFinite(Number(form.openingRate)) || Number(form.openingRate) < 0)
+            )
+          }
           label="Opening price"
-          type="number"
+          type="text"
           value={String(form.openingRate)}
-          onChange={(openingRate) => patchProduct({ openingRate: Number(openingRate || 0) })}
+          onChange={(openingRate) => patchProduct({ openingRate })}
         />
       </div>
       <DialogFooter className="border-t border-border/80 px-5 py-4">
@@ -184,13 +241,24 @@ export function QuotationProductQuickForm({
           <X className="size-4" />
           Cancel
         </Button>
-        <Button disabled={loading || !form.name.trim()} type="submit">
+        <Button disabled={loading} type="submit">
           <Save className="size-4" />
           Save product
         </Button>
       </DialogFooter>
     </form>
   );
+}
+
+function parseTaxRate(value: string) {
+  const parsed = Number(value.replace(/gst/gi, "").replace(/%/g, "").trim());
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function taxRateLabel(record: QuotationLookupRecord) {
+  const rate = Number(record.ratePercent ?? record.taxRate);
+  if (rate < 0 || record.description?.trim() === "-") return "-";
+  return Number.isFinite(rate) ? `${rate}%` : "-";
 }
 
 export function ProductPopupLookup({
@@ -227,21 +295,27 @@ export function ProductPopupLookup({
         placeholder={placeholder}
         value={value}
         {...(sanitize ? { sanitizeInput: sanitize } : {})}
-        onCreate={async (name) =>
-          quotationCommonOption(await onCreate(sanitize ? sanitize(name) : name))
-        }
+        onCreate={async (name) => {
+          const record = await onCreate(sanitize ? sanitize(name) : name);
+          return { ...quotationCommonOption(record), value: String(record.id) };
+        }}
         onValueChange={onValueChange}
       />
     </label>
   );
 }
 
+export function quotationDecimalValue(value: string | number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function computeQuotationLine(
   item: QuotationSavePayload["items"][number],
   taxType: QuotationTaxType
 ) {
-  const taxableAmount = Number(item.quantity || 0) * Number(item.rate || 0);
-  const taxAmount = (taxableAmount * Number(item.taxRate || 0)) / 100;
+  const taxableAmount = quotationDecimalValue(item.quantity) * quotationDecimalValue(item.rate);
+  const taxAmount = (taxableAmount * quotationDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
   const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
   const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
@@ -307,7 +381,7 @@ export function RoundOffRow({
 }: {
   manual: boolean;
   suggestedValue: number;
-  value: number;
+  value: QuotationDecimalInput;
   onChange: (value: string) => void;
   onReset: () => void;
 }) {

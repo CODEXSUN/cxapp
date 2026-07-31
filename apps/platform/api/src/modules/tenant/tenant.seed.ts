@@ -141,11 +141,19 @@ export async function seedDefaultTenant() {
 }
 
 export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, tenant: Tenant) {
-  const enabledKeys = new Set(["platform.application", ...tenant.enabledModuleKeys]);
+  const enabledKeys = new Set(
+    ["platform.application", ...tenant.enabledModuleKeys].filter((key) => key !== "devkit")
+  );
   const moduleKeys = Array.from(enabledKeys);
   console.info(
     `[seeder] seeding tenant "${tenant.tenantCode}" app modules (${moduleKeys.length} modules)`
   );
+
+  await database
+    .updateTable("app_module_settings")
+    .set({ enabled: false, status: "inactive", updated_at: sql`CURRENT_TIMESTAMP` })
+    .where("module_key", "=", "devkit")
+    .execute();
 
   for (const moduleKey of moduleKeys) {
     const settingsJson = JSON.stringify({
@@ -225,7 +233,9 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
   const configuredApps = stringArray(apps.enabled);
   if (
     defaultTenantModuleKeys.every((key) => tenant.enabledModuleKeys.includes(key)) &&
-    defaultTenantModuleKeys.every((key) => configuredApps.includes(key))
+    defaultTenantModuleKeys.every((key) => configuredApps.includes(key)) &&
+    !tenant.enabledModuleKeys.includes("devkit") &&
+    !configuredApps.includes("devkit")
   ) {
     return tenant;
   }
@@ -234,13 +244,21 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
     (await repository.update(String(tenant.id), {
       ...tenant,
       enabledModuleKeys: Array.from(
-        new Set([...defaultTenantModuleKeys, ...tenant.enabledModuleKeys])
+        new Set(
+          [...defaultTenantModuleKeys, ...tenant.enabledModuleKeys].filter(
+            (key) => key !== "devkit"
+          )
+        )
       ).sort(),
       payloadSettings: {
         ...tenant.payloadSettings,
         apps: {
           ...apps,
-          enabled: Array.from(new Set([...defaultTenantModuleKeys, ...configuredApps])).sort()
+          enabled: Array.from(
+            new Set(
+              [...defaultTenantModuleKeys, ...configuredApps].filter((key) => key !== "devkit")
+            )
+          ).sort()
         }
       }
     })) ?? tenant

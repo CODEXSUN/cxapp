@@ -8,7 +8,11 @@ import {
   type ExportSaleLookupOption,
   type ExportSaleLookupRecord
 } from "./export-sales.services";
-import { type ExportSaleSavePayload, type ExportSaleTaxType } from "./export-sales.types";
+import {
+  type ExportSaleDecimalInput,
+  type ExportSaleSavePayload,
+  type ExportSaleTaxType
+} from "./export-sales.types";
 
 export function ProductPopupLookup({
   label,
@@ -44,21 +48,27 @@ export function ProductPopupLookup({
         placeholder={placeholder}
         value={value}
         {...(sanitize ? { sanitizeInput: sanitize } : {})}
-        onCreate={async (name) =>
-          exportSaleCommonOption(await onCreate(sanitize ? sanitize(name) : name))
-        }
+        onCreate={async (name) => {
+          const record = await onCreate(sanitize ? sanitize(name) : name);
+          return { ...exportSaleCommonOption(record), value: String(record.id) };
+        }}
         onValueChange={onValueChange}
       />
     </label>
   );
 }
 
+export function exportSaleDecimalValue(value: string | number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function computeExportSaleLine(
   item: ExportSaleSavePayload["items"][number],
   taxType: ExportSaleTaxType
 ) {
-  const taxableAmount = Number(item.quantity || 0) * Number(item.rate || 0);
-  const taxAmount = (taxableAmount * Number(item.taxRate || 0)) / 100;
+  const taxableAmount = exportSaleDecimalValue(item.quantity) * exportSaleDecimalValue(item.rate);
+  const taxAmount = (taxableAmount * exportSaleDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
   const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
   const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
@@ -124,7 +134,7 @@ export function RoundOffRow({
 }: {
   manual: boolean;
   suggestedValue: number;
-  value: number;
+  value: ExportSaleDecimalInput;
   onChange: (value: string) => void;
   onReset: () => void;
 }) {

@@ -1,15 +1,18 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "../../shared/api/platform-api";
+import { apiDelete, apiGet, apiPost, apiPut, type Desk } from "../../shared/api/platform-api";
 import type { Todo, TodoInput, TodoLookup, TodoLookupKind, TodoStatus } from "./task-manager.types";
-export const listTodos = () => apiGet<Todo[]>("/task-manager/todos", "sa");
-export const listTodoLookups = () => apiGet<TodoLookup[]>("/task-manager/lookups", "sa");
-export const createTodoLookup = (kind: TodoLookupKind, name: string) =>
-  apiPost<TodoLookup>("/task-manager/lookups", { kind, name }, "sa");
-export const createTodo = (input: TodoInput) => apiPost<Todo>("/task-manager/todos", input, "sa");
-export const reorderTodos = (orderedIds: string[]) =>
-  apiPost<Todo[]>("/task-manager/todos/reorder", { orderedIds }, "sa");
-export const updateTodo = (id: string, input: Partial<TodoInput>) =>
-  apiPut<Todo>(`/task-manager/todos/${id}`, input, "sa");
-export const setTodoStatus = (id: string, status: TodoStatus) =>
-  apiPost<Todo>(`/task-manager/todos/${id}/status`, { status }, "sa");
-export const deleteTodo = (id: string) =>
-  apiDelete<{ id: string; deleted: boolean }>(`/task-manager/todos/${id}`, "sa");
+export type TaskManagerDesk = Extract<Desk, "sa" | "tenant">;
+export const listTodos = (desk: TaskManagerDesk) => apiGet<Todo[]>("/task-manager/todos", desk);
+export const listTodoLookups = (desk: TaskManagerDesk) =>
+  apiGet<TodoLookup[]>("/task-manager/lookups", desk);
+export const createTodoLookup = (desk: TaskManagerDesk, kind: TodoLookupKind, name: string) =>
+  apiPost<TodoLookup>("/task-manager/lookups", { kind, name }, desk);
+export const createTodo = (desk: TaskManagerDesk, input: TodoInput) =>
+  apiPost<Todo>("/task-manager/todos", input, desk);
+export const reorderTodos = (desk: TaskManagerDesk, orderedIds: string[]) =>
+  apiPost<Todo[]>("/task-manager/todos/reorder", { orderedIds }, desk);
+export const updateTodo = (desk: TaskManagerDesk, id: string, input: Partial<TodoInput>) =>
+  apiPut<Todo>(`/task-manager/todos/${id}`, input, desk);
+export const setTodoStatus = (desk: TaskManagerDesk, id: string, status: TodoStatus) =>
+  apiPost<Todo>(`/task-manager/todos/${id}/status`, { status }, desk);
+export const deleteTodo = (desk: TaskManagerDesk, id: string) =>
+  apiDelete<{ id: string; deleted: boolean }>(`/task-manager/todos/${id}`, desk);

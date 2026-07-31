@@ -78,8 +78,13 @@ export const createUnitLookup = (name: string) =>
     body: JSON.stringify({ name, isActive: true, sortOrder: 1000 }),
     method: "POST"
   });
-export const createTaxLookup = (ratePercent: number, description: string) =>
+export const createTaxLookup = (ratePercent: number) =>
   request<ProductTaxLookup>("/core/common/products/taxes", {
-    body: JSON.stringify({ ratePercent, description, isActive: true, sortOrder: 1000 }),
+    body: JSON.stringify({
+      ratePercent,
+      description: String(ratePercent),
+      isActive: true,
+      sortOrder: 1000
+    }),
     method: "POST"
   });

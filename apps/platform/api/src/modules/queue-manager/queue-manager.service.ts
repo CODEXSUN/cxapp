@@ -5,17 +5,10 @@ import { probeBullMq, publishBullMqJob } from "./queue-manager.bullmq.js";
 import type {
   QueueBackend,
   QueueJobFilters,
-  QueueJobPayload,
-  QueueJobRecord
+  QueueJobPayload
 } from "./queue-manager.types.js";
 import { processMailJob } from "@cxapp/mail-api";
 import { getTenantDatabaseByName } from "../../database/tenant-database.js";
-import {
-  enqueueMemoryJob,
-  nextMemoryJobId,
-  primeMemoryJobs,
-  removeMemoryJob
-} from "./queue-manager.memory.js";
 
 export class QueueManagerService {
   constructor(
@@ -40,7 +33,6 @@ export class QueueManagerService {
     if (job) {
       const backend = await this.repository.backend();
       if (backend === "bullmq-redis") await publishBullMqJob(job);
-      if (backend === "memory") enqueueMemoryJob(job.id);
     }
     return job;
   }
@@ -95,8 +87,7 @@ export class QueueManagerService {
   async runNextJob() {
     const backend = await this.repository.backend();
     if (backend === "bullmq-redis") return null;
-    const job =
-      backend === "memory" ? await this.findNextMemoryJob() : await this.repository.nextRunnable();
+    const job = await this.repository.nextRunnable();
     return job ? this.runJob(job.id) : null;
   }
 
@@ -105,7 +96,6 @@ export class QueueManagerService {
     if (!job) return null;
     const backend = await this.repository.backend();
     if (backend === "bullmq-redis") await publishBullMqJob(job);
-    if (backend === "memory") enqueueMemoryJob(job.id);
     await this.activity.recordActivity({
       action: "queue.job.retried",
       moduleKey: "platform.queue-manager",
@@ -119,7 +109,6 @@ export class QueueManagerService {
   async cancelJob(id: number) {
     const job = await this.repository.cancel(id);
     if (!job) return null;
-    removeMemoryJob(id);
     await this.activity.recordActivity({
       action: "queue.job.cancelled",
       moduleKey: "platform.queue-manager",
@@ -143,10 +132,6 @@ export class QueueManagerService {
   async switchBackend(backend: QueueBackend, actorEmail: string) {
     if (backend === "bullmq-redis") await probeBullMq();
     const settings = await this.repository.setBackend(backend, actorEmail);
-    if (backend === "memory") {
-      const pending = await this.repository.list({ status: "pending" });
-      primeMemoryJobs(pending.map((job) => job.id));
-    }
     if (backend === "bullmq-redis") {
       const pending = await this.repository.list({ status: "pending" });
       for (const job of pending) await publishBullMqJob(job);
@@ -163,18 +148,6 @@ export class QueueManagerService {
 
   currentBackend() {
     return this.repository.backend();
-  }
-
-  private async findNextMemoryJob(): Promise<QueueJobRecord | null> {
-    let id = nextMemoryJobId();
-    if (!id) {
-      const pending = await this.repository.list({ status: "pending" });
-      primeMemoryJobs(pending.map((job) => job.id));
-      id = nextMemoryJobId();
-    }
-    if (!id) return null;
-    const job = await this.repository.find(id);
-    return job?.status === "pending" ? job : this.findNextMemoryJob();
   }
 
   private async dispatch(jobName: string, payload: Record<string, unknown>) {
