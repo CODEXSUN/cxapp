@@ -25,10 +25,10 @@ export function requirePlatformAccess(input: {
 }) {
   const authorization = headerValue(input.authorization);
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) throw AppError.unauthorized("Platform authentication is required.");
+  if (!token) throw sessionExpired("Platform authentication is required.");
 
   const claims = verify(token, input.secret);
-  if (!claims) throw AppError.unauthorized("Platform session is invalid or expired.");
+  if (!claims) throw sessionExpired("Platform session is invalid or expired.");
   if (
     input.allowedUserTypes &&
     !input.allowedUserTypes.includes(claims.userType as PlatformUserType)
@@ -44,14 +44,19 @@ export function requireTenantAccess(input: {
   tenantDatabase: string;
   tenantId: string | string[] | undefined;
 }) {
-  const tenantId = headerValue(input.tenantId);
-  if (!tenantId) throw AppError.unauthorized("Tenant authentication is required.");
-
   const claims = requirePlatformAccess({
     allowedUserTypes: ["tenant"],
     authorization: input.authorization,
     secret: input.secret
   });
+  const tenantId = headerValue(input.tenantId);
+  if (!tenantId) {
+    throw new AppError({
+      code: "AUTH_TENANT_CONTEXT_MISSING",
+      message: "Tenant authentication context is required.",
+      statusCode: 401
+    });
+  }
   if (
     claims.userType !== "tenant" ||
     claims.tenantId !== tenantId ||
@@ -60,6 +65,10 @@ export function requireTenantAccess(input: {
     throw AppError.forbidden("Tenant session does not match the requested tenant database.");
   }
   return claims;
+}
+
+function sessionExpired(message: string) {
+  return new AppError({ code: "AUTH_SESSION_EXPIRED", message, statusCode: 401 });
 }
 
 function verify(token: string, secret: string): PlatformAccessClaims | null {

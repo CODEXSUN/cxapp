@@ -1,8 +1,7 @@
-import { loadEnv, platformApiUrl } from "@cxapp/framework/env";
+import { loadEnv } from "@cxapp/framework/env";
 import { z } from "zod";
 
 const envSchema = z.object({
-  PLATFORM_API_PORT: z.coerce.number().int().positive(),
   DB_HOST: z.string().min(1),
   DB_MASTER_NAME: z.string().min(1, "DB_MASTER_NAME is required"),
   DB_PASSWORD: z.string().min(1),
@@ -13,4 +12,3 @@ const envSchema = z.object({
 });
 
 export const env = loadEnv(envSchema);
-export const platformApiBaseUrl = platformApiUrl(env.PLATFORM_API_PORT);

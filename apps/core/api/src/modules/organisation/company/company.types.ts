@@ -109,3 +109,5 @@ export type CompanySaveInput = {
   bankAccounts?: CompanyBankAccount[] | undefined;
   socialLinks?: CompanySocialLink[] | undefined;
 };
+
+export type CompanyIndustryNameResolver = (industryId: number) => Promise<string | null>;

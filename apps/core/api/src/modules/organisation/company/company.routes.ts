@@ -3,9 +3,9 @@ import { z } from "zod";
 import { AppError } from "@cxapp/framework/errors";
 import { registerContractRoute } from "@cxapp/framework/http";
 import { CompanyService } from "./company.service.js";
+import type { CompanyIndustryNameResolver } from "./company.types.js";
 
 export const COMPANY_COLLECTION_PATH = "/core/organisation/companies";
-const service = new CompanyService();
 const idSchema = z.object({ id: z.string().regex(/^\d+$/, "Company ID must be numeric.") });
 const nullableString = z.string().trim().nullable();
 const nullableId = z.number().int().positive().nullable();
@@ -122,7 +122,11 @@ const payloadSchema = z.object({
   socialLinks: z.array(socialLinkSchema).optional()
 });
 const querySchema = z.object({ search: z.string().trim().optional() });
-export async function registerCompanyRoutes(app: FastifyInstance) {
+export async function registerCompanyRoutes(
+  app: FastifyInstance,
+  industryNameResolver: CompanyIndustryNameResolver
+) {
+  const service = new CompanyService(undefined, industryNameResolver);
   registerContractRoute(app, {
     handler: ({ query }) => service.list(query.search ?? ""),
     method: "GET",
@@ -136,20 +140,19 @@ export async function registerCompanyRoutes(app: FastifyInstance) {
     url: `${COMPANY_COLLECTION_PATH}/:id`
   });
   registerContractRoute(app, {
-    handler: ({ body, request }) => service.create(body, request.headers.authorization),
+    handler: ({ body }) => service.create(body),
     method: "POST",
     schemas: { body: payloadSchema, response: companySchema },
     url: COMPANY_COLLECTION_PATH
   });
   registerContractRoute(app, {
-    handler: async ({ body, params, request }) =>
-      required(await service.update(params.id, body, request.headers.authorization)),
+    handler: async ({ body, params }) => required(await service.update(params.id, body)),
     method: "PUT",
     schemas: { body: payloadSchema, params: idSchema, response: companySchema },
     url: `${COMPANY_COLLECTION_PATH}/:id`
   });
-  lifecycle(app, "activate", true);
-  lifecycle(app, "deactivate", false);
+  lifecycle(app, service, "activate", true);
+  lifecycle(app, service, "deactivate", false);
   registerContractRoute(app, {
     handler: async ({ params }) => required(await service.forceDelete(params.id)),
     method: "DELETE",
@@ -157,7 +160,12 @@ export async function registerCompanyRoutes(app: FastifyInstance) {
     url: `${COMPANY_COLLECTION_PATH}/:id/force`
   });
 }
-function lifecycle(app: FastifyInstance, action: "activate" | "deactivate", active: boolean) {
+function lifecycle(
+  app: FastifyInstance,
+  service: CompanyService,
+  action: "activate" | "deactivate",
+  active: boolean
+) {
   registerContractRoute(app, {
     handler: async ({ params }) => required(await service.setActive(params.id, active)),
     method: "POST",

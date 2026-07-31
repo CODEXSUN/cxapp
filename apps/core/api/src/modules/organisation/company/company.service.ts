@@ -1,21 +1,28 @@
 import { AppError } from "@cxapp/framework/errors";
-import { platformApiBaseUrl } from "../../../env.js";
 import { CompanyRepository } from "./company.repository.js";
-import type { CompanyAddress, CompanyBankAccount, CompanySaveInput } from "./company.types.js";
+import type {
+  CompanyAddress,
+  CompanyBankAccount,
+  CompanyIndustryNameResolver,
+  CompanySaveInput
+} from "./company.types.js";
 
 export class CompanyService {
-  constructor(private readonly repository = new CompanyRepository()) {}
+  constructor(
+    private readonly repository = new CompanyRepository(),
+    private readonly industryNameResolver?: CompanyIndustryNameResolver
+  ) {}
   list(search = "") {
     return this.repository.list(search);
   }
   find(id: string) {
     return this.repository.find(id);
   }
-  async create(input: CompanySaveInput, authorization?: string) {
-    return this.repository.create(await this.resolveReferences(input, authorization));
+  async create(input: CompanySaveInput) {
+    return this.repository.create(await this.resolveReferences(input));
   }
-  async update(id: string, input: CompanySaveInput, authorization?: string) {
-    return this.repository.update(id, await this.resolveReferences(input, authorization));
+  async update(id: string, input: CompanySaveInput) {
+    return this.repository.update(id, await this.resolveReferences(input));
   }
   setActive(id: string, active: boolean) {
     return this.repository.setActive(id, active);
@@ -25,11 +32,8 @@ export class CompanyService {
       throw AppError.conflict("This company is selected as the Default Company.");
     return this.repository.forceDelete(id);
   }
-  private async resolveReferences(
-    input: CompanySaveInput,
-    authorization?: string
-  ): Promise<CompanySaveInput> {
-    const industryName = await this.resolveIndustryName(input.industryId, authorization);
+  private async resolveReferences(input: CompanySaveInput): Promise<CompanySaveInput> {
+    const industryName = await this.resolveIndustryName(input.industryId);
     const addresses = input.addresses
       ? await Promise.all(input.addresses.map((address) => this.resolveAddress(address)))
       : undefined;
@@ -43,28 +47,14 @@ export class CompanyService {
       ...(bankAccounts ? { bankAccounts } : {})
     };
   }
-  private async resolveIndustryName(industryId: number | null | undefined, authorization?: string) {
+  private async resolveIndustryName(industryId: number | null | undefined) {
     if (industryId === undefined) return undefined;
     if (industryId === null) return null;
-    if (!authorization)
-      throw AppError.unauthorized("Industry validation requires a tenant session.");
-    let response: Response;
-    try {
-      response = await fetch(`${platformApiBaseUrl}/tenant/industries`, {
-        headers: { Accept: "application/json", Authorization: authorization }
-      });
-    } catch {
-      throw AppError.internal("Unable to reach Platform Industry lookup.");
-    }
-    if (response.status === 401 || response.status === 403) {
-      throw AppError.forbidden("Industry validation requires an active tenant session.");
-    }
-    if (!response.ok) throw AppError.internal("Platform Industry lookup failed.");
-    const body = (await response.json()) as IndustryEnvelope;
-    if (!body.success) throw AppError.internal(body.error.message);
-    const industry = body.data.find((item) => item.id === industryId && item.status === "active");
-    if (!industry) throw AppError.validation("Selected industry was not found or is inactive.");
-    return industry.name;
+    if (!this.industryNameResolver)
+      throw AppError.internal("Platform Industry lookup is not configured for Core.");
+    const name = await this.industryNameResolver(industryId);
+    if (!name) throw AppError.validation("Selected industry was not found or is inactive.");
+    return name;
   }
   private async resolveAddress(address: CompanyAddress): Promise<CompanyAddress> {
     const addressType = address.addressTypeId
@@ -117,12 +107,6 @@ export class CompanyService {
     return { ...account, bankNameId: bank?.id ?? null, bankName: bank?.name ?? null };
   }
 }
-type IndustryEnvelope =
-  | {
-      data: Array<{ id: number; name: string; status: "active" | "inactive" }>;
-      success: true;
-    }
-  | { error: { message: string }; success: false };
 function assertParent(
   label: string,
   actualParentId: number | null | undefined,

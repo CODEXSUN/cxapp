@@ -174,7 +174,13 @@ export class StorageManagerRepository {
     const tenantKey = tenant.slug || tenant.tenantCode;
     const fileName = variant === "logo-dark" ? "logo-dark.svg" : "logo.svg";
     const filePath = resolveInsideStorage(tenantPublicStorageRoot(tenantKey), `logo/${fileName}`);
-    const info = await stat(filePath);
+    let info;
+    try {
+      info = await stat(filePath);
+    } catch (error) {
+      if (isFileNotFound(error)) return null;
+      throw error;
+    }
     if (!info.isFile()) throw new Error("Company logo was not found.");
     return {
       buffer: await readFile(filePath),
@@ -284,6 +290,15 @@ export class StorageManagerRepository {
       })
       .execute();
   }
+}
+
+function isFileNotFound(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
 }
 
 function sanitizeFileName(value: string) {

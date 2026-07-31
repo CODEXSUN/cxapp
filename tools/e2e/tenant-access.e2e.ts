@@ -59,6 +59,7 @@ try {
     403,
     "A tenant user was allowed to use the Super Admin tenant-user manager."
   );
+  await exerciseCompanyIndustryAndMissingLogos(first);
   await exerciseSuperAdminUserManager(first);
   await exerciseUnavailableTenantUserManager();
 
@@ -68,6 +69,55 @@ try {
   await closeAllTenantDatabases();
   await closePlatformDatabase();
   await connection.end();
+}
+
+async function exerciseCompanyIndustryAndMissingLogos(tenant: TenantRow) {
+  const industries = await request(tenant, "GET", "/tenant/industries");
+  assert.equal(industries.statusCode, 200, "Tenant industry lookup failed.");
+  const industry = (industries.data as Array<{ id: number; name: string }>)[0];
+  assert.ok(industry, "An active Platform industry is required for company validation E2E.");
+
+  const companies = await request(tenant, "GET", "/core/organisation/companies");
+  assert.equal(companies.statusCode, 200, "Tenant company lookup failed.");
+  const company = (companies.data as Array<{
+    id: number;
+    industryId: number | null;
+    name: string;
+  }>)[0];
+  assert.ok(company, "A seeded tenant company is required for company validation E2E.");
+
+  try {
+    const updated = await request(
+      tenant,
+      "PUT",
+      `/core/organisation/companies/${company.id}`,
+      { industryId: industry.id, name: company.name }
+    );
+    assert.equal(updated.statusCode, 200, "Company industry validation lost tenant context.");
+    assert.equal(
+      (updated.data as { industryName: string | null }).industryName,
+      industry.name,
+      "Company did not persist the Platform-owned industry name."
+    );
+  } finally {
+    const restored = await request(
+      tenant,
+      "PUT",
+      `/core/organisation/companies/${company.id}`,
+      { industryId: company.industryId, name: company.name }
+    );
+    assert.equal(restored.statusCode, 200, "Company industry E2E cleanup failed.");
+  }
+
+  for (const variant of ["logo", "logo-dark"] as const) {
+    const logo = await request(tenant, "GET", `/tenant/media/company-logo/${variant}`);
+    assert.equal(logo.statusCode, 404, `Missing ${variant} returned a server error.`);
+    assert.equal(
+      logo.error?.code,
+      "COMPANY_LOGO_NOT_FOUND",
+      `Missing ${variant} did not return the company-logo not-found contract.`
+    );
+  }
 }
 
 async function exerciseUnavailableTenantUserManager() {
@@ -242,7 +292,10 @@ async function request(
     ...(payload === undefined ? {} : { payload }),
     url
   });
-  const envelope = response.json() as { data?: unknown; error?: { message?: string } };
+  const envelope = response.json() as {
+    data?: unknown;
+    error?: { code?: string; message?: string };
+  };
   return { data: envelope.data, error: envelope.error, statusCode: response.statusCode };
 }
 
@@ -257,6 +310,9 @@ async function adminRequest(
     ...(payload === undefined ? {} : { payload }),
     url
   });
-  const envelope = response.json() as { data?: unknown; error?: { message?: string } };
+  const envelope = response.json() as {
+    data?: unknown;
+    error?: { code?: string; message?: string };
+  };
   return { data: envelope.data, error: envelope.error, statusCode: response.statusCode };
 }

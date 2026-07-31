@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.46
+Current version: 1.0.47
 
-Release tag: v-1.0.46
+Release tag: v-1.0.47
 
-Changelog label: v 1.0.46
+Changelog label: v 1.0.47
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,35 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.47
+
+### [v 1.0.47] 2026-07-31 5:58 pm - Harden browser and module session handling
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped the synchronized workspace version to 1.0.47.
+- Hardened browser session expiry handling so only the explicit `AUTH_SESSION_EXPIRED` contract
+  clears local context and redirects to login; domain, permission, validation, and upstream lookup
+  authorization failures remain visible without destroying a valid session.
+- Made active encrypted session cookies take precedence over retired browser bearer tokens while
+  preserving bearer JWT propagation for authenticated loopback module-to-Core requests.
+- Standardized missing and invalid Framework authentication as `AUTH_SESSION_EXPIRED`, allowing
+  ordinary protected routes—not only `/auth/session`—to recover consistently when a cookie expires
+  or disappears.
+- Removed Mail's legacy local-storage JWT usage, restored session-scoped tenant context reads, and
+  enabled credentialed cookie requests for the Mail API.
+- Added focused regression coverage for cookie-versus-bearer selection, trusted loopback bearer
+  forwarding, explicit expiry classification, and non-session 401 preservation.
+- Confirmed fresh login clears browser session context, replaces every current or legacy session
+  cookie, revokes the previously presented server session, and added lifecycle coverage proving the
+  retired cookie is rejected while the new cookie remains authenticated.
+- Added the Cloudflare MariaDB tunnel runbook for server routing, new Windows client installation,
+  SQLyog configuration, verification, reconnection, and troubleshooting.
 
 ## v-1.0.46
 
@@ -45,6 +74,15 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   persistence coverage against the selected tenant database.
 - Replaced generic tenant-user database failures with actionable setup or credential-reference
   errors, and disabled automatic query retries for unavailable tenant databases.
+- Fixed production company saves with an industry selected by replacing the domain-sensitive
+  loopback HTTP validation call with an injected Platform-owned industry lookup contract.
+- Fixed New Sale redirecting valid users to session-expired login: authenticated module-to-Core
+  lookup calls over the local Platform API are now recognized as trusted loopback bearer requests,
+  while the browser clears login state only for the explicit `AUTH_SESSION_EXPIRED` response code.
+- Confirmed tenant logins are independent session records, so signing in on another computer does
+  not revoke an existing computer's session.
+- Changed absent company logo variants from filesystem-backed 500 errors to the existing
+  `COMPANY_LOGO_NOT_FOUND` 404 response understood by the company form.
 - Added inline progress spinners and processing labels to New setup and Re-install controls.
 - Migrated Platform and shared UI charts to Recharts 3, added the compatible React dependency, and
   updated tooltip and legend typings to the Recharts 3 API.

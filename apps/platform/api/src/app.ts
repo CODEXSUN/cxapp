@@ -21,7 +21,7 @@ import { tenantUserRoleModule } from "./modules/tenant-user-role/index.js";
 import { tenantRolePermissionModule } from "./modules/tenant-role-permission/index.js";
 import { planModule } from "./modules/plan/index.js";
 import { subscriptionModule } from "./modules/subscription/index.js";
-import { industryModule } from "./modules/industry/index.js";
+import { IndustryService, industryModule } from "./modules/industry/index.js";
 import { entitlementModule } from "./modules/entitlement/index.js";
 import { accessControlModule } from "./modules/access-control/index.js";
 import { platformActivityModule } from "./modules/platform-activity/index.js";
@@ -133,7 +133,10 @@ export async function createApp() {
   console.info("[platform.routes] health ready");
   await registerAuthRoutes(app);
   console.info("[platform.routes] auth ready");
-  await registerCoreApi(app);
+  const industryService = new IndustryService();
+  await registerCoreApi(app, {
+    resolveIndustryName: (industryId) => industryService.resolveActiveIndustryName(industryId)
+  });
   console.info("[platform.routes] Core package ready");
   await registerBillingApi(app);
   console.info("[platform.routes] Billing package ready");

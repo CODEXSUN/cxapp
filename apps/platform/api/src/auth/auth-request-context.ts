@@ -33,22 +33,31 @@ const publicAuthPaths = new Set([
 export function registerAuthRequestContext(app: FastifyInstance) {
   app.decorateRequest("authContext", undefined);
   app.addHook("onRequest", async (request) => {
-    const source = bearerToken(request) ? "bearer" : "cookie";
-    const token = bearerToken(request) || readEncryptedSessionCookie(request);
-    if (!token) return;
+    const authentication = selectRequestAuthentication(
+      bearerToken(request),
+      readEncryptedSessionCookie(request)
+    );
+    if (!authentication) return;
+    const { source, token } = authentication;
 
     const payload = verifyAuthToken(token);
     const session = payload ? await sessions.findActive(payload.jti) : null;
     if (!payload || (source === "cookie" && !session) || !claimsMatchSession(payload, session)) {
       if (isPublicAuthenticationPath(request.routeOptions.url ?? request.url.split("?")[0] ?? ""))
         return;
-      throw AppError.unauthorized("Session expired. Please sign in again.");
+      throw authenticationError("AUTH_SESSION_EXPIRED", "Session expired. Please sign in again.");
     }
 
     const host = requestHost(request);
-    if (!hostMatchesClaims(host, payload)) {
+    if (
+      !hostMatchesClaims(host, payload) &&
+      !isTrustedInternalBearerRequest(source, host, request.socket.remoteAddress)
+    ) {
       if (isPublicAuthenticationPath(request.routeOptions.url ?? "")) return;
-      throw AppError.unauthorized("This session is not valid for the requested domain.");
+      throw authenticationError(
+        "AUTH_DOMAIN_MISMATCH",
+        "This session is not valid for the requested domain."
+      );
     }
     if (source === "cookie") enforceBrowserRequestOrigin(request, host);
 
@@ -60,13 +69,19 @@ export function registerAuthRequestContext(app: FastifyInstance) {
         tenant.dbName !== payload.tenantDbName ||
         tenant.tenantCode !== payload.tenantCode
       ) {
-        throw AppError.unauthorized("Tenant access is no longer valid.");
+        throw authenticationError(
+          "AUTH_TENANT_ACCESS_INVALID",
+          "Tenant access is no longer valid."
+        );
       }
       if (
         payload.tenantAccessMode === "custom_domain" &&
         (await tenants.findByDomain(host))?.uuid !== tenant.uuid
       ) {
-        throw AppError.unauthorized("The custom domain is not verified for this tenant.");
+        throw authenticationError(
+          "AUTH_TENANT_DOMAIN_INVALID",
+          "The custom domain is not verified for this tenant."
+        );
       }
       const connection = {
         database: tenant.dbName,
@@ -111,6 +126,12 @@ function bearerToken(request: FastifyRequest) {
   return authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : "";
 }
 
+export function selectRequestAuthentication(bearer: string, cookie: string) {
+  if (cookie) return { source: "cookie" as const, token: cookie };
+  if (bearer) return { source: "bearer" as const, token: bearer };
+  return null;
+}
+
 function claimsMatchSession(payload: AuthTokenPayload, session: AuthSessionRecord | null) {
   if (!session) return true;
   return (
@@ -134,6 +155,21 @@ function hostMatchesClaims(host: string, payload: AuthTokenPayload) {
     );
   }
   return host === payload.loginHost;
+}
+
+export function isTrustedInternalBearerRequest(
+  source: "bearer" | "cookie",
+  host: string,
+  remoteAddress: string | undefined
+) {
+  if (source !== "bearer" || (host !== "127.0.0.1" && host !== "localhost")) return false;
+  return (
+    remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1"
+  );
+}
+
+function authenticationError(code: string, message: string) {
+  return new AppError({ code, message, statusCode: 401 });
 }
 
 export function enforceBrowserRequestOrigin(request: FastifyRequest, host = requestHost(request)) {

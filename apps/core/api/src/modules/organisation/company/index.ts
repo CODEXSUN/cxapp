@@ -5,6 +5,7 @@ export type {
   CompanyAddress,
   CompanyBankAccount,
   CompanyEmail,
+  CompanyIndustryNameResolver,
   CompanyPhone,
   CompanyRecord,
   CompanySaveInput,

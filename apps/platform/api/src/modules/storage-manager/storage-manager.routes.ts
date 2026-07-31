@@ -66,6 +66,16 @@ export async function registerStorageManagerRoutes(app: FastifyInstance) {
       }
       const tenantId = String(request.headers["x-tenant-id"] || "");
       const file = await service.readCompanyLogo(tenantId, variant);
+      if (!file) {
+        return reply
+          .code(404)
+          .send(
+            fail(
+              { code: "COMPANY_LOGO_NOT_FOUND", message: "Company logo was not found." },
+              { requestId: request.id }
+            )
+          );
+      }
       return reply
         .header("cache-control", "no-store")
         .header("content-type", file.mimeType)

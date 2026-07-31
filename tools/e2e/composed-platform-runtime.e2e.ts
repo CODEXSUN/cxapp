@@ -165,9 +165,59 @@ try {
     url: "/auth/development/tenant-login"
   });
   assert.equal(loginResponse.statusCode, 200, loginResponse.body);
-  const cookies = loginResponse.cookies
+  const previousCookies = loginResponse.cookies
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
+  const previousSessionCookie = loginResponse.cookies.findLast(
+    (cookie) => cookie.name.endsWith("cxapp_session") && cookie.value.length > 0
+  );
+  assert.ok(previousSessionCookie, "Development login did not issue a session cookie.");
+
+  const freshLoginResponse = await app.inject({
+    headers: {
+      cookie: previousCookies,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    },
+    method: "POST",
+    url: "/auth/development/tenant-login"
+  });
+  assert.equal(freshLoginResponse.statusCode, 200, freshLoginResponse.body);
+  const freshSessionCookie = freshLoginResponse.cookies.findLast(
+    (cookie) => cookie.name.endsWith("cxapp_session") && cookie.value.length > 0
+  );
+  assert.ok(freshSessionCookie, "Fresh login did not issue a replacement session cookie.");
+  assert.notEqual(
+    freshSessionCookie.value,
+    previousSessionCookie.value,
+    "Fresh login reused the existing session cookie."
+  );
+
+  const retiredSessionResponse = await app.inject({
+    headers: {
+      cookie: `${previousSessionCookie.name}=${previousSessionCookie.value}`,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(retiredSessionResponse.statusCode, 401, retiredSessionResponse.body);
+  assert.equal(retiredSessionResponse.json().error?.code, "AUTH_SESSION_EXPIRED");
+
+  const cookies = `${freshSessionCookie.name}=${freshSessionCookie.value}`;
+  const freshSessionResponse = await app.inject({
+    headers: {
+      cookie: cookies,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(freshSessionResponse.statusCode, 200, freshSessionResponse.body);
+  assert.equal(freshSessionResponse.json().data?.authenticated, true);
+
   const authenticatedDevkitResponse = await app.inject({
     headers: {
       cookie: cookies,

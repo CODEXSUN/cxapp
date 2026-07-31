@@ -5,6 +5,12 @@ export class IndustryService {
   listIndustries() {
     return this.repository.list();
   }
+  async resolveActiveIndustryName(id: number) {
+    const industry = (await this.repository.list()).find(
+      (record) => record.id === id && record.status === "active"
+    );
+    return industry?.name ?? null;
+  }
   createIndustry(input: IndustrySavePayload) {
     validate(input);
     return this.repository.create(input);

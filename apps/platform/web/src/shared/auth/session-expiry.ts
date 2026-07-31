@@ -1,6 +1,7 @@
 import type { Desk } from "../api/platform-api";
 
 export const SESSION_EXPIRED_REASON = "session-expired";
+export const SESSION_EXPIRED_ERROR_CODE = "AUTH_SESSION_EXPIRED";
 
 const loginPaths: Record<Desk, string> = {
   admin: "/admin/login",
@@ -51,9 +52,19 @@ export function installSessionExpiryInterceptor(onClearSession: () => void): voi
   const browserFetch = window.fetch.bind(window);
   window.fetch = async (...arguments_: Parameters<typeof window.fetch>) => {
     const response = await browserFetch(...arguments_);
-    if (response.status === 401) {
+    if (await isExpiredSessionResponse(response)) {
       redirectForExpiredSession();
     }
     return response;
   };
+}
+
+export async function isExpiredSessionResponse(response: Response): Promise<boolean> {
+  if (response.status !== 401) return false;
+  try {
+    const payload = (await response.clone().json()) as { error?: { code?: string } };
+    return payload.error?.code === SESSION_EXPIRED_ERROR_CODE;
+  } catch {
+    return false;
+  }
 }

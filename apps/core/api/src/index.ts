@@ -7,7 +7,7 @@ export {
   rollbackCoreTenantDatabase,
   seedCoreTenantDatabase
 } from "./database/core-database.js";
-export { coreApiModuleKeys, registerCoreApi } from "./app.js";
+export { coreApiModuleKeys, registerCoreApi, type CoreApiDependencies } from "./app.js";
 export {
   getDefaultCompanyForDatabase,
   setDefaultCompanyLandingAppForDatabase

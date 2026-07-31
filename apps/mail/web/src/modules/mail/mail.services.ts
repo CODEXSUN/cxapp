@@ -117,16 +117,15 @@ function escapeMailHtml(value: string) {
 }
 
 async function mailRequest<T>(path: string, init: RequestInit = {}) {
-  const token = localStorage.getItem("cxapp_session_tenant");
-  const tenantId = localStorage.getItem("cxapp_tenant_id");
-  const tenantDatabase = localStorage.getItem("cxapp_tenant_db_name");
+  const tenantId = sessionStorage.getItem("cxapp_tenant_id");
+  const tenantDatabase = sessionStorage.getItem("cxapp_tenant_db_name");
   const companyId = localStorage.getItem("cxapp.tenant.company-id");
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(tenantId ? { "x-tenant-id": tenantId } : {}),
       ...(tenantDatabase ? { "x-tenant-db": tenantDatabase } : {}),
       ...(companyId ? { "x-company-id": companyId } : {}),

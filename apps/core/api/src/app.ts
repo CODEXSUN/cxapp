@@ -11,6 +11,11 @@ import { commonModule } from "./modules/common/index.js";
 import { locationModules } from "./modules/common/location/location.module.js";
 import { masterModule } from "./modules/master/index.js";
 import { organisationModule } from "./modules/organisation/index.js";
+import type { CompanyIndustryNameResolver } from "./modules/organisation/index.js";
+
+export type CoreApiDependencies = {
+  resolveIndustryName: CompanyIndustryNameResolver;
+};
 
 export const coreApiModuleKeys = [
   commonModule.key,
@@ -19,7 +24,7 @@ export const coreApiModuleKeys = [
   ...locationModules.map((module) => module.key)
 ];
 
-export async function registerCoreApi(app: FastifyInstance) {
+export async function registerCoreApi(app: FastifyInstance, dependencies: CoreApiDependencies) {
   await app.register(async (coreApp) => {
     coreApp.addHook("onRequest", (request, _reply, done) => {
       try {
@@ -43,7 +48,7 @@ export async function registerCoreApi(app: FastifyInstance) {
       await authorizeCoreRequest(request, tenantDatabase, claims.email ?? "");
     });
     await commonModule.register(coreApp);
-    await organisationModule.register(coreApp);
+    await organisationModule.register(coreApp, dependencies.resolveIndustryName);
     await masterModule.register(coreApp);
   });
 }

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   hasSessionExpiredReason,
   installSessionExpiryInterceptor,
+  isExpiredSessionResponse,
   protectedDeskFromPathname,
   sessionExpiredLoginPath
 } from "./session-expiry";
@@ -28,10 +29,14 @@ test("builds desk-aware login routes with a durable expiry reason", () => {
   assert.equal(hasSessionExpiredReason("?reason=invalid-credentials"), false);
 });
 
-test("a protected 401 clears session state and replaces the page with login", async () => {
+test("only an explicit expired-session 401 clears session state and opens login", async () => {
   let cleared = 0;
   let replacedWith = "";
-  const fetch = async () => new Response(null, { status: 401 });
+  const fetch = async () =>
+    Response.json(
+      { error: { code: "AUTH_SESSION_EXPIRED", message: "Session expired." }, success: false },
+      { status: 401 }
+    );
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
@@ -52,4 +57,14 @@ test("a protected 401 clears session state and replaces the page with login", as
 
   assert.equal(cleared, 1);
   assert.equal(replacedWith, "/login?reason=session-expired");
+});
+
+test("a domain lookup 401 is not misclassified as an expired browser session", async () => {
+  const response = Response.json(
+    { error: { code: "UNAUTHORIZED", message: "Platform authentication is required." } },
+    { status: 401 }
+  );
+
+  assert.equal(await isExpiredSessionResponse(response), false);
+  assert.equal(await response.json().then((body) => body.error.code), "UNAUTHORIZED");
 });
