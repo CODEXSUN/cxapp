@@ -69,9 +69,21 @@ export class TenantRepository {
       ...tenantInput,
       id: Number(result.insertId)
     };
-    tenant.primaryDomain = await this.ensurePrimaryDomain(tenant.id, tenant.primaryDomain);
-    await this.audit(tenant.id, "tenant.created");
-    return tenant;
+    try {
+      tenant.primaryDomain = await this.ensurePrimaryDomain(tenant.id, tenant.primaryDomain);
+      await this.audit(tenant.id, "tenant.created");
+      return tenant;
+    } catch (error) {
+      try {
+        await getPlatformDatabase().deleteFrom("tenants").where("id", "=", tenant.id).execute();
+      } catch (cleanupError) {
+        throw new Error(
+          `${errorMessage(error)} Registry cleanup also failed: ${errorMessage(cleanupError)}`,
+          { cause: cleanupError }
+        );
+      }
+      throw error;
+    }
   }
 
   async update(id: string, input: TenantSavePayload) {
@@ -340,7 +352,11 @@ function toTenant(row: TenantRow): Tenant {
   };
 }
 
-function parseStringArray(value: string) {
+function parseStringArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (typeof value !== "string") return [];
   try {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed)
@@ -351,7 +367,9 @@ function parseStringArray(value: string) {
   }
 }
 
-function parseRecord(value: string): Record<string, unknown> {
+function parseRecord(value: unknown): Record<string, unknown> {
+  if (isRecord(value)) return value;
+  if (typeof value !== "string") return {};
   try {
     const parsed = JSON.parse(value);
     return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed : {};
@@ -370,6 +388,10 @@ function toIsoDate(value: Date | string) {
 
 function normalizeIdentity(value: string) {
   return value.trim().toLowerCase();
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error && error.message ? error.message : String(error);
 }
 
 function createPublicUuid() {

@@ -3,6 +3,7 @@ import {
   migratePlatformDatabase,
   platformDatabaseName
 } from "../../database/platform-database.js";
+import { AppError } from "@cxapp/framework/errors";
 import { provisionTenantDatabase } from "../tenant/index.js";
 import { PlatformActivityService } from "../platform-activity/index.js";
 import { QueueManagerService } from "../queue-manager/index.js";
@@ -140,11 +141,12 @@ export class DatabaseMaintenanceService {
       });
       return run;
     } catch (error) {
+      const message = errorMessage(error, "Tenant database installation failed.");
       await this.repository.updateRunStatus(started.id, "failed", {
         ...details,
-        error: errorMessage(error, "Tenant database installation failed.")
+        error: message
       });
-      throw error;
+      throw AppError.internal(message);
     }
   }
 

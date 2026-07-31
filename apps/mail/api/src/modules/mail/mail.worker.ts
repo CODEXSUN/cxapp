@@ -127,7 +127,7 @@ async function sendMail(
       } catch (fallbackError) {
         const messageText = `Tenant SMTP failed: ${errorMessage(tenantError)}; fallback failed: ${errorMessage(fallbackError)}`;
         await repository.markStatus(context, message.id, "failed", { error: messageText });
-        throw new Error(messageText);
+        throw new Error(messageText, { cause: fallbackError });
       }
     }
     await repository.markStatus(context, message.id, "failed", {

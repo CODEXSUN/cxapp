@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.45
+Current version: 1.0.46
 
-Release tag: v-1.0.45
+Release tag: v-1.0.46
 
-Changelog label: v 1.0.45
+Changelog label: v 1.0.46
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,38 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.46
+
+### [v 1.0.46] 2026-07-31 2:26 pm - Manual Tenant Database Lifecycle and User Manager
+
+#### Database Changes
+
+- Removed automatic tenant database provisioning and re-installation from tenant create and edit.
+  Tenant identity, connection settings, domains, enabled applications, and portal content now save
+  to the Platform database independently of the tenant database lifecycle.
+- Made tenant database inspection operator-driven. Opening a tenant no longer connects, installs,
+  or migrates its database; Check connection, New setup, Re-install, and Safe migrate remain
+  explicit manual actions.
+- Added exact offline connection details plus applied migration versions to tenant database status
+  and show pages, and registered the tenant Task Manager migration through its module-owned ledger.
+- Database update: Manual only. Existing installed tenants can use Safe migrate; uninstalled tenants
+  require New setup when the operator is ready.
+
+#### App Codebase Changes
+
+- Bumped the synchronized workspace version to 1.0.46.
+- Added Super Admin Tenant Setup -> User Manager navigation with an explicit tenant selector,
+  isolated tenant-user listing, create and edit forms, lifecycle controls, validation, and
+  persistence coverage against the selected tenant database.
+- Replaced generic tenant-user database failures with actionable setup or credential-reference
+  errors, and disabled automatic query retries for unavailable tenant databases.
+- Added inline progress spinners and processing labels to New setup and Re-install controls.
+- Migrated Platform and shared UI charts to Recharts 3, added the compatible React dependency, and
+  updated tooltip and legend typings to the Recharts 3 API.
+- Expanded tenant database and access regression coverage for manual provisioning, migration state,
+  cross-tenant isolation, Super Admin user create/edit persistence, cleanup, and unavailable
+  database error reporting.
 
 ## v-1.0.45
 

@@ -52,7 +52,7 @@ export class TenantDomainService {
     }
     const domain = await this.domains.findById(domainId);
     if (!domain) return null;
-    let records: string[][] = [];
+    let records: string[][];
     try {
       records = await resolveTxt(tenantDomainVerificationName(domain.domain));
     } catch {

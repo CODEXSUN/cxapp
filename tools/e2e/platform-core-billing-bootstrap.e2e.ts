@@ -71,9 +71,27 @@ try {
 
   assert.deepEqual(
     [...tenant.enabledModuleKeys].sort(),
-    ["billing.sales", "mail", "platform.application"],
-    "New tenants should enable Billing and Mail by default."
+    ["billing.sales", "mail", "platform.application", "platform.task-manager"],
+    "New tenants should enable Application, Billing, Mail, and Task Manager by default."
   );
+
+  await admin.changeUser({ database: masterDatabaseName });
+  const [databaseBeforeSetup] = await admin.query<
+    Array<RowDataPacket & { database_count: number }>
+  >("SELECT COUNT(*) AS database_count FROM information_schema.schemata WHERE schema_name=?", [
+    tenantDatabaseName
+  ]);
+  const [runsBeforeSetup] = await admin.query<Array<RowDataPacket & { run_count: number }>>(
+    "SELECT COUNT(*) AS run_count FROM database_maintenance_runs WHERE database_scope='tenant' AND target_key=?",
+    [String(tenant.id)]
+  );
+  assert.equal(Number(databaseBeforeSetup[0]?.database_count), 0);
+  assert.equal(Number(runsBeforeSetup[0]?.run_count), 0);
+
+  const setupRun = await new DatabaseMaintenanceService().setupTenant(tenant.id, {
+    note: "Explicit tenant setup after registry-only creation E2E."
+  });
+  assert.equal(setupRun?.status, "completed");
 
   const initial = await loadState();
   const expectedTenantMigrationCount = tenantDatabaseMigrationsFor(tenant).length;
@@ -84,7 +102,7 @@ try {
   assert.ok(initial.platform.plans > 0);
   assert.equal(initial.platform.completedRuns, 1);
   assert.equal(initial.platform.runningRuns, 0);
-  assert.equal(initial.tenant.moduleSettings, 3);
+  assert.equal(initial.tenant.moduleSettings, 4);
   assert.equal(initial.tenant.enabledBillingModules, 1);
   assert.equal(initial.tenant.companies, 1);
   assert.equal(initial.tenant.cxappCompanies, 1);

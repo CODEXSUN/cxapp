@@ -50,13 +50,18 @@ export class DatabaseMaintenanceRepository {
   }
 
   async tenantStatus(tenant: Tenant) {
-    const probe = await this.probeDatabase({
-      databaseName: tenant.dbName,
-      host: tenant.dbHost || env.DB_HOST,
-      password: resolveTenantDatabasePassword(tenant),
-      port: tenant.dbPort || env.DB_PORT,
-      user: tenant.dbUser || env.DB_USER
-    });
+    let probe: Awaited<ReturnType<DatabaseMaintenanceRepository["probeDatabase"]>>;
+    try {
+      probe = await this.probeDatabase({
+        databaseName: tenant.dbName,
+        host: tenant.dbHost || env.DB_HOST,
+        password: resolveTenantDatabasePassword(tenant),
+        port: tenant.dbPort || env.DB_PORT,
+        user: tenant.dbUser || env.DB_USER
+      });
+    } catch (error) {
+      probe = offlineProbe(connectionMessage(error));
+    }
     return {
       databaseName: tenant.dbName,
       host: tenant.dbHost || env.DB_HOST,
@@ -188,6 +193,7 @@ export class DatabaseMaintenanceRepository {
             ? String((versionRows[0] as { version: string }).version)
             : "unknown";
         return {
+          connectionMessage: null,
           status: "online" as const,
           tableCount: Array.isArray(tableRows) ? tableRows.length : 0,
           version
@@ -195,8 +201,8 @@ export class DatabaseMaintenanceRepository {
       } finally {
         await connection.end();
       }
-    } catch {
-      return { status: "offline" as const, tableCount: 0, version: "unreachable" };
+    } catch (error) {
+      return offlineProbe(connectionMessage(error));
     }
   }
 
@@ -212,12 +218,13 @@ export class DatabaseMaintenanceRepository {
       });
       try {
         const [rows] = await connection.query(
-          "SELECT name, applied_at FROM migration_schema WHERE status='applied' ORDER BY batch, id"
+          "SELECT name, version, applied_at FROM migration_schema WHERE status='applied' ORDER BY batch, id"
         );
         return Array.isArray(rows)
           ? rows.map((row) => ({
               appliedAt: new Date((row as { applied_at: Date | string }).applied_at).toISOString(),
-              name: String((row as { name: string }).name)
+              name: String((row as { name: string }).name),
+              version: Number((row as { version: number | string }).version)
             }))
           : [];
       } finally {
@@ -240,12 +247,13 @@ export class DatabaseMaintenanceRepository {
       });
       try {
         const [rows] = await connection.query(
-          "SELECT name, applied_at FROM migration_schema WHERE status='applied' ORDER BY scope, batch, id"
+          "SELECT name, version, applied_at FROM migration_schema WHERE status='applied' ORDER BY scope, batch, id"
         );
         return Array.isArray(rows)
           ? rows.map((row) => ({
               appliedAt: new Date((row as { applied_at: Date | string }).applied_at).toISOString(),
-              name: String((row as { name: string }).name)
+              name: String((row as { name: string }).name),
+              version: Number((row as { version: number | string }).version)
             }))
           : [];
       } finally {
@@ -330,6 +338,24 @@ function toIsoDate(value: unknown) {
   if (!value) return null;
   const date = new Date(value as string | Date);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function offlineProbe(message: string) {
+  return {
+    connectionMessage: message,
+    status: "offline" as const,
+    tableCount: 0,
+    version: "unreachable"
+  };
+}
+
+function connectionMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "sqlMessage" in error) {
+    const sqlMessage = String((error as { sqlMessage?: unknown }).sqlMessage ?? "").trim();
+    if (sqlMessage) return sqlMessage;
+  }
+  return String(error || "Unknown database connection error.");
 }
 
 function toRun(row: {

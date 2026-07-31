@@ -20,6 +20,7 @@ import {
 } from "@cxapp/ui/components/alert-dialog";
 import { Button } from "@cxapp/ui/components/button";
 import { GlobalLoader } from "@cxapp/ui/components/global-loader";
+import { Spinner } from "@cxapp/ui/components/spinner";
 import { WorkspaceDetailTable, WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import { useTenantDatabaseDetailsQuery, useTenantDatabaseMutations } from "./tenant-database.hooks";
@@ -27,9 +28,11 @@ import { useTenantDatabaseDetailsQuery, useTenantDatabaseMutations } from "./ten
 export function TenantDatabaseControl({ tenantId }: { tenantId: number }) {
   const [confirmReinstall, setConfirmReinstall] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
-  const details = useTenantDatabaseDetailsQuery(tenantId);
+  const details = useTenantDatabaseDetailsQuery(tenantId, "manual");
   const mutations = useTenantDatabaseMutations();
   const busy = Object.values(mutations).some((mutation) => mutation.isPending);
+  const setupPending = mutations.setup.isPending;
+  const reinstallPending = mutations.reinstall.isPending;
   const database = details.data;
 
   const runSetup = () => {
@@ -97,26 +100,43 @@ export function TenantDatabaseControl({ tenantId }: { tenantId: number }) {
             onClick={() => void details.refetch()}
           >
             <RefreshCwIcon className={`size-4 ${details.isFetching ? "animate-spin" : ""}`} />
-            Refresh
+            {details.isFetched ? "Refresh" : "Check connection"}
           </Button>
-          <Button type="button" disabled={busy} onClick={runSetup}>
-            <WrenchIcon className="size-4" />
-            New setup
+          <Button type="button" aria-busy={setupPending} disabled={busy} onClick={runSetup}>
+            {setupPending ? (
+              <Spinner aria-label="Setting up tenant database" />
+            ) : (
+              <WrenchIcon className="size-4" />
+            )}
+            {setupPending ? "Setting up..." : "New setup"}
           </Button>
           <Button
             type="button"
             variant="outline"
+            aria-busy={reinstallPending}
             disabled={busy}
             onClick={() => setConfirmReinstall(true)}
           >
-            <RotateCcwIcon className="size-4" />
-            Re-install
+            {reinstallPending ? (
+              <Spinner aria-label="Re-installing tenant database" />
+            ) : (
+              <RotateCcwIcon className="size-4" />
+            )}
+            {reinstallPending ? "Re-installing..." : "Re-install"}
           </Button>
         </div>
       </div>
 
       {details.isLoading && !database ? (
         <GlobalLoader className="min-h-40" fullScreen={false} />
+      ) : null}
+      {!details.isFetched && !details.isFetching ? (
+        <WorkspaceShowCard title="Connection not checked">
+          <p className="px-4 py-3 text-sm text-muted-foreground">
+            Database access is manual. Check the connection to inspect an existing database, or
+            choose New setup to install it.
+          </p>
+        </WorkspaceShowCard>
       ) : null}
       {details.isError ? (
         <WorkspaceShowCard title="Database unavailable">
@@ -125,12 +145,18 @@ export function TenantDatabaseControl({ tenantId }: { tenantId: number }) {
           </p>
         </WorkspaceShowCard>
       ) : null}
+      {database?.connectionMessage ? (
+        <WorkspaceShowCard title="Connection unavailable">
+          <p className="px-4 py-3 text-sm text-destructive">{database.connectionMessage}</p>
+        </WorkspaceShowCard>
+      ) : null}
       {database ? (
         <div className="grid gap-4 xl:grid-cols-2">
           <WorkspaceShowCard title="Live connection">
             <WorkspaceDetailTable
               rows={[
                 ["Status", database.status === "online" ? "Live connected" : "Offline"],
+                ["Connection result", database.connectionMessage ?? "Connected"],
                 ["Database", database.databaseName],
                 ["Host", database.host],
                 ["Port", database.port],
@@ -144,6 +170,7 @@ export function TenantDatabaseControl({ tenantId }: { tenantId: number }) {
               rows={[
                 ["Applied migrations", database.migrations.length],
                 ["Pending migrations", database.migrationPlan.pending.length],
+                ["Migration version", database.migrationPlan.latestApplied?.version ?? "None"],
                 ["Latest migration", database.migrationPlan.latestApplied?.name ?? "None"],
                 ["Maintenance runs", database.runs.length],
                 ["Last operation", database.runs[0]?.operation ?? "None"],

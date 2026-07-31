@@ -21,13 +21,17 @@ export function useTenantDatabaseQuery() {
   });
 }
 
-export function useTenantDatabaseDetailsQuery(tenantId: number | null) {
+export function useTenantDatabaseDetailsQuery(
+  tenantId: number | null,
+  mode: "automatic" | "manual" = "automatic"
+) {
   return useQuery({
-    enabled: tenantId !== null,
+    enabled: mode === "automatic" && tenantId !== null,
     queryFn: () => getTenantDatabaseDetails(tenantId ?? 0),
     queryKey: [...tenantDatabaseQueryKey, tenantId, "details"],
     meta: { suppressGlobalLoader: true },
-    refetchInterval: 15_000
+    refetchInterval: mode === "automatic" ? 15_000 : false,
+    retry: mode === "automatic" ? 3 : false
   });
 }
 

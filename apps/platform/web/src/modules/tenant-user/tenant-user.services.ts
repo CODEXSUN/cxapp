@@ -1,28 +1,49 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "../../shared/api/platform-api";
-import type { TenantUser, TenantUserListFilters, TenantUserSavePayload } from "./tenant-user.types";
-const path = "/tenant/access/users";
-export function listTenantUsers(filters: TenantUserListFilters = {}) {
+import type {
+  TenantUser,
+  TenantUserListFilters,
+  TenantUserSavePayload,
+  TenantUserScope,
+  TenantUserTenantLookup
+} from "./tenant-user.types";
+
+export function listTenantUserTenants() {
+  return apiGet<TenantUserTenantLookup[]>("/admin/tenants", "sa");
+}
+
+export function listTenantUsers(scope: TenantUserScope, filters: TenantUserListFilters = {}) {
   const query = new URLSearchParams();
   if (filters.search?.trim()) query.set("search", filters.search.trim());
-  return apiGet<TenantUser[]>(`${path}${query.size ? `?${query}` : ""}`, "tenant");
+  return apiGet<TenantUser[]>(
+    `${tenantUserPath(scope)}${query.size ? `?${query}` : ""}`,
+    scope.desk
+  );
 }
-export function createTenantUser(payload: TenantUserSavePayload) {
-  return apiPost<TenantUser>(path, toApi(payload), "tenant");
+export function createTenantUser(scope: TenantUserScope, payload: TenantUserSavePayload) {
+  return apiPost<TenantUser>(tenantUserPath(scope), toApi(payload), scope.desk);
 }
-export function updateTenantUser(id: number, payload: TenantUserSavePayload) {
-  return apiPut<TenantUser>(`${path}/${id}`, toApi(payload), "tenant");
+export function updateTenantUser(
+  scope: TenantUserScope,
+  id: number,
+  payload: TenantUserSavePayload
+) {
+  return apiPut<TenantUser>(`${tenantUserPath(scope)}/${id}`, toApi(payload), scope.desk);
 }
-export function activateTenantUser(id: number) {
-  return apiPost<TenantUser>(`${path}/${id}/activate`, {}, "tenant");
+export function activateTenantUser(scope: TenantUserScope, id: number) {
+  return apiPost<TenantUser>(`${tenantUserPath(scope)}/${id}/activate`, {}, scope.desk);
 }
-export function deactivateTenantUser(id: number) {
-  return apiPost<TenantUser>(`${path}/${id}/deactivate`, {}, "tenant");
+export function deactivateTenantUser(scope: TenantUserScope, id: number) {
+  return apiPost<TenantUser>(`${tenantUserPath(scope)}/${id}/deactivate`, {}, scope.desk);
 }
-export function suspendTenantUser(id: number) {
-  return apiPost<TenantUser>(`${path}/${id}/suspend`, {}, "tenant");
+export function suspendTenantUser(scope: TenantUserScope, id: number) {
+  return apiPost<TenantUser>(`${tenantUserPath(scope)}/${id}/suspend`, {}, scope.desk);
 }
-export function forceDeleteTenantUser(id: number) {
-  return apiDelete<TenantUser>(`${path}/${id}/force`, "tenant");
+export function forceDeleteTenantUser(scope: TenantUserScope, id: number) {
+  return apiDelete<TenantUser>(`${tenantUserPath(scope)}/${id}/force`, scope.desk);
+}
+
+function tenantUserPath(scope: TenantUserScope) {
+  return scope.desk === "sa" ? `/admin/tenants/${scope.tenantId}/users` : "/tenant/access/users";
 }
 function toApi(payload: TenantUserSavePayload) {
   const { password, ...value } = payload;

@@ -6,9 +6,14 @@ import { closeAllTenantDatabases } from "../../apps/platform/api/src/database/te
 import { env } from "../../apps/platform/api/src/env.js";
 import { signAuthToken } from "../../apps/platform/api/src/auth/jwt.js";
 
-type TenantRow = RowDataPacket & { db_name: string; tenant_code: string; uuid: string };
+type TenantRow = RowDataPacket & { db_name: string; id: number; tenant_code: string; uuid: string };
 type RecordValue = { id: number; status: string } & Record<string, unknown>;
 const run = Date.now().toString(36);
+const superAdminToken = signAuthToken({
+  email: "tenant-user-manager-e2e@codexsun.app",
+  userId: "tenant-user-manager-e2e",
+  userType: "super_admin"
+});
 const connection = await createConnection({
   database: env.DB_MASTER_NAME,
   host: env.DB_HOST,
@@ -20,22 +25,44 @@ const app = await createApp();
 
 try {
   const [tenants] = await connection.query<TenantRow[]>(
-    "SELECT uuid, tenant_code, db_name FROM tenants WHERE status='active' ORDER BY id LIMIT 5"
+    `SELECT tenant.id, tenant.uuid, tenant.tenant_code, tenant.db_name
+     FROM tenants tenant
+     INNER JOIN information_schema.SCHEMATA schema_info ON schema_info.SCHEMA_NAME=tenant.db_name
+     WHERE tenant.status='active'
+     ORDER BY tenant.id
+     LIMIT 5`
   );
-  assert.equal(tenants.length, 5, "Five active tenants are required for the access isolation E2E.");
+  assert.ok(
+    tenants.length >= 2,
+    "Two active tenants with manually installed databases are required for the access isolation E2E."
+  );
   const results: Array<{ tenant: string; records: number }> = [];
   for (const tenant of tenants) results.push(await exerciseTenant(tenant));
 
   const first = tenants[0]!;
   const second = tenants[1]!;
+  const baseline = await request(first, "GET", "/tenant/access/users");
   const crossed = await request(first, "GET", "/tenant/access/users", undefined, second.db_name);
   assert.equal(
     crossed.statusCode,
-    403,
-    "A tenant token was accepted against another tenant database."
+    200,
+    "The server did not restore tenant context from authenticated claims."
   );
+  assert.deepEqual(
+    crossed.data,
+    baseline.data,
+    "An untrusted tenant database header changed the authenticated tenant data source."
+  );
+  const deniedAdminAccess = await request(first, "GET", `/admin/tenants/${first.id}/users`);
+  assert.equal(
+    deniedAdminAccess.statusCode,
+    403,
+    "A tenant user was allowed to use the Super Admin tenant-user manager."
+  );
+  await exerciseSuperAdminUserManager(first);
+  await exerciseUnavailableTenantUserManager();
 
-  console.log("Tenant access five-tenant E2E passed", { results, tenants: tenants.length });
+  console.log("Tenant access multi-tenant E2E passed", { results, tenants: tenants.length });
 } finally {
   await app.close();
   await closeAllTenantDatabases();
@@ -43,31 +70,90 @@ try {
   await connection.end();
 }
 
+async function exerciseUnavailableTenantUserManager() {
+  await connection.changeUser({ database: env.DB_MASTER_NAME });
+  const [unavailable] = await connection.query<TenantRow[]>(
+    `SELECT tenant.id, tenant.uuid, tenant.tenant_code, tenant.db_name
+     FROM tenants tenant
+     LEFT JOIN information_schema.SCHEMATA schema_info ON schema_info.SCHEMA_NAME=tenant.db_name
+     WHERE schema_info.SCHEMA_NAME IS NULL
+     ORDER BY tenant.id
+     LIMIT 1`
+  );
+  const tenant = unavailable[0];
+  if (!tenant) return;
+  const response = await adminRequest("GET", `/admin/tenants/${tenant.id}/users`);
+  assert.equal(response.statusCode, 409, "An unavailable tenant database returned a server error.");
+  assert.match(
+    response.error?.message ?? "",
+    /tenant database|database secret/iu,
+    "The unavailable tenant response did not explain the database problem."
+  );
+  assert.notEqual(
+    response.error?.message,
+    "Something went wrong",
+    "The unavailable tenant response hid the actionable database error."
+  );
+}
+
+async function exerciseSuperAdminUserManager(tenant: TenantRow) {
+  const path = `/admin/tenants/${tenant.id}/users`;
+  let created: RecordValue | null = null;
+  try {
+    const createResponse = await adminRequest("POST", path, {
+      email: `sa-e2e-${run}@${tenant.tenant_code.toLowerCase()}.test`,
+      name: `SA E2E User ${run}`,
+      password: "Cxapp-SA-E2E-123!",
+      status: "active"
+    });
+    assert.equal(createResponse.statusCode, 200, "Super Admin tenant-user create failed.");
+    created = createResponse.data as RecordValue;
+
+    const listResponse = await adminRequest("GET", path);
+    assert.equal(listResponse.statusCode, 200, "Super Admin tenant-user list failed.");
+    assert.ok(
+      (listResponse.data as RecordValue[]).some((record) => record.id === created?.id),
+      "Created tenant user did not persist in the selected tenant database."
+    );
+
+    const updateResponse = await adminRequest("PUT", `${path}/${created.id}`, {
+      email: `sa-e2e-${run}@${tenant.tenant_code.toLowerCase()}.test`,
+      name: `SA E2E User Edited ${run}`,
+      status: "active"
+    });
+    assert.equal(updateResponse.statusCode, 200, "Super Admin tenant-user update failed.");
+    assert.equal(
+      (updateResponse.data as RecordValue).name,
+      `SA E2E User Edited ${run}`,
+      "Super Admin tenant-user edit did not persist."
+    );
+  } finally {
+    if (created) {
+      const removed = await adminRequest("DELETE", `${path}/${created.id}/force`);
+      assert.equal(removed.statusCode, 200, "Super Admin tenant-user cleanup failed.");
+    }
+  }
+}
+
 async function exerciseTenant(tenant: TenantRow) {
-  for (const resource of [
-    "app_users",
-    "app_roles",
-    "app_permissions",
-    "user-roles",
-    "role-permissions"
-  ]) {
+  for (const resource of ["users", "roles", "permissions", "user-roles", "role-permissions"]) {
     const listed = await request(tenant, "GET", `/tenant/access/${resource}`);
     assert.equal(listed.statusCode, 200, `${tenant.tenant_code} could not list ${resource}.`);
   }
 
-  const role = await create(tenant, "app_roles", {
+  const role = await create(tenant, "roles", {
     description: `E2E role ${run}`,
     key: `e2e-${run}`,
     label: `E2E Role ${run}`,
     status: "active"
   });
-  const permission = await create(tenant, "app_permissions", {
+  const permission = await create(tenant, "permissions", {
     description: `E2E permission ${run}`,
     key: `e2e.${run}.read`,
     label: `E2E Permission ${run}`,
     status: "active"
   });
-  const user = await create(tenant, "app_users", {
+  const user = await create(tenant, "users", {
     email: `e2e-${run}@${tenant.tenant_code.toLowerCase()}.test`,
     name: `E2E User ${run}`,
     password: "Cxapp-E2E-123!",
@@ -85,9 +171,9 @@ async function exerciseTenant(tenant: TenantRow) {
   });
 
   for (const [resource, record] of [
-    ["app_users", user],
-    ["app_roles", role],
-    ["app_permissions", permission],
+    ["users", user],
+    ["roles", role],
+    ["permissions", permission],
     ["user-roles", userRole],
     ["role-permissions", rolePermission]
   ] as const) {
@@ -104,9 +190,9 @@ async function exerciseTenant(tenant: TenantRow) {
   for (const [resource, record] of [
     ["role-permissions", rolePermission],
     ["user-roles", userRole],
-    ["app_permissions", permission],
-    ["app_roles", role],
-    ["app_users", user]
+    ["permissions", permission],
+    ["roles", role],
+    ["users", user]
   ] as const) {
     const removed = await request(
       tenant,
@@ -152,6 +238,21 @@ async function request(
       "x-tenant-db": databaseName,
       "x-tenant-id": tenant.uuid
     },
+    method,
+    ...(payload === undefined ? {} : { payload }),
+    url
+  });
+  const envelope = response.json() as { data?: unknown; error?: { message?: string } };
+  return { data: envelope.data, error: envelope.error, statusCode: response.statusCode };
+}
+
+async function adminRequest(
+  method: "DELETE" | "GET" | "POST" | "PUT",
+  url: string,
+  payload?: unknown
+) {
+  const response = await app.inject({
+    headers: { authorization: `Bearer ${superAdminToken}` },
     method,
     ...(payload === undefined ? {} : { payload }),
     url

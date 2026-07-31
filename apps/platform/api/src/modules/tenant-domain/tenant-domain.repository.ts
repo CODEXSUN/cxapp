@@ -68,7 +68,7 @@ export class TenantDomainRepository {
 
   async upsertPrimaryDomain(input: { domain: string; tenantId: number }) {
     const domain = normalizeTenantDomain(input.domain);
-    if (!domain || isCanonicalAppHost(domain)) return canonicalAppHost();
+    if (!domain || isSharedApplicationHost(domain)) return canonicalAppHost();
     const existing = await getPlatformDatabase()
       .selectFrom("tenant_domains")
       .select(["id", "tenant_id"])
@@ -187,10 +187,7 @@ export function isCanonicalAppHost(value: string) {
 export function isSharedApplicationHost(value: string) {
   const host = normalizeTenantDomain(value);
   if (host === canonicalAppHost()) return true;
-  return (
-    env.NODE_ENV !== "production" &&
-    (host === "localhost" || host === "127.0.0.1")
-  );
+  return env.NODE_ENV !== "production" && (host === "localhost" || host === "127.0.0.1");
 }
 
 export function tenantDomainVerificationName(domain: string) {

@@ -9,6 +9,7 @@ import {
   ListChecksIcon,
   PaletteIcon,
   ShieldCheckIcon,
+  UsersIcon,
   WorkflowIcon
 } from "lucide-react";
 import { SuperLayout } from "@cxapp/ui/layouts/super-layout";
@@ -54,6 +55,9 @@ const PlanAccessWorkspace = lazyWorkspace(() =>
 const TenantAccessWorkspace = lazyWorkspace(() =>
   import("../../modules/tenant-access").then((module) => module.TenantAccessWorkspace)
 );
+const TenantUserWorkspace = lazyWorkspace(() =>
+  import("../../modules/tenant-user").then((module) => module.TenantUserWorkspace)
+);
 const AccessControlWorkspace = lazyWorkspace(() =>
   import("../../modules/access-control").then((module) => module.AccessControlWorkspace)
 );
@@ -94,6 +98,7 @@ type SaPage =
   | "apps"
   | "entitlements"
   | "tenant-access"
+  | "tenant-users"
   | "industries"
   | "master-database"
   | "tenant-database"
@@ -171,7 +176,11 @@ export function SaDesk() {
     {
       title: "Tenant Setup",
       icon: Building2Icon,
-      isActive: page === "tenants" || page === "domains" || page === "tenant-access",
+      isActive:
+        page === "tenants" ||
+        page === "domains" ||
+        page === "tenant-access" ||
+        page === "tenant-users",
       items: [
         { title: "Tenants", isActive: page === "tenants", onSelect: () => selectPage("tenants") },
         { title: "Domains", isActive: page === "domains", onSelect: () => selectPage("domains") },
@@ -179,6 +188,12 @@ export function SaDesk() {
           title: "Tenant Access",
           isActive: page === "tenant-access",
           onSelect: () => selectPage("tenant-access")
+        },
+        {
+          title: "User Manager",
+          icon: UsersIcon,
+          isActive: page === "tenant-users",
+          onSelect: () => selectPage("tenant-users")
         }
       ]
     },
@@ -297,6 +312,7 @@ export function SaDesk() {
           {page === "apps" ? <AppRegistryWorkspace /> : null}
           {page === "entitlements" ? <EntitlementWorkspace /> : null}
           {page === "tenant-access" ? <TenantAccessWorkspace /> : null}
+          {page === "tenant-users" ? <TenantUserWorkspace mode="super-admin" /> : null}
           {page === "industries" ? <IndustryWorkspace /> : null}
           {page === "master-database" ? <MasterDatabaseWorkspace /> : null}
           {page === "tenant-database" ? <TenantDatabaseWorkspace /> : null}
@@ -324,6 +340,7 @@ function pageFromUrl(): SaPage {
     page === "apps" ||
     page === "entitlements" ||
     page === "tenant-access" ||
+    page === "tenant-users" ||
     page === "industries" ||
     page === "master-database" ||
     page === "tenant-database" ||

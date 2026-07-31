@@ -111,7 +111,7 @@ export function TenantList({ onBack: _onBack }: { onBack: () => void }) {
     onSuccess: async (tenant) => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "tenants"] });
       toast.success("Tenant saved", {
-        description: `${tenant.tenantName} is ready in the tenant list.`
+        description: `${tenant.tenantName} was saved. Use the Database tab to connect or install its database.`
       });
       setView({ mode: "show", tenant });
     },
@@ -860,13 +860,20 @@ function TenantUpsertPage({
               />
             </WorkspaceFormField>
             <WorkspaceFormField label="Secret reference">
-              <Input
-                className="h-11 rounded-md font-mono"
-                value={form.dbSecretRef}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, dbSecretRef: event.target.value }))
-                }
-              />
+              <div className="space-y-1.5">
+                <Input
+                  className="h-11 rounded-md font-mono"
+                  placeholder="DB_PASSWORD"
+                  value={form.dbSecretRef}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, dbSecretRef: event.target.value }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Environment-variable name only, for example DB_PASSWORD. Do not enter the password
+                  value here.
+                </p>
+              </div>
             </WorkspaceFormField>
           </WorkspaceFormGrid>
         </WorkspaceFormPanel>

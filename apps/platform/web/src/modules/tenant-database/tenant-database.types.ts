@@ -5,6 +5,7 @@ export type DatabaseRunStatus = "completed" | "failed" | "requested" | "running"
 export type DatabaseMigrationRow = {
   appliedAt: string;
   name: string;
+  version: number;
 };
 
 export type DatabaseTableInfo = {
@@ -43,6 +44,7 @@ export type DatabaseMaintenanceRun = {
 };
 
 export type TenantDatabaseStatus = {
+  connectionMessage: string | null;
   databaseName: string;
   host: string;
   migrations: DatabaseMigrationRow[];

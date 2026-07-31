@@ -13,23 +13,18 @@ import {
   resolveLandingApp
 } from "../app-registry/index.js";
 import { EntitlementAccessService } from "../entitlement/entitlement.access.js";
-import { provisionTenantStorage } from "./tenant.seed.js";
-import { DatabaseMaintenanceService } from "../database-maintenance/database-maintenance.service.js";
 import { env } from "../../env.js";
 import {
   defaultTenantDomainForSlug,
   normalizeTenantDomain
 } from "../tenant-domain/tenant-domain.repository.js";
-import {
-  getDefaultCompanyForDatabase,
-  setDefaultCompanyLandingAppForDatabase
-} from "@cxapp/core-api";
+import { getDefaultCompanyForDatabase } from "@cxapp/core-api";
+import { AppError, isAppError } from "@cxapp/framework/errors";
 
 export class TenantService {
   constructor(
     private readonly repository = new TenantRepository(),
-    private readonly access = new EntitlementAccessService(),
-    private readonly maintenance = new DatabaseMaintenanceService()
+    private readonly access = new EntitlementAccessService()
   ) {}
 
   async listTenants() {
@@ -70,38 +65,19 @@ export class TenantService {
   }
 
   async createTenant(input: TenantSavePayload) {
-    const tenant = await this.repository.create(this.normalize(input, true));
-    await provisionTenantStorage(tenant);
-    await this.maintenance.setupTenant(tenant.id, {
-      note: "Automatic provisioning after tenant creation."
-    });
-    const defaultCompany = await setDefaultCompanyLandingAppForDatabase(
-      tenant.dbName,
-      tenant.defaultLandingApp
-    );
-    return {
-      ...tenant,
-      defaultLandingApp: resolveLandingApp(defaultCompany.landingApp, tenant.enabledModuleKeys)
-    };
+    try {
+      return await this.repository.create(this.normalize(input, true));
+    } catch (error) {
+      throw tenantPersistenceError(error);
+    }
   }
 
   async updateTenant(id: string, input: TenantSavePayload) {
-    const tenant = await this.repository.update(id, this.normalize(input));
-    if (tenant) {
-      await provisionTenantStorage(tenant);
-      await this.maintenance.reinstallTenant(tenant.id, {
-        note: "Automatic provisioning after tenant update."
-      });
-      const defaultCompany = await setDefaultCompanyLandingAppForDatabase(
-        tenant.dbName,
-        tenant.defaultLandingApp
-      );
-      return {
-        ...tenant,
-        defaultLandingApp: resolveLandingApp(defaultCompany.landingApp, tenant.enabledModuleKeys)
-      };
+    try {
+      return await this.repository.update(id, this.normalize(input));
+    } catch (error) {
+      throw tenantPersistenceError(error);
     }
-    return tenant;
   }
 
   suspendTenant(id: string) {
@@ -330,4 +306,10 @@ function parseStringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+function tenantPersistenceError(error: unknown) {
+  if (isAppError(error)) return error;
+  const message = error instanceof Error && error.message ? error.message : String(error);
+  return AppError.internal(message || "Tenant could not be saved.");
 }

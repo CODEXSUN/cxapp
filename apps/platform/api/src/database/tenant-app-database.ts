@@ -22,9 +22,9 @@ import type { TenantDatabase } from "./schema.js";
 import type { Tenant } from "../modules/tenant/tenant.types.js";
 import { tenantRuntimeMigrations } from "../modules/tenant/tenant.migration.js";
 import {
-  migrateTaskManagerModule,
-  rollbackTaskManagerModule,
-  taskManagerMigration
+  migrateTaskManagerTenantModule,
+  rollbackTaskManagerTenantModule,
+  taskManagerTenantMigrationBatch
 } from "../modules/task-manager/task-manager.migration.js";
 import { seedTaskManagerModule } from "../modules/task-manager/task-manager.seed.js";
 
@@ -58,13 +58,11 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
         }))
       : []),
     ...(enabled.has("platform.task-manager")
-      ? [
-          {
-            description: taskManagerMigration.description,
-            name: taskManagerMigration.key,
-            statements: [`RUN ${taskManagerMigration.key}`]
-          }
-        ]
+      ? taskManagerTenantMigrationBatch.steps.map(({ description, name }) => ({
+          description,
+          name,
+          statements: [`RUN ${name}`]
+        }))
       : [])
   ];
 }
@@ -86,7 +84,7 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   }
 
   if (enabled.has("platform.task-manager")) {
-    await migrateTaskManagerModule(database);
+    await migrateTaskManagerTenantModule(database as never);
     provisionedApps.push("task-manager");
   }
 
@@ -125,7 +123,8 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
 
 export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
-  if (enabled.has("platform.task-manager")) await rollbackTaskManagerModule(database);
+  if (enabled.has("platform.task-manager"))
+    await rollbackTaskManagerTenantModule(database as never);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
   await rollbackCoreTenantDatabase(tenant.dbName);

@@ -105,6 +105,7 @@ export function TenantDatabaseShowPage({
                   </span>
                 ],
                 ["Port", record.port],
+                ["Connection result", record.connectionMessage ?? "Connected"],
                 [
                   "Endpoint",
                   <span key="endpoint" className="font-mono text-xs">
@@ -260,6 +261,7 @@ function MigrationPlanCard({
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Migration</th>
+                <th className="px-4 py-3 text-left font-semibold">Version</th>
                 <th className="px-4 py-3 text-left font-semibold">Applied</th>
               </tr>
             </thead>
@@ -267,6 +269,7 @@ function MigrationPlanCard({
               {migrations.map((migration) => (
                 <tr className="border-t" key={`${migration.name}-${migration.appliedAt}`}>
                   <td className="px-4 py-3 font-mono text-xs">{migration.name}</td>
+                  <td className="px-4 py-3 tabular-nums">{migration.version}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatDate(migration.appliedAt)}
                   </td>
@@ -285,6 +288,7 @@ function MigrationPlanCard({
             ["Available", plan?.available.length ?? "Loading"],
             ["Applied", plan?.applied.length ?? migrations.length],
             ["Pending", plan?.pending.length ?? "Loading"],
+            ["Migration version", plan?.latestApplied?.version ?? "None"],
             ["Latest applied", plan?.latestApplied ? plan.latestApplied.name : "None"],
             ["Latest pending", plan?.latestPending ? plan.latestPending.name : "None"]
           ]}

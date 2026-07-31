@@ -1,3 +1,8 @@
+import {
+  rollbackMigrationBatch,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@cxapp/framework/db";
 import { sql, type Kysely } from "kysely";
 import type { TaskManagerLookupsTable, TaskManagerTodosTable } from "../../database/schema.js";
 
@@ -10,6 +15,31 @@ export const taskManagerMigration = {
   key: "platform.task-manager.database-v1",
   description: "Database-backed tenant and Super Admin tasks and lookup values."
 };
+
+export const taskManagerTenantMigrationBatch: MigrationBatch<TaskManagerDatabase> = {
+  batch: 1,
+  description: taskManagerMigration.description,
+  scope: "platform.task-manager",
+  version: "1.0.45",
+  steps: [
+    {
+      checksum: `${taskManagerMigration.key}:v1`,
+      description: taskManagerMigration.description,
+      down: rollbackTaskManagerModule,
+      name: taskManagerMigration.key,
+      up: migrateTaskManagerModule,
+      version: 1
+    }
+  ]
+};
+
+export function migrateTaskManagerTenantModule(database: Kysely<TaskManagerDatabase>) {
+  return runMigrationBatch(database, taskManagerTenantMigrationBatch);
+}
+
+export function rollbackTaskManagerTenantModule(database: Kysely<TaskManagerDatabase>) {
+  return rollbackMigrationBatch(database, taskManagerTenantMigrationBatch);
+}
 
 export async function migrateTaskManagerModule<Database extends TaskManagerDatabase>(
   db: Kysely<Database>

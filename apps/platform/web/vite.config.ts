@@ -30,6 +30,9 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(rootPackage.version)
     },
+    optimizeDeps: {
+      include: ["react-is"]
+    },
     plugins: [tailwindcss(), react()],
     ...(command === "serve" ? { server: platformDevelopmentServer(runtimeEnv) } : {})
   };
@@ -65,8 +68,7 @@ function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined
       },
       "/api/devkit": {
         ...proxy,
-        rewrite: (path: string) =>
-          `/devkit${path.replace(/^\/api\/devkit/u, "") || "/"}`
+        rewrite: (path: string) => `/devkit${path.replace(/^\/api\/devkit/u, "") || "/"}`
       },
       "/api/platform": {
         ...proxy,
