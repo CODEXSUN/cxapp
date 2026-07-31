@@ -156,20 +156,43 @@ For a non-interactive deployment host:
 bash update.sh --yes
 ```
 
+The updater refuses a dirty Git worktree by default. For an intentional emergency build from
+uncommitted source, make the exception explicit so it is captured in deployment metadata:
+
+```bash
+bash update.sh --allow-dirty
+```
+
 On Windows with Git Bash:
 
 ```powershell
 & "C:\Program Files\Git\bin\bash.exe" update.sh --check
 ```
 
-The updater requires the existing `.container/deploy.env` and Compose-owned CODEXSUN
-containers. Before downtime, it validates configuration, container ownership,
-container health, and every Compose model; builds the current API, Web, and
-migration images; and creates a validated timestamped full MariaDB dump under
-`.container/backups/`. It then runs safe forward migrations, recreates only
-`cxapp-api` and `cxapp-web`, waits for Docker health, and runs the complete
-deployment smoke test. A failed replacement restores the previous application
-images automatically; the SQL backup is retained for manual database recovery.
+The updater requires the existing `.container/deploy.env` and Compose-owned CODEXSUN containers.
+It holds an exclusive host update lock; requires `package.json`, `CXAPP_VERSION`, and all three
+application image tags to match; records the Git commit and dirty state; and checks free space in
+both the backup filesystem and Docker storage before building. A dirty worktree is accepted only
+with `--allow-dirty`. Applying an update requires the Linux `flock` command; read-only `--check`
+does not acquire the update lock.
+
+Before downtime, it validates configuration, container ownership, container health, and every
+Compose model; builds the current API, Web, and migration images; and creates a timestamped full
+MariaDB dump under `.container/backups/`. Every dump receives a verified SHA-256 sidecar. The
+updater retains the newest `CXAPP_UPDATE_BACKUP_RETENTION` dumps and their deployment records.
+
+Production migration is allowed only when `CXAPP_MIGRATION_COMPATIBLE_VERSION` exactly matches the
+source version. Set that value only after confirming the release uses expand-contract migrations
+that remain compatible with the currently running application image. The updater runs the database
+migration preflight, applies forward migrations, recreates only `cxapp-api` and `cxapp-web`, waits
+for Docker health, and runs the complete deployment smoke test. A failed replacement restores the
+previous application images automatically; migrated data and the verified SQL backup are retained
+for an operator-directed recovery.
+
+Each attempt writes a permission-restricted JSON record beside its backup with the timestamp,
+source commit, application version, dirty state, application image digests, migration result,
+backup path, checksum, and final deployment status. Configure the minimum-space guards with
+`CXAPP_UPDATE_MIN_BACKUP_FREE_MB` and `CXAPP_UPDATE_MIN_DOCKER_FREE_MB`.
 
 The updater does not rerun interactive setup, modify either environment file, recreate MariaDB,
 Redis, or File Browser, remove volumes, change credentials, pull source, or

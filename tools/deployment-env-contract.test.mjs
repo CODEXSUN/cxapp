@@ -47,6 +47,20 @@ test("container tooling and Compose consume deploy.env only", async () => {
   assert.doesNotMatch(compose, /\.\.\/\.\.\/\.env/u);
 });
 
+test("guarded updates enforce reproducible versions and recoverable deployment evidence", async () => {
+  const deployment = envValues(await read(".container/deploy.env.sample"));
+  const update = await read(".container/update.sh");
+
+  assert.equal(deployment.CXAPP_MIGRATION_COMPATIBLE_VERSION, deployment.CXAPP_VERSION);
+  assert.equal(deployment.CXAPP_UPDATE_BACKUP_RETENTION, "10");
+  assert.match(update, /flock -n 9/u);
+  assert.match(update, /BILLING_STACK_MIGRATIONS_IMAGE_TAG/u);
+  assert.match(update, /--allow-dirty/u);
+  assert.match(update, /sha256sum --check/u);
+  assert.match(update, /CXAPP_UPDATE_MIN_DOCKER_FREE_MB/u);
+  assert.match(update, /cxapp-deployment-\$timestamp\.json/u);
+});
+
 test("cloud environment preparation is separate from setup and never copies local env", async () => {
   const setup = await read("setup.sh");
   const prepare = await read("prepare-env.sh");

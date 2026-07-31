@@ -114,6 +114,13 @@ Product database migrations are restricted to the product-owned scope and use ex
 backward-compatible additions deploy first, destructive contraction occurs only after the rollback
 window. A migration requiring an immediate destructive change is not independently deployable.
 
+The CXApp guarded updater enforces one release version across source and application image tags,
+serializes updates with a host lock, rejects undeclared dirty source, checks backup and Docker disk
+capacity, and requires a per-version expand-contract compatibility declaration before production
+migration. It retains SHA-256-verified database dumps and deployment metadata containing the source
+commit, version, image digests, migration result, timestamp, and backup identity. Application image
+rollback never pretends to roll back an already-applied database migration.
+
 Shared public contracts remain explicit between workspace packages. A breaking contract must update
 the owner and all composed consumers in the same verified repository release.
 

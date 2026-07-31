@@ -48,6 +48,9 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   retired cookie is rejected while the new cookie remains authenticated.
 - Added the Cloudflare MariaDB tunnel runbook for server routing, new Windows client installation,
   SQLyog configuration, verification, reconnection, and troubleshooting.
+- Hardened CXApp Docker updates with source-to-image version matching, an exclusive host lock,
+  explicit migration compatibility approval, dirty-worktree control, disk-space preflight,
+  SHA-256 backup verification and retention, plus per-attempt deployment audit metadata.
 
 ## v-1.0.46
 
