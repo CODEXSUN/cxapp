@@ -18,8 +18,8 @@ export type ApiEnvelope<T> = {
   success: true;
 };
 
-export async function billingApiGet<T>(path: string) {
-  return billingApiRequest<T>(path);
+export async function billingApiGet<T>(path: string, init?: RequestInit) {
+  return billingApiRequest<T>(path, init);
 }
 
 export async function billingApiPost<T>(path: string, body?: unknown) {

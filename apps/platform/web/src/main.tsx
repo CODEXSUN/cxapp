@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
+import { GlobalLoader } from "@cxapp/ui/components/global-loader";
 import "@cxapp/ui/styles.css";
 import "./styles.css";
+
+const root = createRoot(document.getElementById("root") as HTMLElement);
+root.render(<GlobalLoader />);
 
 const response = await fetch("/api/platform/public/runtime-config");
 if (!response.ok) {
@@ -16,4 +20,4 @@ if (!envelope.success || !envelope.data) {
 window.__CXAPP_RUNTIME_CONFIG__ = Object.freeze(envelope.data);
 
 const { PlatformWebApp } = await import("./app/PlatformWebApp");
-createRoot(document.getElementById("root") as HTMLElement).render(<PlatformWebApp />);
+root.render(<PlatformWebApp />);

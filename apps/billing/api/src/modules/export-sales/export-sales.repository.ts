@@ -5,6 +5,7 @@ import {
   defaultEway,
   existingIds,
   ExportSaleHeaderRow,
+  ExportSaleItemRow,
   ExportSaleReferenceState,
   ExportSalesDatabase,
   exportSalesDatabase,
@@ -31,11 +32,33 @@ import type {
   ExportSaleStatus
 } from "./export-sales.types.js";
 
+type ExportSaleEinvoiceRow = {
+  ack_date: string | null;
+  ack_number: string | null;
+  export_sale_id: number;
+  irn: string;
+  signed_qr: string | null;
+  status: "not-generated" | "generated";
+};
+
+type ExportSaleEwayRow = {
+  bill_date: string;
+  bill_number: string;
+  export_sale_id: number;
+  notes: string | null;
+  part: "Part A" | "Part B";
+  status: "not-generated" | "generated";
+  transport_gst: string | null;
+  transport_id: number | null;
+  transport_name: string | null;
+  vehicle_number: string | null;
+};
+
 export class ExportSalesRepository {
   async list(databaseName: string) {
     const database = await exportSalesDatabase(databaseName);
     const result = await selectExportSaleHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
   async listPage(
     databaseName: string,
@@ -52,20 +75,20 @@ export class ExportSalesRepository {
       status: options.status
     };
     const scope = currentBillingScope();
-    const result = await selectExportSaleHeaders(undefined, page).execute(database);
-    const count = await sql<{
-      total: string | number;
-    }>`SELECT COUNT(*) AS total FROM billing_export_sales s
-      INNER JOIN core_contacts customer ON customer.id=s.customer_id LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
-      WHERE s.deleted_at IS NULL
-        AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
-        AND (${page.status}='all' OR s.status=${page.status})
-      AND (${customer}='all' OR LOWER(customer.name)=${customer})
-      AND (${search}='%%' OR s.invoice_number LIKE ${search} OR customer.name LIKE ${search}
-        OR COALESCE(work_order.code,'') LIKE ${search} OR DATE_FORMAT(s.issued_on,'%Y-%m-%d') LIKE ${search}
-        OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})`.execute(database);
+    const [result, count] = await Promise.all([
+      selectExportSaleHeaders(undefined, page).execute(database),
+      sql<{ total: string | number }>`SELECT COUNT(*) AS total FROM billing_export_sales s
+        INNER JOIN core_contacts customer ON customer.id=s.customer_id LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
+        WHERE s.deleted_at IS NULL
+          AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
+          AND (${page.status}='all' OR s.status=${page.status})
+        AND (${customer}='all' OR LOWER(customer.name)=${customer})
+        AND (${search}='%%' OR s.invoice_number LIKE ${search} OR customer.name LIKE ${search}
+          OR COALESCE(work_order.code,'') LIKE ${search} OR DATE_FORMAT(s.issued_on,'%Y-%m-%d') LIKE ${search}
+          OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})`.execute(database)
+    ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(count.rows[0]?.total ?? 0)
@@ -273,8 +296,14 @@ export class ExportSalesRepository {
   async validItemReferenceIds(databaseName: string, input: ExportSaleSavePayload) {
     const database = await exportSalesDatabase(databaseName);
     return {
-      colours: await existingIds(database, sql`SELECT id FROM core_colours WHERE status = 'active'`),
-      hsnCodes: await existingIds(database, sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`),
+      colours: await existingIds(
+        database,
+        sql`SELECT id FROM core_colours WHERE status = 'active'`
+      ),
+      hsnCodes: await existingIds(
+        database,
+        sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`
+      ),
       products: await existingIds(
         database,
         sql`SELECT id FROM core_products WHERE status = 'active' AND deleted_at IS NULL`
@@ -459,38 +488,64 @@ export class ExportSalesRepository {
     database: Kysely<ExportSalesDatabase>,
     row: ExportSaleHeaderRow
   ): Promise<ExportSale> {
-    const itemsResult = await selectExportSaleItems(row.id).execute(database);
-    const einvoiceResult = await sql<{
-      ack_date: string | null;
-      ack_number: string | null;
-      irn: string;
-      signed_qr: string | null;
-      status: "not-generated" | "generated";
-    }>`
-      SELECT irn, ack_number, DATE_FORMAT(ack_date, '%Y-%m-%dT%H:%i:%s') AS ack_date,
-             signed_qr, status
-      FROM billing_export_sales_einvoices WHERE export_sale_id = ${row.id} ORDER BY id DESC LIMIT 1
-    `.execute(database);
-    const ewayResult = await sql<{
-      bill_date: string;
-      bill_number: string;
-      notes: string | null;
-      part: "Part A" | "Part B";
-      status: "not-generated" | "generated";
-      transport_gst: string | null;
-      transport_id: number | null;
-      transport_name: string | null;
-      vehicle_number: string | null;
-    }>`
-      SELECT e.bill_number, DATE_FORMAT(e.bill_date, '%Y-%m-%d') AS bill_date, e.part,
-             e.transport_id, t.name AS transport_name, t.gst AS transport_gst,
-             e.vehicle_number, e.status, e.notes
-      FROM billing_export_sales_eway_bills e
-      LEFT JOIN core_transports t ON t.id = e.transport_id
-      WHERE e.export_sale_id = ${row.id} ORDER BY e.id DESC LIMIT 1
-    `.execute(database);
-    const einvoice = einvoiceResult.rows[0];
-    const eway = ewayResult.rows[0];
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<ExportSalesDatabase>,
+    rows: ExportSaleHeaderRow[]
+  ): Promise<ExportSale[]> {
+    if (rows.length === 0) return [];
+    const ids = rows.map((row) => row.id);
+    const [itemsResult, einvoiceResult, ewayResult] = await Promise.all([
+      selectExportSaleItems(ids).execute(database),
+      sql<ExportSaleEinvoiceRow>`
+        SELECT e.export_sale_id, e.irn, e.ack_number,
+               DATE_FORMAT(e.ack_date, '%Y-%m-%dT%H:%i:%s') AS ack_date,
+               e.signed_qr, e.status
+        FROM billing_export_sales_einvoices e
+        INNER JOIN (
+          SELECT export_sale_id, MAX(id) AS id FROM billing_export_sales_einvoices
+          WHERE export_sale_id IN (${sql.join(ids)}) GROUP BY export_sale_id
+        ) latest ON latest.id = e.id
+      `.execute(database),
+      sql<ExportSaleEwayRow>`
+        SELECT e.export_sale_id, e.bill_number,
+               DATE_FORMAT(e.bill_date, '%Y-%m-%d') AS bill_date, e.part,
+               e.transport_id, t.name AS transport_name, t.gst AS transport_gst,
+               e.vehicle_number, e.status, e.notes
+        FROM billing_export_sales_eway_bills e
+        INNER JOIN (
+          SELECT export_sale_id, MAX(id) AS id FROM billing_export_sales_eway_bills
+          WHERE export_sale_id IN (${sql.join(ids)}) GROUP BY export_sale_id
+        ) latest ON latest.id = e.id
+        LEFT JOIN core_transports t ON t.id = e.transport_id
+      `.execute(database)
+    ]);
+    const itemsBySale = new Map<number, ExportSaleItemRow[]>();
+    for (const item of itemsResult.rows) {
+      const items = itemsBySale.get(item.export_sale_id) ?? [];
+      items.push(item);
+      itemsBySale.set(item.export_sale_id, items);
+    }
+    const einvoiceBySale = new Map(einvoiceResult.rows.map((item) => [item.export_sale_id, item]));
+    const ewayBySale = new Map(ewayResult.rows.map((item) => [item.export_sale_id, item]));
+    return rows.map((row) =>
+      this.toExportSale(
+        row,
+        itemsBySale.get(row.id) ?? [],
+        einvoiceBySale.get(row.id),
+        ewayBySale.get(row.id)
+      )
+    );
+  }
+
+  private toExportSale(
+    row: ExportSaleHeaderRow,
+    items: ExportSaleItemRow[],
+    einvoice: ExportSaleEinvoiceRow | undefined,
+    eway: ExportSaleEwayRow | undefined
+  ): ExportSale {
     return {
       amount: money(row.amount),
       billingAddress: formatAddress(row, "billing"),
@@ -531,7 +586,7 @@ export class ExportSalesRepository {
       id: row.uuid,
       invoiceNumber: row.invoice_number,
       issuedOn: row.issued_on,
-      items: itemsResult.rows.map(toExportSaleItem),
+      items: items.map(toExportSaleItem),
       ledgerId: row.ledger_id,
       lineNumber: row.line_number,
       notes: row.notes ?? "",

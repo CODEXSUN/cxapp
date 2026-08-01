@@ -18,12 +18,15 @@ import type {
 } from "./payment.types";
 
 export const listPayments = () => billingApiGet<Payment[]>("/billing/payments");
-export const listPaymentsPage = (query: {
-  page: number;
-  pageSize: number;
-  search: string;
-  status: string;
-}) => {
+export const listPaymentsPage = (
+  query: {
+    page: number;
+    pageSize: number;
+    search: string;
+    status: string;
+  },
+  signal?: AbortSignal
+) => {
   const params = new URLSearchParams({
     page: String(query.page),
     pageSize: String(query.pageSize),
@@ -31,7 +34,8 @@ export const listPaymentsPage = (query: {
     status: query.status
   });
   return billingApiGet<import("./payment.types").PaymentPageResult>(
-    `/billing/payments/page?${params}`
+    `/billing/payments/page?${params}`,
+    signal ? { signal } : undefined
   );
 };
 export const getPaymentContext = () => billingApiGet<PaymentContext>("/billing/payments/context");

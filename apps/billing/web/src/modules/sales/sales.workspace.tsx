@@ -216,8 +216,7 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
     });
   }, [entries]);
 
-  async function openNewSale() {
-    await settingsQuery.refetch();
+  function openNewSale() {
     setView({ mode: "upsert", sale: null, returnTo: "list" });
   }
 
@@ -253,7 +252,7 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
         sale={freshSale}
         onBack={() => setView({ mode: "list" })}
         onEdit={() => setView({ mode: "upsert", sale: freshSale, returnTo: "show" })}
-        onNew={() => void openNewSale()}
+        onNew={openNewSale}
         onPrint={() => window.print()}
         onSuspend={() => statusMutation.mutate({ id: freshSale.id, status: "cancelled" })}
         canEdit={freshSale.status === "draft"}
@@ -312,7 +311,7 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
             <RefreshCw className={cn("size-4", salesQuery.isFetching && "animate-spin")} />
             Refresh
           </Button>
-          <Button className="h-9 rounded-md" onClick={() => void openNewSale()} type="button">
+          <Button className="h-9 rounded-md" onClick={openNewSale} type="button">
             <Plus className="size-4" />
             New sale
           </Button>

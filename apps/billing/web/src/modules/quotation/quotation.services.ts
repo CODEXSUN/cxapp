@@ -117,13 +117,16 @@ export async function listQuotations() {
   );
 }
 
-export async function listQuotationsPage(query: {
-  customer: string;
-  page: number;
-  pageSize: number;
-  search: string;
-  status: string;
-}) {
+export async function listQuotationsPage(
+  query: {
+    customer: string;
+    page: number;
+    pageSize: number;
+    search: string;
+    status: string;
+  },
+  signal?: AbortSignal
+) {
   const params = new URLSearchParams({
     customer: query.customer,
     page: String(query.page),
@@ -132,7 +135,8 @@ export async function listQuotationsPage(query: {
     status: query.status
   });
   return billingApiGet<import("./quotation.types").QuotationPageResult>(
-    `/billing/quotations/page?${params}`
+    `/billing/quotations/page?${params}`,
+    signal ? { signal } : undefined
   ).then((result) => ({ ...result, items: result.items.map(fromApiQuotation) }));
 }
 

@@ -116,13 +116,16 @@ export async function listPurchases() {
     records.map(fromApiPurchase)
   );
 }
-export async function listPurchasesPage(query: {
-  customer: string;
-  page: number;
-  pageSize: number;
-  search: string;
-  status: string;
-}) {
+export async function listPurchasesPage(
+  query: {
+    customer: string;
+    page: number;
+    pageSize: number;
+    search: string;
+    status: string;
+  },
+  signal?: AbortSignal
+) {
   const params = new URLSearchParams({
     customer: query.customer,
     page: String(query.page),
@@ -131,7 +134,8 @@ export async function listPurchasesPage(query: {
     status: query.status
   });
   return billingApiGet<import("./purchase.types").PurchasePageResult>(
-    `/billing/purchases/page?${params}`
+    `/billing/purchases/page?${params}`,
+    signal ? { signal } : undefined
   ).then((result) => ({ ...result, items: result.items.map(fromApiPurchase) }));
 }
 

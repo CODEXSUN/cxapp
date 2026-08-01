@@ -242,7 +242,6 @@ export function ExportSalesWorkspace({
   }, [entries]);
 
   function openNewExportSale() {
-    void settingsQuery.refetch();
     setView({ mode: "upsert", exportSale: null, returnTo: "list" });
   }
 

@@ -12,6 +12,7 @@ import {
   type WorkspaceAnimatedTab
 } from "@cxapp/ui/workspace/animated-tabs";
 import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import {
   createQuotationAddressType,
   createQuotationLocation,
@@ -184,27 +185,27 @@ export function QuotationAddressDialog({
   const [saveError, setSaveError] = useState("");
   const addressTypesQuery = useQuery({
     queryFn: listQuotationAddressTypes,
-    queryKey: ["billing", "quotation", "lookups", "address-types"]
+    ...billingLookupQuery("address-types")
   });
   const countriesQuery = useQuery({
     queryFn: () => listQuotationLocations("countries"),
-    queryKey: ["billing", "quotation", "lookups", "countries"]
+    ...billingLookupQuery("countries")
   });
   const statesQuery = useQuery({
     queryFn: () => listQuotationLocations("states"),
-    queryKey: ["billing", "quotation", "lookups", "states"]
+    ...billingLookupQuery("states")
   });
   const districtsQuery = useQuery({
     queryFn: () => listQuotationLocations("districts"),
-    queryKey: ["billing", "quotation", "lookups", "districts"]
+    ...billingLookupQuery("districts")
   });
   const citiesQuery = useQuery({
     queryFn: () => listQuotationLocations("cities"),
-    queryKey: ["billing", "quotation", "lookups", "cities"]
+    ...billingLookupQuery("cities")
   });
   const pincodesQuery = useQuery({
     queryFn: () => listQuotationLocations("pincodes"),
-    queryKey: ["billing", "quotation", "lookups", "pincodes"]
+    ...billingLookupQuery("pincodes")
   });
 
   useEffect(() => {

@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import { getSale, getSaleContext, listSales, listSalesPage } from "./sales.services";
+import type { SalePageResult } from "./sales.types";
 
 export function useSalesList() {
   return useQuery({
@@ -16,10 +18,12 @@ export function useSalesPage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<SalePageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listSalesPage(query),
-    queryKey: ["billing", "sales", "page", query]
+    queryFn: ({ signal }) => listSalesPage(request, signal),
+    queryKey: ["billing", "sales", "page", request]
   });
 }
 

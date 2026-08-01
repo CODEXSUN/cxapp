@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import {
   getQuotation,
   getQuotationContext,
   listQuotations,
   listQuotationsPage
 } from "./quotation.services";
+import type { QuotationPageResult } from "./quotation.types";
 
 export function useQuotationList() {
   return useQuery({
@@ -20,10 +22,12 @@ export function useQuotationPage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<QuotationPageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listQuotationsPage(query),
-    queryKey: ["billing", "quotations", "page", query]
+    queryFn: ({ signal }) => listQuotationsPage(request, signal),
+    queryKey: ["billing", "quotations", "page", request]
   });
 }
 

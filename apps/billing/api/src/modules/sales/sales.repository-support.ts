@@ -67,6 +67,7 @@ export type SaleHeaderRow = {
 };
 
 export type SaleItemRow = {
+  sales_id: number;
   cgst_amount: string | number;
   colour_id: number | null;
   colour_name: string | null;
@@ -195,9 +196,10 @@ export function selectSalePageHeaders(
   `;
 }
 
-export function selectSaleItems(saleId: number) {
+export function selectSaleItems(saleIds: number | number[]) {
+  const ids = Array.isArray(saleIds) ? saleIds : [saleIds];
   return sql<SaleItemRow>`
-    SELECT item.uuid, item.line_number, item.product_id, product.name AS product_name,
+    SELECT item.sales_id, item.uuid, item.line_number, item.product_id, product.name AS product_name,
            item.description, item.hsn_code_id, hsn.code AS hsn_code, item.po_no, item.dc_no,
            item.colour_id, colour.name AS colour_name, item.size_id, size.name AS size_name,
            item.quantity, item.unit_id, unit.name AS unit_name, item.rate,
@@ -210,8 +212,8 @@ export function selectSaleItems(saleId: number) {
     LEFT JOIN core_sizes size ON size.id = item.size_id
     INNER JOIN core_units unit ON unit.id = item.unit_id
     LEFT JOIN core_taxes tax ON tax.id = item.tax_id
-    WHERE item.sales_id = ${saleId}
-    ORDER BY item.line_number
+    WHERE item.sales_id IN (${sql.join(ids)})
+    ORDER BY item.sales_id, item.line_number
   `;
 }
 

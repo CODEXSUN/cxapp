@@ -1,4 +1,12 @@
-import { lazy, useEffect, useMemo, useState, type ComponentType } from "react";
+import {
+  lazy,
+  startTransition,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType
+} from "react";
 import {
   Building2Icon,
   CreditCardIcon,
@@ -39,10 +47,31 @@ import type { LandingAppOption } from "@cxapp/core-web/modules/organisation/defa
 import { listFinancialYears } from "@cxapp/core-web/modules/organisation/financial-year/services";
 import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
+import { publishAccountingYear, publishCompanyContext } from "../../shared/tenant/runtime-context";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
 }
+
+const loadBillingDashboardModule = () => import("@cxapp/billing-web/modules/dashboard");
+const loadQuotationModule = () => import("@cxapp/billing-web/modules/quotation");
+const loadSalesModule = () => import("@cxapp/billing-web/modules/sales");
+const loadPurchaseModule = () => import("@cxapp/billing-web/modules/purchase");
+const loadExportSalesModule = () => import("@cxapp/billing-web/modules/export-sales");
+const loadPaymentModule = () => import("@cxapp/billing-web/modules/payment");
+const loadReceiptModule = () => import("@cxapp/billing-web/modules/receipt");
+const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/reports");
+
+const billingWorkspacePreloaders = [
+  loadBillingDashboardModule,
+  loadQuotationModule,
+  loadSalesModule,
+  loadPurchaseModule,
+  loadExportSalesModule,
+  loadPaymentModule,
+  loadReceiptModule,
+  loadBillingReportsModule
+] as const;
 
 const TaskManagerWorkspace = lazyWorkspace(() =>
   import("../../modules/task-manager").then((module) => module.TaskManagerWorkspace)
@@ -210,31 +239,31 @@ const FinancialYearWorkspace = lazyWorkspace(() =>
   )
 );
 const QuotationWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/quotation").then((module) => module.QuotationWorkspace)
+  loadQuotationModule().then((module) => module.QuotationWorkspace)
 );
 const QuotationPrintRoutePage = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/quotation").then((module) => module.QuotationPrintRoutePage)
+  loadQuotationModule().then((module) => module.QuotationPrintRoutePage)
 );
 const SalesWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/sales").then((module) => module.SalesWorkspace)
+  loadSalesModule().then((module) => module.SalesWorkspace)
 );
 const SalesPrintRoutePage = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/sales").then((module) => module.SalesPrintRoutePage)
+  loadSalesModule().then((module) => module.SalesPrintRoutePage)
 );
 const BillingDashboardWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/dashboard").then((module) => module.BillingDashboardWorkspace)
+  loadBillingDashboardModule().then((module) => module.BillingDashboardWorkspace)
 );
 const CustomerStatementWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/reports").then((module) => module.CustomerStatementWorkspace)
+  loadBillingReportsModule().then((module) => module.CustomerStatementWorkspace)
 );
 const SupplierStatementWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/reports").then((module) => module.SupplierStatementWorkspace)
+  loadBillingReportsModule().then((module) => module.SupplierStatementWorkspace)
 );
 const StockStatementWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/reports").then((module) => module.StockStatementWorkspace)
+  loadBillingReportsModule().then((module) => module.StockStatementWorkspace)
 );
 const GstStatementWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/reports").then((module) => module.GstStatementWorkspace)
+  loadBillingReportsModule().then((module) => module.GstStatementWorkspace)
 );
 const BillingSettingsWorkspace = lazyWorkspace(() =>
   import("@cxapp/billing-web").then((module) => module.BillingSettingsWorkspace)
@@ -243,24 +272,22 @@ const DocumentSettingsWorkspace = lazyWorkspace(() =>
   import("@cxapp/billing-web").then((module) => module.DocumentSettingsWorkspace)
 );
 const PurchaseWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/purchase").then((module) => module.PurchaseWorkspace)
+  loadPurchaseModule().then((module) => module.PurchaseWorkspace)
 );
 const PurchasePrintRoutePage = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/purchase").then((module) => module.PurchasePrintRoutePage)
+  loadPurchaseModule().then((module) => module.PurchasePrintRoutePage)
 );
 const ExportSalesWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/export-sales").then((module) => module.ExportSalesWorkspace)
+  loadExportSalesModule().then((module) => module.ExportSalesWorkspace)
 );
 const ExportSalesPrintRoutePage = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/export-sales").then(
-    (module) => module.ExportSalesPrintRoutePage
-  )
+  loadExportSalesModule().then((module) => module.ExportSalesPrintRoutePage)
 );
 const PaymentWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/payment").then((module) => module.PaymentWorkspace)
+  loadPaymentModule().then((module) => module.PaymentWorkspace)
 );
 const ReceiptWorkspace = lazyWorkspace(() =>
-  import("@cxapp/billing-web/modules/receipt").then((module) => module.ReceiptWorkspace)
+  loadReceiptModule().then((module) => module.ReceiptWorkspace)
 );
 const MailWorkspace = lazyWorkspace(() =>
   import("@cxapp/mail-web/modules/mail").then((module) => module.MailWorkspace)
@@ -336,9 +363,6 @@ type AppPage =
   | "core.master.product"
   | "core.master.work-order"
   | `core.common.${"accounts" | "contacts" | "others" | "products" | "workorder"}.${string}`;
-const COMPANY_CONTEXT_STORAGE_KEY = "cxapp.tenant.company-id";
-const ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY = "cxapp.tenant.financial-year-id";
-
 export function AppDesk() {
   const queryClient = useQueryClient();
   const signedInUser = signedInTenantUser();
@@ -346,22 +370,26 @@ export function AppDesk() {
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() => isAppRootPath());
   const runtimeQuery = useQuery({
     queryFn: getTenantRuntime,
-    queryKey: ["tenant", "runtime"]
+    queryKey: ["tenant", "runtime"],
+    staleTime: 5 * 60 * 1_000
   });
   const companiesQuery = useQuery({
     enabled: Boolean(runtimeQuery.data?.tenant?.uuid),
     queryFn: () => listCompanies(),
-    queryKey: ["core", "organisation", "companies", runtimeQuery.data?.tenant?.uuid]
+    queryKey: ["core", "organisation", "companies", runtimeQuery.data?.tenant?.uuid],
+    staleTime: 5 * 60 * 1_000
   });
   const financialYearsQuery = useQuery({
     enabled: Boolean(runtimeQuery.data?.tenant?.uuid),
     queryFn: listFinancialYears,
-    queryKey: ["core", "organisation", "financial-years", runtimeQuery.data?.tenant?.uuid]
+    queryKey: ["core", "organisation", "financial-years", runtimeQuery.data?.tenant?.uuid],
+    staleTime: 5 * 60 * 1_000
   });
   const defaultCompanyQuery = useQuery({
     enabled: Boolean(runtimeQuery.data?.tenant?.uuid),
     queryFn: getDefaultCompany,
-    queryKey: [...defaultCompanyQueryKey, runtimeQuery.data?.tenant?.uuid]
+    queryKey: [...defaultCompanyQueryKey, runtimeQuery.data?.tenant?.uuid],
+    staleTime: 5 * 60 * 1_000
   });
   const [companyContextId, setCompanyContextId] = useState<number | null>(null);
   const [financialYearContextId, setFinancialYearContextId] = useState<number | null>(null);
@@ -397,7 +425,8 @@ export function AppDesk() {
       const module = await import("@cxapp/billing-web/modules/settings/services");
       return module.getBillingSettings();
     },
-    queryKey: ["billing", "settings", companyContextId]
+    queryKey: ["billing", "settings", companyContextId],
+    staleTime: 5 * 60 * 1_000
   });
   const appSafePage = page.startsWith("devkit")
     ? pageForApp(landingApp)
@@ -426,6 +455,22 @@ export function AppDesk() {
   useEffect(() => {
     setPlatformDocumentTitle(activePageTitle);
   }, [activePageTitle]);
+
+  useEffect(() => {
+    if (activeApp !== "billing") return;
+
+    const preload = () => {
+      void Promise.allSettled(billingWorkspacePreloaders.map((loader) => loader()));
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleCallbackId = window.requestIdleCallback(preload, { timeout: 2_000 });
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = setTimeout(preload, 750);
+    return () => clearTimeout(timeoutId);
+  }, [activeApp]);
 
   useEffect(() => {
     if (!isBillingFeaturePageDisabled(page, billingSettingsQuery.data?.features)) return;
@@ -469,14 +514,14 @@ export function AppDesk() {
 
   function selectPage(nextPage: AppPage) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
-    setPage(allowedPage);
+    startTransition(() => setPage(allowedPage));
     window.history.pushState({ page: allowedPage }, "", `/app/${allowedPage.replaceAll(".", "/")}`);
     setPlatformDocumentTitle(titleForPage(allowedPage));
   }
 
   function selectBillingRecord(nextPage: AppPage, recordId: string) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
-    setPage(allowedPage);
+    startTransition(() => setPage(allowedPage));
     window.history.pushState(
       { page: allowedPage, recordId },
       "",
@@ -642,81 +687,83 @@ export function AppDesk() {
         workspaceItems={workspaceItems}
       >
         <main className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5">
-          {safePage === "application.overview" ? (
-            <ApplicationOverview signedInUser={signedInUser} />
-          ) : null}
-          {safePage === "application.landing" ? (
-            <LandingDesk
-              enabledApps={enabledApps}
-              landingApp={landingApp}
-              onPublish={publishLandingApp}
-              saving={defaultSelectionMutation.isPending}
-            />
-          ) : null}
-          {safePage === "application.profile" ? <ApplicationProfile /> : null}
-          {safePage === "application.settings" ? <ApplicationSettings /> : null}
-          {safePage === "application.access.users" ? <TenantUserWorkspace /> : null}
-          {safePage === "application.access.roles" ? <TenantRoleWorkspace /> : null}
-          {safePage === "application.access.permissions" ? <TenantPermissionWorkspace /> : null}
-          {safePage === "application.access.user-roles" ? <TenantUserRoleWorkspace /> : null}
-          {safePage === "application.access.role-permissions" ? (
-            <TenantRolePermissionWorkspace />
-          ) : null}
-          {safePage === "billing.overview" ? (
-            <BillingOverview onNavigate={selectPage} onNavigateToRecord={selectBillingRecord} />
-          ) : null}
-          {safePage === "billing.quotation" ? <QuotationWorkspace /> : null}
-          {safePage === "billing.quotation.print" ? <QuotationPrintRoutePage /> : null}
-          {safePage === "billing.sales" ? (
-            <BillingSales initialRecordId={recordIdFromUrl()} />
-          ) : null}
-          {safePage === "billing.sales.print" ? <SalesPrintRoutePage /> : null}
-          {safePage === "billing.purchase" ? (
-            <PurchaseWorkspace initialRecordId={recordIdFromUrl()} />
-          ) : null}
-          {safePage === "billing.purchase.print" ? <PurchasePrintRoutePage /> : null}
-          {safePage === "billing.export-sales" ? (
-            <ExportSalesWorkspace initialRecordId={recordIdFromUrl()} />
-          ) : null}
-          {safePage === "billing.export-sales.print" ? <ExportSalesPrintRoutePage /> : null}
-          {safePage === "billing.payment" ? (
-            <PaymentWorkspace initialRecordId={recordIdFromUrl()} />
-          ) : null}
-          {safePage === "billing.receipt" ? (
-            <ReceiptWorkspace initialRecordId={recordIdFromUrl()} />
-          ) : null}
-          {safePage === "billing.reports.customer-statement" ? (
-            <CustomerStatementWorkspace />
-          ) : null}
-          {safePage === "billing.reports.supplier-statement" ? (
-            <SupplierStatementWorkspace />
-          ) : null}
-          {safePage === "billing.reports.stock-statement" ? <StockStatementWorkspace /> : null}
-          {safePage === "billing.reports.gst-statement" ? <GstStatementWorkspace /> : null}
-          {safePage === "billing.settings" ? <BillingSettingsWorkspace /> : null}
-          {safePage === "billing.document-settings" ? <DocumentSettingsWorkspace /> : null}
-          {safePage.startsWith("mail.") ? (
-            <MailWorkspace mailbox={mailboxForPage(safePage)} />
-          ) : null}
-          {safePage === "task-manager.overview" || safePage === "task-manager.todos" ? (
-            <TaskManagerWorkspace desk="tenant" />
-          ) : null}
-          {safePage === "core.organisation.company" ? <CompanyWorkspace /> : null}
-          {safePage === "core.organisation.financial-year" ? <FinancialYearWorkspace /> : null}
-          {safePage === "core.organisation.default-company" ? (
-            <DefaultCompanyWorkspace
-              landingApps={landingAppOptions(switchableApps)}
-              onSaved={() => {
-                void defaultCompanyQuery.refetch();
-                void financialYearsQuery.refetch();
-              }}
-            />
-          ) : null}
-          {renderOwnedLocationPage(safePage)}
-          {renderOwnedCommonMasterPage(safePage)}
-          {safePage === "core.master.contact" ? <ContactWorkspace key={safePage} /> : null}
-          {safePage === "core.master.product" ? <ProductWorkspace key={safePage} /> : null}
-          {safePage === "core.master.work-order" ? <WorkOrderWorkspace key={safePage} /> : null}
+          <Suspense fallback={<GlobalLoader className="min-h-[32rem]" fullScreen={false} />}>
+            {safePage === "application.overview" ? (
+              <ApplicationOverview signedInUser={signedInUser} />
+            ) : null}
+            {safePage === "application.landing" ? (
+              <LandingDesk
+                enabledApps={enabledApps}
+                landingApp={landingApp}
+                onPublish={publishLandingApp}
+                saving={defaultSelectionMutation.isPending}
+              />
+            ) : null}
+            {safePage === "application.profile" ? <ApplicationProfile /> : null}
+            {safePage === "application.settings" ? <ApplicationSettings /> : null}
+            {safePage === "application.access.users" ? <TenantUserWorkspace /> : null}
+            {safePage === "application.access.roles" ? <TenantRoleWorkspace /> : null}
+            {safePage === "application.access.permissions" ? <TenantPermissionWorkspace /> : null}
+            {safePage === "application.access.user-roles" ? <TenantUserRoleWorkspace /> : null}
+            {safePage === "application.access.role-permissions" ? (
+              <TenantRolePermissionWorkspace />
+            ) : null}
+            {safePage === "billing.overview" ? (
+              <BillingOverview onNavigate={selectPage} onNavigateToRecord={selectBillingRecord} />
+            ) : null}
+            {safePage === "billing.quotation" ? <QuotationWorkspace /> : null}
+            {safePage === "billing.quotation.print" ? <QuotationPrintRoutePage /> : null}
+            {safePage === "billing.sales" ? (
+              <BillingSales initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "billing.sales.print" ? <SalesPrintRoutePage /> : null}
+            {safePage === "billing.purchase" ? (
+              <PurchaseWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "billing.purchase.print" ? <PurchasePrintRoutePage /> : null}
+            {safePage === "billing.export-sales" ? (
+              <ExportSalesWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "billing.export-sales.print" ? <ExportSalesPrintRoutePage /> : null}
+            {safePage === "billing.payment" ? (
+              <PaymentWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "billing.receipt" ? (
+              <ReceiptWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "billing.reports.customer-statement" ? (
+              <CustomerStatementWorkspace />
+            ) : null}
+            {safePage === "billing.reports.supplier-statement" ? (
+              <SupplierStatementWorkspace />
+            ) : null}
+            {safePage === "billing.reports.stock-statement" ? <StockStatementWorkspace /> : null}
+            {safePage === "billing.reports.gst-statement" ? <GstStatementWorkspace /> : null}
+            {safePage === "billing.settings" ? <BillingSettingsWorkspace /> : null}
+            {safePage === "billing.document-settings" ? <DocumentSettingsWorkspace /> : null}
+            {safePage.startsWith("mail.") ? (
+              <MailWorkspace mailbox={mailboxForPage(safePage)} />
+            ) : null}
+            {safePage === "task-manager.overview" || safePage === "task-manager.todos" ? (
+              <TaskManagerWorkspace desk="tenant" />
+            ) : null}
+            {safePage === "core.organisation.company" ? <CompanyWorkspace /> : null}
+            {safePage === "core.organisation.financial-year" ? <FinancialYearWorkspace /> : null}
+            {safePage === "core.organisation.default-company" ? (
+              <DefaultCompanyWorkspace
+                landingApps={landingAppOptions(switchableApps)}
+                onSaved={() => {
+                  void defaultCompanyQuery.refetch();
+                  void financialYearsQuery.refetch();
+                }}
+              />
+            ) : null}
+            {renderOwnedLocationPage(safePage)}
+            {renderOwnedCommonMasterPage(safePage)}
+            {safePage === "core.master.contact" ? <ContactWorkspace key={safePage} /> : null}
+            {safePage === "core.master.product" ? <ProductWorkspace key={safePage} /> : null}
+            {safePage === "core.master.work-order" ? <WorkOrderWorkspace key={safePage} /> : null}
+          </Suspense>
         </main>
       </ApplicationLayout>
     </AuthGate>
@@ -734,15 +781,6 @@ function TenantBootstrapErrorScreen({ error }: { error: unknown }) {
       </div>
     </main>
   );
-}
-
-function publishCompanyContext(id: number) {
-  window.localStorage.setItem(COMPANY_CONTEXT_STORAGE_KEY, String(id));
-  window.dispatchEvent(new CustomEvent("cxapp:company-change", { detail: { id } }));
-}
-function publishAccountingYear(id: number) {
-  window.localStorage.setItem(ACCOUNTING_YEAR_CONTEXT_STORAGE_KEY, String(id));
-  window.dispatchEvent(new CustomEvent("cxapp:accounting-year-change", { detail: { id } }));
 }
 
 function landingAppOptions(apps: PlatformAppId[]): LandingAppOption[] {

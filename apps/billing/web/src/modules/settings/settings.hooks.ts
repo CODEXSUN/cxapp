@@ -26,7 +26,8 @@ export function useBillingSettings() {
   return useQuery({
     enabled: Boolean(companyId),
     queryFn: getBillingSettings,
-    queryKey: billingSettingsQueryKey(companyId)
+    queryKey: billingSettingsQueryKey(companyId),
+    staleTime: 5 * 60 * 1_000
   });
 }
 

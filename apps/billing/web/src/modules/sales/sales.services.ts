@@ -128,19 +128,25 @@ export async function listSales() {
   return billingApiGet<Sale[]>("/billing/sales").then((records) => records.map(fromApiSale));
 }
 
-export async function listSalesPage(query: {
-  page: number;
-  pageSize: number;
-  search: string;
-  status: string;
-}) {
+export async function listSalesPage(
+  query: {
+    page: number;
+    pageSize: number;
+    search: string;
+    status: string;
+  },
+  signal?: AbortSignal
+) {
   const params = new URLSearchParams({
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,
     status: query.status
   });
-  return billingApiGet<SalePageResult>(`/billing/sales/page?${params}`).then((result) => ({
+  return billingApiGet<SalePageResult>(
+    `/billing/sales/page?${params}`,
+    signal ? { signal } : undefined
+  ).then((result) => ({
     ...result,
     items: result.items.map(fromApiSale)
   }));

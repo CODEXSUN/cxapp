@@ -65,4 +65,5 @@ export * from "./components/use-toast";
 export * from "./components/global-loader";
 export * from "./design-system";
 export * from "./lib/utils";
+export * from "./lib/use-debounced-value";
 export * from "./workspace/index";

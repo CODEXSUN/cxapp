@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Save, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import {
   locationPatch,
   locationPayload,
@@ -50,31 +51,31 @@ export function SaleContactQuickForm({
   );
   const addressTypesQuery = useQuery({
     queryFn: listSaleAddressTypes,
-    queryKey: ["billing", "sale", "lookups", "address-types"]
+    ...billingLookupQuery("address-types")
   });
   const countriesQuery = useQuery({
     queryFn: () => listSaleLocations("countries"),
-    queryKey: ["billing", "sale", "lookups", "countries"]
+    ...billingLookupQuery("countries")
   });
   const contactTypesQuery = useQuery({
     queryFn: listSaleContactTypes,
-    queryKey: ["billing", "sale", "lookups", "contact-types"]
+    ...billingLookupQuery("contact-types")
   });
   const statesQuery = useQuery({
     queryFn: () => listSaleLocations("states"),
-    queryKey: ["billing", "sale", "lookups", "states"]
+    ...billingLookupQuery("states")
   });
   const districtsQuery = useQuery({
     queryFn: () => listSaleLocations("districts"),
-    queryKey: ["billing", "sale", "lookups", "districts"]
+    ...billingLookupQuery("districts")
   });
   const citiesQuery = useQuery({
     queryFn: () => listSaleLocations("cities"),
-    queryKey: ["billing", "sale", "lookups", "cities"]
+    ...billingLookupQuery("cities")
   });
   const pincodesQuery = useQuery({
     queryFn: () => listSaleLocations("pincodes"),
-    queryKey: ["billing", "sale", "lookups", "pincodes"]
+    ...billingLookupQuery("pincodes")
   });
 
   useEffect(() => {

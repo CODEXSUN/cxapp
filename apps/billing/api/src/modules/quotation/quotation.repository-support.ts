@@ -60,6 +60,7 @@ export type QuotationHeaderRow = {
 };
 
 export type QuotationItemRow = {
+  quotation_id: number;
   cgst_amount: string | number;
   colour_id: number | null;
   colour_name: string | null;
@@ -165,9 +166,10 @@ export function selectQuotationHeaders(
   `;
 }
 
-export function selectQuotationItems(quotationId: number) {
+export function selectQuotationItems(quotationIds: number | number[]) {
+  const ids = Array.isArray(quotationIds) ? quotationIds : [quotationIds];
   return sql<QuotationItemRow>`
-    SELECT item.uuid, item.line_number, item.product_id, product.name AS product_name,
+    SELECT item.quotation_id, item.uuid, item.line_number, item.product_id, product.name AS product_name,
            item.description, item.hsn_code_id, hsn.code AS hsn_code, item.po_no, item.dc_no,
            item.colour_id, colour.name AS colour_name, item.size_id, size.name AS size_name,
            item.quantity, item.unit_id, unit.name AS unit_name, item.rate,
@@ -180,8 +182,8 @@ export function selectQuotationItems(quotationId: number) {
     LEFT JOIN core_sizes size ON size.id = item.size_id
     INNER JOIN core_units unit ON unit.id = item.unit_id
     LEFT JOIN core_taxes tax ON tax.id = item.tax_id
-    WHERE item.quotation_id = ${quotationId}
-    ORDER BY item.line_number
+    WHERE item.quotation_id IN (${sql.join(ids)})
+    ORDER BY item.quotation_id, item.line_number
   `;
 }
 

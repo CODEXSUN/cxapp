@@ -1,4 +1,5 @@
 import { productsQueryKey } from "@cxapp/core-web/modules/master/product";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -128,23 +129,23 @@ export function usePurchaseFormController({
   const [shippingAddressChoice, setShippingAddressChoice] = useState("");
   const contactsQuery = useQuery({
     queryFn: listPurchaseContacts,
-    queryKey: ["billing", "purchase", "lookups", "contacts"]
+    ...billingLookupQuery("contacts")
   });
   const workOrdersQuery = useQuery({
     queryFn: listPurchaseWorkOrders,
-    queryKey: ["billing", "purchase", "lookups", "work-orders"]
+    ...billingLookupQuery("work-orders")
   });
   const productsQuery = useQuery({
     queryFn: listPurchaseProducts,
-    queryKey: ["billing", "purchase", "lookups", "products"]
+    ...billingLookupQuery("products")
   });
   const coloursQuery = useQuery({
     queryFn: listPurchaseColours,
-    queryKey: ["billing", "purchase", "lookups", "colours"]
+    ...billingLookupQuery("colours")
   });
   const sizesQuery = useQuery({
     queryFn: listPurchaseSizes,
-    queryKey: ["billing", "purchase", "lookups", "sizes"]
+    ...billingLookupQuery("sizes")
   });
   const contactSaveMutation = useMutation({
     mutationFn: ({ id, payload }: { id?: string; payload: PurchaseContactSavePayload }) =>

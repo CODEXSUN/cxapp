@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import {
   getReceiptContext,
   listReceiptActivity,
@@ -8,6 +9,7 @@ import {
   listReceipts,
   listReceiptsPage
 } from "./receipt.services";
+import type { ReceiptPageResult } from "./receipt.types";
 export const receiptQueryKey = ["billing", "receipts"] as const;
 export function useReceiptList() {
   return useQuery({ queryFn: listReceipts, queryKey: receiptQueryKey });
@@ -18,10 +20,12 @@ export function useReceiptPage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<ReceiptPageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listReceiptsPage(query),
-    queryKey: [...receiptQueryKey, "page", query]
+    queryFn: ({ signal }) => listReceiptsPage(request, signal),
+    queryKey: [...receiptQueryKey, "page", request]
   });
 }
 export function useReceiptContext() {

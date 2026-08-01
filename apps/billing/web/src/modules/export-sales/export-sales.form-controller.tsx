@@ -1,4 +1,5 @@
 import { productsQueryKey } from "@cxapp/core-web/modules/master/product";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -156,27 +157,27 @@ export function useExportSalesFormController({
   }, [contextQuery.data, exportSale]);
   const contactsQuery = useQuery({
     queryFn: listExportSaleContacts,
-    queryKey: ["billing", "exportSale", "lookups", "contacts"]
+    ...billingLookupQuery("contacts")
   });
   const workOrdersQuery = useQuery({
     queryFn: listExportSaleWorkOrders,
-    queryKey: ["billing", "exportSale", "lookups", "work-orders"]
+    ...billingLookupQuery("work-orders")
   });
   const productsQuery = useQuery({
     queryFn: listExportSaleProducts,
-    queryKey: ["billing", "exportSale", "lookups", "products"]
+    ...billingLookupQuery("products")
   });
   const coloursQuery = useQuery({
     queryFn: listExportSaleColours,
-    queryKey: ["billing", "exportSale", "lookups", "colours"]
+    ...billingLookupQuery("colours")
   });
   const sizesQuery = useQuery({
     queryFn: listExportSaleSizes,
-    queryKey: ["billing", "exportSale", "lookups", "sizes"]
+    ...billingLookupQuery("sizes")
   });
   const transportsQuery = useQuery({
     queryFn: listExportSaleTransports,
-    queryKey: ["billing", "exportSale", "lookups", "transports"]
+    ...billingLookupQuery("transports")
   });
   const contactSaveMutation = useMutation({
     mutationFn: ({ id, payload }: { id?: string; payload: ExportSaleContactSavePayload }) =>

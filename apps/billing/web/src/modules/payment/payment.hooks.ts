@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import {
   getPaymentContext,
   listPaymentActivity,
@@ -8,6 +9,7 @@ import {
   listPayments,
   listPaymentsPage
 } from "./payment.services";
+import type { PaymentPageResult } from "./payment.types";
 export const paymentQueryKey = ["billing", "payments"] as const;
 export function usePaymentList() {
   return useQuery({ queryFn: listPayments, queryKey: paymentQueryKey });
@@ -18,10 +20,12 @@ export function usePaymentPage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<PaymentPageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listPaymentsPage(query),
-    queryKey: [...paymentQueryKey, "page", query]
+    queryFn: ({ signal }) => listPaymentsPage(request, signal),
+    queryKey: [...paymentQueryKey, "page", request]
   });
 }
 export function usePaymentContext() {

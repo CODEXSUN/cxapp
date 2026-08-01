@@ -3,6 +3,7 @@ import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   PurchaseDatabase,
   PurchaseHeaderRow,
+  PurchaseItemRow,
   PurchaseReferenceState,
   emptyPurchaseEinvoice,
   emptyPurchaseEway,
@@ -33,7 +34,7 @@ export class PurchaseRepository {
   async list(databaseName: string) {
     const database = await purchaseDatabase(databaseName);
     const result = await selectPurchaseHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
 
   async listPage(
@@ -51,22 +52,24 @@ export class PurchaseRepository {
       status: options.status
     };
     const scope = currentBillingScope();
-    const result = await selectPurchaseHeaders(undefined, page).execute(database);
-    const count = await sql<{ total: string | number }>`
-      SELECT COUNT(*) AS total FROM billing_purchases s
-      INNER JOIN core_contacts supplier ON supplier.id=s.supplier_id
-      LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
-      WHERE s.deleted_at IS NULL
-        AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
-        AND (${page.status}='all' OR s.status=${page.status})
-        AND (${customer}='all' OR LOWER(supplier.name)=${customer})
-        AND (${search}='%%' OR s.purchase_number LIKE ${search} OR supplier.name LIKE ${search}
-          OR s.supplier_bill_number LIKE ${search} OR COALESCE(work_order.code,'') LIKE ${search}
-          OR DATE_FORMAT(s.purchase_date,'%Y-%m-%d') LIKE ${search}
-          OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})
-    `.execute(database);
+    const [result, count] = await Promise.all([
+      selectPurchaseHeaders(undefined, page).execute(database),
+      sql<{ total: string | number }>`
+        SELECT COUNT(*) AS total FROM billing_purchases s
+        INNER JOIN core_contacts supplier ON supplier.id=s.supplier_id
+        LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
+        WHERE s.deleted_at IS NULL
+          AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
+          AND (${page.status}='all' OR s.status=${page.status})
+          AND (${customer}='all' OR LOWER(supplier.name)=${customer})
+          AND (${search}='%%' OR s.purchase_number LIKE ${search} OR supplier.name LIKE ${search}
+            OR s.supplier_bill_number LIKE ${search} OR COALESCE(work_order.code,'') LIKE ${search}
+            OR DATE_FORMAT(s.purchase_date,'%Y-%m-%d') LIKE ${search}
+            OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})
+      `.execute(database)
+    ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(count.rows[0]?.total ?? 0)
@@ -274,8 +277,14 @@ export class PurchaseRepository {
   async validItemReferenceIds(databaseName: string, input: PurchaseSavePayload) {
     const database = await purchaseDatabase(databaseName);
     return {
-      colours: await existingIds(database, sql`SELECT id FROM core_colours WHERE status = 'active'`),
-      hsnCodes: await existingIds(database, sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`),
+      colours: await existingIds(
+        database,
+        sql`SELECT id FROM core_colours WHERE status = 'active'`
+      ),
+      hsnCodes: await existingIds(
+        database,
+        sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`
+      ),
       products: await existingIds(
         database,
         sql`SELECT id FROM core_products WHERE status = 'active' AND deleted_at IS NULL`
@@ -465,7 +474,25 @@ export class PurchaseRepository {
     database: Kysely<PurchaseDatabase>,
     row: PurchaseHeaderRow
   ): Promise<Purchase> {
-    const itemsResult = await selectPurchaseItems(row.id).execute(database);
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<PurchaseDatabase>,
+    rows: PurchaseHeaderRow[]
+  ): Promise<Purchase[]> {
+    if (rows.length === 0) return [];
+    const itemsResult = await selectPurchaseItems(rows.map((row) => row.id)).execute(database);
+    const itemsByPurchase = new Map<number, PurchaseItemRow[]>();
+    for (const item of itemsResult.rows) {
+      const items = itemsByPurchase.get(item.purchase_id) ?? [];
+      items.push(item);
+      itemsByPurchase.set(item.purchase_id, items);
+    }
+    return rows.map((row) => this.toPurchase(row, itemsByPurchase.get(row.id) ?? []));
+  }
+
+  private toPurchase(row: PurchaseHeaderRow, items: PurchaseItemRow[]): Purchase {
     return {
       amount: money(row.amount),
       billingAddress: formatAddress(row, "billing"),
@@ -489,7 +516,7 @@ export class PurchaseRepository {
       id: row.uuid,
       invoiceNumber: row.purchase_number,
       issuedOn: row.purchase_date,
-      items: itemsResult.rows.map(toPurchaseItem),
+      items: items.map(toPurchaseItem),
       ledgerId: row.ledger_id,
       lineNumber: row.line_number,
       notes: row.notes ?? "",

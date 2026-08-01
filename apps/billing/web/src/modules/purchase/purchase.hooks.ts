@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import {
   getPurchase,
   getPurchaseContext,
   listPurchases,
   listPurchasesPage
 } from "./purchase.services";
+import type { PurchasePageResult } from "./purchase.types";
 
 export function usePurchaseList() {
   return useQuery({
@@ -19,10 +21,12 @@ export function usePurchasePage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<PurchasePageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listPurchasesPage(query),
-    queryKey: ["billing", "purchases", "page", query]
+    queryFn: ({ signal }) => listPurchasesPage(request, signal),
+    queryKey: ["billing", "purchases", "page", request]
   });
 }
 

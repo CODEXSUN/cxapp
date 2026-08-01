@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Save, Send, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import { ContactQuickField } from "./export-sales.form-section-1";
 import { exportSaleCommonOption } from "./export-sales.form-section-2";
 import { ProductPopupLookup } from "./export-sales.form-section-5";
@@ -295,19 +296,19 @@ export function ExportSaleProductQuickForm({
   const [validationError, setValidationError] = useState("");
   const categoriesQuery = useQuery({
     queryFn: listExportSaleProductCategories,
-    queryKey: ["billing", "exportSale", "lookups", "product-categories"]
+    ...billingLookupQuery("product-categories")
   });
   const hsnCodesQuery = useQuery({
     queryFn: listExportSaleHsnCodes,
-    queryKey: ["billing", "exportSale", "lookups", "hsn-codes"]
+    ...billingLookupQuery("hsn-codes")
   });
   const unitsQuery = useQuery({
     queryFn: listExportSaleUnits,
-    queryKey: ["billing", "exportSale", "lookups", "units"]
+    ...billingLookupQuery("units")
   });
   const taxesQuery = useQuery({
     queryFn: listExportSaleTaxes,
-    queryKey: ["billing", "exportSale", "lookups", "taxes"]
+    ...billingLookupQuery("taxes")
   });
 
   function patchProduct(next: Partial<ExportSaleMasterSavePayload>) {

@@ -12,6 +12,7 @@ import {
   type WorkspaceAnimatedTab
 } from "@cxapp/ui/workspace/animated-tabs";
 import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import {
   createExportSaleAddressType,
   createExportSaleLocation,
@@ -184,27 +185,27 @@ export function ExportSaleAddressDialog({
   const [saveError, setSaveError] = useState("");
   const addressTypesQuery = useQuery({
     queryFn: listExportSaleAddressTypes,
-    queryKey: ["billing", "exportSale", "lookups", "address-types"]
+    ...billingLookupQuery("address-types")
   });
   const countriesQuery = useQuery({
     queryFn: () => listExportSaleLocations("countries"),
-    queryKey: ["billing", "exportSale", "lookups", "countries"]
+    ...billingLookupQuery("countries")
   });
   const statesQuery = useQuery({
     queryFn: () => listExportSaleLocations("states"),
-    queryKey: ["billing", "exportSale", "lookups", "states"]
+    ...billingLookupQuery("states")
   });
   const districtsQuery = useQuery({
     queryFn: () => listExportSaleLocations("districts"),
-    queryKey: ["billing", "exportSale", "lookups", "districts"]
+    ...billingLookupQuery("districts")
   });
   const citiesQuery = useQuery({
     queryFn: () => listExportSaleLocations("cities"),
-    queryKey: ["billing", "exportSale", "lookups", "cities"]
+    ...billingLookupQuery("cities")
   });
   const pincodesQuery = useQuery({
     queryFn: () => listExportSaleLocations("pincodes"),
-    queryKey: ["billing", "exportSale", "lookups", "pincodes"]
+    ...billingLookupQuery("pincodes")
   });
 
   useEffect(() => {

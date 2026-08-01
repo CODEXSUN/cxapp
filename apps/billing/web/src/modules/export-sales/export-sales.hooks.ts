@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@cxapp/ui";
 import {
   getExportSale,
   getExportSaleContext,
   listExportSales,
   listExportSalesPage
 } from "./export-sales.services";
+import type { ExportSalePageResult } from "./export-sales.types";
 
 export function useExportSalesList() {
   return useQuery({
@@ -19,10 +21,12 @@ export function useExportSalesPage(query: {
   search: string;
   status: string;
 }) {
-  return useQuery({
+  const search = useDebouncedValue(query.search);
+  const request = { ...query, search };
+  return useQuery<ExportSalePageResult>({
     placeholderData: (previous) => previous,
-    queryFn: () => listExportSalesPage(query),
-    queryKey: ["billing", "exportSales", "page", query]
+    queryFn: ({ signal }) => listExportSalesPage(request, signal),
+    queryKey: ["billing", "exportSales", "page", request]
   });
 }
 

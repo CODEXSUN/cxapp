@@ -47,6 +47,17 @@ type HeaderRow = {
   uuid: string;
 };
 
+type AllocationRow = {
+  allocated_amount: string | number;
+  document_date: string;
+  document_no: string;
+  document_total: string | number;
+  payment_id: number;
+  previous_balance: string | number;
+  purchase_id: string;
+  uuid: string;
+};
+
 export class PaymentRepository {
   async defaultLedgerId(databaseName: string) {
     const database = await paymentDatabase(databaseName);
@@ -58,7 +69,7 @@ export class PaymentRepository {
   async list(databaseName: string) {
     const database = await paymentDatabase(databaseName);
     const result = await selectHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
   async listPage(
     databaseName: string,
@@ -73,19 +84,19 @@ export class PaymentRepository {
       status: options.status
     };
     const scope = currentBillingScope();
-    const result = await selectHeaders(undefined, false, page).execute(database);
-    const count = await sql<{
-      total: string | number;
-    }>`SELECT COUNT(*) AS total FROM billing_payments r
-      INNER JOIN core_contacts supplier ON supplier.id=r.supplier_id INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
-      WHERE r.deleted_at IS NULL
-      AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
-      AND (${page.status}='all' OR r.status=${page.status})
-      AND (${search}='%%' OR r.payment_number LIKE ${search} OR supplier.name LIKE ${search}
-        OR ledger.name LIKE ${search} OR r.payment_mode LIKE ${search} OR r.status LIKE ${search}
-        OR COALESCE(r.reference_no,'') LIKE ${search})`.execute(database);
+    const [result, count] = await Promise.all([
+      selectHeaders(undefined, false, page).execute(database),
+      sql<{ total: string | number }>`SELECT COUNT(*) AS total FROM billing_payments r
+        INNER JOIN core_contacts supplier ON supplier.id=r.supplier_id INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
+        WHERE r.deleted_at IS NULL
+        AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
+        AND (${page.status}='all' OR r.status=${page.status})
+        AND (${search}='%%' OR r.payment_number LIKE ${search} OR supplier.name LIKE ${search}
+          OR ledger.name LIKE ${search} OR r.payment_mode LIKE ${search} OR r.status LIKE ${search}
+          OR COALESCE(r.reference_no,'') LIKE ${search})`.execute(database)
+    ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(count.rows[0]?.total ?? 0)
@@ -374,29 +385,40 @@ export class PaymentRepository {
   }
 
   private async hydrate(database: Kysely<PaymentDatabase>, row: HeaderRow): Promise<Payment> {
-    const result = await sql<{
-      allocated_amount: string | number;
-      document_date: string;
-      document_no: string;
-      document_total: string | number;
-      previous_balance: string | number;
-      purchase_id: string;
-      uuid: string;
-    }>`
-      SELECT a.uuid, s.uuid AS purchase_id, s.purchase_number AS document_no, s.purchase_date AS document_date,
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<PaymentDatabase>,
+    rows: HeaderRow[]
+  ): Promise<Payment[]> {
+    if (rows.length === 0) return [];
+    const ids = rows.map((row) => row.id);
+    const result = await sql<AllocationRow>`
+      SELECT a.payment_id, a.uuid, s.uuid AS purchase_id, s.purchase_number AS document_no,
+             s.purchase_date AS document_date,
              s.amount AS document_total, s.amount AS previous_balance, a.allocated_amount
       FROM billing_payment_allocations a INNER JOIN billing_purchases s ON s.id=a.purchase_id
-      WHERE a.payment_id=${row.id} ORDER BY a.line_number
+      WHERE a.payment_id IN (${sql.join(ids)}) ORDER BY a.payment_id, a.line_number
     `.execute(database);
-    const allocations: PaymentAllocation[] = result.rows.map((item) => ({
-      allocatedAmount: Number(item.allocated_amount),
-      documentDate: dateValue(item.document_date),
-      documentNo: item.document_no,
-      documentTotal: Number(item.document_total),
-      id: item.uuid,
-      previousBalance: Number(item.previous_balance),
-      purchaseId: item.purchase_id
-    }));
+    const allocationsByPayment = new Map<number, PaymentAllocation[]>();
+    for (const item of result.rows) {
+      const allocations = allocationsByPayment.get(item.payment_id) ?? [];
+      allocations.push({
+        allocatedAmount: Number(item.allocated_amount),
+        documentDate: dateValue(item.document_date),
+        documentNo: item.document_no,
+        documentTotal: Number(item.document_total),
+        id: item.uuid,
+        previousBalance: Number(item.previous_balance),
+        purchaseId: item.purchase_id
+      });
+      allocationsByPayment.set(item.payment_id, allocations);
+    }
+    return rows.map((row) => this.toPayment(row, allocationsByPayment.get(row.id) ?? []));
+  }
+
+  private toPayment(row: HeaderRow, allocations: PaymentAllocation[]): Payment {
     return {
       allocatedAmount: Number(row.allocated_amount),
       allocations,
@@ -544,9 +566,7 @@ async function internalPayment(database: Kysely<PaymentDatabase>, uuid: string) 
     status: PaymentStatus;
   }>`SELECT id, status FROM billing_payments WHERE uuid=${uuid}
     AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
-    AND deleted_at IS NULL LIMIT 1`.execute(
-    database
-  );
+    AND deleted_at IS NULL LIMIT 1`.execute(database);
   return result.rows[0] ?? null;
 }
 

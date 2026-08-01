@@ -13,6 +13,7 @@ import {
   nonNullIds,
   publicUuid,
   SaleHeaderRow,
+  SaleItemRow,
   SaleReferenceState,
   SalesDatabase,
   salesDatabase,
@@ -34,11 +35,33 @@ import type {
 } from "./sales.types.js";
 export { SalesInvoiceReservationConflict } from "./sales.repository-support.js";
 
+type SaleEinvoiceRow = {
+  ack_date: string | null;
+  ack_number: string | null;
+  irn: string;
+  sales_id: number;
+  signed_qr: string | null;
+  status: "not-generated" | "generated";
+};
+
+type SaleEwayRow = {
+  bill_date: string;
+  bill_number: string;
+  notes: string | null;
+  part: "Part A" | "Part B";
+  sales_id: number;
+  status: "not-generated" | "generated";
+  transport_gst: string | null;
+  transport_id: number | null;
+  transport_name: string | null;
+  vehicle_number: string | null;
+};
+
 export class SalesRepository {
   async list(databaseName: string) {
     const database = await salesDatabase(databaseName);
     const result = await selectSaleHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
 
   async listPage(
@@ -69,7 +92,7 @@ export class SalesRepository {
       `.execute(database)
     ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(countResult.rows[0]?.total ?? 0)
@@ -274,8 +297,14 @@ export class SalesRepository {
   async validItemReferenceIds(databaseName: string, input: SaleSavePayload) {
     const database = await salesDatabase(databaseName);
     return {
-      colours: await existingIds(database, sql`SELECT id FROM core_colours WHERE status = 'active'`),
-      hsnCodes: await existingIds(database, sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`),
+      colours: await existingIds(
+        database,
+        sql`SELECT id FROM core_colours WHERE status = 'active'`
+      ),
+      hsnCodes: await existingIds(
+        database,
+        sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`
+      ),
       products: await existingIds(
         database,
         sql`SELECT id FROM core_products WHERE status = 'active' AND deleted_at IS NULL`
@@ -469,38 +498,63 @@ export class SalesRepository {
   }
 
   private async hydrate(database: Kysely<SalesDatabase>, row: SaleHeaderRow): Promise<Sale> {
-    const itemsResult = await selectSaleItems(row.id).execute(database);
-    const einvoiceResult = await sql<{
-      ack_date: string | null;
-      ack_number: string | null;
-      irn: string;
-      signed_qr: string | null;
-      status: "not-generated" | "generated";
-    }>`
-      SELECT irn, ack_number, DATE_FORMAT(ack_date, '%Y-%m-%dT%H:%i:%s') AS ack_date,
-             signed_qr, status
-      FROM billing_sales_einvoices WHERE sales_id = ${row.id} ORDER BY id DESC LIMIT 1
-    `.execute(database);
-    const ewayResult = await sql<{
-      bill_date: string;
-      bill_number: string;
-      notes: string | null;
-      part: "Part A" | "Part B";
-      status: "not-generated" | "generated";
-      transport_gst: string | null;
-      transport_id: number | null;
-      transport_name: string | null;
-      vehicle_number: string | null;
-    }>`
-      SELECT e.bill_number, DATE_FORMAT(e.bill_date, '%Y-%m-%d') AS bill_date, e.part,
-             e.transport_id, t.name AS transport_name, t.gst AS transport_gst,
-             e.vehicle_number, e.status, e.notes
-      FROM billing_sales_eway_bills e
-      LEFT JOIN core_transports t ON t.id = e.transport_id
-      WHERE e.sales_id = ${row.id} ORDER BY e.id DESC LIMIT 1
-    `.execute(database);
-    const einvoice = einvoiceResult.rows[0];
-    const eway = ewayResult.rows[0];
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<SalesDatabase>,
+    rows: SaleHeaderRow[]
+  ): Promise<Sale[]> {
+    if (rows.length === 0) return [];
+    const ids = rows.map((row) => row.id);
+    const [itemsResult, einvoiceResult, ewayResult] = await Promise.all([
+      selectSaleItems(ids).execute(database),
+      sql<SaleEinvoiceRow>`
+        SELECT e.sales_id, e.irn, e.ack_number,
+               DATE_FORMAT(e.ack_date, '%Y-%m-%dT%H:%i:%s') AS ack_date,
+               e.signed_qr, e.status
+        FROM billing_sales_einvoices e
+        INNER JOIN (
+          SELECT sales_id, MAX(id) AS id FROM billing_sales_einvoices
+          WHERE sales_id IN (${sql.join(ids)}) GROUP BY sales_id
+        ) latest ON latest.id = e.id
+      `.execute(database),
+      sql<SaleEwayRow>`
+        SELECT e.sales_id, e.bill_number, DATE_FORMAT(e.bill_date, '%Y-%m-%d') AS bill_date,
+               e.part, e.transport_id, t.name AS transport_name, t.gst AS transport_gst,
+               e.vehicle_number, e.status, e.notes
+        FROM billing_sales_eway_bills e
+        INNER JOIN (
+          SELECT sales_id, MAX(id) AS id FROM billing_sales_eway_bills
+          WHERE sales_id IN (${sql.join(ids)}) GROUP BY sales_id
+        ) latest ON latest.id = e.id
+        LEFT JOIN core_transports t ON t.id = e.transport_id
+      `.execute(database)
+    ]);
+    const itemsBySale = new Map<number, SaleItemRow[]>();
+    for (const item of itemsResult.rows) {
+      const items = itemsBySale.get(item.sales_id) ?? [];
+      items.push(item);
+      itemsBySale.set(item.sales_id, items);
+    }
+    const einvoiceBySale = new Map(einvoiceResult.rows.map((item) => [item.sales_id, item]));
+    const ewayBySale = new Map(ewayResult.rows.map((item) => [item.sales_id, item]));
+    return rows.map((row) =>
+      this.toSale(
+        row,
+        itemsBySale.get(row.id) ?? [],
+        einvoiceBySale.get(row.id),
+        ewayBySale.get(row.id)
+      )
+    );
+  }
+
+  private toSale(
+    row: SaleHeaderRow,
+    items: SaleItemRow[],
+    einvoice: SaleEinvoiceRow | undefined,
+    eway: SaleEwayRow | undefined
+  ): Sale {
     return {
       amount: money(row.amount),
       billingAddress: formatAddress(row, "billing"),
@@ -541,7 +595,7 @@ export class SalesRepository {
       id: row.uuid,
       invoiceNumber: row.invoice_number,
       issuedOn: row.issued_on,
-      items: itemsResult.rows.map(toSaleItem),
+      items: items.map(toSaleItem),
       ledgerId: row.ledger_id,
       lineNumber: row.line_number,
       notes: row.notes ?? "",

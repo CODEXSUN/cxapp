@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { billingLookupQuery } from "../../shared/query/billing-lookup-query";
 import { ContactQuickField } from "./quotation.form-section-1";
 import { quotationCommonOption } from "./quotation.form-section-2";
 import {
@@ -46,19 +47,19 @@ export function QuotationProductQuickForm({
   const [validationError, setValidationError] = useState("");
   const categoriesQuery = useQuery({
     queryFn: listQuotationProductCategories,
-    queryKey: ["billing", "quotation", "lookups", "product-categories"]
+    ...billingLookupQuery("product-categories")
   });
   const hsnCodesQuery = useQuery({
     queryFn: listQuotationHsnCodes,
-    queryKey: ["billing", "quotation", "lookups", "hsn-codes"]
+    ...billingLookupQuery("hsn-codes")
   });
   const unitsQuery = useQuery({
     queryFn: listQuotationUnits,
-    queryKey: ["billing", "quotation", "lookups", "units"]
+    ...billingLookupQuery("units")
   });
   const taxesQuery = useQuery({
     queryFn: listQuotationTaxes,
-    queryKey: ["billing", "quotation", "lookups", "taxes"]
+    ...billingLookupQuery("taxes")
   });
 
   function patchProduct(next: Partial<QuotationMasterSavePayload>) {

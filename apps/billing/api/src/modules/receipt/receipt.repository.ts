@@ -47,6 +47,17 @@ type HeaderRow = {
   uuid: string;
 };
 
+type AllocationRow = {
+  allocated_amount: string | number;
+  document_date: string;
+  document_no: string;
+  document_total: string | number;
+  previous_balance: string | number;
+  receipt_id: number;
+  sale_id: string;
+  uuid: string;
+};
+
 export class ReceiptRepository {
   async defaultLedgerId(databaseName: string) {
     const database = await receiptDatabase(databaseName);
@@ -58,7 +69,7 @@ export class ReceiptRepository {
   async list(databaseName: string) {
     const database = await receiptDatabase(databaseName);
     const result = await selectHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
   async listPage(
     databaseName: string,
@@ -73,19 +84,19 @@ export class ReceiptRepository {
       status: options.status
     };
     const scope = currentBillingScope();
-    const result = await selectHeaders(undefined, false, page).execute(database);
-    const count = await sql<{
-      total: string | number;
-    }>`SELECT COUNT(*) AS total FROM billing_receipts r
-      INNER JOIN core_contacts customer ON customer.id=r.customer_id INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
-      WHERE r.deleted_at IS NULL
-      AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
-      AND (${page.status}='all' OR r.status=${page.status})
-      AND (${search}='%%' OR r.receipt_number LIKE ${search} OR customer.name LIKE ${search}
-        OR ledger.name LIKE ${search} OR r.receipt_mode LIKE ${search} OR r.status LIKE ${search}
-        OR COALESCE(r.reference_no,'') LIKE ${search})`.execute(database);
+    const [result, count] = await Promise.all([
+      selectHeaders(undefined, false, page).execute(database),
+      sql<{ total: string | number }>`SELECT COUNT(*) AS total FROM billing_receipts r
+        INNER JOIN core_contacts customer ON customer.id=r.customer_id INNER JOIN core_ledgers ledger ON ledger.id=r.ledger_id
+        WHERE r.deleted_at IS NULL
+        AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
+        AND (${page.status}='all' OR r.status=${page.status})
+        AND (${search}='%%' OR r.receipt_number LIKE ${search} OR customer.name LIKE ${search}
+          OR ledger.name LIKE ${search} OR r.receipt_mode LIKE ${search} OR r.status LIKE ${search}
+          OR COALESCE(r.reference_no,'') LIKE ${search})`.execute(database)
+    ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(count.rows[0]?.total ?? 0)
@@ -374,29 +385,40 @@ export class ReceiptRepository {
   }
 
   private async hydrate(database: Kysely<ReceiptDatabase>, row: HeaderRow): Promise<Receipt> {
-    const result = await sql<{
-      allocated_amount: string | number;
-      document_date: string;
-      document_no: string;
-      document_total: string | number;
-      previous_balance: string | number;
-      sale_id: string;
-      uuid: string;
-    }>`
-      SELECT a.uuid, s.uuid AS sale_id, s.invoice_number AS document_no, s.issued_on AS document_date,
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<ReceiptDatabase>,
+    rows: HeaderRow[]
+  ): Promise<Receipt[]> {
+    if (rows.length === 0) return [];
+    const ids = rows.map((row) => row.id);
+    const result = await sql<AllocationRow>`
+      SELECT a.receipt_id, a.uuid, s.uuid AS sale_id, s.invoice_number AS document_no,
+             s.issued_on AS document_date,
              s.amount AS document_total, s.amount AS previous_balance, a.allocated_amount
       FROM billing_receipt_allocations a INNER JOIN billing_sales s ON s.id=a.sales_id
-      WHERE a.receipt_id=${row.id} ORDER BY a.line_number
+      WHERE a.receipt_id IN (${sql.join(ids)}) ORDER BY a.receipt_id, a.line_number
     `.execute(database);
-    const allocations: ReceiptAllocation[] = result.rows.map((item) => ({
-      allocatedAmount: Number(item.allocated_amount),
-      documentDate: dateValue(item.document_date),
-      documentNo: item.document_no,
-      documentTotal: Number(item.document_total),
-      id: item.uuid,
-      previousBalance: Number(item.previous_balance),
-      saleId: item.sale_id
-    }));
+    const allocationsByReceipt = new Map<number, ReceiptAllocation[]>();
+    for (const item of result.rows) {
+      const allocations = allocationsByReceipt.get(item.receipt_id) ?? [];
+      allocations.push({
+        allocatedAmount: Number(item.allocated_amount),
+        documentDate: dateValue(item.document_date),
+        documentNo: item.document_no,
+        documentTotal: Number(item.document_total),
+        id: item.uuid,
+        previousBalance: Number(item.previous_balance),
+        saleId: item.sale_id
+      });
+      allocationsByReceipt.set(item.receipt_id, allocations);
+    }
+    return rows.map((row) => this.toReceipt(row, allocationsByReceipt.get(row.id) ?? []));
+  }
+
+  private toReceipt(row: HeaderRow, allocations: ReceiptAllocation[]): Receipt {
     return {
       allocatedAmount: Number(row.allocated_amount),
       allocations,

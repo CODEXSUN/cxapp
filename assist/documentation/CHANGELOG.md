@@ -27,6 +27,10 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 #### Database Changes
 
 - Database update: No (manual).
+- Replaced per-record Billing list hydration with module-owned batch reads for quotation, sales,
+  purchase, export sales, payment, and receipt documents. A 100-row Sales or Export Sales page now
+  uses five bounded statements instead of up to 302 queued statements, without changing schemas or
+  response contracts.
 
 #### App Codebase Changes
 
@@ -51,6 +55,27 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Hardened CXApp Docker updates with source-to-image version matching, an exclusive host lock,
   explicit migration compatibility approval, dirty-worktree control, disk-space preflight,
   SHA-256 backup verification and retention, plus per-attempt deployment audit metadata.
+- Debounced and cancellation-wired all Billing transaction searches, ran page and count reads in
+  parallel, retained prior page data during refresh, and removed the forced Billing-settings reload
+  from New Sale and New Export Sale.
+- Added bounded React Query freshness and cache lifetimes, disabled expensive focus-triggered
+  refetches, and assigned longer freshness to tenant runtime, company/year context, and Billing
+  settings while keeping mutation invalidation authoritative.
+- Added idle Billing workspace preloading and immutable hashed-asset caching so first navigation pays
+  less chunk latency while visible layouts and module flows remain unchanged.
+- Added an authenticated lightweight route for automatic quotation, sales, purchase, and export
+  sales printing. Hidden print frames now restore trusted session company/year context and load only
+  the owning Billing print module instead of booting the complete tenant desk; ordinary print-page
+  navigation and printed output remain unchanged.
+- Consolidated repeated quotation, sales, purchase, and export-sales master reads into Billing-owned,
+  company-scoped lookup cache keys with bounded freshness. Switching forms now reuses matching live
+  contacts, products, work orders, address data, and product masters while existing create/edit
+  refetches keep the shared cache authoritative and prevent cross-company reuse. Lookup requests
+  also wait for the trusted company context instead of issuing an initial context-free request.
+- Mounted the shared global loader before the initial runtime-configuration request and contained
+  lazy tenant workspace fallbacks inside the existing desk shell. Sidebar and record navigation now
+  uses React transitions so a late module chunk no longer replaces an already-visible page with a
+  full-screen loader.
 
 ## v-1.0.46
 

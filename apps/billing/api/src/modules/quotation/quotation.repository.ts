@@ -3,6 +3,7 @@ import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   QuotationDatabase,
   QuotationHeaderRow,
+  QuotationItemRow,
   QuotationReferenceState,
   addressDetails,
   existingIds,
@@ -30,7 +31,7 @@ export class QuotationRepository {
   async list(databaseName: string) {
     const database = await quotationDatabase(databaseName);
     const result = await selectQuotationHeaders().execute(database);
-    return Promise.all(result.rows.map((row) => this.hydrate(database, row)));
+    return this.hydrateMany(database, result.rows);
   }
 
   async listPage(
@@ -42,29 +43,31 @@ export class QuotationRepository {
     const customer = options.customer.trim().toLowerCase();
     const offset = (options.page - 1) * options.pageSize;
     const scope = currentBillingScope();
-    const result = await selectQuotationHeaders(undefined, {
-      customer,
-      limit: options.pageSize,
-      offset,
-      search,
-      status: options.status
-    }).execute(database);
-    const count = await sql<{ total: string | number }>`
-      SELECT COUNT(*) AS total FROM billing_quotations s
-      INNER JOIN core_contacts customer ON customer.id=s.customer_id
-      LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
-      WHERE s.deleted_at IS NULL
-        AND s.company_id=${scope.companyId}
-        AND s.financial_year_id=${scope.financialYearId}
-        AND (${options.status}='all' OR s.status=${options.status})
-        AND (${customer}='all' OR LOWER(customer.name)=${customer})
-        AND (${search}='%%' OR s.quotation_number LIKE ${search} OR customer.name LIKE ${search}
-          OR COALESCE(work_order.code,'') LIKE ${search}
-          OR DATE_FORMAT(s.quotation_date,'%Y-%m-%d') LIKE ${search}
-          OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})
-    `.execute(database);
+    const [result, count] = await Promise.all([
+      selectQuotationHeaders(undefined, {
+        customer,
+        limit: options.pageSize,
+        offset,
+        search,
+        status: options.status
+      }).execute(database),
+      sql<{ total: string | number }>`
+        SELECT COUNT(*) AS total FROM billing_quotations s
+        INNER JOIN core_contacts customer ON customer.id=s.customer_id
+        LEFT JOIN core_work_orders work_order ON work_order.id=s.work_order_id
+        WHERE s.deleted_at IS NULL
+          AND s.company_id=${scope.companyId}
+          AND s.financial_year_id=${scope.financialYearId}
+          AND (${options.status}='all' OR s.status=${options.status})
+          AND (${customer}='all' OR LOWER(customer.name)=${customer})
+          AND (${search}='%%' OR s.quotation_number LIKE ${search} OR customer.name LIKE ${search}
+            OR COALESCE(work_order.code,'') LIKE ${search}
+            OR DATE_FORMAT(s.quotation_date,'%Y-%m-%d') LIKE ${search}
+            OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search})
+      `.execute(database)
+    ]);
     return {
-      items: await Promise.all(result.rows.map((row) => this.hydrate(database, row))),
+      items: await this.hydrateMany(database, result.rows),
       page: options.page,
       pageSize: options.pageSize,
       total: Number(count.rows[0]?.total ?? 0)
@@ -272,8 +275,14 @@ export class QuotationRepository {
   async validItemReferenceIds(databaseName: string, input: QuotationSavePayload) {
     const database = await quotationDatabase(databaseName);
     return {
-      colours: await existingIds(database, sql`SELECT id FROM core_colours WHERE status = 'active'`),
-      hsnCodes: await existingIds(database, sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`),
+      colours: await existingIds(
+        database,
+        sql`SELECT id FROM core_colours WHERE status = 'active'`
+      ),
+      hsnCodes: await existingIds(
+        database,
+        sql`SELECT id FROM core_hsn_codes WHERE status = 'active'`
+      ),
       products: await existingIds(
         database,
         sql`SELECT id FROM core_products WHERE status = 'active' AND deleted_at IS NULL`
@@ -454,7 +463,25 @@ export class QuotationRepository {
     database: Kysely<QuotationDatabase>,
     row: QuotationHeaderRow
   ): Promise<Quotation> {
-    const itemsResult = await selectQuotationItems(row.id).execute(database);
+    return (await this.hydrateMany(database, [row]))[0]!;
+  }
+
+  private async hydrateMany(
+    database: Kysely<QuotationDatabase>,
+    rows: QuotationHeaderRow[]
+  ): Promise<Quotation[]> {
+    if (rows.length === 0) return [];
+    const itemsResult = await selectQuotationItems(rows.map((row) => row.id)).execute(database);
+    const itemsByQuotation = new Map<number, QuotationItemRow[]>();
+    for (const item of itemsResult.rows) {
+      const items = itemsByQuotation.get(item.quotation_id) ?? [];
+      items.push(item);
+      itemsByQuotation.set(item.quotation_id, items);
+    }
+    return rows.map((row) => this.toQuotation(row, itemsByQuotation.get(row.id) ?? []));
+  }
+
+  private toQuotation(row: QuotationHeaderRow, items: QuotationItemRow[]): Quotation {
     return {
       amount: money(row.amount),
       billingAddress: formatAddress(row, "billing"),
@@ -478,7 +505,7 @@ export class QuotationRepository {
       id: row.uuid,
       quotationNumber: row.quotation_number,
       date: row.quotation_date,
-      items: itemsResult.rows.map(toQuotationItem),
+      items: items.map(toQuotationItem),
       ledgerId: row.ledger_id,
       lineNumber: row.line_number,
       notes: row.notes ?? "",

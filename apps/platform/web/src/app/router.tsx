@@ -10,6 +10,11 @@ const SaDesk = lazy(() =>
 const AppDesk = lazy(() =>
   import("../desks/tenant/AppDesk").then((module) => ({ default: module.AppDesk }))
 );
+const BillingPrintRoute = lazy(() =>
+  import("../desks/tenant/BillingPrintRoute").then((module) => ({
+    default: module.BillingPrintRoute
+  }))
+);
 const HealthPage = lazy(() =>
   import("../public/health/HealthPage").then((module) => ({ default: module.HealthPage }))
 );
@@ -186,6 +191,30 @@ const adminRoute = createRoute({
   path: "/admin"
 });
 
+const quotationPrintRoute = createRoute({
+  component: () => <BillingPrintRoute document="quotation" />,
+  getParentRoute: () => rootRoute,
+  path: "/app/billing/quotation/print"
+});
+
+const salesPrintRoute = createRoute({
+  component: () => <BillingPrintRoute document="sales" />,
+  getParentRoute: () => rootRoute,
+  path: "/app/billing/sales/print"
+});
+
+const purchasePrintRoute = createRoute({
+  component: () => <BillingPrintRoute document="purchase" />,
+  getParentRoute: () => rootRoute,
+  path: "/app/billing/purchase/print"
+});
+
+const exportSalesPrintRoute = createRoute({
+  component: () => <BillingPrintRoute document="export-sales" />,
+  getParentRoute: () => rootRoute,
+  path: "/app/billing/export-sales/print"
+});
+
 const appSplatRoute = createRoute({
   component: AppDesk,
   getParentRoute: () => rootRoute,
@@ -211,6 +240,10 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   saSplatRoute,
   adminRoute,
+  quotationPrintRoute,
+  salesPrintRoute,
+  purchasePrintRoute,
+  exportSalesPrintRoute,
   appSplatRoute
 ]);
 
