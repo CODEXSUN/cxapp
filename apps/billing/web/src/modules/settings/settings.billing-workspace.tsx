@@ -45,13 +45,16 @@ const switches: Array<{ key: keyof BillingDocumentLayoutSettings; label: string 
   { key: "useColour", label: "Colour" },
   { key: "useSize", label: "Size" },
   { key: "useEinvoice", label: "E-invoice" },
-  { key: "useEway", label: "E-way" }
+  { key: "useEway", label: "E-way" },
+  { key: "useWorkOrder", label: "Work order" }
 ];
 
 function switchNote(key: keyof BillingDocumentLayoutSettings, label: string) {
-  return key === "useEinvoice" || key === "useEway"
-    ? `Show ${label} tabs in sales, purchase, and export sales.`
-    : `Show ${label} controls in quotation, sales, purchase, and export sales.`;
+  return key === "useWorkOrder"
+    ? "Show Work order controls in quotation, sales, purchase, receipt, and payment."
+    : key === "useEinvoice" || key === "useEway"
+      ? `Show ${label} tabs in sales, purchase, and export sales.`
+      : `Show ${label} controls in quotation, sales, purchase, and export sales.`;
 }
 
 export function BillingSettingsWorkspace() {

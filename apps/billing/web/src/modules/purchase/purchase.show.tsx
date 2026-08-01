@@ -25,6 +25,7 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { cn } from "@cxapp/ui/lib/utils";
 import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
 import { getTenantUserLabel } from "../../shared/api/tenant-context";
+import { useBillingDocumentTitle } from "../settings";
 import { formatDate } from "./purchase.services";
 import { PurchasePrintDocument, type PurchasePrintCopy } from "./purchase.print";
 import type { Purchase } from "./purchase.types";
@@ -58,6 +59,7 @@ export function PurchaseShowPage({
   onSuspend: () => void;
   purchase: Purchase;
 }) {
+  const documentTitle = useBillingDocumentTitle("purchase");
   const activityUser = getTenantUserLabel();
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Array<{ body: string; createdAt: string; id: string }>>(
@@ -92,11 +94,11 @@ export function PurchaseShowPage({
         {
           createdAt: purchase.updatedAt,
           id: "updated",
-          message: `Purchase updated${purchase.generatedSalesInvoiceNo ? ` and linked to ${purchase.generatedSalesInvoiceNo}` : ""}`
+          message: "Purchase updated"
         },
         { createdAt: purchase.createdAt, id: "created", message: "Purchase entry created" }
       ].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
-    [purchase.createdAt, purchase.generatedSalesInvoiceNo, purchase.updatedAt, toolActivities]
+    [purchase.createdAt, purchase.updatedAt, toolActivities]
   );
 
   function togglePrintCopy(copy: PurchasePrintCopy) {
@@ -254,10 +256,10 @@ export function PurchaseShowPage({
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
           <Card className="min-h-[350px] rounded-md border-border/70 shadow-none">
-            <CardHeader>
+            <CardHeader className="px-6 pb-3 pt-5">
               <CardTitle className="text-lg">Comments</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8">
+            <CardContent className="space-y-5 px-6 pb-5 pt-0">
               <div className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
                   A
@@ -278,7 +280,7 @@ export function PurchaseShowPage({
                 </Button>
               </div>
               {comments.length || purchase.notes ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {purchase.notes ? (
                     <SideNote body={purchase.notes} meta="Saved notes" title="System" />
                   ) : null}
@@ -288,7 +290,6 @@ export function PurchaseShowPage({
                       body={item.body}
                       meta={formatDateTime(item.createdAt)}
                       title="Admin"
-                      titleOnRight
                     />
                   ))}
                 </div>
@@ -303,7 +304,7 @@ export function PurchaseShowPage({
                       </span>
                       <span>{item.message}</span>
                       <span className="text-muted-foreground">
-                        {` · ${formatDate(item.createdAt)} - by ${activityUser}`}
+                        {` Â· ${formatDate(item.createdAt)} - by ${activityUser}`}
                       </span>
                     </div>
                   ))}
@@ -326,7 +327,10 @@ export function PurchaseShowPage({
                     onClick={() => {
                       if (tool.id === "downloadPdf") {
                         recordActivity(`Downloaded print preview for ${purchase.invoiceNumber}`);
-                        toast.success("Print preview download queued");
+                        toast.success("Print preview download queued", {
+                          description:
+                            "The request is queued and can be tracked while you continue working."
+                        });
                         return;
                       }
                       setOpenTool((current) => (current === tool.id ? null : tool.id));
@@ -336,12 +340,14 @@ export function PurchaseShowPage({
                   >
                     <tool.icon className="size-4" />
                     <span className="flex-1">{tool.label}</span>
-                    <Plus
-                      className={cn(
-                        "size-4 transition-transform",
-                        openTool === tool.id ? "rotate-45" : ""
-                      )}
-                    />
+                    {tool.id !== "downloadPdf" ? (
+                      <Plus
+                        className={cn(
+                          "size-4 transition-transform",
+                          openTool === tool.id ? "rotate-45" : ""
+                        )}
+                      />
+                    ) : null}
                   </button>
                   {tool.id === "assign" && assignees.length ? (
                     <div className="px-3 pb-2">
@@ -380,21 +386,31 @@ export function PurchaseShowPage({
                             const documentElement =
                               document.querySelector<HTMLElement>(".billing-mail-document");
                             if (!documentElement)
-                              return toast.error("Purchase preview is not ready.");
+                              return toast.error("Purchase preview is not ready.", {
+                                description:
+                                  "Generate or refresh the document before trying this action again."
+                              });
                             try {
                               await queueBillingDocumentEmail({
                                 documentElement,
                                 documentNumber: purchase.invoiceNumber,
-                                documentTitle: "Purchase",
+                                documentTitle,
                                 partyName: purchase.supplierName,
                                 recipient: value
                               });
                               recordActivity(`Queued purchase email to ${value}`);
-                              toast.success("Purchase email queued");
+                              toast.success("Purchase email queued", {
+                                description:
+                                  "The request is queued and can be tracked while you continue working."
+                              });
                               setEmailAddress("");
                             } catch (error) {
                               toast.error(
-                                error instanceof Error ? error.message : "Purchase email failed."
+                                error instanceof Error ? error.message : "Purchase email failed.",
+                                {
+                                  description:
+                                    "Review the details, correct the problem, and try again."
+                                }
                               );
                             }
                           }}
@@ -514,33 +530,14 @@ function InlineSend({
   );
 }
 
-function SideNote({
-  body,
-  meta,
-  title,
-  titleOnRight = false
-}: {
-  body: string;
-  meta: string;
-  title: string;
-  titleOnRight?: boolean;
-}) {
+function SideNote({ body, meta, title }: { body: string; meta: string; title: string }) {
   return (
-    <div className="rounded-md border border-border/70 bg-muted/10 px-4 py-3">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        {titleOnRight ? (
-          <>
-            <span className="text-xs text-muted-foreground">{meta}</span>
-            <span className="font-medium">{title}</span>
-          </>
-        ) : (
-          <>
-            <span className="font-medium">{title}</span>
-            <span className="text-xs text-muted-foreground">{meta}</span>
-          </>
-        )}
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-md border border-border/70 bg-muted/10 px-3 py-2">
+      <p className="min-w-0 whitespace-pre-wrap text-sm leading-5 text-foreground">{body}</p>
+      <div className="flex shrink-0 flex-col items-end text-right leading-tight">
+        <span className="text-xs text-muted-foreground">{meta}</span>
+        <span className="mt-0.5 text-sm font-medium">{title}</span>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{body}</p>
     </div>
   );
 }

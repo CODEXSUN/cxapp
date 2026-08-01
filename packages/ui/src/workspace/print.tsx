@@ -35,7 +35,7 @@ export function WorkspacePrintSheet({
   return (
     <>
       <style>{`
-        @page { size: A4 portrait; margin: 7mm 4mm 5mm; }
+        @page { size: A4 portrait; margin: 4mm; }
         @media print {
           html, body {
             background: #fff !important;
@@ -44,7 +44,10 @@ export function WorkspacePrintSheet({
             min-height: 0 !important;
             width: auto !important;
           }
-          .print-sheet { width: 210mm; }
+          .print-sheet {
+            max-width: 202mm !important;
+            width: 202mm !important;
+          }
           body:has(.billing-print-document) { background: #fff !important; }
           body:has(.billing-document-print-page) *:has(.billing-document-print-page) {
             height: auto !important;
@@ -81,17 +84,19 @@ export function WorkspacePrintSheet({
           }
           .billing-print-area > :first-child { overflow: visible !important; }
           .billing-print-document {
-            break-inside: avoid;
+            break-inside: auto;
             color: #000 !important;
+          }
+          .billing-print-document article {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
           }
           .billing-print-document,
           .billing-print-document * { border-color: #475569 !important; }
-          .billing-print-document .text-\\[9px\\] { font-size: 10px !important; }
-          .billing-print-document .text-\\[10px\\] { font-size: 11px !important; }
         }
       `}</style>
       <div
-        className={`print-sheet mx-auto w-[210mm] max-w-full origin-top bg-white font-sans text-[10px] text-black print:mx-0 print:mt-0 print:w-[198mm] print:max-w-none ${className ?? ""}`}
+        className={`print-sheet mx-auto w-[210mm] max-w-full origin-top bg-white font-sans text-[10px] text-black print:mx-0 print:mt-0 print:w-[202mm] print:max-w-none ${className ?? ""}`}
       >
         {children}
       </div>

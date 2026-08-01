@@ -12,7 +12,8 @@ export function SettingsList({ settings }: { settings: BillingSettings }) {
     ["Colour", settings.layout.useColour],
     ["Size", settings.layout.useSize],
     ["E-Invoice", settings.layout.useEinvoice],
-    ["E-Way", settings.layout.useEway]
+    ["E-Way", settings.layout.useEway],
+    ["Work order", settings.layout.useWorkOrder]
   ] as const;
 
   return (

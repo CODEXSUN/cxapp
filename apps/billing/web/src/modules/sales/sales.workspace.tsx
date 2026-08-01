@@ -11,7 +11,7 @@ import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 import { cn } from "@cxapp/ui/lib/utils";
 import { useSalesSettings } from "../settings";
 import { defaultBillingSettings } from "../settings/settings.types";
-import { type Sale, type SaleSavePayload, type SaleView } from "./sales.types";
+import { type SaleSavePayload, type SaleView } from "./sales.types";
 import { SaleShowPage } from "./sales.show";
 import {
   createSale,
@@ -25,7 +25,7 @@ import {
 } from "./sales.services";
 import { useSalesPage } from "./sales.hooks";
 import { SalesForm } from "./sales.form";
-import { canSelectSale, SalesList } from "./sales.list";
+import { SalesList } from "./sales.list";
 import { getToken } from "../../shared/api/tenant-context";
 
 const statusFilters = [
@@ -67,7 +67,6 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pendingListPrintId, setPendingListPrintId] = useState<string | null>(null);
-  const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(saleColumnCatalog.map((column) => [column.id, true]))
   );
@@ -203,42 +202,9 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
       ),
     [pageEntries]
   );
-  const pageSelectableEntries = pageEntries.filter(canSelectSale);
-  const pageSelected =
-    pageSelectableEntries.length > 0 &&
-    pageSelectableEntries.every((sale) => selectedSaleIds.has(sale.id));
-
-  useEffect(() => {
-    setSelectedSaleIds((current) => {
-      const available = new Set(entries.map((sale) => sale.id));
-      const next = new Set(Array.from(current).filter((id) => available.has(id)));
-      return next.size === current.size ? current : next;
-    });
-  }, [entries]);
 
   function openNewSale() {
     setView({ mode: "upsert", sale: null, returnTo: "list" });
-  }
-
-  function toggleSaleSelection(sale: Sale, checked: boolean) {
-    if (!canSelectSale(sale)) return;
-    setSelectedSaleIds((current) => {
-      const next = new Set(current);
-      if (checked) next.add(sale.id);
-      else next.delete(sale.id);
-      return next;
-    });
-  }
-
-  function togglePageSelection(checked: boolean) {
-    setSelectedSaleIds((current) => {
-      const next = new Set(current);
-      for (const sale of pageSelectableEntries) {
-        if (checked) next.add(sale.id);
-        else next.delete(sale.id);
-      }
-      return next;
-    });
   }
 
   if (view.mode === "show") {
@@ -368,13 +334,6 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
         }}
         canAdminRevoke={canAdminRevoke}
         onView={(sale) => setView({ mode: "show", sale })}
-        page={currentPage}
-        rowsPerPage={rowsPerPage}
-        pageSelected={pageSelected}
-        pageSelectableCount={pageSelectableEntries.length}
-        selectedSaleIds={selectedSaleIds}
-        onTogglePageSelection={togglePageSelection}
-        onToggleSelection={toggleSaleSelection}
         visibleColumns={visibleColumns}
       />
       <SalePageTotals

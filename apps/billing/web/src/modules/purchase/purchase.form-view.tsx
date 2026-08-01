@@ -123,65 +123,67 @@ export function PurchaseFormView({
                   onValueChange={(value) => patch({ supplierBillDate: value })}
                 />
               </Field>
-              <Field label="Work order no">
-                <WorkspaceLookup
-                  createDescription="Add a work order without leaving this purchase."
-                  createLabel="New work order"
-                  createMode="popup"
-                  createTitle="New work order"
-                  emptyLabel="No work orders found. Create a new work order."
-                  loading={workOrdersQuery.isLoading}
-                  options={workOrdersQuery.data ?? []}
-                  placeholder="Search work order"
-                  value={form.workOrderNo}
-                  onTextChange={(value) => patch({ workOrderId: null, workOrderNo: value })}
-                  onValueChange={(value, option) =>
-                    patch({
-                      workOrderId: numericId(
-                        (option as PurchaseLookupOption | undefined)?.record?.id
-                      ),
-                      workOrderNo: option?.value ?? value
-                    })
-                  }
-                  renderCreateForm={({ initialName, onCancel, onCreated }) => (
-                    <PurchaseWorkOrderQuickForm
-                      initialValue={masterDraftFromRecord(undefined, initialName)}
-                      loading={masterSaveMutation.isPending}
-                      onCancel={onCancel}
-                      onSave={async (payload) => {
-                        const created = await masterSaveMutation.mutateAsync({
-                          kind: "workOrders",
-                          payload
-                        });
-                        await workOrdersQuery.refetch();
-                        const option = purchaseWorkOrderOption(created);
-                        onCreated(option);
-                        patch({ workOrderId: Number(created.id), workOrderNo: option.value });
-                        toast.success("Work order saved", { description: option.label });
-                      }}
-                      title="New work order"
-                    />
-                  )}
-                  trailingAction={
-                    selectedWorkOrder?.record ? (
-                      <button
-                        aria-label="Edit selected work order"
-                        className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        title="Edit selected work order"
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (selectedWorkOrder.record)
-                            setEditingWorkOrder(selectedWorkOrder.record);
+              {settings.useWorkOrder ? (
+                <Field label="Work order no">
+                  <WorkspaceLookup
+                    createDescription="Add a work order without leaving this purchase."
+                    createLabel="New work order"
+                    createMode="popup"
+                    createTitle="New work order"
+                    emptyLabel="No work orders found. Create a new work order."
+                    loading={workOrdersQuery.isLoading}
+                    options={workOrdersQuery.data ?? []}
+                    placeholder="Search work order"
+                    value={form.workOrderNo}
+                    onTextChange={(value) => patch({ workOrderId: null, workOrderNo: value })}
+                    onValueChange={(value, option) =>
+                      patch({
+                        workOrderId: numericId(
+                          (option as PurchaseLookupOption | undefined)?.record?.id
+                        ),
+                        workOrderNo: option?.value ?? value
+                      })
+                    }
+                    renderCreateForm={({ initialName, onCancel, onCreated }) => (
+                      <PurchaseWorkOrderQuickForm
+                        initialValue={masterDraftFromRecord(undefined, initialName)}
+                        loading={masterSaveMutation.isPending}
+                        onCancel={onCancel}
+                        onSave={async (payload) => {
+                          const created = await masterSaveMutation.mutateAsync({
+                            kind: "workOrders",
+                            payload
+                          });
+                          await workOrdersQuery.refetch();
+                          const option = purchaseWorkOrderOption(created);
+                          onCreated(option);
+                          patch({ workOrderId: Number(created.id), workOrderNo: option.value });
+                          toast.success("Work order saved", { description: option.label });
                         }}
-                      >
-                        <ArrowUpRight className="size-4" />
-                      </button>
-                    ) : undefined
-                  }
-                />
-              </Field>
+                        title="New work order"
+                      />
+                    )}
+                    trailingAction={
+                      selectedWorkOrder?.record ? (
+                        <button
+                          aria-label="Edit selected work order"
+                          className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          title="Edit selected work order"
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (selectedWorkOrder.record)
+                              setEditingWorkOrder(selectedWorkOrder.record);
+                          }}
+                        >
+                          <ArrowUpRight className="size-4" />
+                        </button>
+                      ) : undefined
+                    }
+                  />
+                </Field>
+              ) : null}
             </div>
             <div className="space-y-5">
               <Field label="Purchase number">

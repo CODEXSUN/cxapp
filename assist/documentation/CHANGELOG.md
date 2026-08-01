@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.47
+Current version: 1.0.49
 
-Release tag: v-1.0.47
+Release tag: v-1.0.49
 
-Changelog label: v 1.0.47
+Changelog label: v 1.0.49
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,50 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.49
+
+### [v 1.0.49] 2026-08-01 10:12 am - Billing adaptive document printing
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.49.
+- Locked quotation, sales, purchase, and export-sales item prints to one Billing-owned adaptive pagination contract: 13-15 items retain the 12-plus-remainder layout, larger documents balance 12-15 items on the first page, middle pages hold up to 12, and continuation/final pages retain at least 4 items whenever redistribution is possible.
+- Standardized the four print item tables with unrestricted product/description wrapping, indented valid Colour/Size details, three-line item slots, missing-item-only line reservations, darker table borders, calculated page and carried-forward totals, and explicit continuation markers.
+- Expanded receiver and authorised-signature space, kept compact A4 totals and footers, and made Sales e-invoice print metadata render persisted IRN, acknowledgement, and E-Way Bill values only when each value is present.
+
+## v-1.0.48
+
+### [v 1.0.48] 2026-08-01 7:21 am - Billing quotation and sales list cleanup
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.48.
+- Removed the contact-filter card from the Billing Quotation list while preserving quotation
+  search, status filtering, column controls, row selection, invoice generation, totals, and
+  pagination.
+- Removed the unused select-all and per-row multi-select controls from the Billing Sales list,
+  including their local selection state and handlers, while preserving print controls, row actions,
+  totals, and pagination.
+- Removed the supplier contact-filter card from the Billing Purchase list while preserving purchase
+  search, status filtering, multi-select invoice generation, totals, and pagination.
+- Added a persisted Billing Settings Work order layout toggle with backward-compatible defaults and conditional work-order controls in quotation, sales, and purchase forms. Receipt and payment currently have no work-order field/API contract to toggle.
+- Ported Billing Stack show/print enhancements into CXApp quotation, sales, and purchase: configurable document titles, shared letterhead headers, address-mode layouts, bank details, amount-in-words, signature/footer sections, compact totals, richer feedback, and sales e-invoice print details.
+- Tuned quotation, sales, and purchase print item tables with product/description on the first Particulars line, valid Colour/Size values on a dedicated second line, wider particulars columns, darker borders, balanced item-row spacing with a larger first-row top buffer, tighter blank rows, and compact totals and footer sections.
+- Reworked quotation, sales, and purchase A4 pagination to fit up to 20 items on the first page and 12 items on each continuation page, retain the 12-row blank reservation for short final pages, and prevent signatures or jurisdiction footers from spilling onto an extra sheet.
+- Added calculated page totals, cumulative carried-forward totals, and explicit "To be continued" markers to multi-page Billing prints; removed duplicate Colour/Size columns because valid values are already rendered in the wider Particulars column.
+- Updated Sales e-invoice print details to render persisted IRN, Ack No., Ack Date, E-Way Bill No., and E-Way Bill Date independently, omitting both the label and value whenever a field is empty.
+- Standardized quotation, sales, and purchase print item slots to a three-line reserved height across the 12-row final-page pattern, including matching dummy rows, and indented Colour/Size beneath the primary particulars line.
+- Refined Billing print pagination with unrestricted particulars wrapping, Colour/Size on the following indented line, line-budgeted placeholders only for missing item slots, and a taller receiver/authorised-signature area instead of trailing dummy lines. Invoices with 13-15 items retain the 12-plus-remainder split; larger invoices balance 12-15 items on the first page, up to 12 on middle pages, and at least 4 on continuation/final pages whenever the document size permits.
+- Locked Export Sales item printing to the same adaptive Billing pattern as quotation, sales, and purchase, including balanced page sizes, wider wrapping particulars, indented Colour/Size, line-budgeted missing slots, calculated page/carried-forward totals, and continuation markers.
 
 ## v-1.0.47
 

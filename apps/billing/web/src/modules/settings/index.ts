@@ -7,6 +7,7 @@ export * from "./settings.schema";
 export { SalesSettingsPage } from "./settings.workspace";
 export {
   billingSettingsQueryKey,
+  useBillingDocumentTitle,
   useBillingSettings,
   useCompanyContextId,
   useSalesSettings

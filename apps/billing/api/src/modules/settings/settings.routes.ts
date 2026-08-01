@@ -39,7 +39,8 @@ const settingsSchema = z.object({
     useEinvoice: z.boolean(),
     useEway: z.boolean(),
     usePo: z.boolean(),
-    useSize: z.boolean()
+    useSize: z.boolean(),
+    useWorkOrder: z.boolean()
   }),
   numbering: numberingSchema,
   customise: z.object({

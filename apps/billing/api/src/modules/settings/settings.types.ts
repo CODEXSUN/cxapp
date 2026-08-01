@@ -22,6 +22,7 @@ export type BillingDocumentLayoutSettings = {
   useEway: boolean;
   usePo: boolean;
   useSize: boolean;
+  useWorkOrder: boolean;
 };
 
 export type BillingSettings = {
@@ -70,7 +71,8 @@ export const defaultBillingDocumentLayoutSettings: BillingDocumentLayoutSettings
   useEinvoice: true,
   useEway: true,
   usePo: false,
-  useSize: true
+  useSize: true,
+  useWorkOrder: true
 };
 
 export const defaultBillingSettings: BillingSettings = {

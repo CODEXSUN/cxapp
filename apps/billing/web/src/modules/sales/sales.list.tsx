@@ -21,13 +21,6 @@ export function SalesList({
   onRevoke,
   onSetStatus,
   onView,
-  page: _page,
-  pageSelected,
-  pageSelectableCount,
-  rowsPerPage: _rowsPerPage,
-  selectedSaleIds,
-  onTogglePageSelection,
-  onToggleSelection,
   visibleColumns
 }: {
   canAdminRevoke: boolean;
@@ -39,13 +32,6 @@ export function SalesList({
   onRevoke: (sale: Sale) => void;
   onSetStatus: (sale: Sale, status: "cancelled" | "confirmed") => void;
   onView: (sale: Sale) => void;
-  page: number;
-  pageSelected: boolean;
-  pageSelectableCount: number;
-  rowsPerPage: number;
-  selectedSaleIds: Set<string>;
-  onTogglePageSelection: (checked: boolean) => void;
-  onToggleSelection: (sale: Sale, checked: boolean) => void;
   visibleColumns: Record<string, boolean>;
 }) {
   return (
@@ -54,16 +40,6 @@ export function SalesList({
         <table className="w-full min-w-[980px] border-collapse text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="w-12 border-b border-border/70 px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <input
-                  aria-label="Select sales on this page"
-                  checked={pageSelected}
-                  className="size-4 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={pageSelectableCount === 0}
-                  onChange={(event) => onTogglePageSelection(event.target.checked)}
-                  type="checkbox"
-                />
-              </th>
               {[
                 "Sale",
                 ...(visibleColumns.date ? ["Date"] : []),
@@ -98,21 +74,6 @@ export function SalesList({
                 key={sale.id}
                 className="border-b border-border/70 transition-colors last:border-b-0 hover:bg-muted/20"
               >
-                <td className="px-4 py-2.5 text-center">
-                  <input
-                    aria-label={`Select ${sale.saleNumber}`}
-                    checked={selectedSaleIds.has(sale.id)}
-                    className="size-4 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={!canSelectSale(sale)}
-                    onChange={(event) => onToggleSelection(sale, event.target.checked)}
-                    title={
-                      sale.generatedSalesInvoiceNo
-                        ? `Already invoiced by ${sale.generatedSalesInvoiceNo}`
-                        : undefined
-                    }
-                    type="checkbox"
-                  />
-                </td>
                 <td className="px-4 py-2.5">
                   <button
                     className="font-semibold text-foreground underline-offset-4 hover:underline"
@@ -257,8 +218,4 @@ function StatusPill({ sale, status }: { sale?: Sale; status?: Sale["status"] }) 
           ? "danger"
           : "warning";
   return <WorkspaceStatusBadge label={label} tone={tone} />;
-}
-
-export function canSelectSale(sale: Sale) {
-  return sale.status !== "cancelled" && !sale.generatedSalesInvoiceNo;
 }

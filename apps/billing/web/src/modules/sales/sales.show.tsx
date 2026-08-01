@@ -25,6 +25,7 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { cn } from "@cxapp/ui/lib/utils";
 import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
 import { getTenantUserLabel } from "../../shared/api/tenant-context";
+import { useBillingDocumentTitle } from "../settings";
 import { formatDate } from "./sales.services";
 import { SalePrintDocument, type SalePrintCopy } from "./sales.print";
 import type { Sale } from "./sales.types";
@@ -58,6 +59,7 @@ export function SaleShowPage({
   onSuspend: () => void;
   sale: Sale;
 }) {
+  const documentTitle = useBillingDocumentTitle("sales");
   const activityUser = getTenantUserLabel();
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Array<{ body: string; createdAt: string; id: string }>>(
@@ -252,10 +254,10 @@ export function SaleShowPage({
 
         <div className="mt-4 grid gap-4 print:hidden xl:grid-cols-[minmax(0,1fr)_280px]">
           <Card className="min-h-[350px] rounded-md border-border/70 shadow-none">
-            <CardHeader>
+            <CardHeader className="px-6 pb-3 pt-5">
               <CardTitle className="text-lg">Comments</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8">
+            <CardContent className="space-y-5 px-6 pb-5 pt-0">
               <div className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
                   A
@@ -276,7 +278,7 @@ export function SaleShowPage({
                 </Button>
               </div>
               {comments.length || sale.notes ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {sale.notes ? (
                     <SideNote body={sale.notes} meta="Saved notes" title="System" />
                   ) : null}
@@ -286,7 +288,6 @@ export function SaleShowPage({
                       body={item.body}
                       meta={formatDateTime(item.createdAt)}
                       title="Admin"
-                      titleOnRight
                     />
                   ))}
                 </div>
@@ -301,7 +302,7 @@ export function SaleShowPage({
                       </span>
                       <span>{item.message}</span>
                       <span className="text-muted-foreground">
-                        {` · ${formatDate(item.createdAt)} - by ${activityUser}`}
+                        {` Â· ${formatDate(item.createdAt)} - by ${activityUser}`}
                       </span>
                     </div>
                   ))}
@@ -324,7 +325,10 @@ export function SaleShowPage({
                     onClick={() => {
                       if (tool.id === "downloadPdf") {
                         recordActivity(`Downloaded print preview for ${sale.saleNumber}`);
-                        toast.success("Print preview download queued");
+                        toast.success("Print preview download queued", {
+                          description:
+                            "The request is queued and can be tracked while you continue working."
+                        });
                         return;
                       }
                       setOpenTool((current) => (current === tool.id ? null : tool.id));
@@ -334,12 +338,14 @@ export function SaleShowPage({
                   >
                     <tool.icon className="size-4" />
                     <span className="flex-1">{tool.label}</span>
-                    <Plus
-                      className={cn(
-                        "size-4 transition-transform",
-                        openTool === tool.id ? "rotate-45" : ""
-                      )}
-                    />
+                    {tool.id !== "downloadPdf" ? (
+                      <Plus
+                        className={cn(
+                          "size-4 transition-transform",
+                          openTool === tool.id ? "rotate-45" : ""
+                        )}
+                      />
+                    ) : null}
                   </button>
                   {tool.id === "assign" && assignees.length ? (
                     <div className="px-3 pb-2">
@@ -378,21 +384,31 @@ export function SaleShowPage({
                             const documentElement =
                               document.querySelector<HTMLElement>(".billing-mail-document");
                             if (!documentElement)
-                              return toast.error("Invoice preview is not ready.");
+                              return toast.error("Invoice preview is not ready.", {
+                                description:
+                                  "Generate or refresh the document before trying this action again."
+                              });
                             try {
                               await queueBillingDocumentEmail({
                                 documentElement,
                                 documentNumber: sale.saleNumber,
-                                documentTitle: "Sales Invoice",
+                                documentTitle,
                                 partyName: sale.customerName,
                                 recipient: value
                               });
                               recordActivity(`Queued sale email to ${value}`);
-                              toast.success("Invoice email queued");
+                              toast.success("Invoice email queued", {
+                                description:
+                                  "The request is queued and can be tracked while you continue working."
+                              });
                               setEmailAddress("");
                             } catch (error) {
                               toast.error(
-                                error instanceof Error ? error.message : "Invoice email failed."
+                                error instanceof Error ? error.message : "Invoice email failed.",
+                                {
+                                  description:
+                                    "Review the details, correct the problem, and try again."
+                                }
                               );
                             }
                           }}
@@ -514,33 +530,14 @@ function InlineSend({
   );
 }
 
-function SideNote({
-  body,
-  meta,
-  title,
-  titleOnRight = false
-}: {
-  body: string;
-  meta: string;
-  title: string;
-  titleOnRight?: boolean;
-}) {
+function SideNote({ body, meta, title }: { body: string; meta: string; title: string }) {
   return (
-    <div className="rounded-md border border-border/70 bg-muted/10 px-4 py-3">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        {titleOnRight ? (
-          <>
-            <span className="text-xs text-muted-foreground">{meta}</span>
-            <span className="font-medium">{title}</span>
-          </>
-        ) : (
-          <>
-            <span className="font-medium">{title}</span>
-            <span className="text-xs text-muted-foreground">{meta}</span>
-          </>
-        )}
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-md border border-border/70 bg-muted/10 px-3 py-2">
+      <p className="min-w-0 whitespace-pre-wrap text-sm leading-5 text-foreground">{body}</p>
+      <div className="flex shrink-0 flex-col items-end text-right leading-tight">
+        <span className="text-xs text-muted-foreground">{meta}</span>
+        <span className="mt-0.5 text-sm font-medium">{title}</span>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{body}</p>
     </div>
   );
 }

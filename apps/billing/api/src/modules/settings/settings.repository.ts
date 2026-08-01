@@ -157,6 +157,7 @@ function normalizeSettings(value: string | null): BillingSettings {
     if (typeof parsed.useEway === "boolean") legacyLayout.useEway = parsed.useEway;
     if (typeof parsed.usePo === "boolean") legacyLayout.usePo = parsed.usePo;
     if (typeof parsed.useSize === "boolean") legacyLayout.useSize = parsed.useSize;
+    if (typeof parsed.useWorkOrder === "boolean") legacyLayout.useWorkOrder = parsed.useWorkOrder;
     const hasLegacyLayout = Object.values(legacyLayout).some((value) => typeof value === "boolean");
     const normalizedLegacyLayout = hasLegacyLayout ? normalizeLayout(legacyLayout) : undefined;
     const savedLayout = normalizeSavedLayout(parsed.layout, normalizedLegacyLayout);

@@ -13,7 +13,8 @@ export const salesSettingsSchema = z.object({
     useEinvoice: z.boolean(),
     useEway: z.boolean(),
     usePo: z.boolean(),
-    useSize: z.boolean()
+    useSize: z.boolean(),
+    useWorkOrder: z.boolean()
   }),
   numbering: z.record(
     z.enum(["quotation", "sales", "purchase", "exportSales", "receipt", "payment"]),

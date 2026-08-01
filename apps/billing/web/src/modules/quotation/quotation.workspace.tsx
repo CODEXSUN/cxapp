@@ -4,7 +4,6 @@ import { Plus, RefreshCw, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxapp/ui/components/button";
 import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
-import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { WorkspaceTableEmptyState, WorkspaceTablePanel } from "@cxapp/ui/workspace/table";
@@ -96,7 +95,6 @@ export function QuotationWorkspace() {
   const [view, setView] = useState<QuotationView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [contactFilter, setContactFilter] = useState("all");
   const [selectedQuotationIds, setSelectedQuotationIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(quotationColumnCatalog.map((column) => [column.id, true]))
@@ -104,7 +102,7 @@ export function QuotationWorkspace() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const quotationsQuery = useQuotationPage({
-    customer: contactFilter,
+    customer: "all",
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -212,7 +210,6 @@ export function QuotationWorkspace() {
   });
 
   const entries = quotationsQuery.data?.items ?? [];
-  const contactOptions = useMemo(() => buildQuotationContactFilterOptions(entries), [entries]);
   const totalCount = quotationsQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const pageEntries = entries;
@@ -401,44 +398,6 @@ export function QuotationWorkspace() {
           )
         }
       />
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border/70 bg-card px-4 py-3 text-sm shadow-sm">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <div className="ml-1 min-w-64">
-            <WorkspaceLookup
-              options={[
-                { label: "All contacts", value: "all" },
-                ...contactOptions.map((option) => ({ label: option.label, value: option.id }))
-              ]}
-              placeholder="Search contact"
-              value={contactFilter}
-              onTextChange={(value) => {
-                if (!value) {
-                  setContactFilter("all");
-                  setSelectedQuotationIds(new Set());
-                  setCurrentPage(1);
-                }
-              }}
-              onValueChange={(value) => {
-                setContactFilter(value || "all");
-                setSelectedQuotationIds(new Set());
-                setCurrentPage(1);
-              }}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <span>{selectedEntries.length} selected</span>
-          <Button
-            className="h-8 rounded-md px-2"
-            disabled={!selectedEntries.length}
-            onClick={() => setSelectedQuotationIds(new Set())}
-            type="button"
-            variant="ghost"
-          >
-            Clear
-          </Button>
-        </div>
-      </div>
       {quotationsQuery.isError ? (
         <WorkspaceTablePanel>
           <WorkspaceTableEmptyState>
@@ -527,15 +486,4 @@ function PageTotal({ label, strong, value }: { label: string; strong?: boolean; 
 
 function quotationContactKey(quotation: Quotation) {
   return quotation.customerName.trim().toLowerCase();
-}
-
-function buildQuotationContactFilterOptions(entries: Quotation[]) {
-  const byKey = new Map<string, string>();
-  for (const quotation of entries) {
-    const key = quotationContactKey(quotation);
-    if (!byKey.has(key)) byKey.set(key, quotation.customerName || key);
-  }
-  return Array.from(byKey, ([id, label]) => ({ id, label })).sort((left, right) =>
-    left.label.localeCompare(right.label)
-  );
 }

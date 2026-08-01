@@ -6,7 +6,6 @@ import { Button } from "@cxapp/ui/components/button";
 import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
-import { WorkspaceLookup } from "@cxapp/ui/workspace/lookup";
 import { WorkspaceTableEmptyState, WorkspaceTablePanel } from "@cxapp/ui/workspace/table";
 import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 import { cn } from "@cxapp/ui/lib/utils";
@@ -98,7 +97,6 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   const [view, setView] = useState<PurchaseView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [contactFilter, setContactFilter] = useState("all");
   const [selectedPurchaseIds, setSelectedPurchaseIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(purchaseColumnCatalog.map((column) => [column.id, true]))
@@ -106,7 +104,7 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const purchasesQuery = usePurchasePage({
-    customer: contactFilter,
+    customer: "all",
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -230,7 +228,6 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   });
 
   const entries = purchasesQuery.data?.items ?? [];
-  const contactOptions = useMemo(() => buildPurchaseContactFilterOptions(entries), [entries]);
   const totalCount = purchasesQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const pageEntries = entries;
@@ -422,44 +419,6 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
           )
         }
       />
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border/70 bg-card px-4 py-3 text-sm shadow-sm">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <div className="ml-1 min-w-64">
-            <WorkspaceLookup
-              options={[
-                { label: "All contacts", value: "all" },
-                ...contactOptions.map((option) => ({ label: option.label, value: option.id }))
-              ]}
-              placeholder="Search contact"
-              value={contactFilter}
-              onTextChange={(value) => {
-                if (!value) {
-                  setContactFilter("all");
-                  setSelectedPurchaseIds(new Set());
-                  setCurrentPage(1);
-                }
-              }}
-              onValueChange={(value) => {
-                setContactFilter(value || "all");
-                setSelectedPurchaseIds(new Set());
-                setCurrentPage(1);
-              }}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <span>{selectedEntries.length} selected</span>
-          <Button
-            className="h-8 rounded-md px-2"
-            disabled={!selectedEntries.length}
-            onClick={() => setSelectedPurchaseIds(new Set())}
-            type="button"
-            variant="ghost"
-          >
-            Clear
-          </Button>
-        </div>
-      </div>
       {purchasesQuery.isError ? (
         <WorkspaceTablePanel>
           <WorkspaceTableEmptyState>
@@ -548,15 +507,4 @@ function PageTotal({ label, strong, value }: { label: string; strong?: boolean; 
 
 function purchaseContactKey(purchase: Purchase) {
   return purchase.supplierName.trim().toLowerCase();
-}
-
-function buildPurchaseContactFilterOptions(entries: Purchase[]) {
-  const byKey = new Map<string, string>();
-  for (const purchase of entries) {
-    const key = purchaseContactKey(purchase);
-    if (!byKey.has(key)) byKey.set(key, purchase.supplierName || key);
-  }
-  return Array.from(byKey, ([id, label]) => ({ id, label })).sort((left, right) =>
-    left.label.localeCompare(right.label)
-  );
 }

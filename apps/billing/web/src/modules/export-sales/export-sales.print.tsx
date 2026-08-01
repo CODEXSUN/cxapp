@@ -7,6 +7,10 @@ import { GlobalLoader } from "@cxapp/ui/components/global-loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@cxapp/ui/components/card";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { PageTitle } from "../../shared/document/PageTitle";
+import {
+  getBillingPrintDummyLineCount,
+  paginateBillingPrintItems
+} from "../../shared/document/print-pagination";
 import { BillingCompanyName, BillingDocumentHeader, useBillingSettings } from "../settings";
 import { useExportSaleRecord } from "./export-sales.hooks";
 import {
@@ -152,7 +156,7 @@ export function ExportSalePrintDocument({
     exportSale.shippingAddress || exportSale.billingAddress,
     statesQuery.data ?? []
   );
-  const pages = chunkItems(exportSale.items, 12);
+  const pages = paginateBillingPrintItems(exportSale.items);
 
   return (
     <WorkspacePrintSheet className="billing-print-document">
@@ -211,15 +215,15 @@ function ExportSalePrintPage({
   exportSale: ExportSale;
 }) {
   const splitTax = exportSale.taxType === "cgst-sgst";
-  const blankRows = isLastPage ? Math.max(0, 12 - items.length) : 0;
+  const blankLines = getBillingPrintDummyLineCount(
+    items.map(({ item }) => exportSalePrintParticulars(item, showColour, showSize))
+  );
   const headings = [
     "S.no",
     ...(showPo ? ["PO"] : []),
     ...(showDc ? ["DC"] : []),
     "Particulars",
     "HSN Code",
-    ...(showColour ? ["Colour"] : []),
-    ...(showSize ? ["Size"] : []),
     "Qty",
     "Rate",
     "Taxable",
@@ -296,13 +300,28 @@ function ExportSalePrintPage({
         </section>
 
         <section>
-          <table className="w-full border-collapse text-[10px]">
+          <table className="w-full table-fixed border-collapse text-[10px]">
+            <colgroup>
+              <col className="w-[4.5%]" />
+              {showPo ? <col className="w-[7%]" /> : null}
+              {showDc ? <col className="w-[7%]" /> : null}
+              <col className="w-[39%]" />
+              <col className="w-[10ch]" />
+              <col className="w-[5.5%]" />
+              <col className="w-[8%]" />
+              <col className="w-[9%]" />
+              <col className="w-[7%]" />
+              <col className="w-[10%]" />
+              <col className="w-[9%]" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-slate-300">
+              <tr className="border-b-[3px] border-double border-slate-300">
                 {headings.map((heading) => (
                   <th
                     key={heading}
-                    className="border-r border-slate-300 px-2 py-2 text-center font-semibold last:border-r-0"
+                    className={`border-r border-slate-300 py-1 text-center font-semibold leading-tight last:border-r-0 ${
+                      heading === "Particulars" ? "px-1.5 text-left" : "px-1"
+                    }`}
                   >
                     {heading}
                   </th>
@@ -311,27 +330,26 @@ function ExportSalePrintPage({
             </thead>
             <tbody>
               {pageIndex > 0 ? (
-                <tr>
-                  <td
-                    className="border-b border-slate-300 px-2 py-1 text-left font-semibold"
-                    colSpan={headings.length}
-                  >
-                    Carry forward from previous page
-                  </td>
-                </tr>
+                <ExportSalePrintPageTotalRow
+                  items={exportSale.items.slice(0, items[0]?.index ?? 0)}
+                  label="Carried forward"
+                  leadingColumnCount={3 + Number(showPo) + Number(showDc)}
+                  showContinuation={false}
+                />
               ) : null}
-              {items.map(({ item, index }) => (
+              {items.map(({ item, index }, pageItemIndex) => (
                 <ExportSalePrintItemRow
                   key={item.id}
                   item={item}
                   index={index}
+                  isFirst={pageItemIndex === 0}
                   showColour={showColour}
                   showDc={showDc}
                   showPo={showPo}
                   showSize={showSize}
                 />
               ))}
-              {Array.from({ length: blankRows }).map((_, index) => (
+              {Array.from({ length: blankLines }).map((_, index) => (
                 <ExportSalePrintBlankRow
                   key={`blank-${pageIndex}-${index}`}
                   columnCount={headings.length}
@@ -340,19 +358,13 @@ function ExportSalePrintPage({
               {isLastPage ? (
                 <ExportSalePrintTotalRow
                   exportSale={exportSale}
-                  leadingColumnCount={
-                    3 + Number(showPo) + Number(showDc) + Number(showColour) + Number(showSize)
-                  }
+                  leadingColumnCount={3 + Number(showPo) + Number(showDc)}
                 />
               ) : (
-                <tr>
-                  <td
-                    className="border-t border-slate-300 px-2 py-2 text-right font-semibold"
-                    colSpan={headings.length}
-                  >
-                    To be continued...
-                  </td>
-                </tr>
+                <ExportSalePrintPageTotalRow
+                  items={items.map(({ item }) => item)}
+                  leadingColumnCount={3 + Number(showPo) + Number(showDc)}
+                />
               )}
             </tbody>
           </table>
@@ -415,6 +427,7 @@ function ExportSalePrintPage({
 function ExportSalePrintItemRow({
   item,
   index,
+  isFirst,
   showColour,
   showDc,
   showPo,
@@ -422,49 +435,73 @@ function ExportSalePrintItemRow({
 }: {
   item: ExportSale["items"][number];
   index: number;
+  isFirst: boolean;
   showColour: boolean;
   showDc: boolean;
   showPo: boolean;
   showSize: boolean;
 }) {
+  const { primary: primaryParticulars, variant: variantParticulars } = exportSalePrintParticulars(
+    item,
+    showColour,
+    showSize
+  );
+
   return (
-    <tr className="align-top">
-      <td className="border-r border-slate-200 px-2 py-2 text-center">{index + 1}</td>
+    <tr
+      className={`h-[33px] align-top ${isFirst ? "[&>td]:pb-[1.5px] [&>td]:pt-[5px]" : "[&>td]:py-[1.5px]"}`}
+    >
+      <td className="border-r border-slate-300 px-1 text-center">{index + 1}</td>
       {showPo ? (
-        <td className="border-r border-slate-200 px-2 py-2 text-center">{item.poNo || "-"}</td>
+        <td className="break-words border-r border-slate-300 px-1 text-center">
+          {hasDisplayValue(item.poNo) ? item.poNo : ""}
+        </td>
       ) : null}
       {showDc ? (
-        <td className="border-r border-slate-200 px-2 py-2 text-center">{item.dcNo || "-"}</td>
+        <td className="break-words border-r border-slate-300 px-1 text-center">
+          {hasDisplayValue(item.dcNo) ? item.dcNo : ""}
+        </td>
       ) : null}
-      <td className="border-r border-slate-200 px-2 py-2">
-        <div className="font-medium">
-          {[item.productName, item.description].filter(Boolean).join(" - ")}
-        </div>
+      <td className="whitespace-normal break-words border-r border-slate-300 px-1.5 [overflow-wrap:anywhere]">
+        <div className="font-medium text-[10px] leading-[11px]">{primaryParticulars}</div>
+        {variantParticulars ? (
+          <div className="pl-2 text-[9px] leading-[10px]">{variantParticulars}</div>
+        ) : null}
       </td>
-      <td className="border-r border-slate-200 px-2 py-2 text-center">{item.hsnCode || "-"}</td>
-      {showColour ? (
-        <td className="border-r border-slate-200 px-2 py-2 text-center">{item.colour || "-"}</td>
-      ) : null}
-      {showSize ? (
-        <td className="border-r border-slate-200 px-2 py-2 text-center">{item.size || "-"}</td>
-      ) : null}
-      <td className="border-r border-slate-200 px-2 py-2 text-center">{item.quantity}</td>
-      <td className="border-r border-slate-200 px-2 py-2 text-right">{money(item.rate)}</td>
-      <td className="border-r border-slate-200 px-2 py-2 text-right">
-        {money(item.taxableAmount)}
+      <td className="whitespace-nowrap border-r border-slate-300 px-1 text-center">
+        {hasDisplayValue(item.hsnCode) ? item.hsnCode : ""}
       </td>
-      <td className="border-r border-slate-200 px-2 py-2 text-center">{item.taxRate}%</td>
-      <td className="border-r border-slate-200 px-2 py-2 text-right">{money(item.taxAmount)}</td>
-      <td className="px-2 py-2 text-right">{money(item.lineTotal)}</td>
+      <td className="border-r border-slate-300 px-1 text-center">{item.quantity}</td>
+      <td className="border-r border-slate-300 px-1 text-right">{money(item.rate)}</td>
+      <td className="border-r border-slate-300 px-1 text-right">{money(item.taxableAmount)}</td>
+      <td className="border-r border-slate-300 px-1 text-center">{item.taxRate}%</td>
+      <td className="border-r border-slate-300 px-1 text-right">{money(item.taxAmount)}</td>
+      <td className="px-1 text-right">{money(item.lineTotal)}</td>
     </tr>
   );
 }
 
+function exportSalePrintParticulars(
+  item: ExportSale["items"][number],
+  showColour: boolean,
+  showSize: boolean
+) {
+  return {
+    primary: [item.productName, item.description].filter(hasDisplayValue).join(" - "),
+    variant: [
+      showColour && hasDisplayValue(item.colour) ? "Colour : " + item.colour : "",
+      showSize && hasDisplayValue(item.size) ? "Size : " + item.size : ""
+    ]
+      .filter(hasDisplayValue)
+      .join(" - ")
+  };
+}
+
 function ExportSalePrintBlankRow({ columnCount }: { columnCount: number }) {
   return (
-    <tr className="h-6">
+    <tr className="h-[11px]">
       {Array.from({ length: columnCount }).map((_, index) => (
-        <td key={index} className={index === columnCount - 1 ? "" : "border-r border-slate-200"} />
+        <td key={index} className={index === columnCount - 1 ? "" : "border-r border-slate-300"} />
       ))}
     </tr>
   );
@@ -479,40 +516,77 @@ function ExportSalePrintTotalRow({
 }) {
   return (
     <tr className="border-t border-slate-300 font-semibold">
-      <td className="border-r border-slate-200 px-2 py-2 text-right" colSpan={leadingColumnCount}>
+      <td className="whitespace-nowrap border-r border-slate-300 px-1.5 py-1 text-left" colSpan={2}>
+        E&amp;OE
+      </td>
+      <td
+        className="border-r border-slate-300 px-1 py-1 text-right"
+        colSpan={leadingColumnCount - 2}
+      >
         Total
       </td>
-      <td className="border-r border-slate-200 px-2 py-2 text-center">
+      <td className="border-r border-slate-300 px-1 py-1 text-center">
         {exportSale.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}
       </td>
-      <td className="border-r border-slate-200 px-2 py-2" />
-      <td className="border-r border-slate-200 px-2 py-2 text-right">
+      <td className="border-r border-slate-300 px-1 py-1" />
+      <td className="border-r border-slate-300 px-1 py-1 text-right">
         {money(exportSale.subtotal)}
       </td>
-      <td className="border-r border-slate-200 px-2 py-2" />
-      <td className="border-r border-slate-200 px-2 py-2 text-right">
+      <td className="border-r border-slate-300 px-1 py-1" />
+      <td className="border-r border-slate-300 px-1 py-1 text-right">
         {money(exportSale.taxAmount)}
       </td>
-      <td className="px-2 py-2 text-right">{money(exportSale.amount)}</td>
+      <td className="px-1 py-1 text-right">{money(exportSale.amount)}</td>
     </tr>
   );
 }
 
-function chunkItems(items: ExportSale["items"], _size: number) {
-  const finalPageBudget = 12;
-  const continuationPageBudget = 24;
-  const pages: Array<Array<{ item: ExportSale["items"][number]; index: number }>> = [];
-  let index = 0;
-  while (items.length - index > finalPageBudget) {
-    pages.push(
-      items
-        .slice(index, index + continuationPageBudget)
-        .map((item, offset) => ({ item, index: index + offset }))
-    );
-    index += continuationPageBudget;
-  }
-  pages.push(items.slice(index).map((item, offset) => ({ item, index: index + offset })));
-  return pages;
+function ExportSalePrintPageTotalRow({
+  items,
+  label = "Page total",
+  leadingColumnCount,
+  showContinuation = true
+}: {
+  items: ExportSale["items"];
+  label?: string;
+  leadingColumnCount: number;
+  showContinuation?: boolean;
+}) {
+  const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const taxableAmount = items.reduce((sum, item) => sum + Number(item.taxableAmount || 0), 0);
+  const taxAmount = items.reduce((sum, item) => sum + Number(item.taxAmount || 0), 0);
+  const lineTotal = items.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
+
+  return (
+    <>
+      <tr className="border-t border-slate-300 font-semibold">
+        <td className="border-r border-slate-300 px-1 py-1 text-right" colSpan={leadingColumnCount}>
+          {label}
+        </td>
+        <td className="border-r border-slate-300 px-1 py-1 text-center">{quantity}</td>
+        <td className="border-r border-slate-300 px-1 py-1" />
+        <td className="border-r border-slate-300 px-1 py-1 text-right">{money(taxableAmount)}</td>
+        <td className="border-r border-slate-300 px-1 py-1" />
+        <td className="border-r border-slate-300 px-1 py-1 text-right">{money(taxAmount)}</td>
+        <td className="px-1 py-1 text-right">{money(lineTotal)}</td>
+      </tr>
+      {showContinuation ? (
+        <tr>
+          <td
+            className="border-t border-slate-300 px-1 py-1 text-right font-semibold"
+            colSpan={leadingColumnCount + 6}
+          >
+            To be continued...
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
+function hasDisplayValue(value: string | null | undefined) {
+  const normalized = value?.trim() ?? "";
+  return Boolean(normalized && normalized !== "-");
 }
 
 function PrintPair({ children, label }: { children: string; label: string }) {

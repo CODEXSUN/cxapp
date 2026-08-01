@@ -10,7 +10,8 @@ const layoutKeys: Array<keyof BillingDocumentLayoutSettings> = [
   "useColour",
   "useSize",
   "useEinvoice",
-  "useEway"
+  "useEway",
+  "useWorkOrder"
 ];
 
 export function SalesSettingsForm({

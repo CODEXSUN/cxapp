@@ -31,4 +31,9 @@ export function useBillingSettings() {
   });
 }
 
+export function useBillingDocumentTitle(kind: import("./settings.types").BillingDocumentKind) {
+  const settings = useBillingSettings().data;
+  return settings?.customise.documentTitles[kind] ?? kind;
+}
+
 export const useSalesSettings = useBillingSettings;
