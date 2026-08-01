@@ -247,6 +247,20 @@ export async function registerSalesRoutes(app: FastifyInstance) {
     handler: async ({ body, params, request }) =>
       required(await service.generateEway(databaseName(request), params.id, body.eway))
   });
+  registerContractRoute(app, {
+    method: "DELETE",
+    url: "/billing/sales/:id/einvoice",
+    schemas: { params: idSchema, response: saleSchema },
+    handler: async ({ params, request }) =>
+      required(await service.clearEinvoice(databaseName(request), params.id))
+  });
+  registerContractRoute(app, {
+    method: "DELETE",
+    url: "/billing/sales/:id/eway",
+    schemas: { params: idSchema, response: saleSchema },
+    handler: async ({ params, request }) =>
+      required(await service.clearEway(databaseName(request), params.id))
+  });
   registerLookupRoutes(app);
 }
 

@@ -88,7 +88,11 @@ export function BillingSettingsWorkspace() {
     setForm((current) => {
       const layout = { ...current.layout, ...next };
       if (next.useEway === false) {
-        return { ...current, gstApiMode: "none", layout: { ...layout, useEinvoice: false } };
+        return {
+          ...current,
+          gstApiMode: layout.useEinvoice ? "einvoice_only" : "none",
+          layout
+        };
       }
       if (next.useEway === true) {
         return {
@@ -100,8 +104,8 @@ export function BillingSettingsWorkspace() {
       if (next.useEinvoice === true) {
         return {
           ...current,
-          gstApiMode: "einvoice_eway",
-          layout: { ...layout, useEway: true }
+          gstApiMode: layout.useEway ? "einvoice_eway" : "einvoice_only",
+          layout
         };
       }
       if (next.useEinvoice === false) {
@@ -121,8 +125,8 @@ export function BillingSettingsWorkspace() {
       gstApiMode,
       layout: {
         ...current.layout,
-        useEinvoice: gstApiMode === "einvoice_eway",
-        useEway: gstApiMode !== "none"
+        useEinvoice: gstApiMode === "einvoice_eway" || gstApiMode === "einvoice_only",
+        useEway: gstApiMode === "einvoice_eway" || gstApiMode === "eway_only"
       }
     }));
   }
@@ -170,6 +174,7 @@ export function BillingSettingsWorkspace() {
                   options={[
                     { label: "None", value: "none" },
                     { label: "E-invoice + E-way", value: "einvoice_eway" },
+                    { label: "E-invoice only", value: "einvoice_only" },
                     { label: "E-way only", value: "eway_only" }
                   ]}
                   onValueChange={(gstApiMode) =>

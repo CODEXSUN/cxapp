@@ -23,6 +23,8 @@ import {
   createSaleContactAddress,
   createSaleLookup,
   createSaleTransport,
+  clearSaleEinvoice,
+  clearSaleEway,
   generateSaleEinvoice,
   generateSaleEway,
   listSaleColours,
@@ -224,6 +226,10 @@ export function useSalesFormController({
         ? generateSaleEinvoice(id, details as SaleEinvoiceDetails)
         : generateSaleEway(id, details as SaleEwayDetails)
   });
+  const clearComplianceMutation = useMutation({
+    mutationFn: ({ id, kind }: { id: string; kind: "einvoice" | "eway" }) =>
+      kind === "einvoice" ? clearSaleEinvoice(id) : clearSaleEway(id)
+  });
   const selectedContact = (contactsQuery.data ?? []).find(
     (option) =>
       Number(option.record?.id ?? 0) === form.customerId ||
@@ -350,6 +356,41 @@ export function useSalesFormController({
     patch({ einvoice: { ...einvoice, ...next } });
   }
 
+  async function clearEway() {
+    if (!sale) {
+      patch({ eway: createEmptySaleEway() });
+      return;
+    }
+    try {
+      const updated = await clearComplianceMutation.mutateAsync({ id: sale.id, kind: "eway" });
+      patch({ eway: updated.eway });
+      toast.success("E-way details cleared");
+    } catch (error) {
+      toast.error("Unable to clear E-way details", {
+        description: error instanceof Error ? error.message : "Please try again."
+      });
+    }
+  }
+
+  async function clearEinvoice() {
+    if (!sale) {
+      patch({ einvoice: createEmptySaleEinvoice() });
+      return;
+    }
+    try {
+      const updated = await clearComplianceMutation.mutateAsync({
+        id: sale.id,
+        kind: "einvoice"
+      });
+      patch({ einvoice: updated.einvoice });
+      toast.success("E-invoice details cleared");
+    } catch (error) {
+      toast.error("Unable to clear E-invoice details", {
+        description: error instanceof Error ? error.message : "Please try again."
+      });
+    }
+  }
+
   async function generateEway() {
     if (!sale) {
       toast.error("Save the sale before generating the E-way bill.");
@@ -361,7 +402,7 @@ export function useSalesFormController({
         kind: "eway",
         details: eway
       });
-      patch({ eway: updated.eway, einvoice: updated.einvoice });
+      patch({ eway: updated.eway });
       toast.success("E-way bill generated");
     } catch (error) {
       toast.error("E-way generation failed", {
@@ -499,12 +540,14 @@ export function useSalesFormController({
     shippingAddressChoice,
     eway,
     patchEway,
+    clearEway,
     generateEway,
     transportsQuery,
     selectedTransport,
     transportSaveMutation,
     einvoice,
     patchEinvoice,
+    clearEinvoice,
     generateEinvoice,
     onSubmit,
     activeTab,

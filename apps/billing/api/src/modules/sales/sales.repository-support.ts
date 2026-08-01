@@ -273,6 +273,8 @@ export async function upsertEinvoice(
   value: SaleEinvoiceDetails
 ) {
   await sql`DELETE FROM billing_sales_einvoices WHERE sales_id = ${saleId}`.execute(transaction);
+  if (!value.irn.trim() && !value.ackNo.trim() && !value.ackDate.trim() && !value.signedQr.trim())
+    return;
   await sql`
     INSERT INTO billing_sales_einvoices (
       uuid, sales_id, irn, ack_number, ack_date, signed_qr, status, generated_at
@@ -290,6 +292,16 @@ export async function upsertEway(
   value: SaleEwayDetails
 ) {
   await sql`DELETE FROM billing_sales_eway_bills WHERE sales_id = ${saleId}`.execute(transaction);
+  if (
+    !value.billNo.trim() &&
+    !value.billDate.trim() &&
+    !value.notes.trim() &&
+    !value.transport.trim() &&
+    !value.transportGst.trim() &&
+    value.transportId === null &&
+    !value.vehicleNo.trim()
+  )
+    return;
   await sql`
     INSERT INTO billing_sales_eway_bills (
       uuid, sales_id, bill_number, bill_date, part, transport_id, transport_name,

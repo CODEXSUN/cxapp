@@ -22,6 +22,7 @@ import {
   useBillingSettings
 } from "../settings";
 import { useSaleRecord } from "./sales.hooks";
+import { saleCompliancePrintFields } from "./sales.print-compliance";
 import {
   formatDate,
   formatMoney,
@@ -161,8 +162,11 @@ export function SalePrintDocument({ copy, sale }: { copy: SalePrintCopy; sale: S
   const showColour = billingSettings?.layout.useColour ?? false;
   const showSize = billingSettings?.layout.useSize ?? false;
   const showWorkOrder = billingSettings?.layout.useWorkOrder ?? true;
-  const showEinvoiceDetails =
-    (billingSettings?.layout.useEinvoice ?? false) && hasEinvoicePrintData(sale);
+  const complianceFields = saleCompliancePrintFields(sale, {
+    useEinvoice: billingSettings?.layout.useEinvoice ?? false,
+    useEway: billingSettings?.layout.useEway ?? false
+  });
+  const showComplianceDetails = complianceFields.irn || complianceFields.ewayBillNo;
   const primaryBankAccount =
     billingSettings?.printing.printAccountNumber === true
       ? (company?.bankAccounts.find(
@@ -198,7 +202,8 @@ export function SalePrintDocument({ copy, sale }: { copy: SalePrintCopy; sale: S
           shippingAddress={shippingAddress}
           showColour={showColour}
           showDc={showDc}
-          showEinvoiceDetails={showEinvoiceDetails}
+          complianceFields={complianceFields}
+          showComplianceDetails={showComplianceDetails}
           showPo={showPo}
           showSize={showSize}
           showWorkOrder={showWorkOrder}
@@ -223,7 +228,8 @@ function SalePrintPage({
   shippingAddress,
   showColour,
   showDc,
-  showEinvoiceDetails,
+  complianceFields,
+  showComplianceDetails,
   showPo,
   showSize,
   showWorkOrder,
@@ -242,7 +248,8 @@ function SalePrintPage({
   shippingAddress: { address: string; state: string };
   showColour: boolean;
   showDc: boolean;
-  showEinvoiceDetails: boolean;
+  complianceFields: ReturnType<typeof saleCompliancePrintFields>;
+  showComplianceDetails: boolean;
   showPo: boolean;
   showSize: boolean;
   showWorkOrder: boolean;
@@ -289,13 +296,13 @@ function SalePrintPage({
         {addressMode === "billing_and_shipping" ? (
           <section className="grid border-b border-slate-300 text-[10px] sm:grid-cols-2">
             <div
-              className={`space-y-1 px-1.5 py-1.5 ${showEinvoiceDetails ? "" : "sm:col-span-2"}`}
+              className={`space-y-1 px-1.5 py-1.5 ${showComplianceDetails ? "" : "sm:col-span-2"}`}
             >
               <SaleDocumentDetails sale={sale} showWorkOrder={showWorkOrder} />
             </div>
-            {showEinvoiceDetails ? (
+            {showComplianceDetails ? (
               <div className="border-l border-slate-300 px-1.5 py-1.5">
-                <EinvoiceDetails sale={sale} />
+                <ComplianceDetails fields={complianceFields} sale={sale} />
               </div>
             ) : null}
           </section>
@@ -344,9 +351,9 @@ function SalePrintPage({
               <div className="space-y-1">
                 <SaleDocumentDetails sale={sale} showWorkOrder={showWorkOrder} />
               </div>
-              {showEinvoiceDetails ? (
+              {showComplianceDetails ? (
                 <div className="mt-2 border-t border-slate-300 pt-2">
-                  <EinvoiceDetails sale={sale} />
+                  <ComplianceDetails fields={complianceFields} sale={sale} />
                 </div>
               ) : null}
             </div>
@@ -667,65 +674,51 @@ function SaleDocumentDetails({ sale, showWorkOrder }: { sale: Sale; showWorkOrde
   );
 }
 
-function EinvoiceDetails({ sale }: { sale: Sale }) {
-  const hasIrn = hasDisplayValue(sale.einvoice.irn);
-  const hasAckNo = hasDisplayValue(sale.einvoice.ackNo);
-  const hasAckDate = hasDisplayValue(sale.einvoice.ackDate);
-  const hasEwayBillNo = hasDisplayValue(sale.eway.billNo);
-  const hasEwayBillDate = hasDisplayValue(sale.eway.billDate);
-
+function ComplianceDetails({
+  fields,
+  sale
+}: {
+  fields: ReturnType<typeof saleCompliancePrintFields>;
+  sale: Sale;
+}) {
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2 gap-y-1">
-      {hasIrn ? (
+      {fields.irn ? (
         <>
           <span className="whitespace-nowrap font-semibold">IRN :</span>
           <span className="col-span-3 break-all font-semibold">{sale.einvoice.irn.trim()}</span>
         </>
       ) : null}
-      {hasAckNo ? (
+      {fields.ackNo ? (
         <>
           <span className="whitespace-nowrap font-semibold">Ack No.:</span>
           <span className="font-semibold">{sale.einvoice.ackNo.trim()}</span>
         </>
       ) : null}
-      {hasAckDate ? (
+      {fields.ackDate ? (
         <>
           <span
-            className={`whitespace-nowrap text-right font-semibold ${hasAckNo ? "" : "col-start-3"}`}
+            className={`whitespace-nowrap text-right font-semibold ${fields.ackNo ? "" : "col-start-3"}`}
           >
             Ack Date:
           </span>
           <span className="text-right font-semibold">{formatDate(sale.einvoice.ackDate)}</span>
         </>
       ) : null}
-      {hasEwayBillNo ? (
+      {fields.ewayBillNo ? (
         <>
           <span className="whitespace-nowrap font-semibold">E-Way Bill No.:</span>
           <span className="font-semibold">{sale.eway.billNo.trim()}</span>
         </>
       ) : null}
-      {hasEwayBillDate ? (
+      {fields.ewayBillDate ? (
         <>
-          <span
-            className={`whitespace-nowrap text-right font-semibold ${hasEwayBillNo ? "" : "col-start-3"}`}
-          >
-            Date:
-          </span>
+          <span className="whitespace-nowrap text-right font-semibold">Date:</span>
           <span className="text-right font-semibold">{formatDate(sale.eway.billDate)}</span>
         </>
       ) : null}
     </div>
   );
-}
-
-function hasEinvoicePrintData(sale: Sale) {
-  return [
-    sale.einvoice.irn,
-    sale.einvoice.ackNo,
-    sale.einvoice.ackDate,
-    sale.eway.billNo,
-    sale.eway.billDate
-  ].some(hasDisplayValue);
 }
 
 function SalePrintBankDetails({

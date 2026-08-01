@@ -252,7 +252,7 @@ function DetailsTab({
           value={form.legalName ?? ""}
           onChange={(event) => {
             setLegalNameManual(true);
-            set("legalName", nullable(event.target.value.toUpperCase()));
+            set("legalName", nullableInput(event.target.value.toUpperCase()));
           }}
         />
       </WorkspaceFormField>
@@ -532,7 +532,7 @@ function AddressesTab({
                       onChange={(event) =>
                         updateAddress(setForm, index, {
                           ...address,
-                          addressLine2: nullable(event.target.value)
+                          addressLine2: nullableInput(event.target.value)
                         })
                       }
                     />
@@ -804,7 +804,7 @@ function FinanceTab({
                       onChange={(event) =>
                         updateBankAccount(setForm, index, {
                           ...account,
-                          holderName: nullable(event.target.value)
+                          holderName: nullableInput(event.target.value)
                         })
                       }
                     />
@@ -1152,6 +1152,7 @@ function preparePayload(form: ContactSavePayload): ContactSavePayload {
     addresses: form.addresses.filter(hasAddressValue).map((item, index) => ({
       ...item,
       addressLine1: item.addressLine1.trim(),
+      addressLine2: nullable(item.addressLine2),
       sortOrder: index + 1
     })),
     bankAccounts: form.bankAccounts
@@ -1159,6 +1160,7 @@ function preparePayload(form: ContactSavePayload): ContactSavePayload {
       .map((item, index) => ({
         ...item,
         accountNumber: item.accountNumber.trim(),
+        holderName: nullable(item.holderName),
         sortOrder: index + 1
       })),
     socialLinks: form.socialLinks
@@ -1393,6 +1395,10 @@ function toOption(item: { id: number; name: string }, description?: string): Wor
 function nullable(value: unknown) {
   const text = String(value ?? "").trim();
   return text || null;
+}
+function nullableInput(value: unknown) {
+  const text = String(value ?? "");
+  return text === "" ? null : text;
 }
 function tabForPath(path: string): ContactTab {
   if (path.startsWith("emails") || path.startsWith("phones")) return "communication";

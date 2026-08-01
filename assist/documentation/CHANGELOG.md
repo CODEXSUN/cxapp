@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.50
+Current version: 1.0.51
 
-Release tag: v-1.0.50
+Release tag: v-1.0.51
 
-Changelog label: v 1.0.50
+Changelog label: v 1.0.51
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,27 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.51
+
+### [v 1.0.51] 2026-08-01 11:22 am - Independent compliance and normal text entry
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.51.
+- Made Sales E-invoice and E-way behavior independent: Billing settings now support either feature
+  alone, each form section has its own persisted Clear operation, and clearing one compliance record
+  leaves the other untouched.
+- Tightened Sales print visibility so acknowledgement fields require a non-empty IRN and E-way date
+  requires a non-empty E-way bill number; E-way-only documents print without enabling E-invoice.
+- Expanded focused MariaDB coverage for E-invoice-only and E-way-only persistence, independent clear
+  endpoints, database-row removal, and the print visibility contract.
+- Restored normal trailing-space typing and caret behavior for Company and Contact legal names,
+  second address lines, and bank holder names while trimming those values only when saving.
 
 ## v-1.0.50
 

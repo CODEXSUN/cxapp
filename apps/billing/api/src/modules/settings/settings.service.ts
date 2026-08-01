@@ -74,6 +74,7 @@ function normalizeBillingSettings(input: BillingSettings): BillingSettings {
 function normalizedGstApiMode(input: BillingSettings) {
   if (input.gstApiMode === "none") return "none" as const;
   if (input.gstApiMode === "eway_only") return "eway_only" as const;
+  if (input.gstApiMode === "einvoice_only") return "einvoice_only" as const;
   return "einvoice_eway" as const;
 }
 
@@ -82,7 +83,7 @@ function normalizedLayout(input: BillingSettings) {
   const mode = normalizedGstApiMode(input);
   return {
     ...layout,
-    useEinvoice: mode === "einvoice_eway",
-    useEway: mode !== "none"
+    useEinvoice: mode === "einvoice_eway" || mode === "einvoice_only",
+    useEway: mode === "einvoice_eway" || mode === "eway_only"
   };
 }

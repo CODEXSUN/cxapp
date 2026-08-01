@@ -43,6 +43,7 @@ export function SalesSettingsForm({
             value={settings.gstApiMode}
             options={[
               { label: "E-Invoice + E-Way", value: "einvoice_eway" },
+              { label: "E-Invoice only", value: "einvoice_only" },
               { label: "E-Way only", value: "eway_only" }
             ]}
             onValueChange={(gstApiMode) =>

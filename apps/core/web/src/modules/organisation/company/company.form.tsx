@@ -220,7 +220,7 @@ function DetailsTab({
       <WorkspaceFormField label="Legal name">
         <Input
           value={form.legalName ?? ""}
-          onChange={(event) => set("legalName", nullable(event.target.value))}
+          onChange={(event) => set("legalName", nullableInput(event.target.value))}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="Industry">
@@ -636,7 +636,7 @@ function AddressesTab({
                 <TextField
                   label="Address line 2"
                   value={address.addressLine2}
-                  onChange={(value) => update({ ...address, addressLine2: nullable(value) })}
+                  onChange={(value) => update({ ...address, addressLine2: nullableInput(value) })}
                 />
                 <LookupField
                   label="Country"
@@ -821,7 +821,7 @@ function FinanceTab({
                   <TextField
                     label="Holder name"
                     value={account.holderName}
-                    onChange={(value) => update({ ...account, holderName: nullable(value) })}
+                    onChange={(value) => update({ ...account, holderName: nullableInput(value) })}
                   />
                   <WorkspaceFormField label="Account type">
                     <WorkspaceSelect
@@ -1125,18 +1125,27 @@ function preparePayload(form: CompanySavePayload): CompanySavePayload {
     ...form,
     code: form.code.trim().toUpperCase(),
     name: form.name.trim(),
+    legalName: nullable(form.legalName),
     emails: form.emails
       .filter((item) => item.email.trim())
       .map((item, index) => ({ ...item, sortOrder: index + 1 })),
     phones: form.phones
       .filter((item) => item.phone.trim())
       .map((item, index) => ({ ...item, sortOrder: index + 1 })),
-    addresses: form.addresses
-      .filter(hasAddressValue)
-      .map((item, index) => ({ ...item, sortOrder: index + 1 })),
+    addresses: form.addresses.filter(hasAddressValue).map((item, index) => ({
+      ...item,
+      addressLine1: item.addressLine1.trim(),
+      addressLine2: nullable(item.addressLine2),
+      sortOrder: index + 1
+    })),
     bankAccounts: form.bankAccounts
       .filter((item) => item.accountNumber.trim())
-      .map((item, index) => ({ ...item, sortOrder: index + 1 })),
+      .map((item, index) => ({
+        ...item,
+        accountNumber: item.accountNumber.trim(),
+        holderName: nullable(item.holderName),
+        sortOrder: index + 1
+      })),
     socialLinks: form.socialLinks
       .filter((item) => item.url.trim())
       .map((item, index) => ({ ...item, sortOrder: index + 1 }))
@@ -1268,6 +1277,10 @@ function numberOrNull(value: string) {
 function nullable(value: unknown) {
   const text = String(value ?? "").trim();
   return text || null;
+}
+function nullableInput(value: unknown) {
+  const text = String(value ?? "");
+  return text === "" ? null : text;
 }
 function filePreview(file: File) {
   return new Promise<string>((resolve, reject) => {

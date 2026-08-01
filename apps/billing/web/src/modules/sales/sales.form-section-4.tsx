@@ -100,6 +100,7 @@ export function SaleTransportQuickForm({
 export function SaleEwayTab({
   loading,
   onChange,
+  onClear,
   onCreateTransport,
   onGenerate,
   onTransportChange,
@@ -109,6 +110,7 @@ export function SaleEwayTab({
 }: {
   loading: boolean;
   onChange: (next: Partial<SaleEwayDetails>) => void;
+  onClear: () => void;
   onCreateTransport: (
     payload: SaleTransportSavePayload
   ) => Promise<{ description: string; label: string; meta: string; value: string }>;
@@ -127,10 +129,16 @@ export function SaleEwayTab({
             {value.status === "generated" ? "Generated" : "Not generated"}
           </span>
         </div>
-        <Button type="button" className="h-9 rounded-md" onClick={onGenerate}>
-          <Send className="size-4" />
-          Generate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" className="h-9 rounded-md" onClick={onClear}>
+            <X className="size-4" />
+            Clear
+          </Button>
+          <Button type="button" className="h-9 rounded-md" onClick={onGenerate}>
+            <Send className="size-4" />
+            Generate
+          </Button>
+        </div>
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Field label="E-way bill no">
@@ -208,10 +216,12 @@ export function SaleEwayTab({
 
 export function SaleEinvoiceTab({
   onChange,
+  onClear,
   onGenerate,
   value
 }: {
   onChange: (next: Partial<SaleEinvoiceDetails>) => void;
+  onClear: () => void;
   onGenerate: () => void;
   value: SaleEinvoiceDetails;
 }) {
@@ -224,10 +234,16 @@ export function SaleEinvoiceTab({
             {value.status === "generated" ? "Generated" : "Not generated"}
           </span>
         </div>
-        <Button type="button" className="h-9 rounded-md" onClick={onGenerate}>
-          <Send className="size-4" />
-          Generate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" className="h-9 rounded-md" onClick={onClear}>
+            <X className="size-4" />
+            Clear
+          </Button>
+          <Button type="button" className="h-9 rounded-md" onClick={onGenerate}>
+            <Send className="size-4" />
+            Generate
+          </Button>
+        </div>
       </div>
       <Field label="IRN">
         <Input

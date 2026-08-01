@@ -32,7 +32,7 @@ const settingsSchema = z.object({
     quotation: z.boolean(),
     tconnect: z.boolean()
   }),
-  gstApiMode: z.enum(["none", "einvoice_eway", "eway_only"]),
+  gstApiMode: z.enum(["none", "einvoice_eway", "einvoice_only", "eway_only"]),
   layout: z.object({
     useColour: z.boolean(),
     useDc: z.boolean(),

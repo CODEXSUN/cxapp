@@ -20,6 +20,7 @@ import { registerPurchaseRoutes } from "../../apps/billing/api/src/modules/purch
 import { PurchaseService } from "../../apps/billing/api/src/modules/purchase/purchase.service.js";
 import { SalesService } from "../../apps/billing/api/src/modules/sales/sales.service.js";
 import { registerSalesRoutes } from "../../apps/billing/api/src/modules/sales/sales.routes.js";
+import { saleCompliancePrintFields } from "../../apps/billing/web/src/modules/sales/sales.print-compliance.js";
 import { registerDashboardRoutes } from "../../apps/billing/api/src/modules/dashboard/dashboard.routes.js";
 import { registerProductRoutes } from "../../apps/core/api/src/modules/master/product/product.routes.js";
 import { registerContactRoutes } from "../../apps/core/api/src/modules/master/contact/contact.routes.js";
@@ -315,6 +316,45 @@ try {
   assert.equal(fetchedSale.eway.transport, "Draft Transporter");
   assert.equal(fetchedSale.eway.transportGst, "33ABCDE1234F1Z5");
   assert.equal(fetchedSale.eway.vehicleNo, "TN01AB1234");
+  assert.deepEqual(saleCompliancePrintFields(fetchedSale, { useEinvoice: true, useEway: true }), {
+    ackDate: false,
+    ackNo: false,
+    ewayBillDate: false,
+    ewayBillNo: false,
+    irn: false
+  });
+  assert.deepEqual(
+    saleCompliancePrintFields(
+      {
+        einvoice: { ...fetchedSale.einvoice, irn: "IRN-PRINT-001" },
+        eway: { ...fetchedSale.eway, billNo: "EWAY-PRINT-001" }
+      },
+      { useEinvoice: true, useEway: true }
+    ),
+    {
+      ackDate: true,
+      ackNo: true,
+      ewayBillDate: true,
+      ewayBillNo: true,
+      irn: true
+    }
+  );
+  assert.deepEqual(
+    saleCompliancePrintFields(
+      {
+        einvoice: { ...fetchedSale.einvoice, irn: "IRN-PRINT-001" },
+        eway: { ...fetchedSale.eway, billNo: "EWAY-PRINT-001" }
+      },
+      { useEinvoice: true, useEway: false }
+    ),
+    {
+      ackDate: true,
+      ackNo: true,
+      ewayBillDate: false,
+      ewayBillNo: false,
+      irn: true
+    }
+  );
   const [draftComplianceRows] = await admin.query<RowDataPacket[]>(
     `
     SELECT
@@ -327,6 +367,98 @@ try {
   );
   assert.equal(Number(draftComplianceRows[0]?.einvoice_count), 1);
   assert.equal(Number(draftComplianceRows[0]?.eway_count), 1);
+
+  const emptyEinvoice = {
+    ackDate: "",
+    ackNo: "",
+    irn: "",
+    signedQr: "",
+    status: "not-generated"
+  };
+  const emptyEway = {
+    billDate: "",
+    billNo: "",
+    notes: "",
+    part: "Part A",
+    status: "not-generated",
+    transport: "",
+    transportGst: "",
+    transportId: null,
+    vehicleNo: ""
+  };
+  const ewayOnlySale = await requestData(
+    api,
+    "PUT",
+    `/billing/sales/${sale.id}`,
+    databaseName,
+    { ...salePayload, einvoice: emptyEinvoice },
+    timings
+  );
+  assert.equal(ewayOnlySale.einvoice.irn, "");
+  assert.equal(ewayOnlySale.eway.transport, "Draft Transporter");
+  const [ewayOnlyRows] = await admin.query<RowDataPacket[]>(
+    `
+    SELECT
+      (SELECT COUNT(*) FROM billing_sales_einvoices WHERE sales_id = sale.id) AS einvoice_count,
+      (SELECT COUNT(*) FROM billing_sales_eway_bills WHERE sales_id = sale.id) AS eway_count
+    FROM billing_sales sale
+    WHERE sale.uuid = ?
+    `,
+    [sale.id]
+  );
+  assert.equal(Number(ewayOnlyRows[0]?.einvoice_count), 0);
+  assert.equal(Number(ewayOnlyRows[0]?.eway_count), 1);
+
+  const einvoiceOnlySale = await requestData(
+    api,
+    "PUT",
+    `/billing/sales/${sale.id}`,
+    databaseName,
+    { ...salePayload, eway: emptyEway },
+    timings
+  );
+  assert.equal(einvoiceOnlySale.einvoice.ackNo, "ACK-DRAFT-001");
+  assert.equal(einvoiceOnlySale.eway.billNo, "");
+  const [einvoiceOnlyRows] = await admin.query<RowDataPacket[]>(
+    `
+    SELECT
+      (SELECT COUNT(*) FROM billing_sales_einvoices WHERE sales_id = sale.id) AS einvoice_count,
+      (SELECT COUNT(*) FROM billing_sales_eway_bills WHERE sales_id = sale.id) AS eway_count
+    FROM billing_sales sale
+    WHERE sale.uuid = ?
+    `,
+    [sale.id]
+  );
+  assert.equal(Number(einvoiceOnlyRows[0]?.einvoice_count), 1);
+  assert.equal(Number(einvoiceOnlyRows[0]?.eway_count), 0);
+
+  await requestData(api, "PUT", `/billing/sales/${sale.id}`, databaseName, salePayload, timings);
+
+  const clearedEinvoiceSale = await requestData(
+    api,
+    "DELETE",
+    `/billing/sales/${sale.id}/einvoice`,
+    databaseName,
+    undefined,
+    timings
+  );
+  assert.equal(clearedEinvoiceSale.einvoice.irn, "");
+  assert.equal(clearedEinvoiceSale.einvoice.ackNo, "");
+  assert.equal(clearedEinvoiceSale.eway.transport, "Draft Transporter");
+  await requestData(api, "PUT", `/billing/sales/${sale.id}`, databaseName, salePayload, timings);
+
+  const clearedEwaySale = await requestData(
+    api,
+    "DELETE",
+    `/billing/sales/${sale.id}/eway`,
+    databaseName,
+    undefined,
+    timings
+  );
+  assert.equal(clearedEwaySale.eway.billNo, "");
+  assert.equal(clearedEwaySale.eway.transport, "");
+  assert.equal(clearedEwaySale.einvoice.ackNo, "ACK-DRAFT-001");
+  await requestData(api, "PUT", `/billing/sales/${sale.id}`, databaseName, salePayload, timings);
 
   const concurrentSales = await Promise.all([
     requestData(

@@ -83,12 +83,14 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
     shippingAddressChoice,
     eway,
     patchEway,
+    clearEway,
     generateEway,
     transportsQuery,
     selectedTransport,
     transportSaveMutation,
     einvoice,
     patchEinvoice,
+    clearEinvoice,
     generateEinvoice,
     onSubmit,
     activeTab,
@@ -360,6 +362,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
               <SaleEwayTab
                 value={eway}
                 onChange={patchEway}
+                onClear={clearEway}
                 onGenerate={generateEway}
                 options={transportsQuery.data ?? []}
                 loading={transportsQuery.isLoading}
@@ -396,6 +399,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
               <SaleEinvoiceTab
                 value={einvoice}
                 onChange={patchEinvoice}
+                onClear={clearEinvoice}
                 onGenerate={generateEinvoice}
               />
             )

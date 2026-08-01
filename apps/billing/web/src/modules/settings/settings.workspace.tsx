@@ -125,6 +125,7 @@ function SettingsWorkspaceContent() {
                     value={form.gstApiMode}
                     options={[
                       { label: "E-invoice + E-way", value: "einvoice_eway" },
+                      { label: "E-invoice only", value: "einvoice_only" },
                       { label: "E-way only", value: "eway_only" }
                     ]}
                     onValueChange={(gstApiMode) =>

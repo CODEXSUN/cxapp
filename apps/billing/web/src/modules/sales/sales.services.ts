@@ -192,6 +192,14 @@ export async function generateSaleEway(id: string, eway?: Sale["eway"]) {
   return billingApiPost<Sale>(`/billing/sales/${id}/eway/generate`, { eway }).then(fromApiSale);
 }
 
+export async function clearSaleEinvoice(id: string) {
+  return billingApiDelete<Sale>(`/billing/sales/${id}/einvoice`).then(fromApiSale);
+}
+
+export async function clearSaleEway(id: string) {
+  return billingApiDelete<Sale>(`/billing/sales/${id}/eway`).then(fromApiSale);
+}
+
 export function createSaleContact(payload: SaleContactSavePayload) {
   return billingApiPost<SaleLookupRecord>(
     "/billing/sales/lookups/contacts",

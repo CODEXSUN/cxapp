@@ -164,13 +164,16 @@ function normalizeSettings(value: string | null): BillingSettings {
     const gstApiMode: BillingGstApiMode =
       parsed.gstApiMode === "none" ||
       parsed.gstApiMode === "eway_only" ||
+      parsed.gstApiMode === "einvoice_only" ||
       parsed.gstApiMode === "einvoice_eway"
         ? parsed.gstApiMode
-        : !savedLayout.useEway
-          ? "none"
+        : savedLayout.useEinvoice && savedLayout.useEway
+          ? "einvoice_eway"
           : savedLayout.useEinvoice
-            ? "einvoice_eway"
-            : "eway_only";
+            ? "einvoice_only"
+            : savedLayout.useEway
+              ? "eway_only"
+              : "none";
     return {
       ...defaultBillingSettings,
       features: {
@@ -184,8 +187,8 @@ function normalizeSettings(value: string | null): BillingSettings {
       gstApiMode,
       layout: {
         ...savedLayout,
-        useEinvoice: gstApiMode === "einvoice_eway",
-        useEway: gstApiMode !== "none"
+        useEinvoice: gstApiMode === "einvoice_eway" || gstApiMode === "einvoice_only",
+        useEway: gstApiMode === "einvoice_eway" || gstApiMode === "eway_only"
       },
       numbering: normalizeNumbering(parsed.numbering),
       customise: {

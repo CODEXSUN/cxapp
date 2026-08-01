@@ -1,4 +1,4 @@
-export type BillingGstApiMode = "none" | "einvoice_eway" | "eway_only";
+export type BillingGstApiMode = "none" | "einvoice_eway" | "einvoice_only" | "eway_only";
 
 export type BillingDocumentKind = "quotation" | "sales" | "purchase" | "payment" | "receipt";
 export type BillingNumberDocumentKind = BillingDocumentKind | "exportSales";

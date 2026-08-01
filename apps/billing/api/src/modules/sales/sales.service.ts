@@ -231,6 +231,24 @@ export class SalesService {
     });
   }
 
+  async clearEinvoice(databaseName: string, id: string) {
+    const sale = await this.repository.get(databaseName, id);
+    if (!sale) return null;
+    if (sale.status !== "draft")
+      throw AppError.conflict("Only draft Sale E-invoice details can be cleared.");
+    return this.repository.updateCompliance(databaseName, id, {
+      einvoice: normalizeEinvoice(undefined)
+    });
+  }
+
+  async clearEway(databaseName: string, id: string) {
+    const sale = await this.repository.get(databaseName, id);
+    if (!sale) return null;
+    if (sale.status !== "draft")
+      throw AppError.conflict("Only draft Sale E-way details can be cleared.");
+    return this.repository.updateCompliance(databaseName, id, { eway: normalizeEway(undefined) });
+  }
+
   private async validateReferences(databaseName: string, input: SaleSavePayload) {
     const references = await this.repository.referenceState(databaseName, input);
     const failures = [
