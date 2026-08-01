@@ -6,6 +6,11 @@ export const salesMigration = {
     "Sales invoices with module-owned items, compliance, collaboration, and entry-tool tables."
 };
 
+export const salesComplianceDraftMigration = {
+  key: "billing.sales.compliance-drafts-v1",
+  description: "Persist incomplete E-invoice and E-way draft details before document generation."
+};
+
 export async function migrateSalesModule<Database>(database: Kysely<Database>) {
   await assertSalesParentSchema(database);
 
@@ -124,10 +129,12 @@ export async function migrateSalesModule<Database>(database: Kysely<Database>) {
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       sales_id INT NOT NULL,
-      bill_number VARCHAR(80) NOT NULL,
-      bill_date DATE NOT NULL,
+      bill_number VARCHAR(80) NULL,
+      bill_date DATE NULL,
       part VARCHAR(16) NOT NULL DEFAULT 'Part B',
       transport_id INT NULL,
+      transport_name VARCHAR(191) NULL,
+      transport_gst VARCHAR(32) NULL,
       vehicle_number VARCHAR(80) NULL,
       status VARCHAR(24) NOT NULL DEFAULT 'not-generated',
       request_json JSON NULL,
@@ -159,7 +166,7 @@ export async function migrateSalesModule<Database>(database: Kysely<Database>) {
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
       uuid CHAR(8) NOT NULL,
       sales_id INT NOT NULL,
-      irn VARCHAR(128) NOT NULL,
+      irn VARCHAR(128) NULL,
       ack_number VARCHAR(80) NULL,
       ack_date DATETIME(3) NULL,
       signed_invoice LONGTEXT NULL,
@@ -288,6 +295,28 @@ const salesParentTables = [
   "app_users",
   "core_work_orders"
 ] as const;
+
+export async function migrateSalesComplianceDrafts<Database>(database: Kysely<Database>) {
+  await sql
+    .raw(
+      `
+      ALTER TABLE billing_sales_eway_bills
+        MODIFY COLUMN bill_number VARCHAR(80) NULL,
+        MODIFY COLUMN bill_date DATE NULL,
+        ADD COLUMN IF NOT EXISTS transport_name VARCHAR(191) NULL AFTER transport_id,
+        ADD COLUMN IF NOT EXISTS transport_gst VARCHAR(32) NULL AFTER transport_name
+      `
+    )
+    .execute(database);
+  await sql
+    .raw(
+      `
+      ALTER TABLE billing_sales_einvoices
+        MODIFY COLUMN irn VARCHAR(128) NULL
+      `
+    )
+    .execute(database);
+}
 
 async function assertSalesParentSchema<Database>(database: Kysely<Database>) {
   const result = await sql<{

@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.49",
+  "version": "1.0.50",
   "private": true,
   "packageManager": "npm@12.0.1",
   "description": "CODEXSUN",
@@ -52,6 +52,7 @@
     "test:e2e:composed-runtime": "tsx tools/e2e/composed-platform-runtime.e2e.ts",
     "test:e2e:devkit": "tsx tools/e2e/devkit-isolation.e2e.ts",
     "test:e2e:persistence": "tsx tools/e2e/organisation-billing-persistence.e2e.ts",
+    "test:e2e:sales-compliance": "tsx tools/e2e/organisation-billing-persistence.e2e.ts --sales-compliance",
     "test:e2e:live-mass": "tsx tools/e2e/live-five-tenant-mass.e2e.ts",
     "test:e2e:tenant-access": "tsx tools/e2e/tenant-access.e2e.ts",
     "test:queue-live": "tsx tools/e2e/queue-management-live.e2e.ts",

@@ -273,12 +273,11 @@ export async function upsertEinvoice(
   value: SaleEinvoiceDetails
 ) {
   await sql`DELETE FROM billing_sales_einvoices WHERE sales_id = ${saleId}`.execute(transaction);
-  if (value.status === "not-generated" && !value.irn) return;
   await sql`
     INSERT INTO billing_sales_einvoices (
       uuid, sales_id, irn, ack_number, ack_date, signed_qr, status, generated_at
     ) VALUES (
-      ${publicUuid()}, ${saleId}, ${value.irn}, ${value.ackNo || null}, ${value.ackDate || null},
+      ${publicUuid()}, ${saleId}, ${value.irn || null}, ${value.ackNo || null}, ${value.ackDate || null},
       ${value.signedQr || null}, ${value.status},
       ${value.status === "generated" ? sql`CURRENT_TIMESTAMP(3)` : null}
     )
@@ -291,14 +290,14 @@ export async function upsertEway(
   value: SaleEwayDetails
 ) {
   await sql`DELETE FROM billing_sales_eway_bills WHERE sales_id = ${saleId}`.execute(transaction);
-  if (value.status === "not-generated" && !value.billNo) return;
   await sql`
     INSERT INTO billing_sales_eway_bills (
-      uuid, sales_id, bill_number, bill_date, part, transport_id, vehicle_number,
-      status, notes, generated_at
+      uuid, sales_id, bill_number, bill_date, part, transport_id, transport_name,
+      transport_gst, vehicle_number, status, notes, generated_at
     ) VALUES (
-      ${publicUuid()}, ${saleId}, ${value.billNo}, ${value.billDate}, ${value.part},
-      ${value.transportId}, ${value.vehicleNo || null}, ${value.status}, ${value.notes || null},
+      ${publicUuid()}, ${saleId}, ${value.billNo || null}, ${value.billDate || null}, ${value.part},
+      ${value.transportId}, ${value.transport || null}, ${value.transportGst || null},
+      ${value.vehicleNo || null}, ${value.status}, ${value.notes || null},
       ${value.status === "generated" ? sql`CURRENT_TIMESTAMP(3)` : null}
     )
   `.execute(transaction);

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.49
+Current version: 1.0.50
 
-Release tag: v-1.0.49
+Release tag: v-1.0.50
 
-Changelog label: v 1.0.49
+Changelog label: v 1.0.50
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,27 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.50
+
+### [v 1.0.50] 2026-08-01 10:50 am - Persist Sales compliance drafts
+
+#### Database Changes
+
+- Database update: Yes (`billing.sales.compliance-drafts-v1`).
+- Added a forward, tenant-scoped Billing migration that allows draft E-invoice IRNs and E-way
+  bill numbers/dates to remain empty while preserving generated-document uniqueness, and stores
+  E-way transporter name and GST snapshots for reliable reloads.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.50.
+- Persisted E-invoice and E-way draft details inside the same transaction as normal Sale create and
+  update operations, preventing transport, vehicle, date, notes, acknowledgement, IRN, and signed-QR
+  input from disappearing after Save or reload.
+- Added focused MariaDB persistence coverage for compliance draft creation, direct table rows,
+  editing, API reload, and Billing database connection restart through
+  `npm run test:e2e:sales-compliance`.
 
 ## v-1.0.49
 

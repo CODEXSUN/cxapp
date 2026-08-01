@@ -27,7 +27,12 @@ import {
   purchaseMigration
 } from "../modules/purchase/purchase.migration.js";
 import { seedPurchaseModule } from "../modules/purchase/purchase.seed.js";
-import { migrateSalesModule, salesMigration } from "../modules/sales/sales.migration.js";
+import {
+  migrateSalesComplianceDrafts,
+  migrateSalesModule,
+  salesComplianceDraftMigration,
+  salesMigration
+} from "../modules/sales/sales.migration.js";
 import { migrateReceiptModule, receiptMigration } from "../modules/receipt/receipt.migration.js";
 import { seedReceiptModule } from "../modules/receipt/receipt.seed.js";
 import { seedSalesModule } from "../modules/sales/sales.seed.js";
@@ -144,6 +149,11 @@ const billingMigrationSteps = [
     description: "Billing sales documents and relational line items.",
     key: salesMigration.key,
     migrate: migrateSalesModule
+  },
+  {
+    description: salesComplianceDraftMigration.description,
+    key: salesComplianceDraftMigration.key,
+    migrate: migrateSalesComplianceDrafts
   },
   {
     description: "Billing purchase documents and relational line items.",

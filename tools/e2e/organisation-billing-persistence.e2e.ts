@@ -34,6 +34,7 @@ import {
 import { env } from "../../apps/core/api/src/env.js";
 
 const runId = Date.now();
+const salesComplianceOnly = process.argv.includes("--sales-compliance");
 const databaseName = `cxapp_persistence_e2e_${runId}`;
 const isolatedDatabaseName = `cxapp_persistence_isolated_e2e_${runId}`;
 const admin = await createConnection({
@@ -90,13 +91,14 @@ try {
   assert.equal(context.currencyId, references.currencyId);
 
   await assertTenantBoundary(api, databaseName, isolatedDatabaseName);
-  await assertLegacyCountryCleanup(admin, isolatedDatabaseName);
+  if (!salesComplianceOnly) await assertLegacyCountryCleanup(admin, isolatedDatabaseName);
   await admin.changeUser({ database: databaseName });
 
-  await runWithCoreDatabase(databaseName, async () => {
-    await assertMinimalProduct(api!, databaseName, timings);
-    await assertMinimalContact(api!, databaseName, references.contactTypeId, timings);
-  });
+  if (!salesComplianceOnly)
+    await runWithCoreDatabase(databaseName, async () => {
+      await assertMinimalProduct(api!, databaseName, timings);
+      await assertMinimalContact(api!, databaseName, references.contactTypeId, timings);
+    });
   await assertMinimalDrafts(api, databaseName, references, timings);
 
   const quotationPayload = {
@@ -115,55 +117,62 @@ try {
   assert.equal(quotation.customerId, references.customerId);
   assert.equal(quotation.items.length, 1);
 
-  const contactAfterReferencedAddressUpdate = await runWithCoreDatabase(databaseName, async () => {
-    const contactBeforeReferencedAddressUpdate = await requestData(
-      api!,
-      "GET",
-      `/core/master/core_contacts/${references.customerId}`,
+  if (!salesComplianceOnly) {
+    const contactAfterReferencedAddressUpdate = await runWithCoreDatabase(
       databaseName,
-      undefined,
-      timings
-    );
-    const referencedAddress = (contactBeforeReferencedAddressUpdate.addresses as ApiRecord[])[0];
-    assert.ok(referencedAddress, "The Billing test contact must have a persisted address.");
-    return requestData(
-      api!,
-      "PUT",
-      `/core/master/core_contacts/${references.customerId}`,
-      databaseName,
-      {
-        addresses: [
+      async () => {
+        const contactBeforeReferencedAddressUpdate = await requestData(
+          api!,
+          "GET",
+          `/core/master/core_contacts/${references.customerId}`,
+          databaseName,
+          undefined,
+          timings
+        );
+        const referencedAddress = (
+          contactBeforeReferencedAddressUpdate.addresses as ApiRecord[]
+        )[0];
+        assert.ok(referencedAddress, "The Billing test contact must have a persisted address.");
+        return requestData(
+          api!,
+          "PUT",
+          `/core/master/core_contacts/${references.customerId}`,
+          databaseName,
           {
-            addressLine1: referencedAddress.addressLine1,
-            addressLine2: referencedAddress.addressLine2,
-            addressTypeId: referencedAddress.addressTypeId,
-            addressTypeName: referencedAddress.addressTypeName,
-            cityId: referencedAddress.cityId,
-            cityName: referencedAddress.cityName,
-            countryId: referencedAddress.countryId,
-            countryName: referencedAddress.countryName,
-            districtId: referencedAddress.districtId,
-            districtName: referencedAddress.districtName,
-            isDefault: true,
-            pincodeId: referencedAddress.pincodeId,
-            pincodeName: referencedAddress.pincodeName,
-            stateId: referencedAddress.stateId,
-            stateName: referencedAddress.stateName
-          }
-        ],
-        isActive: true,
-        legalName: contactBeforeReferencedAddressUpdate.legalName,
-        name: contactBeforeReferencedAddressUpdate.name,
-        typeId: references.contactTypeId
-      },
-      timings
+            addresses: [
+              {
+                addressLine1: referencedAddress.addressLine1,
+                addressLine2: referencedAddress.addressLine2,
+                addressTypeId: referencedAddress.addressTypeId,
+                addressTypeName: referencedAddress.addressTypeName,
+                cityId: referencedAddress.cityId,
+                cityName: referencedAddress.cityName,
+                countryId: referencedAddress.countryId,
+                countryName: referencedAddress.countryName,
+                districtId: referencedAddress.districtId,
+                districtName: referencedAddress.districtName,
+                isDefault: true,
+                pincodeId: referencedAddress.pincodeId,
+                pincodeName: referencedAddress.pincodeName,
+                stateId: referencedAddress.stateId,
+                stateName: referencedAddress.stateName
+              }
+            ],
+            isActive: true,
+            legalName: contactBeforeReferencedAddressUpdate.legalName,
+            name: contactBeforeReferencedAddressUpdate.name,
+            typeId: references.contactTypeId
+          },
+          timings
+        );
+      }
     );
-  });
-  assert.equal(
-    Number((contactAfterReferencedAddressUpdate.addresses as ApiRecord[])[0]?.id),
-    references.addressId,
-    "Editing a contact must preserve an address ID already referenced by Billing."
-  );
+    assert.equal(
+      Number((contactAfterReferencedAddressUpdate.addresses as ApiRecord[])[0]?.id),
+      references.addressId,
+      "Editing a contact must preserve an address ID already referenced by Billing."
+    );
+  }
 
   const listedQuotations = await requestList(api, "/billing/quotations", databaseName, timings);
   assert.equal(
@@ -251,6 +260,24 @@ try {
 
   const salePayload = {
     ...documentPayload(references),
+    einvoice: {
+      ackDate: references.documentDate,
+      ackNo: "ACK-DRAFT-001",
+      irn: "",
+      signedQr: "draft-signed-qr-feed",
+      status: "not-generated"
+    },
+    eway: {
+      billDate: references.documentDate,
+      billNo: "",
+      notes: "Draft transport instructions",
+      part: "Part B",
+      status: "not-generated",
+      transport: "Draft Transporter",
+      transportGst: "33ABCDE1234F1Z5",
+      transportId: null,
+      vehicleNo: "TN01AB1234"
+    },
     invoiceNumber: "INV-PERSIST-001",
     items: documentPayload(references).items.map((item) => ({ ...item, description: "" })),
     issuedOn: references.documentDate
@@ -283,6 +310,23 @@ try {
     timings
   );
   assert.equal(fetchedSale.invoiceNumber, "INV-PERSIST-001");
+  assert.equal(fetchedSale.einvoice.ackNo, "ACK-DRAFT-001");
+  assert.equal(fetchedSale.einvoice.signedQr, "draft-signed-qr-feed");
+  assert.equal(fetchedSale.eway.transport, "Draft Transporter");
+  assert.equal(fetchedSale.eway.transportGst, "33ABCDE1234F1Z5");
+  assert.equal(fetchedSale.eway.vehicleNo, "TN01AB1234");
+  const [draftComplianceRows] = await admin.query<RowDataPacket[]>(
+    `
+    SELECT
+      (SELECT COUNT(*) FROM billing_sales_einvoices WHERE sales_id = sale.id) AS einvoice_count,
+      (SELECT COUNT(*) FROM billing_sales_eway_bills WHERE sales_id = sale.id) AS eway_count
+    FROM billing_sales sale
+    WHERE sale.uuid = ?
+    `,
+    [sale.id]
+  );
+  assert.equal(Number(draftComplianceRows[0]?.einvoice_count), 1);
+  assert.equal(Number(draftComplianceRows[0]?.eway_count), 1);
 
   const concurrentSales = await Promise.all([
     requestData(
@@ -431,11 +475,20 @@ try {
     databaseName,
     {
       ...salePayload,
+      einvoice: { ...salePayload.einvoice, ackNo: "ACK-DRAFT-UPDATED" },
+      eway: {
+        ...salePayload.eway,
+        notes: "Updated draft transport instructions",
+        vehicleNo: "TN01AB5678"
+      },
       notes: "Updated sale through HTTP CRUD"
     },
     timings
   );
   assert.equal(updatedSale.notes, "Updated sale through HTTP CRUD");
+  assert.equal(updatedSale.einvoice.ackNo, "ACK-DRAFT-UPDATED");
+  assert.equal(updatedSale.eway.notes, "Updated draft transport instructions");
+  assert.equal(updatedSale.eway.vehicleNo, "TN01AB5678");
   assert.equal(
     (
       await requestData(
@@ -735,6 +788,11 @@ try {
   assert.equal(persistedQuotation?.items[0]?.description, "Dummy persisted product");
   assert.equal(persistedSale?.invoiceNumber, "INV-PERSIST-001");
   assert.equal(persistedSale?.items[0]?.description, "");
+  assert.equal(persistedSale?.einvoice.ackNo, "ACK-DRAFT-UPDATED");
+  assert.equal(persistedSale?.einvoice.signedQr, "draft-signed-qr-feed");
+  assert.equal(persistedSale?.eway.transport, "Draft Transporter");
+  assert.equal(persistedSale?.eway.notes, "Updated draft transport instructions");
+  assert.equal(persistedSale?.eway.vehicleNo, "TN01AB5678");
   assert.equal(persistedSale12?.items.length, 12);
   assert.equal(persistedSale24?.items.length, 24);
   assert.equal(persistedMergedSale?.items.length, 12);

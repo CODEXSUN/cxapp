@@ -38,15 +38,15 @@ export { SalesInvoiceReservationConflict } from "./sales.repository-support.js";
 type SaleEinvoiceRow = {
   ack_date: string | null;
   ack_number: string | null;
-  irn: string;
+  irn: string | null;
   sales_id: number;
   signed_qr: string | null;
   status: "not-generated" | "generated";
 };
 
 type SaleEwayRow = {
-  bill_date: string;
-  bill_number: string;
+  bill_date: string | null;
+  bill_number: string | null;
   notes: string | null;
   part: "Part A" | "Part B";
   sales_id: number;
@@ -374,6 +374,8 @@ export class SalesRepository {
           `.execute(transaction);
           const saleId = Number(inserted.insertId);
           await insertItems(transaction, saleId, totals.items);
+          await upsertEinvoice(transaction, saleId, input.einvoice ?? defaultEinvoice());
+          await upsertEway(transaction, saleId, input.eway ?? defaultEway());
           await insertActivity(transaction, saleId, "created", "create", null, input.status);
         });
         return this.get(databaseName, uuid);
@@ -415,6 +417,8 @@ export class SalesRepository {
           transaction
         );
         await insertItems(transaction, existing.id, totals.items);
+        await upsertEinvoice(transaction, existing.id, input.einvoice ?? defaultEinvoice());
+        await upsertEway(transaction, existing.id, input.eway ?? defaultEway());
         await insertActivity(
           transaction,
           existing.id,
@@ -521,7 +525,9 @@ export class SalesRepository {
       `.execute(database),
       sql<SaleEwayRow>`
         SELECT e.sales_id, e.bill_number, DATE_FORMAT(e.bill_date, '%Y-%m-%d') AS bill_date,
-               e.part, e.transport_id, t.name AS transport_name, t.gst AS transport_gst,
+               e.part, e.transport_id,
+               COALESCE(e.transport_name, t.name) AS transport_name,
+               COALESCE(e.transport_gst, t.gst) AS transport_gst,
                e.vehicle_number, e.status, e.notes
         FROM billing_sales_eway_bills e
         INNER JOIN (
@@ -572,15 +578,15 @@ export class SalesRepository {
         ? {
             ackDate: einvoice.ack_date ?? "",
             ackNo: einvoice.ack_number ?? "",
-            irn: einvoice.irn,
+            irn: einvoice.irn ?? "",
             signedQr: einvoice.signed_qr ?? "",
             status: einvoice.status
           }
         : defaultEinvoice(),
       eway: eway
         ? {
-            billDate: eway.bill_date,
-            billNo: eway.bill_number,
+            billDate: eway.bill_date ?? "",
+            billNo: eway.bill_number ?? "",
             notes: eway.notes ?? "",
             part: eway.part,
             status: eway.status,
