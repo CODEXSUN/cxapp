@@ -20,6 +20,7 @@ try {
   );
 
   await verifyInlineBackend("database");
+  await verifyClientArtifactQueue();
 
   try {
     await service.switchBackend("bullmq-redis", actorEmail);
@@ -67,6 +68,29 @@ async function enqueueProbe(backend: "bullmq-redis" | "database") {
   });
   assert.ok(job, `${backend} did not return a persisted queue job.`);
   return job;
+}
+
+async function verifyClientArtifactQueue() {
+  const queued = await service.enqueueClientArtifact(
+    {
+      artifactType: "pdf",
+      category: "billing-sales",
+      fileName: "queue-live-invoice.pdf",
+      label: "Queue live invoice",
+      sha256: "a".repeat(64),
+      sizeBytes: 1024
+    },
+    { actorEmail, tenantId: "queue-live-tenant" },
+    `queue-live:artifact:${Date.now()}`
+  );
+  assert.equal(queued.status, "pending");
+  const completed = await service.runNextJob();
+  assert.equal(completed?.id, queued.jobId);
+  assert.equal(completed?.status, "completed");
+  assert.equal(completed?.jobName, "client-artifact.prepare");
+  assert.equal(completed?.queueName, "reports");
+  assert.equal(completed?.result.fileName, "queue-live-invoice.pdf");
+  results["client-artifact"] = "delivered";
 }
 
 async function waitForCompletion(id: number, timeoutMs: number) {

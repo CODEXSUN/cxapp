@@ -37,8 +37,7 @@ export class QueueManagerRepository {
     return {
       availableBackends: ["database", "bullmq-redis"],
       backend,
-      backendLabel:
-        backend === "bullmq-redis" ? "BullMQ + Redis" : "Database queue",
+      backendLabel: backend === "bullmq-redis" ? "BullMQ + Redis" : "Database queue",
       canRunInline: backend !== "bullmq-redis",
       completed: jobs.filter((job) => job.status === "completed").length,
       failed: jobs.filter((job) => job.status === "failed").length,
@@ -251,10 +250,10 @@ function toQueueJob(row: {
   idempotency_key: string | null;
   job_name: string;
   max_attempts: number;
-  payload_json: string;
+  payload_json: unknown;
   priority: number;
   queue_name: string;
-  result_json: string;
+  result_json: unknown;
   source_module: string;
   started_at: Date | string | null;
   status: QueueJobStatus;
@@ -287,10 +286,16 @@ function toQueueJob(row: {
   };
 }
 
-function parseJson(value: string) {
+function parseJson(value: unknown): Record<string, unknown> {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  if (typeof value !== "string") return {};
   try {
     const parsed = JSON.parse(value);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed : {};
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
   } catch {
     return {};
   }

@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import type {
   MailComposePayload,
   MailMessage,
@@ -51,26 +51,32 @@ export function restoreMail(id: string) {
 }
 
 export async function captureMailPdf(element: HTMLElement, fileName: string) {
-  const canvas = await html2canvas(element, {
-    backgroundColor: "#ffffff",
-    scale: 1.6,
-    useCORS: true
-  });
-  if (!canvas.width || !canvas.height || canvas.width * canvas.height > 20_000_000) {
-    throw new Error("The document is too large to export safely as a PDF.");
-  }
   const pdf = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" });
   const width = 190;
-  const height = (canvas.height * width) / canvas.width;
-  const image = canvas.toDataURL("image/jpeg", 0.94);
-  let offset = 10;
-  pdf.addImage(image, "JPEG", 10, offset, width, height);
-  let remaining = height - 277;
-  while (remaining > 0) {
-    offset -= 287;
-    pdf.addPage();
-    pdf.addImage(image, "JPEG", 10, offset, width, height);
-    remaining -= 287;
+  const printSheets = Array.from(element.querySelectorAll<HTMLElement>(".billing-print-document"));
+  const targets = printSheets.length ? printSheets : [element];
+  let hasPage = false;
+
+  for (const target of targets) {
+    const canvas = await html2canvas(target, {
+      backgroundColor: "#ffffff",
+      scale: 1.6,
+      useCORS: true
+    });
+    if (!canvas.width || !canvas.height || canvas.width * canvas.height > 20_000_000) {
+      throw new Error("The document is too large to export safely as a PDF.");
+    }
+    const height = (canvas.height * width) / canvas.width;
+    const image = canvas.toDataURL("image/jpeg", 0.94);
+    let offset = 10;
+    let remaining = height;
+    do {
+      if (hasPage) pdf.addPage();
+      pdf.addImage(image, "JPEG", 10, offset, width, height);
+      hasPage = true;
+      remaining -= 277;
+      offset -= 287;
+    } while (remaining > 0);
   }
   const data = pdf.output("datauristring");
   return {
@@ -94,7 +100,7 @@ export async function queueBillingDocumentEmail(input: {
   const subject = `${input.documentTitle} ${input.documentNumber}`;
   const bodyText = `Hello ${input.partyName},\n\nPlease find the attached ${input.documentTitle} ${input.documentNumber}.\n\nRegards,\nCODEXSUN`;
   const bodyHtml = `<div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:28px;color:#172033"><div style="max-width:640px;margin:auto;background:#fff;border:1px solid #e3e8ef;border-radius:12px;overflow:hidden"><div style="background:#059669;color:#fff;padding:22px 26px"><div style="font-size:13px;opacity:.9">CODEXSUN Billing</div><div style="font-size:22px;font-weight:700;margin-top:4px">${escapeMailHtml(input.documentTitle)}</div></div><div style="padding:26px"><p>Hello ${escapeMailHtml(input.partyName)},</p><p>Please find your <strong>${escapeMailHtml(input.documentTitle)} ${escapeMailHtml(input.documentNumber)}</strong> attached as a PDF.</p><div style="margin-top:22px;padding:14px 16px;border-radius:8px;background:#f4f7f9;font-size:13px">Attachment: <strong>${escapeMailHtml(attachment.fileName)}</strong></div><p style="margin-top:24px;color:#64748b;font-size:13px">This message was sent securely from CODEXSUN.</p></div></div></div>`;
-  return createMailMessage({
+  const message = await createMailMessage({
     attachments: [attachment],
     bcc: [],
     bodyHtml,
@@ -105,6 +111,10 @@ export async function queueBillingDocumentEmail(input: {
     subject,
     to: [input.recipient.trim().toLowerCase()]
   });
+  if (message.status !== "queued") {
+    throw new Error(`Mail attachment was saved with unexpected status ${message.status}.`);
+  }
+  return message;
 }
 
 function escapeMailHtml(value: string) {

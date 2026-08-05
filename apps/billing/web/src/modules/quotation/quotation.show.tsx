@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Download,
+  LoaderCircle,
   Mail,
   MessageCircle,
   Paperclip,
@@ -25,6 +26,13 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { cn } from "@cxapp/ui/lib/utils";
 import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
 import { getTenantUserLabel } from "../../shared/api/tenant-context";
+import {
+  buildAndQueueBillingDocumentPdf,
+  downloadBillingDocumentPdf,
+  openBillingDocumentWhatsApp,
+  requireBillingDocumentElement,
+  reserveBillingDocumentWhatsAppPage
+} from "../../shared/entry-tools";
 import { useBillingDocumentTitle } from "../settings";
 import { formatDate } from "./quotation.services";
 import { QuotationPrintDocument, type QuotationPrintCopy } from "./quotation.print";
@@ -71,8 +79,8 @@ export function QuotationShowPage({
     []
   );
   const [openTool, setOpenTool] = useState<QuotationEntryToolId | null>(null);
-  const [emailAddress, setEmailAddress] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState(quotation.customerEmail);
+  const [whatsappNumber, setWhatsappNumber] = useState(quotation.customerPhone);
   const [assigneeInput, setAssigneeInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [assignees, setAssignees] = useState<string[]>([]);
@@ -82,6 +90,14 @@ export function QuotationShowPage({
     Array<{ id: string; message: string; createdAt: string }>
   >([]);
   const [printCopies, setPrintCopies] = useState<readonly QuotationPrintCopy[]>(["original"]);
+  const [processingTool, setProcessingTool] = useState<"downloadPdf" | "email" | "whatsapp" | null>(
+    null
+  );
+
+  useEffect(() => {
+    setEmailAddress(quotation.customerEmail);
+    setWhatsappNumber(quotation.customerPhone);
+  }, [quotation.customerEmail, quotation.customerPhone, quotation.id]);
 
   const entryTools: Array<{ icon: typeof Mail; id: QuotationEntryToolId; label: string }> = [
     { icon: Download, id: "downloadPdf", label: "Download PDF" },
@@ -119,6 +135,15 @@ export function QuotationShowPage({
       { createdAt: new Date().toISOString(), id: `${Date.now()}-${current.length}`, message },
       ...current
     ]);
+  }
+
+  async function buildQueuedPdf() {
+    return buildAndQueueBillingDocumentPdf({
+      documentElement: requireBillingDocumentElement(),
+      documentKind: "quotation",
+      documentNumber: quotation.quotationNumber,
+      documentTitle
+    });
   }
 
   function addComment() {
@@ -320,7 +345,7 @@ export function QuotationShowPage({
                       </span>
                       <span>{item.message}</span>
                       <span className="text-muted-foreground">
-                        {` Â· ${formatDate(item.createdAt)} - by ${activityUser}`}
+                        {` @ ${formatDate(item.createdAt)} - by ${activityUser}`}
                       </span>
                     </div>
                   ))}
@@ -340,13 +365,28 @@ export function QuotationShowPage({
               {entryTools.map((tool) => (
                 <div key={tool.id} className="border-b border-border/70 last:border-b-0">
                   <button
-                    onClick={() => {
+                    disabled={processingTool !== null}
+                    onClick={async () => {
                       if (tool.id === "downloadPdf") {
-                        recordActivity(`Downloaded print preview for ${quotation.quotationNumber}`);
-                        toast.success("Print preview download queued", {
-                          description:
-                            "The request is queued and can be tracked while you continue working."
-                        });
+                        setProcessingTool("downloadPdf");
+                        try {
+                          const result = await buildQueuedPdf();
+                          downloadBillingDocumentPdf(result.attachment);
+                          recordActivity(
+                            `Downloaded PDF for ${quotation.quotationNumber} (queue #${result.job.jobId})`
+                          );
+                          toast.success("Quotation PDF downloaded", {
+                            description: `Queue job #${result.job.jobId} was accepted for tracking.`
+                          });
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Quotation PDF download failed."
+                          );
+                        } finally {
+                          setProcessingTool(null);
+                        }
                         return;
                       }
                       setOpenTool((current) => (current === tool.id ? null : tool.id));
@@ -354,7 +394,11 @@ export function QuotationShowPage({
                     type="button"
                     className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-muted/50"
                   >
-                    <tool.icon className="size-4" />
+                    {tool.id === "downloadPdf" && processingTool === "downloadPdf" ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <tool.icon className="size-4" />
+                    )}
                     <span className="flex-1">{tool.label}</span>
                     {tool.id !== "downloadPdf" ? (
                       <Plus
@@ -393,22 +437,17 @@ export function QuotationShowPage({
                     <div className="px-3 pb-3">
                       {tool.id === "email" ? (
                         <InlineSend
+                          loading={processingTool === "email"}
                           value={emailAddress}
                           placeholder="Email address"
                           onChange={setEmailAddress}
                           onSend={async () => {
                             const value = emailAddress.trim();
                             if (!value) return;
-                            const documentElement =
-                              document.querySelector<HTMLElement>(".billing-mail-document");
-                            if (!documentElement)
-                              return toast.error("Quotation preview is not ready.", {
-                                description:
-                                  "Generate or refresh the document before trying this action again."
-                              });
+                            setProcessingTool("email");
                             try {
                               await queueBillingDocumentEmail({
-                                documentElement,
+                                documentElement: requireBillingDocumentElement(),
                                 documentNumber: quotation.quotationNumber,
                                 documentTitle,
                                 partyName: quotation.customerName,
@@ -428,6 +467,8 @@ export function QuotationShowPage({
                                     "Review the details, correct the problem, and try again."
                                 }
                               );
+                            } finally {
+                              setProcessingTool(null);
                             }
                           }}
                         />
@@ -492,14 +533,43 @@ export function QuotationShowPage({
                       ) : null}
                       {tool.id === "whatsapp" ? (
                         <InlineSend
+                          loading={processingTool === "whatsapp"}
                           value={whatsappNumber}
                           placeholder="WhatsApp number"
                           onChange={setWhatsappNumber}
-                          onSend={() => {
+                          onSend={async () => {
                             const value = whatsappNumber.trim();
                             if (!value) return;
-                            recordActivity(`Sent WhatsApp message to ${value}`);
-                            setWhatsappNumber("");
+                            let page: Window | null = null;
+                            setProcessingTool("whatsapp");
+                            try {
+                              page = reserveBillingDocumentWhatsAppPage();
+                              const result = await buildQueuedPdf();
+                              downloadBillingDocumentPdf(result.attachment);
+                              const phone = openBillingDocumentWhatsApp(page, {
+                                documentNumber: quotation.quotationNumber,
+                                documentTitle,
+                                partyName: quotation.customerName,
+                                phone: value
+                              });
+                              recordActivity(
+                                `Opened WhatsApp for ${phone} with PDF queue #${result.job.jobId}`
+                              );
+                              toast.success("PDF downloaded and WhatsApp opened", {
+                                description:
+                                  "Attach the downloaded PDF, review the message, and press Send."
+                              });
+                              setWhatsappNumber("");
+                            } catch (error) {
+                              page?.close();
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "WhatsApp document preparation failed."
+                              );
+                            } finally {
+                              setProcessingTool(null);
+                            }
                           }}
                         />
                       ) : null}
@@ -516,11 +586,13 @@ export function QuotationShowPage({
 }
 
 function InlineSend({
+  loading = false,
   onChange,
   onSend,
   placeholder,
   value
 }: {
+  loading?: boolean;
   onChange: (value: string) => void;
   onSend: () => void;
   placeholder: string;
@@ -535,12 +607,12 @@ function InlineSend({
         className="h-9 rounded-md"
       />
       <Button
-        disabled={!value.trim()}
+        disabled={loading || !value.trim()}
         onClick={onSend}
         type="button"
         className="size-9 rounded-md p-0"
       >
-        <Send className="size-4" />
+        {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
       </Button>
     </div>
   );

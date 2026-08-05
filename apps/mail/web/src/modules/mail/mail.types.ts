@@ -46,6 +46,8 @@ export type MailSettings = {
   fallbackEnabled: boolean;
   fromEmail: string;
   fromName: string;
+  hostingerApiTokenConfigured: boolean;
+  hostingerMailboxId: string;
   inboundEnabled: boolean;
   inboundHost: string;
   inboundPasswordConfigured: boolean;
@@ -54,7 +56,7 @@ export type MailSettings = {
   inboundSecure: boolean;
   inboundUsername: string;
   passwordConfigured: boolean;
-  provider: "smtp";
+  provider: "hostinger-api" | "smtp";
   replyTo: string;
   smtpHost: string;
   smtpPort: number;
@@ -64,8 +66,8 @@ export type MailSettings = {
 };
 export type MailSettingsPayload = Omit<
   MailSettings,
-  "inboundPasswordConfigured" | "passwordConfigured" | "provider" | "updatedAt"
-> & { inboundPassword?: string; smtpPassword?: string };
+  "hostingerApiTokenConfigured" | "inboundPasswordConfigured" | "passwordConfigured" | "updatedAt"
+> & { hostingerApiToken?: string; inboundPassword?: string; smtpPassword?: string };
 export type MailComposePayload = {
   attachments: Array<{ base64: string; fileName: string; mimeType: string }>;
   bcc: string[];

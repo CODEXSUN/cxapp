@@ -66,6 +66,7 @@ Current platform implementation:
 - `bullmq-redis` is connected through BullMQ and Redis using `CXAPP_REDIS_URL`; database metadata is still retained so Queue Management can show status, filters, retries, and audit context.
 - Database maintenance backup/restore requests enqueue `database-maintenance.run` jobs on the `maintenance` queue.
 - Password recovery enqueues Mail-owned `mail.system-send` jobs on the `mail` queue. External delivery requires the environment SMTP fallback to be configured and enabled.
+- Tenant browser-generated artifacts enqueue `client-artifact.prepare` metadata jobs on the `reports` queue after checksum and size validation. Billing document PDF downloads use this ingress so Queue Management records the accepted export without storing large PDF payloads in the platform queue database.
 
 ## Outbox Strategy
 

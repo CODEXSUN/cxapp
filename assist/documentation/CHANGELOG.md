@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.51
+Current version: 1.0.53
 
-Release tag: v-1.0.51
+Release tag: v-1.0.53
 
-Changelog label: v 1.0.51
+Changelog label: v 1.0.53
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,45 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.53
+
+### [v 1.0.53] 2026-08-05 6:10 pm - Mail settings and fallback reliability
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.53.
+- Reorganized the tenant Mail settings dialog into shared spring-animated Outbound, Inbound, and
+  Test delivery tabs while preserving entered values across tab changes and keeping Save/Cancel
+  controls fixed in the dialog footer.
+- Fixed stale environment SMTP fallback configuration during local development by making the API
+  watcher observe the root `.env` file and letting each restarted API child reload current mail
+  credentials instead of inheriting the watcher's original `.env` snapshot.
+- Confirmed the normal Mail queue fallback flow against Hostinger SMTP: the controlled delivery
+  completed on its first attempt through the environment provider and persisted the returned
+  provider message ID on the sent Mail record.
+
+## v-1.0.52
+
+### [v 1.0.52] 2026-08-05 5:30 pm - Billing activity separator
+
+#### Database Changes
+
+- Database update: Yes (`mail.hostinger-provider-v1`).
+- Added encrypted Hostinger Mail API token and mailbox resource ID fields to tenant Mail settings.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.52.
+- Replaced the malformed activity timeline separator with `@` in Sales, Quotation, Purchase, and
+  Export Sales show pages.
+- Added Hostinger Mail API as a tenant-selectable outbound provider, including encrypted token
+  persistence, mailbox resource selection, queued delivery, and Base64 PDF attachment support while
+  retaining SMTP and environment fallback behavior.
 
 ## v-1.0.51
 
@@ -45,6 +84,9 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   four document types, and tightened the GSTIN/UIN and State Name label-to-value spacing.
 - Added each product's GST percentage to the Quotation, Sales, Purchase, and Export Sales
   autocomplete dropdown labels while preserving the clean product name when selected and saved.
+- Replaced the simulated Billing Entry tools PDF toast with real multi-copy PDF generation,
+  tenant-scoped Queue Management tracking, browser download, Mail-queued PDF attachments, and a
+  new-tab WhatsApp handoff that downloads the PDF and clearly requires the user to attach and send it.
 
 ## v-1.0.50
 

@@ -17,6 +17,10 @@ import {
   SelectTrigger,
   SelectValue
 } from "@cxapp/ui/components/select";
+import {
+  WorkspaceAnimatedTabs,
+  type WorkspaceAnimatedTab
+} from "@cxapp/ui/workspace/animated-tabs";
 import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import { mailSettingsSchema } from "./mail.schema";
 import type { MailSettings, MailSettingsPayload } from "./mail.types";
@@ -37,10 +41,17 @@ export function MailSettingsForm({
   settings?: MailSettings | undefined;
 }) {
   const [form, setForm] = useState<MailSettingsPayload>(() => blankSettings());
+  const [activeTab, setActiveTab] = useState("outbound");
   const [error, setError] = useState("");
   const [testRecipient, setTestRecipient] = useState("");
   useEffect(() => {
-    if (settings) setForm({ ...settings, inboundPassword: "", smtpPassword: "" });
+    if (settings)
+      setForm({
+        ...settings,
+        hostingerApiToken: "",
+        inboundPassword: "",
+        smtpPassword: ""
+      });
   }, [settings]);
 
   async function save() {
@@ -49,8 +60,18 @@ export function MailSettingsForm({
       setError(parsed.error.issues[0]?.message ?? "Check mail settings.");
       return;
     }
-    if (form.enabled && (!form.smtpHost || !form.fromEmail)) {
+    if (form.enabled && form.provider === "smtp" && (!form.smtpHost || !form.fromEmail)) {
       setError("SMTP host and From email are required.");
+      return;
+    }
+    if (
+      form.enabled &&
+      form.provider === "hostinger-api" &&
+      (!form.hostingerMailboxId ||
+        (!form.hostingerApiToken && !settings?.hostingerApiTokenConfigured) ||
+        !form.fromEmail)
+    ) {
+      setError("Hostinger mailbox resource ID, API token, and From email are required.");
       return;
     }
     setError("");
@@ -67,188 +88,299 @@ export function MailSettingsForm({
             enabled.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid max-h-[72vh] gap-5 overflow-y-auto p-6">
+        <div className="grid max-h-[72vh] overflow-y-auto px-6 pb-6">
           {error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
             </div>
           ) : null}
-          <section className="grid gap-4">
-            <div>
-              <h3 className="font-semibold">Outbound SMTP</h3>
-              <p className="text-sm text-muted-foreground">
-                Configure the selected company sender identity and delivery server.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="SMTP host">
-                <Input
-                  value={form.smtpHost}
-                  onChange={(event) => setForm({ ...form, smtpHost: event.target.value })}
-                />
-              </Field>
-              <Field label="Port">
-                <Input
-                  type="number"
-                  value={form.smtpPort}
-                  onChange={(event) => setForm({ ...form, smtpPort: Number(event.target.value) })}
-                />
-              </Field>
-              <Field label="Username">
-                <Input
-                  value={form.smtpUsername}
-                  onChange={(event) => setForm({ ...form, smtpUsername: event.target.value })}
-                />
-              </Field>
-              <Field label={settings?.passwordConfigured ? "Password (configured)" : "Password"}>
-                <Input
-                  type="password"
-                  placeholder={
-                    settings?.passwordConfigured ? "Leave blank to keep current" : "SMTP password"
-                  }
-                  value={form.smtpPassword ?? ""}
-                  onChange={(event) => setForm({ ...form, smtpPassword: event.target.value })}
-                />
-              </Field>
-              <Field label="From email">
-                <Input
-                  type="email"
-                  value={form.fromEmail}
-                  onChange={(event) => setForm({ ...form, fromEmail: event.target.value })}
-                />
-              </Field>
-              <Field label="From name">
-                <Input
-                  value={form.fromName}
-                  onChange={(event) => setForm({ ...form, fromName: event.target.value })}
-                />
-              </Field>
-              <Field label="Reply-to">
-                <Input
-                  type="email"
-                  value={form.replyTo}
-                  onChange={(event) => setForm({ ...form, replyTo: event.target.value })}
-                />
-              </Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <WorkspaceSwitchCard
-                checked={form.enabled}
-                fieldLabel="Tenant SMTP"
-                label={form.enabled ? "Enabled" : "Disabled"}
-                description="Use this tenant configuration first."
-                onCheckedChange={(enabled) => setForm({ ...form, enabled })}
-              />
-              <WorkspaceSwitchCard
-                checked={form.smtpSecure}
-                fieldLabel="Secure SMTP"
-                label={form.smtpSecure ? "TLS enabled" : "STARTTLS / plain"}
-                onCheckedChange={(smtpSecure) => setForm({ ...form, smtpSecure })}
-              />
-              <WorkspaceSwitchCard
-                checked={form.fallbackEnabled}
-                fieldLabel="Environment fallback"
-                label={form.fallbackEnabled ? "Fallback enabled" : "Fallback disabled"}
-                description="Use MAIL_* credentials when tenant delivery fails."
-                onCheckedChange={(fallbackEnabled) => setForm({ ...form, fallbackEnabled })}
-              />
-            </div>
-          </section>
-          <section className="grid gap-4 border-t pt-5">
-            <div>
-              <h3 className="font-semibold">Inbound Inbox</h3>
-              <p className="text-sm text-muted-foreground">
-                IMAP is recommended for synchronized history. POP3 settings remain available for
-                provider compatibility.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Protocol">
-                <Select
-                  value={form.inboundProtocol}
-                  onValueChange={(value) =>
-                    setForm({ ...form, inboundProtocol: value as "imap" | "pop3" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="imap">IMAP</SelectItem>
-                    <SelectItem value="pop3">POP3</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Inbound host">
-                <Input
-                  value={form.inboundHost}
-                  onChange={(event) => setForm({ ...form, inboundHost: event.target.value })}
-                />
-              </Field>
-              <Field label="Port">
-                <Input
-                  type="number"
-                  value={form.inboundPort}
-                  onChange={(event) =>
-                    setForm({ ...form, inboundPort: Number(event.target.value) })
-                  }
-                />
-              </Field>
-              <Field label="Username">
-                <Input
-                  value={form.inboundUsername}
-                  onChange={(event) => setForm({ ...form, inboundUsername: event.target.value })}
-                />
-              </Field>
-              <Field
-                label={settings?.inboundPasswordConfigured ? "Password (configured)" : "Password"}
-              >
-                <Input
-                  type="password"
-                  placeholder={
-                    settings?.inboundPasswordConfigured
-                      ? "Leave blank to keep current"
-                      : "Inbound password"
-                  }
-                  value={form.inboundPassword ?? ""}
-                  onChange={(event) => setForm({ ...form, inboundPassword: event.target.value })}
-                />
-              </Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <WorkspaceSwitchCard
-                checked={form.inboundEnabled}
-                fieldLabel="Inbox sync"
-                label={form.inboundEnabled ? "Enabled" : "Disabled"}
-                onCheckedChange={(inboundEnabled) => setForm({ ...form, inboundEnabled })}
-              />
-              <WorkspaceSwitchCard
-                checked={form.inboundSecure}
-                fieldLabel="Secure inbound"
-                label={form.inboundSecure ? "TLS enabled" : "Unencrypted"}
-                onCheckedChange={(inboundSecure) => setForm({ ...form, inboundSecure })}
-              />
-            </div>
-          </section>
-          <section className="grid gap-3 border-t pt-5">
-            <h3 className="font-semibold">Test delivery</h3>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                value={testRecipient}
-                onChange={(event) => setTestRecipient(event.target.value)}
-                placeholder="recipient@example.com"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || !testRecipient.trim()}
-                onClick={() => void onTest(testRecipient)}
-              >
-                Send test
-              </Button>
-            </div>
-          </section>
+          <WorkspaceAnimatedTabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            keepMounted
+            listClassName="sticky top-0 z-10 bg-background pt-3"
+            contentClassName="mt-5 pb-0"
+            tabs={
+              [
+                {
+                  value: "outbound",
+                  label: "Outbound",
+                  content: (
+                    <section className="grid gap-4">
+                      <div>
+                        <h3 className="font-semibold">Outbound provider</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Configure the selected company sender identity and delivery server.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Provider">
+                          <Select
+                            value={form.provider}
+                            onValueChange={(provider) =>
+                              setForm({ ...form, provider: provider as "hostinger-api" | "smtp" })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="smtp">SMTP</SelectItem>
+                              <SelectItem value="hostinger-api">Hostinger Mail API</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        {form.provider === "smtp" ? (
+                          <>
+                            <Field label="SMTP host">
+                              <Input
+                                value={form.smtpHost}
+                                onChange={(event) =>
+                                  setForm({ ...form, smtpHost: event.target.value })
+                                }
+                              />
+                            </Field>
+                            <Field label="Port">
+                              <Input
+                                type="number"
+                                value={form.smtpPort}
+                                onChange={(event) =>
+                                  setForm({ ...form, smtpPort: Number(event.target.value) })
+                                }
+                              />
+                            </Field>
+                            <Field label="Username">
+                              <Input
+                                value={form.smtpUsername}
+                                onChange={(event) =>
+                                  setForm({ ...form, smtpUsername: event.target.value })
+                                }
+                              />
+                            </Field>
+                            <Field
+                              label={
+                                settings?.passwordConfigured ? "Password (configured)" : "Password"
+                              }
+                            >
+                              <Input
+                                type="password"
+                                placeholder={
+                                  settings?.passwordConfigured
+                                    ? "Leave blank to keep current"
+                                    : "SMTP password"
+                                }
+                                value={form.smtpPassword ?? ""}
+                                onChange={(event) =>
+                                  setForm({ ...form, smtpPassword: event.target.value })
+                                }
+                              />
+                            </Field>
+                          </>
+                        ) : (
+                          <>
+                            <Field label="Mailbox resource ID">
+                              <Input
+                                value={form.hostingerMailboxId}
+                                onChange={(event) =>
+                                  setForm({ ...form, hostingerMailboxId: event.target.value })
+                                }
+                                placeholder="Hostinger mailbox resource ID"
+                              />
+                            </Field>
+                            <Field
+                              label={
+                                settings?.hostingerApiTokenConfigured
+                                  ? "API token (configured)"
+                                  : "API token"
+                              }
+                            >
+                              <Input
+                                type="password"
+                                value={form.hostingerApiToken ?? ""}
+                                onChange={(event) =>
+                                  setForm({ ...form, hostingerApiToken: event.target.value })
+                                }
+                                placeholder={
+                                  settings?.hostingerApiTokenConfigured
+                                    ? "Leave blank to keep current"
+                                    : "Hostinger Mail API bearer token"
+                                }
+                              />
+                            </Field>
+                          </>
+                        )}
+                        <Field label="From email">
+                          <Input
+                            type="email"
+                            value={form.fromEmail}
+                            onChange={(event) =>
+                              setForm({ ...form, fromEmail: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field label="From name">
+                          <Input
+                            value={form.fromName}
+                            onChange={(event) => setForm({ ...form, fromName: event.target.value })}
+                          />
+                        </Field>
+                        <Field label="Reply-to">
+                          <Input
+                            type="email"
+                            value={form.replyTo}
+                            onChange={(event) => setForm({ ...form, replyTo: event.target.value })}
+                          />
+                        </Field>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <WorkspaceSwitchCard
+                          checked={form.enabled}
+                          fieldLabel="Tenant delivery"
+                          label={form.enabled ? "Enabled" : "Disabled"}
+                          description={`Use ${form.provider === "hostinger-api" ? "Hostinger Mail API" : "SMTP"} first.`}
+                          onCheckedChange={(enabled) => setForm({ ...form, enabled })}
+                        />
+                        {form.provider === "smtp" ? (
+                          <WorkspaceSwitchCard
+                            checked={form.smtpSecure}
+                            fieldLabel="Secure SMTP"
+                            label={form.smtpSecure ? "TLS enabled" : "STARTTLS / plain"}
+                            onCheckedChange={(smtpSecure) => setForm({ ...form, smtpSecure })}
+                          />
+                        ) : null}
+                        <WorkspaceSwitchCard
+                          checked={form.fallbackEnabled}
+                          fieldLabel="Environment fallback"
+                          label={form.fallbackEnabled ? "Fallback enabled" : "Fallback disabled"}
+                          description="Use MAIL_* credentials when tenant delivery fails."
+                          onCheckedChange={(fallbackEnabled) =>
+                            setForm({ ...form, fallbackEnabled })
+                          }
+                        />
+                      </div>
+                    </section>
+                  )
+                },
+                {
+                  value: "inbound",
+                  label: "Inbound",
+                  content: (
+                    <section className="grid gap-4">
+                      <div>
+                        <h3 className="font-semibold">Inbound Inbox</h3>
+                        <p className="text-sm text-muted-foreground">
+                          IMAP is recommended for synchronized history. POP3 settings remain
+                          available for provider compatibility.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Protocol">
+                          <Select
+                            value={form.inboundProtocol}
+                            onValueChange={(value) =>
+                              setForm({ ...form, inboundProtocol: value as "imap" | "pop3" })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="imap">IMAP</SelectItem>
+                              <SelectItem value="pop3">POP3</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field label="Inbound host">
+                          <Input
+                            value={form.inboundHost}
+                            onChange={(event) =>
+                              setForm({ ...form, inboundHost: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field label="Port">
+                          <Input
+                            type="number"
+                            value={form.inboundPort}
+                            onChange={(event) =>
+                              setForm({ ...form, inboundPort: Number(event.target.value) })
+                            }
+                          />
+                        </Field>
+                        <Field label="Username">
+                          <Input
+                            value={form.inboundUsername}
+                            onChange={(event) =>
+                              setForm({ ...form, inboundUsername: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field
+                          label={
+                            settings?.inboundPasswordConfigured
+                              ? "Password (configured)"
+                              : "Password"
+                          }
+                        >
+                          <Input
+                            type="password"
+                            placeholder={
+                              settings?.inboundPasswordConfigured
+                                ? "Leave blank to keep current"
+                                : "Inbound password"
+                            }
+                            value={form.inboundPassword ?? ""}
+                            onChange={(event) =>
+                              setForm({ ...form, inboundPassword: event.target.value })
+                            }
+                          />
+                        </Field>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <WorkspaceSwitchCard
+                          checked={form.inboundEnabled}
+                          fieldLabel="Inbox sync"
+                          label={form.inboundEnabled ? "Enabled" : "Disabled"}
+                          onCheckedChange={(inboundEnabled) => setForm({ ...form, inboundEnabled })}
+                        />
+                        <WorkspaceSwitchCard
+                          checked={form.inboundSecure}
+                          fieldLabel="Secure inbound"
+                          label={form.inboundSecure ? "TLS enabled" : "Unencrypted"}
+                          onCheckedChange={(inboundSecure) => setForm({ ...form, inboundSecure })}
+                        />
+                      </div>
+                    </section>
+                  )
+                },
+                {
+                  value: "test",
+                  label: "Test delivery",
+                  content: (
+                    <section className="grid gap-3">
+                      <h3 className="font-semibold">Test delivery</h3>
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          value={testRecipient}
+                          onChange={(event) => setTestRecipient(event.target.value)}
+                          placeholder="recipient@example.com"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={busy || !testRecipient.trim()}
+                          onClick={() => void onTest(testRecipient)}
+                        >
+                          Send test
+                        </Button>
+                      </div>
+                    </section>
+                  )
+                }
+              ] satisfies WorkspaceAnimatedTab[]
+            }
+          />
         </div>
         <DialogFooter className="border-t px-6 py-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -278,6 +410,8 @@ function blankSettings(): MailSettingsPayload {
     fallbackEnabled: true,
     fromEmail: "",
     fromName: "",
+    hostingerApiToken: "",
+    hostingerMailboxId: "",
     inboundEnabled: false,
     inboundHost: "",
     inboundPassword: "",
@@ -285,6 +419,7 @@ function blankSettings(): MailSettingsPayload {
     inboundProtocol: "imap",
     inboundSecure: true,
     inboundUsername: "",
+    provider: "smtp",
     replyTo: "",
     smtpHost: "",
     smtpPassword: "",

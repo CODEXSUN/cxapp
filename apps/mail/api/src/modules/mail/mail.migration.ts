@@ -15,9 +15,9 @@ export const mailMigration = {
 
 export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
   batch: 1,
-  description: "Mail module-owned schema baseline through release 1.0.42.",
+  description: "Mail module-owned schema baseline through release 1.0.52.",
   scope: "mail",
-  version: "1.0.42",
+  version: "1.0.52",
   steps: [
     {
       checksum: `${mailMigration.key}:v1`,
@@ -51,6 +51,13 @@ export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
           "mail_events"
         ]),
       version: 2
+    },
+    {
+      checksum: "mail.hostinger-provider-v1",
+      description: "Add encrypted Hostinger Mail API provider settings.",
+      name: "mail.hostinger-provider-v1",
+      up: applyHostingerProviderSchema,
+      version: 3
     }
   ]
 };
@@ -74,6 +81,8 @@ async function applyMailSchema(database: Kysely<MailDatabase>) {
       uuid CHAR(8) NOT NULL UNIQUE,
       company_id INT NOT NULL DEFAULT 0,
       provider VARCHAR(24) NOT NULL DEFAULT 'smtp',
+      hostinger_mailbox_id VARCHAR(191) NOT NULL DEFAULT '',
+      hostinger_api_token_secret LONGTEXT NOT NULL DEFAULT '',
       smtp_host VARCHAR(191) NOT NULL DEFAULT '',
       smtp_port INT NOT NULL DEFAULT 587,
       smtp_secure TINYINT(1) NOT NULL DEFAULT 0,
@@ -177,6 +186,16 @@ async function applyMailSchema(database: Kysely<MailDatabase>) {
       CONSTRAINT mail_events_message_fk FOREIGN KEY (mail_message_id) REFERENCES mail_messages (id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `
+    )
+    .execute(database);
+}
+
+async function applyHostingerProviderSchema(database: Kysely<MailDatabase>) {
+  await sql
+    .raw(
+      `ALTER TABLE mail_settings
+        ADD COLUMN IF NOT EXISTS hostinger_mailbox_id VARCHAR(191) NOT NULL DEFAULT '' AFTER provider,
+        ADD COLUMN IF NOT EXISTS hostinger_api_token_secret LONGTEXT NOT NULL DEFAULT '' AFTER hostinger_mailbox_id`
     )
     .execute(database);
 }

@@ -211,6 +211,9 @@ function validate(values, validateDeployment) {
     for (const key of ["MAIL_SMTP_HOST", "MAIL_FROM_EMAIL"]) {
       if (isMissing(values.get(key))) problems.push(`${key} is required when MAIL_ENABLED=1`);
     }
+    if (values.get("MAIL_SMTP_PORT") === "465" && values.get("MAIL_SMTP_SECURE") !== "1") {
+      problems.push("MAIL_SMTP_SECURE must be 1 when MAIL_SMTP_PORT is 465");
+    }
   }
   if (problems.length) {
     fail(`Deployment environment validation failed:\n- ${problems.join("\n- ")}`);

@@ -2,8 +2,15 @@ import type { QueueJobRecord } from "./queue-manager.types.js";
 
 export const queueManagerWorker = {
   backends: ["database", "bullmq-redis"],
-  jobs: ["database-maintenance.run", "mail.send", "mail.sync", "mail.system-send", "queue.probe"],
-  queues: ["maintenance", "mail", "system"]
+  jobs: [
+    "client-artifact.prepare",
+    "database-maintenance.run",
+    "mail.send",
+    "mail.sync",
+    "mail.system-send",
+    "queue.probe"
+  ],
+  queues: ["maintenance", "mail", "reports", "system"]
 } as const;
 
 export function queueJobCanRunInline(job: QueueJobRecord) {

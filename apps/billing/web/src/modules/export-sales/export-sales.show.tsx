@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Download,
+  LoaderCircle,
   Mail,
   MessageCircle,
   Paperclip,
@@ -25,6 +26,13 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { cn } from "@cxapp/ui/lib/utils";
 import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
 import { getTenantUserLabel } from "../../shared/api/tenant-context";
+import {
+  buildAndQueueBillingDocumentPdf,
+  downloadBillingDocumentPdf,
+  openBillingDocumentWhatsApp,
+  requireBillingDocumentElement,
+  reserveBillingDocumentWhatsAppPage
+} from "../../shared/entry-tools";
 import { formatDate } from "./export-sales.services";
 import { ExportSalePrintDocument, type ExportSalePrintCopy } from "./export-sales.print";
 import type { ExportSale } from "./export-sales.types";
@@ -59,14 +67,15 @@ export function ExportSaleShowPage({
   onSuspend: () => void;
   exportSale: ExportSale;
 }) {
+  const documentTitle = "Export Sales Invoice";
   const activityUser = getTenantUserLabel();
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Array<{ body: string; createdAt: string; id: string }>>(
     []
   );
   const [openTool, setOpenTool] = useState<ExportSaleEntryToolId | null>(null);
-  const [emailAddress, setEmailAddress] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState(exportSale.customerEmail);
+  const [whatsappNumber, setWhatsappNumber] = useState(exportSale.customerPhone);
   const [assigneeInput, setAssigneeInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [assignees, setAssignees] = useState<string[]>([]);
@@ -76,6 +85,14 @@ export function ExportSaleShowPage({
     Array<{ id: string; message: string; createdAt: string }>
   >([]);
   const [printCopies, setPrintCopies] = useState<readonly ExportSalePrintCopy[]>(["original"]);
+  const [processingTool, setProcessingTool] = useState<"downloadPdf" | "email" | "whatsapp" | null>(
+    null
+  );
+
+  useEffect(() => {
+    setEmailAddress(exportSale.customerEmail);
+    setWhatsappNumber(exportSale.customerPhone);
+  }, [exportSale.customerEmail, exportSale.customerPhone, exportSale.id]);
 
   const entryTools: Array<{ icon: typeof Mail; id: ExportSaleEntryToolId; label: string }> = [
     { icon: Download, id: "downloadPdf", label: "Download PDF" },
@@ -113,6 +130,15 @@ export function ExportSaleShowPage({
       { createdAt: new Date().toISOString(), id: `${Date.now()}-${current.length}`, message },
       ...current
     ]);
+  }
+
+  async function buildQueuedPdf() {
+    return buildAndQueueBillingDocumentPdf({
+      documentElement: requireBillingDocumentElement(),
+      documentKind: "export-sales",
+      documentNumber: exportSale.invoiceNumber,
+      documentTitle
+    });
   }
 
   function addComment() {
@@ -302,7 +328,7 @@ export function ExportSaleShowPage({
                       </span>
                       <span>{item.message}</span>
                       <span className="text-muted-foreground">
-                        {` · ${formatDate(item.createdAt)} - by ${activityUser}`}
+                        {` @ ${formatDate(item.createdAt)} - by ${activityUser}`}
                       </span>
                     </div>
                   ))}
@@ -322,10 +348,28 @@ export function ExportSaleShowPage({
               {entryTools.map((tool) => (
                 <div key={tool.id} className="border-b border-border/70 last:border-b-0">
                   <button
-                    onClick={() => {
+                    disabled={processingTool !== null}
+                    onClick={async () => {
                       if (tool.id === "downloadPdf") {
-                        recordActivity(`Downloaded print preview for ${exportSale.invoiceNumber}`);
-                        toast.success("Print preview download queued");
+                        setProcessingTool("downloadPdf");
+                        try {
+                          const result = await buildQueuedPdf();
+                          downloadBillingDocumentPdf(result.attachment);
+                          recordActivity(
+                            `Downloaded PDF for ${exportSale.invoiceNumber} (queue #${result.job.jobId})`
+                          );
+                          toast.success("Export invoice PDF downloaded", {
+                            description: `Queue job #${result.job.jobId} was accepted for tracking.`
+                          });
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Export invoice PDF download failed."
+                          );
+                        } finally {
+                          setProcessingTool(null);
+                        }
                         return;
                       }
                       setOpenTool((current) => (current === tool.id ? null : tool.id));
@@ -333,14 +377,20 @@ export function ExportSaleShowPage({
                     type="button"
                     className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-muted/50"
                   >
-                    <tool.icon className="size-4" />
+                    {tool.id === "downloadPdf" && processingTool === "downloadPdf" ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <tool.icon className="size-4" />
+                    )}
                     <span className="flex-1">{tool.label}</span>
-                    <Plus
-                      className={cn(
-                        "size-4 transition-transform",
-                        openTool === tool.id ? "rotate-45" : ""
-                      )}
-                    />
+                    {tool.id !== "downloadPdf" ? (
+                      <Plus
+                        className={cn(
+                          "size-4 transition-transform",
+                          openTool === tool.id ? "rotate-45" : ""
+                        )}
+                      />
+                    ) : null}
                   </button>
                   {tool.id === "assign" && assignees.length ? (
                     <div className="px-3 pb-2">
@@ -370,21 +420,19 @@ export function ExportSaleShowPage({
                     <div className="px-3 pb-3">
                       {tool.id === "email" ? (
                         <InlineSend
+                          loading={processingTool === "email"}
                           value={emailAddress}
                           placeholder="Email address"
                           onChange={setEmailAddress}
                           onSend={async () => {
                             const value = emailAddress.trim();
                             if (!value) return;
-                            const documentElement =
-                              document.querySelector<HTMLElement>(".billing-mail-document");
-                            if (!documentElement)
-                              return toast.error("Export invoice preview is not ready.");
+                            setProcessingTool("email");
                             try {
                               await queueBillingDocumentEmail({
-                                documentElement,
+                                documentElement: requireBillingDocumentElement(),
                                 documentNumber: exportSale.invoiceNumber,
-                                documentTitle: "Export Sales Invoice",
+                                documentTitle,
                                 partyName: exportSale.customerName,
                                 recipient: value
                               });
@@ -397,6 +445,8 @@ export function ExportSaleShowPage({
                                   ? error.message
                                   : "Export invoice email failed."
                               );
+                            } finally {
+                              setProcessingTool(null);
                             }
                           }}
                         />
@@ -461,14 +511,43 @@ export function ExportSaleShowPage({
                       ) : null}
                       {tool.id === "whatsapp" ? (
                         <InlineSend
+                          loading={processingTool === "whatsapp"}
                           value={whatsappNumber}
                           placeholder="WhatsApp number"
                           onChange={setWhatsappNumber}
-                          onSend={() => {
+                          onSend={async () => {
                             const value = whatsappNumber.trim();
                             if (!value) return;
-                            recordActivity(`Sent WhatsApp message to ${value}`);
-                            setWhatsappNumber("");
+                            let page: Window | null = null;
+                            setProcessingTool("whatsapp");
+                            try {
+                              page = reserveBillingDocumentWhatsAppPage();
+                              const result = await buildQueuedPdf();
+                              downloadBillingDocumentPdf(result.attachment);
+                              const phone = openBillingDocumentWhatsApp(page, {
+                                documentNumber: exportSale.invoiceNumber,
+                                documentTitle,
+                                partyName: exportSale.customerName,
+                                phone: value
+                              });
+                              recordActivity(
+                                `Opened WhatsApp for ${phone} with PDF queue #${result.job.jobId}`
+                              );
+                              toast.success("PDF downloaded and WhatsApp opened", {
+                                description:
+                                  "Attach the downloaded PDF, review the message, and press Send."
+                              });
+                              setWhatsappNumber("");
+                            } catch (error) {
+                              page?.close();
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "WhatsApp document preparation failed."
+                              );
+                            } finally {
+                              setProcessingTool(null);
+                            }
                           }}
                         />
                       ) : null}
@@ -487,11 +566,13 @@ export function ExportSaleShowPage({
 export const ExportSalesShowPage = ExportSaleShowPage;
 
 function InlineSend({
+  loading = false,
   onChange,
   onSend,
   placeholder,
   value
 }: {
+  loading?: boolean;
   onChange: (value: string) => void;
   onSend: () => void;
   placeholder: string;
@@ -506,12 +587,12 @@ function InlineSend({
         className="h-9 rounded-md"
       />
       <Button
-        disabled={!value.trim()}
+        disabled={loading || !value.trim()}
         onClick={onSend}
         type="button"
         className="size-9 rounded-md p-0"
       >
-        <Send className="size-4" />
+        {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
       </Button>
     </div>
   );

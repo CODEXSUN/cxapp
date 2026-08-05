@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { AppError } from "@cxapp/framework/errors";
 import { ok } from "@cxapp/framework/http";
 import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { verifyAuthToken } from "../../auth/jwt.js";
@@ -8,8 +9,41 @@ import { registerContractRoute } from "@cxapp/framework/http";
 import { z } from "zod";
 
 const service = new QueueManagerService();
+const clientArtifactSchema = z
+  .object({
+    artifactType: z.literal("pdf"),
+    category: z.string().trim().min(1).max(80),
+    fileName: z.string().trim().min(1).max(255),
+    label: z.string().trim().min(1).max(255),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    sizeBytes: z
+      .number()
+      .int()
+      .positive()
+      .max(15 * 1024 * 1024)
+  })
+  .strict();
 
 export async function registerQueueManagerRoutes(app: FastifyInstance) {
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/tenant/queue/artifacts",
+    preHandler: requireTenantQueueUser,
+    schemas: {
+      body: clientArtifactSchema,
+      response: z
+        .object({
+          jobId: z.number().int().positive(),
+          jobUuid: z.string().min(1),
+          status: z.enum(["cancelled", "completed", "failed", "pending", "running"])
+        })
+        .strict()
+    },
+    handler: ({ body, request }) => {
+      const identity = tenantQueueIdentity(request);
+      return service.enqueueClientArtifact(body, identity, request.id);
+    }
+  });
   app.get("/admin/queue/settings", { preHandler: requireSuperAdmin }, async (request) =>
     ok(await service.runtimeSettings(), { requestId: request.id })
   );
@@ -86,6 +120,21 @@ export async function registerQueueManagerRoutes(app: FastifyInstance) {
   app.post("/admin/queue/cleanup", { preHandler: requireSuperAdmin }, async (request) =>
     ok(await service.cleanupRetainedJobs(), { requestId: request.id })
   );
+}
+
+async function requireTenantQueueUser(request: Parameters<typeof tenantQueueIdentity>[0]) {
+  tenantQueueIdentity(request);
+}
+
+function tenantQueueIdentity(request: import("fastify").FastifyRequest) {
+  const payload = request.authContext?.payload;
+  if (payload?.userType !== "tenant" || !payload.tenantId) {
+    throw AppError.forbidden("Tenant queue access requires an active tenant session.");
+  }
+  return {
+    actorEmail: payload.email || "tenant-user",
+    tenantId: payload.tenantId
+  };
 }
 
 function actorEmail(authorization: string | undefined) {

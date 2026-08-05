@@ -84,6 +84,10 @@ validate_deploy_env() {
   if [ "$(env_value MAIL_ENABLED)" = "1" ]; then
     require_env_value MAIL_SMTP_HOST
     require_env_value MAIL_FROM_EMAIL
+    if [ "$(env_value MAIL_SMTP_PORT)" = "465" ] && [ "$(env_value MAIL_SMTP_SECURE)" != "1" ]; then
+      echo "MAIL_SMTP_SECURE must be 1 when MAIL_SMTP_PORT is 465." >&2
+      exit 78
+    fi
   fi
 
   if [ "$(env_value CXAPP_SINGLE_TENANT)" = "1" ]; then

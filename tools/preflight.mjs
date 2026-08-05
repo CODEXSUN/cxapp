@@ -19,6 +19,8 @@ const apps = {
     args: [
       nodePackageBin("tsx", "dist/cli.mjs"),
       "watch",
+      "--include",
+      "../../../.env",
       "--exclude",
       "../../../dist/**/*",
       "src/server.ts"
@@ -61,7 +63,9 @@ const child = spawn(
     cwd: resolve(root, config.cwd),
     env: {
       ...process.env,
-      ...env,
+      // The API loads the root .env itself. Keeping those values out of the long-lived
+      // watcher lets a child restart read fresh integration credentials after .env changes.
+      ...(app === "platform-web" ? env : {}),
       ...(app === "platform-api"
         ? {
             CXAPP_DB_FRESH_SESSION_FILE: join(

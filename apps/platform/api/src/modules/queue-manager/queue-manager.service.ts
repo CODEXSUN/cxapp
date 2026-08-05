@@ -3,6 +3,8 @@ import { QueueManagerRepository } from "./queue-manager.repository.js";
 import { env } from "../../env.js";
 import { probeBullMq, publishBullMqJob } from "./queue-manager.bullmq.js";
 import type {
+  ClientArtifactQueueInput,
+  ClientArtifactQueueResult,
   QueueBackend,
   QueueJobFilters,
   QueueJobPayload
@@ -35,6 +37,25 @@ export class QueueManagerService {
       if (backend === "bullmq-redis") await publishBullMqJob(job);
     }
     return job;
+  }
+
+  async enqueueClientArtifact(
+    input: ClientArtifactQueueInput,
+    identity: { actorEmail: string; tenantId: string },
+    correlationId: string
+  ): Promise<ClientArtifactQueueResult> {
+    const job = await this.enqueue({
+      actorEmail: identity.actorEmail,
+      correlationId,
+      jobName: "client-artifact.prepare",
+      maxAttempts: 2,
+      payload: input,
+      queueName: "reports",
+      sourceModule: "platform.client-artifact",
+      tenantId: identity.tenantId
+    });
+    if (!job) throw new Error("The document export queue job was not created.");
+    return { jobId: job.id, jobUuid: job.uuid, status: job.status };
   }
 
   async runJob(id: number, options: { fromWorker?: boolean } = {}) {
@@ -153,6 +174,12 @@ export class QueueManagerService {
   private async dispatch(jobName: string, payload: Record<string, unknown>) {
     if (jobName === "queue.probe") {
       return { echo: payload, processedAt: new Date().toISOString() };
+    }
+    if (jobName === "client-artifact.prepare") {
+      return {
+        ...payload,
+        preparedAt: new Date().toISOString()
+      };
     }
     if (jobName === "database-maintenance.run") {
       const { processDatabaseMaintenanceJob } =

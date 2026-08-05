@@ -32,6 +32,8 @@ const settingsPayloadSchema = z
     fallbackEnabled: z.boolean(),
     fromEmail: z.union([z.literal(""), z.email()]),
     fromName: z.string().max(191),
+    hostingerApiToken: z.string().optional(),
+    hostingerMailboxId: z.string().max(191),
     inboundEnabled: z.boolean(),
     inboundHost: z.string().max(191),
     inboundPassword: z.string().optional(),
@@ -39,6 +41,7 @@ const settingsPayloadSchema = z
     inboundProtocol: z.enum(["imap", "pop3"]),
     inboundSecure: z.boolean(),
     inboundUsername: z.string().max(191),
+    provider: z.enum(["hostinger-api", "smtp"]),
     replyTo: z.union([z.literal(""), z.email()]),
     smtpHost: z.string().max(191),
     smtpPassword: z.string().optional(),
@@ -55,6 +58,8 @@ const settingsResponseSchema = z
     fallbackEnabled: z.boolean(),
     fromEmail: z.string(),
     fromName: z.string(),
+    hostingerApiTokenConfigured: z.boolean(),
+    hostingerMailboxId: z.string(),
     inboundEnabled: z.boolean(),
     inboundHost: z.string(),
     inboundPasswordConfigured: z.boolean(),
@@ -63,7 +68,7 @@ const settingsResponseSchema = z
     inboundSecure: z.boolean(),
     inboundUsername: z.string(),
     passwordConfigured: z.boolean(),
-    provider: z.literal("smtp"),
+    provider: z.enum(["hostinger-api", "smtp"]),
     replyTo: z.string(),
     smtpHost: z.string(),
     smtpPort: z.number(),
@@ -196,11 +201,15 @@ export function registerMailRoutes(app: FastifyInstance, dependencies: MailModul
   });
 }
 
-function listFilters(input: {
-  limit?: number | undefined;
-  mailbox?: MailListFilters["mailbox"] | undefined;
-  search?: string | undefined;
-} | undefined): MailListFilters {
+function listFilters(
+  input:
+    | {
+        limit?: number | undefined;
+        mailbox?: MailListFilters["mailbox"] | undefined;
+        search?: string | undefined;
+      }
+    | undefined
+): MailListFilters {
   return {
     ...(input?.limit !== undefined ? { limit: input.limit } : {}),
     ...(input?.mailbox !== undefined ? { mailbox: input.mailbox } : {}),

@@ -3,7 +3,7 @@ import { createServer } from "node:net";
 import test from "node:test";
 import { decryptMailSecret, encryptMailSecret } from "./mail.secrets.js";
 import { shouldImportInboundMessage } from "./mail.sync.js";
-import { processMailJob } from "./mail.worker.js";
+import { buildHostingerSendRequest, processMailJob } from "./mail.worker.js";
 import { openSystemMailPayload, sealSystemMailPayload } from "./mail.system-payload.js";
 
 test("tenant mail secrets round-trip without persisting plaintext", () => {
@@ -33,6 +33,32 @@ test("system mail queue payloads do not retain plaintext reset links", () => {
   assert.deepEqual(openSystemMailPayload(sealed, "system-mail-secret"), {
     bodyText: "https://codexsun.test/reset-password?token=raw-token"
   });
+});
+
+test("Hostinger Mail API payload preserves PDF attachments", () => {
+  const request = buildHostingerSendRequest(
+    {
+      bcc: [],
+      bodyHtml: "<p>Invoice attached.</p>",
+      bodyText: "Invoice attached.",
+      cc: [],
+      fromName: "CODEXSUN",
+      subject: "Tax Invoice SAL-0001",
+      to: ["customer@example.test"]
+    },
+    [
+      {
+        content_base64: "cGRm",
+        file_name: "Tax-Invoice-SAL-0001.pdf",
+        mime_type: "application/pdf"
+      }
+    ]
+  );
+
+  assert.equal(request.to[0], "customer@example.test");
+  assert.equal(request.attachments[0]?.filename, "Tax-Invoice-SAL-0001.pdf");
+  assert.equal(request.attachments[0]?.contentType, "application/pdf");
+  assert.equal(request.attachments[0]?.encoding, "base64");
 });
 
 test("system mail is delivered through the configured SMTP transport", async (context) => {

@@ -79,6 +79,13 @@ const envSchema = z
           });
         }
       }
+      if (value.MAIL_SMTP_PORT === 465 && value.MAIL_SMTP_SECURE !== "1") {
+        context.addIssue({
+          code: "custom",
+          message: "MAIL_SMTP_SECURE must be 1 when MAIL_SMTP_PORT is 465",
+          path: ["MAIL_SMTP_SECURE"]
+        });
+      }
     }
     if (value.ENABLE_DEFAULT_TENANT_SEED === "1") {
       for (const key of [

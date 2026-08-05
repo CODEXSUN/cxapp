@@ -59,3 +59,18 @@ export type QueueRuntimeSettings = {
   failed: number;
   completed: number;
 };
+
+export type ClientArtifactQueueInput = {
+  artifactType: "pdf";
+  category: string;
+  fileName: string;
+  label: string;
+  sha256: string;
+  sizeBytes: number;
+};
+
+export type ClientArtifactQueueResult = {
+  jobId: number;
+  jobUuid: string;
+  status: QueueJobStatus;
+};
