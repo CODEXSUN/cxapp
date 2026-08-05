@@ -26,18 +26,20 @@ export async function runBillingReportsE2e() {
         pageSize: 20,
         search: ""
       });
-      const gst = await new GstStatementService().get(databaseName, {
-        page: 1,
-        pageSize: 20
-      });
+      const gst = await new GstStatementService().get(databaseName, {});
       assertReport(customer.from, customer.to, customer.total, "Customer Statement");
       assertReport(supplier.from, supplier.to, supplier.total, "Supplier Statement");
       assertReport(stock.from, stock.to, stock.total, "Stock Statement");
-      assertReport(gst.from, gst.to, gst.total, "GST Statement");
+      assertReport(
+        gst.from,
+        gst.to,
+        gst.sales.documentCount + gst.purchases.documentCount,
+        "GST Statement"
+      );
       results.push({
         customerRows: customer.items.length,
         databaseName,
-        gstRows: gst.items.length,
+        gstRows: gst.sales.documents.length + gst.purchases.documents.length,
         stockRows: stock.items.length,
         supplierRows: supplier.items.length
       });
@@ -58,7 +60,9 @@ async function registeredTenantDatabases() {
     connectTimeout: 5_000
   });
   try {
-    const [rows] = await connection.query("SELECT db_name FROM tenants WHERE db_name IS NOT NULL AND status <> 'deleted' ORDER BY id");
+    const [rows] = await connection.query(
+      "SELECT db_name FROM tenants WHERE db_name IS NOT NULL AND status <> 'deleted' ORDER BY id"
+    );
     return (rows as Array<{ db_name: string }>).map((row) => row.db_name);
   } finally {
     await connection.end();

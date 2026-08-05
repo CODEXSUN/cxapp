@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.53
+Current version: 1.0.54
 
-Release tag: v-1.0.53
+Release tag: v-1.0.54
 
-Changelog label: v 1.0.53
+Changelog label: v 1.0.54
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,13 +20,31 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.54
+
+### [v 1.0.54] 2026-08-05 6:45 pm - GST statement tabs and separate printing
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.54.
+- Moved the monthly GST filing fields into a dedicated `Filed details` tab, keeping the Sales,
+  Purchase, HSN, and reconciliation reports together under the `GST statement` tab.
+- Added independent Sales and Purchase print actions that render only the selected document and HSN
+  report while retaining the combined GST Statement print option.
+
 ## v-1.0.53
 
 ### [v 1.0.53] 2026-08-05 6:10 pm - Mail settings and fallback reliability
 
 #### Database Changes
 
-- Database update: No (manual).
+- Database update: Yes (`billing.reports.gst-statement.filing-v1`).
+- Added company, financial-year, year, and month-scoped GST filing persistence for the opening GST
+  balance plus GSTR-1 and GSTR-3B ARN numbers and filed dates.
 
 #### App Codebase Changes
 
@@ -40,6 +58,12 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Confirmed the normal Mail queue fallback flow against Hostinger SMTP: the controlled delivery
   completed on its first attempt through the environment provider and persisted the returned
   provider message ID on the sent Mail record.
+- Reworked GST Statement into a monthly filing workspace with month/year controls, side-by-side
+  Sales/Outward and Purchase/Inward document registers, contact GSTIN, mixed tax-rate visibility,
+  invoice totals, and separate HSN/product summaries derived from confirmed Billing documents.
+- Added the GST reconciliation formula `opening balance + Sales GST - Purchase GST = balance`,
+  editable filed-return details, and a filing-oriented print layout containing both document and HSN
+  reports plus GSTR-1/GSTR-3B ARN status.
 
 ## v-1.0.52
 

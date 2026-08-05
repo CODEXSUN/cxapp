@@ -51,6 +51,10 @@ import {
   billingRuntimePersistenceMigration,
   migrateBillingRuntimePersistence
 } from "../modules/runtime-persistence/runtime-persistence.migration.js";
+import {
+  gstStatementFilingMigration,
+  migrateGstStatementFiling
+} from "../modules/reports/gst-statement/gst-statement.migration.js";
 
 export type BillingDatabase = {
   billing_domain_events: BillingDomainEventsTable;
@@ -189,6 +193,11 @@ const billingMigrationSteps = [
     description: billingRuntimePersistenceMigration.description,
     key: billingRuntimePersistenceMigration.key,
     migrate: migrateBillingRuntimePersistence
+  },
+  {
+    description: gstStatementFilingMigration.description,
+    key: gstStatementFilingMigration.key,
+    migrate: migrateGstStatementFiling
   }
 ] as const;
 
@@ -226,9 +235,9 @@ const billingTableNames = [
 
 export const billingMigrationBatch: MigrationBatch<BillingDatabase> = {
   batch: 1,
-  description: "Billing module-owned schema baseline through release 1.0.42.",
+  description: "Billing module-owned schema baseline through release 1.0.53.",
   scope: "billing",
-  version: "1.0.42",
+  version: "1.0.53",
   steps: [
     ...billingMigrationSteps.map(({ description, key, migrate }) => ({
       checksum: `${key}:v1`,

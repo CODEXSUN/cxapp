@@ -1,42 +1,81 @@
-export type GstStatementDirection = "inward" | "outward";
-
 export type GstStatementQuery = {
   companyId?: number | undefined;
-  from?: string | undefined;
-  page: number;
-  pageSize: number;
-  to?: string | undefined;
+  month?: number | undefined;
+  year?: number | undefined;
 };
 
-export type GstStatementLine = {
+export type GstStatementFilingPayload = {
+  gstr1Arn: string;
+  gstr1FiledOn: string | null;
+  gstr3bArn: string;
+  gstr3bFiledOn: string | null;
+  month: number;
+  openingBalance: number;
+  year: number;
+};
+
+export type GstStatementFiling = Omit<GstStatementFilingPayload, "month" | "year"> & {
+  updatedAt: string | null;
+};
+
+export type GstStatementDocumentType = "export-sale" | "purchase" | "sale";
+
+export type GstStatementDocument = {
   cgstAmount: number;
-  direction: GstStatementDirection;
-  documentCount: number;
+  contactName: string;
+  documentDate: string;
+  documentNumber: string;
+  documentType: GstStatementDocumentType;
+  gstin: string;
   igstAmount: number;
+  invoiceTotal: number;
+  serial: number;
+  sgstAmount: number;
+  taxableAmount: number;
+  taxRates: number[];
+};
+
+export type GstStatementHsnLine = {
+  cgstAmount: number;
+  hsnCode: string;
+  igstAmount: number;
+  productName: string;
+  sgstAmount: number;
+  taxableAmount: number;
+  totalQuantity: number;
+};
+
+export type GstStatementPanel = {
+  cgstAmount: number;
+  documentCount: number;
+  documents: GstStatementDocument[];
+  hsn: GstStatementHsnLine[];
+  igstAmount: number;
+  invoiceTotal: number;
   sgstAmount: number;
   taxAmount: number;
   taxableAmount: number;
-  taxRate: number;
 };
 
 export type GstStatementResult = {
-  cgstAmount: number;
+  availableYears: number[];
+  companyGstin: string;
   companyId: number;
   companyName: string;
+  filing: GstStatementFiling;
   financialYearId: number;
   financialYearName: string;
   from: string;
-  igstAmount: number;
-  inwardTaxAmount: number;
-  inwardTaxableAmount: number;
-  items: GstStatementLine[];
-  netTaxPayable: number;
-  outwardTaxAmount: number;
-  outwardTaxableAmount: number;
-  page: number;
-  pageSize: number;
-  sgstAmount: number;
-  taxAmount: number;
+  month: number;
+  monthLabel: string;
+  purchases: GstStatementPanel;
+  sales: GstStatementPanel;
+  summary: {
+    balance: number;
+    openingBalance: number;
+    purchaseTax: number;
+    salesTax: number;
+  };
   to: string;
-  total: number;
+  year: number;
 };

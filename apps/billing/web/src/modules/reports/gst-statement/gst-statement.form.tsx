@@ -1,24 +1,52 @@
-import { WorkspaceFormField } from "@cxapp/ui/workspace";
-import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
+import { WorkspaceFormField, WorkspaceSelect } from "@cxapp/ui/workspace";
+
+const monthOptions = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+].map((label, index) => ({ label, value: String(index + 1) }));
 
 export function GstStatementForm({
-  from,
-  onFromChange,
-  onToChange,
-  to
+  availableYears,
+  month,
+  onMonthChange,
+  onYearChange,
+  year
 }: {
-  from: string;
-  onFromChange: (value: string) => void;
-  onToChange: (value: string) => void;
-  to: string;
+  availableYears: number[];
+  month: number | undefined;
+  onMonthChange: (value: number) => void;
+  onYearChange: (value: number) => void;
+  year: number | undefined;
 }) {
   return (
     <div className="grid gap-4 rounded-md border border-border/70 bg-card p-4 shadow-sm md:grid-cols-2">
-      <WorkspaceFormField label="From date">
-        <WorkspaceDatePicker value={from} onValueChange={onFromChange} />
+      <WorkspaceFormField label="Month">
+        <WorkspaceSelect
+          ariaLabel="GST statement month"
+          onValueChange={(value) => onMonthChange(Number(value))}
+          options={monthOptions}
+          placeholder="Select month"
+          value={month ? String(month) : ""}
+        />
       </WorkspaceFormField>
-      <WorkspaceFormField label="To date">
-        <WorkspaceDatePicker value={to} onValueChange={onToChange} />
+      <WorkspaceFormField label="Year">
+        <WorkspaceSelect
+          ariaLabel="GST statement year"
+          onValueChange={(value) => onYearChange(Number(value))}
+          options={availableYears.map((value) => ({ label: String(value), value: String(value) }))}
+          placeholder="Select year"
+          value={year ? String(year) : ""}
+        />
       </WorkspaceFormField>
     </div>
   );

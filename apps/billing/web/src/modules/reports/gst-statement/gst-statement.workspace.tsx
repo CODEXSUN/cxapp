@@ -1,63 +1,104 @@
 import { useEffect, useState } from "react";
-import { Printer, RefreshCw } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Printer, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxapp/ui/components/button";
+import { Input } from "@cxapp/ui/components/input";
 import { cn } from "@cxapp/ui/lib/utils";
+import { WorkspaceFormField } from "@cxapp/ui/workspace";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@cxapp/ui/components/tabs";
+import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
-import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { GstStatementForm } from "./gst-statement.form";
 import { useGstStatement } from "./gst-statement.hooks";
 import { GstStatementList } from "./gst-statement.list";
-import { GstStatementPrint } from "./gst-statement.print";
-import { formatGstStatementMoney, getGstStatementForPrint } from "./gst-statement.services";
-import type { GstStatement } from "./gst-statement.types";
+import { GstStatementPrint, type GstStatementPrintScope } from "./gst-statement.print";
+import { gstStatementFilingSchema } from "./gst-statement.schema";
+import { formatGstStatementMoney, saveGstStatementFiling } from "./gst-statement.services";
+import type { GstStatement, GstStatementFilingPayload } from "./gst-statement.types";
+
+const blankFiling: GstStatementFilingPayload = {
+  gstr1Arn: "",
+  gstr1FiledOn: null,
+  gstr3bArn: "",
+  gstr3bFiledOn: null,
+  month: 1,
+  openingBalance: 0,
+  year: new Date().getFullYear()
+};
 
 export function GstStatementWorkspace() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const queryClient = useQueryClient();
+  const [month, setMonth] = useState<number>();
+  const [year, setYear] = useState<number>();
+  const [filing, setFiling] = useState<GstStatementFilingPayload>(blankFiling);
+  const [filingError, setFilingError] = useState("");
+  const [activeTab, setActiveTab] = useState("statement");
   const [printStatement, setPrintStatement] = useState<GstStatement>();
-  const [printing, setPrinting] = useState(false);
-  const query = useGstStatement({ from, page, pageSize, to });
+  const [printScope, setPrintScope] = useState<GstStatementPrintScope>("all");
+  const query = useGstStatement({ month, year });
   const statement = query.data;
 
   useEffect(() => {
     if (!statement) return;
-    if (!from) setFrom(statement.from);
-    if (!to) setTo(statement.to);
-  }, [from, statement, to]);
+    setMonth(statement.month);
+    setYear(statement.year);
+    setFiling({
+      gstr1Arn: statement.filing.gstr1Arn,
+      gstr1FiledOn: statement.filing.gstr1FiledOn,
+      gstr3bArn: statement.filing.gstr3bArn,
+      gstr3bFiledOn: statement.filing.gstr3bFiledOn,
+      month: statement.month,
+      openingBalance: statement.filing.openingBalance,
+      year: statement.year
+    });
+    setFilingError("");
+  }, [statement]);
 
-  const totalPages = Math.max(1, Math.ceil((statement?.total ?? 0) / pageSize));
-
-  async function handlePrint() {
-    setPrinting(true);
-    try {
-      const complete = await getGstStatementForPrint({
-        from: from || statement?.from || "",
-        to: to || statement?.to || ""
-      });
-      setPrintStatement(complete);
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "GST Statement could not be printed.");
-    } finally {
-      setPrinting(false);
+  const saveMutation = useMutation({
+    mutationFn: saveGstStatementFiling,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["billing", "reports", "gst-statement"] });
+      toast.success("GST filing details saved");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "GST filing details could not be saved.";
+      setFilingError(message);
+      toast.error(message);
     }
+  });
+
+  function saveFiling() {
+    const parsed = gstStatementFilingSchema.safeParse(filing);
+    if (!parsed.success) {
+      setFilingError(parsed.error.issues[0]?.message ?? "Check GST filing details.");
+      return;
+    }
+    setFilingError("");
+    saveMutation.mutate(parsed.data);
   }
+
+  function handlePrint(scope: GstStatementPrintScope = "all") {
+    if (!statement) return;
+    setPrintScope(scope);
+    setPrintStatement(statement);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+  }
+
+  const balance =
+    filing.openingBalance +
+    (statement?.sales.taxAmount ?? 0) -
+    (statement?.purchases.taxAmount ?? 0);
 
   return (
     <WorkspacePage
       className="billing-document-print-page"
       actions={
         <div className="flex gap-2 print:hidden">
-          <Button
-            disabled={!statement || printing}
-            onClick={() => void handlePrint()}
-            type="button"
-          >
+          <Button disabled={!statement} onClick={() => handlePrint("all")} type="button">
             <Printer className="size-4" />
-            {printing ? "Preparing..." : "Print"}
+            Print
           </Button>
           <Button
             disabled={query.isFetching}
@@ -70,23 +111,19 @@ export function GstStatementWorkspace() {
           </Button>
         </div>
       }
-      description="GST inward and outward taxable values grouped by transaction direction and tax rate."
+      description="Monthly GST sales, purchase, HSN, reconciliation, and filing details."
       technicalName="page.billing.reports.gst-statement"
       title="GST Statement"
     >
       <main className="space-y-4">
         <GstStatementForm
-          from={from || statement?.from || ""}
-          onFromChange={(value) => {
-            setFrom(value);
-            setPage(1);
-          }}
-          onToChange={(value) => {
-            setTo(value);
-            setPage(1);
-          }}
-          to={to || statement?.to || ""}
+          availableYears={statement?.availableYears ?? []}
+          month={month ?? statement?.month}
+          onMonthChange={setMonth}
+          onYearChange={setYear}
+          year={year ?? statement?.year}
         />
+
         {query.isError ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
             {query.error instanceof Error
@@ -94,56 +131,208 @@ export function GstStatementWorkspace() {
               : "GST Statement could not be loaded."}
           </div>
         ) : null}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <GstStatementTotal label="Outward taxable" value={statement?.outwardTaxableAmount ?? 0} />
-          <GstStatementTotal label="Inward taxable" value={statement?.inwardTaxableAmount ?? 0} />
-          <GstStatementTotal label="Outward GST" value={statement?.outwardTaxAmount ?? 0} />
-          <GstStatementTotal label="Input GST" value={statement?.inwardTaxAmount ?? 0} />
-          <GstStatementTotal label="Net GST payable" strong value={statement?.netTaxPayable ?? 0} />
-          <GstStatementTotal label="IGST" value={statement?.igstAmount ?? 0} />
+
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-card px-4 py-3">
+          <div>
+            <div className="font-semibold">{statement?.monthLabel ?? "Monthly GST return"}</div>
+            <div className="text-sm text-muted-foreground">
+              {statement?.companyName ?? "Selected company"}
+              {statement?.companyGstin ? ` · GSTIN ${statement.companyGstin}` : ""}
+              {statement ? ` · ${statement.financialYearName}` : ""}
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {statement ? `${formatDate(statement.from)} to ${formatDate(statement.to)}` : ""}
+          </div>
         </div>
-        <GstStatementList entries={statement?.items ?? []} loading={query.isLoading} />
-        <WorkspacePagination
-          onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
-          onPageChange={setPage}
-          onPreviousPage={() => setPage((current) => Math.max(1, current - 1))}
-          onRowsPerPageChange={(value) => {
-            setPageSize(value);
-            setPage(1);
-          }}
-          page={page}
-          rowsPerPage={pageSize}
-          rowsPerPageOptions={[10, 20, 50, 100, 200]}
-          showingLabel={`${statement?.items.length ?? 0} tax rows on this page`}
-          singularLabel="tax rows"
-          totalCount={statement?.total ?? 0}
-          totalPages={totalPages}
-        />
+
+        <Tabs className="w-full" onValueChange={setActiveTab} value={activeTab}>
+          <TabsList className="h-auto w-full justify-start rounded-none border-b border-border/90 bg-transparent p-0">
+            <TabsTrigger
+              className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              value="statement"
+            >
+              GST statement
+            </TabsTrigger>
+            <TabsTrigger
+              className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              value="filing"
+            >
+              Filed details
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent className="mt-4 space-y-4" value="statement">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+              <GstStatementList
+                loading={query.isLoading}
+                onPrint={() => handlePrint("sales")}
+                panel={statement?.sales}
+                side="sales"
+              />
+              <GstStatementList
+                loading={query.isLoading}
+                onPrint={() => handlePrint("purchase")}
+                panel={statement?.purchases}
+                side="purchase"
+              />
+            </div>
+
+            <section className="rounded-md border border-border/80 bg-card p-4 shadow-sm">
+              <header className="border-b border-border/70 pb-3">
+                <h2 className="font-semibold">GST reconciliation summary</h2>
+                <p className="text-sm text-muted-foreground">
+                  Opening balance + Sales GST − Purchase GST = Closing balance
+                </p>
+              </header>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <SummaryTotal label="Opening balance" prefix="" value={filing.openingBalance} />
+                <SummaryTotal
+                  label="Sales GST"
+                  prefix="+"
+                  value={statement?.sales.taxAmount ?? 0}
+                />
+                <SummaryTotal
+                  label="Purchase GST"
+                  prefix="−"
+                  value={statement?.purchases.taxAmount ?? 0}
+                />
+                <SummaryTotal label="Balance" prefix="=" strong value={balance} />
+              </div>
+            </section>
+          </TabsContent>
+
+          <TabsContent className="mt-4" value="filing">
+            <section className="rounded-md border border-border/80 bg-card p-4 shadow-sm">
+              <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border/70 pb-3">
+                <div>
+                  <h2 className="font-semibold">GST filed details</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Save the opening balance, ARN number, and filed date for this return period.
+                  </p>
+                </div>
+                {statement?.filing.updatedAt ? (
+                  <span className="text-xs text-muted-foreground">
+                    Last saved {new Date(statement.filing.updatedAt).toLocaleString("en-IN")}
+                  </span>
+                ) : null}
+              </header>
+              {filingError ? (
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {filingError}
+                </div>
+              ) : null}
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <WorkspaceFormField label="Opening GST balance">
+                  <Input
+                    className="h-11"
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      setFiling((current) => ({
+                        ...current,
+                        openingBalance: Number(event.target.value || 0)
+                      }))
+                    }
+                    type="number"
+                    value={filing.openingBalance}
+                  />
+                </WorkspaceFormField>
+                <WorkspaceFormField label="GSTR-1 ARN No">
+                  <Input
+                    className="h-11 uppercase"
+                    maxLength={80}
+                    onChange={(event) =>
+                      setFiling((current) => ({ ...current, gstr1Arn: event.target.value }))
+                    }
+                    placeholder="Enter GSTR-1 ARN"
+                    value={filing.gstr1Arn}
+                  />
+                </WorkspaceFormField>
+                <WorkspaceFormField label="GSTR-1 filed date">
+                  <WorkspaceDatePicker
+                    onValueChange={(value) =>
+                      setFiling((current) => ({ ...current, gstr1FiledOn: value || null }))
+                    }
+                    value={filing.gstr1FiledOn ?? ""}
+                  />
+                </WorkspaceFormField>
+                <WorkspaceFormField label="GSTR-3B ARN No">
+                  <Input
+                    className="h-11 uppercase"
+                    maxLength={80}
+                    onChange={(event) =>
+                      setFiling((current) => ({ ...current, gstr3bArn: event.target.value }))
+                    }
+                    placeholder="Enter GSTR-3B ARN"
+                    value={filing.gstr3bArn}
+                  />
+                </WorkspaceFormField>
+                <WorkspaceFormField label="GSTR-3B filed date">
+                  <WorkspaceDatePicker
+                    onValueChange={(value) =>
+                      setFiling((current) => ({ ...current, gstr3bFiledOn: value || null }))
+                    }
+                    value={filing.gstr3bFiledOn ?? ""}
+                  />
+                </WorkspaceFormField>
+              </div>
+              <div className="mt-4 flex justify-end border-t border-border/70 pt-4">
+                <Button
+                  disabled={!statement || saveMutation.isPending}
+                  onClick={saveFiling}
+                  type="button"
+                >
+                  <Save className="size-4" />
+                  {saveMutation.isPending ? "Saving..." : "Save filed details"}
+                </Button>
+              </div>
+            </section>
+          </TabsContent>
+        </Tabs>
+
         <section className="billing-print-area hidden print:block">
-          <div>{printStatement ? <GstStatementPrint statement={printStatement} /> : null}</div>
+          {printStatement ? (
+            <GstStatementPrint scope={printScope} statement={printStatement} />
+          ) : null}
         </section>
       </main>
     </WorkspacePage>
   );
 }
 
-function GstStatementTotal({
+function SummaryTotal({
   label,
+  prefix,
   strong,
   value
 }: {
   label: string;
+  prefix: string;
   strong?: boolean;
   value: number;
 }) {
   return (
-    <div className="rounded-md border border-border/70 bg-card px-4 py-3 shadow-sm">
+    <div
+      className={cn(
+        "rounded-md border px-4 py-3",
+        strong ? "border-primary/40 bg-primary/5" : "border-border/70 bg-muted/20"
+      )}
+    >
       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
       <div className={cn("mt-1 text-lg", strong ? "font-bold text-primary" : "font-semibold")}>
+        {prefix ? `${prefix} ` : ""}
         {formatGstStatementMoney(value)}
       </div>
     </div>
   );
+}
+
+function formatDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
 }

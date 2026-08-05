@@ -1,27 +1,21 @@
-import { billingApiGet } from "../../../shared/api/billing-api";
-import type { GstStatement, GstStatementFilters } from "./gst-statement.types";
+import { billingApiGet, billingApiPut } from "../../../shared/api/billing-api";
+import type {
+  GstStatement,
+  GstStatementFiling,
+  GstStatementFilingPayload,
+  GstStatementFilters
+} from "./gst-statement.types";
 
 export function getGstStatement(filters: GstStatementFilters) {
-  const query = new URLSearchParams({
-    page: String(filters.page),
-    pageSize: String(filters.pageSize)
-  });
-  if (filters.from) query.set("from", filters.from);
-  if (filters.to) query.set("to", filters.to);
-  return billingApiGet<GstStatement>(`/billing/reports/gst-statement?${query}`);
+  const query = new URLSearchParams();
+  if (filters.month) query.set("month", String(filters.month));
+  if (filters.year) query.set("year", String(filters.year));
+  const suffix = query.size ? `?${query}` : "";
+  return billingApiGet<GstStatement>(`/billing/reports/gst-statement${suffix}`);
 }
 
-export async function getGstStatementForPrint(
-  filters: Omit<GstStatementFilters, "page" | "pageSize">
-) {
-  const first = await getGstStatement({ ...filters, page: 1, pageSize: 200 });
-  const pageCount = Math.ceil(first.total / 200);
-  const items = [...first.items];
-  for (let page = 2; page <= pageCount; page += 1) {
-    const statement = await getGstStatement({ ...filters, page, pageSize: 200 });
-    items.push(...statement.items);
-  }
-  return { ...first, items, page: 1, pageSize: items.length };
+export function saveGstStatementFiling(payload: GstStatementFilingPayload) {
+  return billingApiPut<GstStatementFiling>("/billing/reports/gst-statement/filing", payload);
 }
 
 export function formatGstStatementMoney(value: number) {
@@ -31,4 +25,8 @@ export function formatGstStatementMoney(value: number) {
     minimumFractionDigits: 2,
     style: "currency"
   }).format(value);
+}
+
+export function formatGstQuantity(value: number) {
+  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 4 }).format(value);
 }

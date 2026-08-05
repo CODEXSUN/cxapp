@@ -1,9 +1,16 @@
 import { sql } from "kysely";
-import { getBillingDatabase } from "../../../database/billing-database.js";
 import { currentBillingScope } from "../../../auth/billing-scope.js";
-import type { GstStatementLine } from "./gst-statement.types.js";
+import { getBillingDatabase } from "../../../database/billing-database.js";
+import type {
+  GstStatementDocument,
+  GstStatementFiling,
+  GstStatementFilingPayload,
+  GstStatementHsnLine,
+  GstStatementPanel
+} from "./gst-statement.types.js";
 
 type ContextRow = {
+  company_gstin: string | null;
   company_id: number;
   company_name: string;
   financial_year_end: string;
@@ -12,15 +19,37 @@ type ContextRow = {
   financial_year_start: string;
 };
 
-type GstRow = {
+type DocumentRow = {
   cgst_amount: string | number;
-  direction: GstStatementLine["direction"];
-  document_count: number;
+  contact_name: string;
+  document_date: string;
+  document_number: string;
+  document_type: GstStatementDocument["documentType"];
+  gstin: string | null;
   igst_amount: string | number;
+  invoice_total: string | number;
   sgst_amount: string | number;
-  tax_amount: string | number;
   taxable_amount: string | number;
-  tax_rate: string | number;
+  tax_rates: string | null;
+};
+
+type HsnRow = {
+  cgst_amount: string | number;
+  hsn_code: string | null;
+  igst_amount: string | number;
+  product_name: string;
+  sgst_amount: string | number;
+  taxable_amount: string | number;
+  total_quantity: string | number;
+};
+
+type FilingRow = {
+  gstr1_arn: string;
+  gstr1_filed_on: string | null;
+  gstr3b_arn: string;
+  gstr3b_filed_on: string | null;
+  opening_balance: string | number;
+  updated_at: string | null;
 };
 
 export class GstStatementRepository {
@@ -28,8 +57,8 @@ export class GstStatementRepository {
     const database = await getBillingDatabase(databaseName);
     const scope = currentBillingScope();
     const result = await sql<ContextRow>`
-      SELECT company.id AS company_id, company.name AS company_name, financial_year.id AS financial_year_id,
-             financial_year.name AS financial_year_name,
+      SELECT company.id AS company_id, company.name AS company_name, company.gstin AS company_gstin,
+             financial_year.id AS financial_year_id, financial_year.name AS financial_year_name,
              DATE_FORMAT(financial_year.start_date, '%Y-%m-%d') AS financial_year_start,
              DATE_FORMAT(financial_year.end_date, '%Y-%m-%d') AS financial_year_end
       FROM core_companies company CROSS JOIN core_financial_years financial_year
@@ -41,118 +70,265 @@ export class GstStatementRepository {
     return result.rows[0] ?? null;
   }
 
-  async lines(
+  async panel(
     databaseName: string,
+    direction: "purchase" | "sales",
     companyId: number,
     from: string,
-    to: string,
-    page: number,
-    pageSize: number
-  ): Promise<GstStatementLine[]> {
+    to: string
+  ): Promise<GstStatementPanel> {
     const database = await getBillingDatabase(databaseName);
-    const offset = (page - 1) * pageSize;
-    const result = await sql<GstRow>`
-      ${gstRows(companyId, from, to)}
-      ORDER BY direction DESC, tax_rate
-      LIMIT ${pageSize} OFFSET ${offset}
-    `.execute(database);
-    return result.rows.map(toGstLine);
+    const documentResult = await (direction === "sales"
+      ? salesDocuments(companyId, from, to).execute(database)
+      : purchaseDocuments(companyId, from, to).execute(database));
+    const hsnResult = await (direction === "sales"
+      ? salesHsn(companyId, from, to).execute(database)
+      : purchaseHsn(companyId, from, to).execute(database));
+    const documents = (documentResult.rows as DocumentRow[]).map((row, index) =>
+      toDocument(row, index)
+    );
+    const hsn = (hsnResult.rows as HsnRow[]).map(toHsnLine);
+    return panelSummary(documents, hsn);
   }
 
-  async summary(databaseName: string, companyId: number, from: string, to: string) {
+  async filing(
+    databaseName: string,
+    companyId: number,
+    financialYearId: number,
+    year: number,
+    month: number
+  ): Promise<GstStatementFiling> {
     const database = await getBillingDatabase(databaseName);
-    const result = await sql<{
-      cgst_amount: string | number;
-      igst_amount: string | number;
-      inward_tax_amount: string | number;
-      inward_taxable_amount: string | number;
-      outward_tax_amount: string | number;
-      outward_taxable_amount: string | number;
-      sgst_amount: string | number;
-      tax_amount: string | number;
-      total: number;
-    }>`
-      SELECT COUNT(*) AS total,
-             COALESCE(SUM(CASE WHEN gst_values.direction='inward' THEN gst_values.taxable_amount ELSE 0 END),0)
-               AS inward_taxable_amount,
-             COALESCE(SUM(CASE WHEN gst_values.direction='outward' THEN gst_values.taxable_amount ELSE 0 END),0)
-               AS outward_taxable_amount,
-             COALESCE(SUM(CASE WHEN gst_values.direction='inward' THEN gst_values.tax_amount ELSE 0 END),0)
-               AS inward_tax_amount,
-             COALESCE(SUM(CASE WHEN gst_values.direction='outward' THEN gst_values.tax_amount ELSE 0 END),0)
-               AS outward_tax_amount,
-             COALESCE(SUM(gst_values.cgst_amount),0) AS cgst_amount,
-             COALESCE(SUM(gst_values.sgst_amount),0) AS sgst_amount,
-             COALESCE(SUM(gst_values.igst_amount),0) AS igst_amount,
-             COALESCE(SUM(gst_values.tax_amount),0) AS tax_amount
-      FROM (${gstRows(companyId, from, to)}) gst_values
+    const result = await sql<FilingRow>`
+      SELECT opening_balance, gstr1_arn, DATE_FORMAT(gstr1_filed_on, '%Y-%m-%d') AS gstr1_filed_on,
+             gstr3b_arn, DATE_FORMAT(gstr3b_filed_on, '%Y-%m-%d') AS gstr3b_filed_on,
+             DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%s.000Z') AS updated_at
+      FROM billing_gst_filings
+      WHERE company_id=${companyId} AND financial_year_id=${financialYearId}
+        AND filing_year=${year} AND filing_month=${month} AND status='active'
+      LIMIT 1
     `.execute(database);
-    const row = result.rows[0];
-    return {
-      cgstAmount: money(row?.cgst_amount),
-      igstAmount: money(row?.igst_amount),
-      inwardTaxAmount: money(row?.inward_tax_amount),
-      inwardTaxableAmount: money(row?.inward_taxable_amount),
-      netTaxPayable: money(row?.outward_tax_amount) - money(row?.inward_tax_amount),
-      outwardTaxAmount: money(row?.outward_tax_amount),
-      outwardTaxableAmount: money(row?.outward_taxable_amount),
-      sgstAmount: money(row?.sgst_amount),
-      taxAmount: money(row?.tax_amount),
-      total: Number(row?.total ?? 0)
-    };
+    return toFiling(result.rows[0]);
+  }
+
+  async saveFiling(
+    databaseName: string,
+    companyId: number,
+    financialYearId: number,
+    input: GstStatementFilingPayload
+  ) {
+    const database = await getBillingDatabase(databaseName);
+    await sql`
+      INSERT INTO billing_gst_filings
+        (company_id, financial_year_id, filing_year, filing_month, opening_balance,
+         gstr1_arn, gstr1_filed_on, gstr3b_arn, gstr3b_filed_on, updated_by)
+      VALUES
+        (${companyId}, ${financialYearId}, ${input.year}, ${input.month}, ${input.openingBalance},
+         ${input.gstr1Arn}, ${input.gstr1FiledOn}, ${input.gstr3bArn}, ${input.gstr3bFiledOn},
+         'tenant:gst-statement')
+      ON DUPLICATE KEY UPDATE
+        opening_balance=VALUES(opening_balance), gstr1_arn=VALUES(gstr1_arn),
+        gstr1_filed_on=VALUES(gstr1_filed_on), gstr3b_arn=VALUES(gstr3b_arn),
+        gstr3b_filed_on=VALUES(gstr3b_filed_on), updated_by=VALUES(updated_by),
+        status='active', updated_at=CURRENT_TIMESTAMP(3)
+    `.execute(database);
+    return this.filing(databaseName, companyId, financialYearId, input.year, input.month);
   }
 }
 
-function gstRows(companyId: number, from: string, to: string) {
+function salesDocuments(companyId: number, from: string, to: string) {
   const { financialYearId } = currentBillingScope();
-  return sql`
-    SELECT movement.direction, movement.tax_rate,
-           COUNT(DISTINCT CONCAT(movement.source, ':', movement.document_id)) AS document_count,
+  return sql<DocumentRow>`
+    SELECT movement.document_type, movement.document_number, movement.document_date,
+           movement.gstin, movement.contact_name, movement.invoice_total,
            SUM(movement.taxable_amount) AS taxable_amount,
            SUM(movement.cgst_amount) AS cgst_amount,
            SUM(movement.sgst_amount) AS sgst_amount,
            SUM(movement.igst_amount) AS igst_amount,
-           SUM(movement.tax_amount) AS tax_amount
+           GROUP_CONCAT(DISTINCT movement.tax_rate ORDER BY movement.tax_rate SEPARATOR ',') AS tax_rates
     FROM (
-      SELECT 'outward' AS direction, 'sale' AS source, sale.id AS document_id,
-             item.tax_rate, item.taxable_amount, item.cgst_amount, item.sgst_amount,
-             item.igst_amount, item.tax_amount
-      FROM billing_sales_items item
-      INNER JOIN billing_sales sale ON sale.id=item.sales_id
-      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId} AND sale.status='confirmed' AND sale.deleted_at IS NULL
+      SELECT 'sale' AS document_type, sale.id AS document_id, sale.invoice_number AS document_number,
+             DATE_FORMAT(sale.issued_on, '%Y-%m-%d') AS document_date,
+             contact.gstin, contact.name AS contact_name, sale.amount AS invoice_total,
+             item.tax_rate, item.taxable_amount, item.cgst_amount, item.sgst_amount, item.igst_amount
+      FROM billing_sales sale
+      INNER JOIN billing_sales_items item ON item.sales_id=sale.id
+      INNER JOIN core_contacts contact ON contact.id=sale.customer_id
+      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
+        AND sale.status='confirmed' AND sale.deleted_at IS NULL
         AND sale.issued_on BETWEEN ${from} AND ${to}
       UNION ALL
-      SELECT 'outward', 'export-sale', sale.id, item.tax_rate, item.taxable_amount,
-             item.cgst_amount, item.sgst_amount, item.igst_amount, item.tax_amount
-      FROM billing_export_sales_items item
-      INNER JOIN billing_export_sales sale ON sale.id=item.export_sale_id
-      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId} AND sale.status='confirmed' AND sale.deleted_at IS NULL
+      SELECT 'export-sale', sale.id, sale.invoice_number,
+             DATE_FORMAT(sale.issued_on, '%Y-%m-%d'), contact.gstin, contact.name,
+             sale.amount, item.tax_rate, item.taxable_amount, item.cgst_amount,
+             item.sgst_amount, item.igst_amount
+      FROM billing_export_sales sale
+      INNER JOIN billing_export_sales_items item ON item.export_sale_id=sale.id
+      INNER JOIN core_contacts contact ON contact.id=sale.customer_id
+      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
+        AND sale.status='confirmed' AND sale.deleted_at IS NULL
         AND sale.issued_on BETWEEN ${from} AND ${to}
-      UNION ALL
-      SELECT 'inward', 'purchase', purchase.id, item.tax_rate, item.taxable_amount,
-             item.cgst_amount, item.sgst_amount, item.igst_amount, item.tax_amount
-      FROM billing_purchase_items item
-      INNER JOIN billing_purchases purchase ON purchase.id=item.purchase_id
-      WHERE purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId} AND purchase.status='confirmed'
-        AND purchase.deleted_at IS NULL AND purchase.purchase_date BETWEEN ${from} AND ${to}
     ) movement
-    GROUP BY movement.direction, movement.tax_rate
+    GROUP BY movement.document_type, movement.document_id, movement.document_number,
+             movement.document_date, movement.gstin, movement.contact_name, movement.invoice_total
+    ORDER BY movement.document_date, movement.document_number
   `;
 }
 
-function toGstLine(row: GstRow): GstStatementLine {
+function purchaseDocuments(companyId: number, from: string, to: string) {
+  const { financialYearId } = currentBillingScope();
+  return sql<DocumentRow>`
+    SELECT 'purchase' AS document_type, purchase.purchase_number AS document_number,
+           DATE_FORMAT(purchase.purchase_date, '%Y-%m-%d') AS document_date,
+           contact.gstin, contact.name AS contact_name, purchase.amount AS invoice_total,
+           SUM(item.taxable_amount) AS taxable_amount, SUM(item.cgst_amount) AS cgst_amount,
+           SUM(item.sgst_amount) AS sgst_amount, SUM(item.igst_amount) AS igst_amount,
+           GROUP_CONCAT(DISTINCT item.tax_rate ORDER BY item.tax_rate SEPARATOR ',') AS tax_rates
+    FROM billing_purchases purchase
+    INNER JOIN billing_purchase_items item ON item.purchase_id=purchase.id
+    INNER JOIN core_contacts contact ON contact.id=purchase.supplier_id
+    WHERE purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId}
+      AND purchase.status='confirmed' AND purchase.deleted_at IS NULL
+      AND purchase.purchase_date BETWEEN ${from} AND ${to}
+    GROUP BY purchase.id, purchase.purchase_number, purchase.purchase_date,
+             contact.gstin, contact.name, purchase.amount
+    ORDER BY purchase.purchase_date, purchase.purchase_number
+  `;
+}
+
+function salesHsn(companyId: number, from: string, to: string) {
+  const { financialYearId } = currentBillingScope();
+  return sql<HsnRow>`
+    SELECT movement.hsn_code, movement.product_name,
+           SUM(movement.quantity) AS total_quantity,
+           SUM(movement.taxable_amount) AS taxable_amount,
+           SUM(movement.cgst_amount) AS cgst_amount,
+           SUM(movement.sgst_amount) AS sgst_amount,
+           SUM(movement.igst_amount) AS igst_amount
+    FROM (
+      SELECT COALESCE(hsn.code,'') AS hsn_code,
+             COALESCE(product.name, NULLIF(TRIM(item.description),''), 'Unmapped product') AS product_name,
+             item.quantity, item.taxable_amount, item.cgst_amount, item.sgst_amount, item.igst_amount
+      FROM billing_sales sale
+      INNER JOIN billing_sales_items item ON item.sales_id=sale.id
+      LEFT JOIN core_products product ON product.id=item.product_id
+      LEFT JOIN core_hsn_codes hsn ON hsn.id=item.hsn_code_id
+      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
+        AND sale.status='confirmed' AND sale.deleted_at IS NULL
+        AND sale.issued_on BETWEEN ${from} AND ${to}
+      UNION ALL
+      SELECT COALESCE(hsn.code,''),
+             COALESCE(product.name, NULLIF(TRIM(item.description),''), 'Unmapped product'),
+             item.quantity, item.taxable_amount, item.cgst_amount, item.sgst_amount, item.igst_amount
+      FROM billing_export_sales sale
+      INNER JOIN billing_export_sales_items item ON item.export_sale_id=sale.id
+      LEFT JOIN core_products product ON product.id=item.product_id
+      LEFT JOIN core_hsn_codes hsn ON hsn.id=item.hsn_code_id
+      WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
+        AND sale.status='confirmed' AND sale.deleted_at IS NULL
+        AND sale.issued_on BETWEEN ${from} AND ${to}
+    ) movement
+    GROUP BY movement.hsn_code, movement.product_name
+    ORDER BY movement.hsn_code, movement.product_name
+  `;
+}
+
+function purchaseHsn(companyId: number, from: string, to: string) {
+  const { financialYearId } = currentBillingScope();
+  return sql<HsnRow>`
+    SELECT COALESCE(hsn.code,'') AS hsn_code,
+           COALESCE(product.name, NULLIF(TRIM(item.description),''), 'Unmapped product') AS product_name,
+           SUM(item.quantity) AS total_quantity,
+           SUM(item.taxable_amount) AS taxable_amount,
+           SUM(item.cgst_amount) AS cgst_amount,
+           SUM(item.sgst_amount) AS sgst_amount,
+           SUM(item.igst_amount) AS igst_amount
+    FROM billing_purchases purchase
+    INNER JOIN billing_purchase_items item ON item.purchase_id=purchase.id
+    LEFT JOIN core_products product ON product.id=item.product_id
+    LEFT JOIN core_hsn_codes hsn ON hsn.id=item.hsn_code_id
+    WHERE purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId}
+      AND purchase.status='confirmed' AND purchase.deleted_at IS NULL
+      AND purchase.purchase_date BETWEEN ${from} AND ${to}
+    GROUP BY hsn_code, product_name
+    ORDER BY hsn.code, product.name
+  `;
+}
+
+function toDocument(row: DocumentRow, index: number): GstStatementDocument {
   return {
     cgstAmount: money(row.cgst_amount),
-    direction: row.direction,
-    documentCount: Number(row.document_count),
+    contactName: row.contact_name,
+    documentDate: row.document_date,
+    documentNumber: row.document_number,
+    documentType: row.document_type,
+    gstin: row.gstin ?? "",
     igstAmount: money(row.igst_amount),
+    invoiceTotal: money(row.invoice_total),
+    serial: index + 1,
     sgstAmount: money(row.sgst_amount),
-    taxAmount: money(row.tax_amount),
     taxableAmount: money(row.taxable_amount),
-    taxRate: Math.round(Number(row.tax_rate ?? 0) * 10_000) / 10_000
+    taxRates: String(row.tax_rates ?? "")
+      .split(",")
+      .map(Number)
+      .filter(Number.isFinite)
+  };
+}
+
+function toHsnLine(row: HsnRow): GstStatementHsnLine {
+  return {
+    cgstAmount: money(row.cgst_amount),
+    hsnCode: row.hsn_code || "Unmapped",
+    igstAmount: money(row.igst_amount),
+    productName: row.product_name,
+    sgstAmount: money(row.sgst_amount),
+    taxableAmount: money(row.taxable_amount),
+    totalQuantity: quantity(row.total_quantity)
+  };
+}
+
+function panelSummary(
+  documents: GstStatementDocument[],
+  hsn: GstStatementHsnLine[]
+): GstStatementPanel {
+  const totals = documents.reduce(
+    (total, row) => ({
+      cgstAmount: total.cgstAmount + row.cgstAmount,
+      igstAmount: total.igstAmount + row.igstAmount,
+      invoiceTotal: total.invoiceTotal + row.invoiceTotal,
+      sgstAmount: total.sgstAmount + row.sgstAmount,
+      taxableAmount: total.taxableAmount + row.taxableAmount
+    }),
+    { cgstAmount: 0, igstAmount: 0, invoiceTotal: 0, sgstAmount: 0, taxableAmount: 0 }
+  );
+  return {
+    cgstAmount: money(totals.cgstAmount),
+    documentCount: documents.length,
+    documents,
+    hsn,
+    igstAmount: money(totals.igstAmount),
+    invoiceTotal: money(totals.invoiceTotal),
+    sgstAmount: money(totals.sgstAmount),
+    taxAmount: money(totals.cgstAmount + totals.sgstAmount + totals.igstAmount),
+    taxableAmount: money(totals.taxableAmount)
+  };
+}
+
+function toFiling(row: FilingRow | undefined): GstStatementFiling {
+  return {
+    gstr1Arn: row?.gstr1_arn ?? "",
+    gstr1FiledOn: row?.gstr1_filed_on ?? null,
+    gstr3bArn: row?.gstr3b_arn ?? "",
+    gstr3bFiledOn: row?.gstr3b_filed_on ?? null,
+    openingBalance: money(row?.opening_balance),
+    updatedAt: row?.updated_at ?? null
   };
 }
 
 function money(value: string | number | null | undefined) {
   return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+function quantity(value: string | number | null | undefined) {
+  return Math.round(Number(value ?? 0) * 10_000) / 10_000;
 }
