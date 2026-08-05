@@ -25,6 +25,7 @@ export type PurchaseHeaderRow = {
   purchase_einvoice_json: string | null;
   purchase_eway_json: string | null;
   supplier_email: string | null;
+  supplier_gstin: string | null;
   supplier_id: number;
   supplier_name: string;
   supplier_phone: string | null;
@@ -120,6 +121,7 @@ export function selectPurchaseHeaders(
            s.financial_year_id, financial_year.name AS financial_year_name,
            s.line_number, s.purchase_number, s.supplier_id, supplier.name AS supplier_name,
            supplier.primary_email AS supplier_email, supplier.primary_phone AS supplier_phone,
+           supplier.gstin AS supplier_gstin,
            DATE_FORMAT(s.supplier_bill_date, '%Y-%m-%d') AS supplier_bill_date,
            s.supplier_bill_number,
            s.billing_address_id, billing.address_line1 AS billing_address_line1,

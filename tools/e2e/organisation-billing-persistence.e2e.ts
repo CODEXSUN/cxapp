@@ -116,6 +116,7 @@ try {
     timings
   );
   assert.equal(quotation.customerId, references.customerId);
+  assert.equal(quotation.customerGstin, "33ABCDE1234F1Z5");
   assert.equal(quotation.items.length, 1);
 
   if (!salesComplianceOnly) {
@@ -285,6 +286,7 @@ try {
   };
   const sale = await requestData(api, "POST", "/billing/sales", databaseName, salePayload, timings);
   assert.equal(sale.customerId, references.customerId);
+  assert.equal(sale.customerGstin, "33ABCDE1234F1Z5");
   assert.equal(sale.items.length, 1);
   assert.equal(sale.items[0]?.description, "");
 
@@ -725,6 +727,7 @@ try {
     timings
   );
   assert.equal(purchase.supplierId, references.customerId);
+  assert.equal(purchase.supplierGstin, "33ABCDE1234F1Z5");
   assert.equal(purchase.items[0]?.description, "");
   assert.equal(
     (
@@ -1283,6 +1286,10 @@ async function assertMinimalDrafts(
     assert.ok(Number(draft.ledgerId) > 0);
     assert.ok(Number(draft.workOrderId) > 0);
   }
+  assert.equal(drafts[0]?.customerGstin, "33ABCDE1234F1Z5");
+  assert.equal(drafts[1]?.customerGstin, "33ABCDE1234F1Z5");
+  assert.equal(drafts[2]?.supplierGstin, "33ABCDE1234F1Z5");
+  assert.equal(drafts[3]?.customerGstin, "33ABCDE1234F1Z5");
   await expectApiError(
     app,
     "POST",
@@ -1579,8 +1586,8 @@ function assertEnvelopeMeta(body: Envelope, rawBody: string) {
 
 async function createDummyCoreEntries(connection: typeof admin) {
   await connection.query(`
-    INSERT INTO core_contacts (uuid,code,name,type_id,type_name,status)
-    SELECT 'c0de0001','C-E2E','Dummy persisted customer',id,name,'active'
+    INSERT INTO core_contacts (uuid,code,name,type_id,type_name,gstin,status)
+    SELECT 'c0de0001','C-E2E','Dummy persisted customer',id,name,'33ABCDE1234F1Z5','active'
     FROM core_contact_types WHERE status='active' ORDER BY name<>'-',id LIMIT 1
   `);
   await connection.query(`

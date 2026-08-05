@@ -3,6 +3,7 @@ import { DialogFooter, DialogHeader, DialogTitle } from "@cxapp/ui/components/di
 import { WorkspaceFormBanner } from "@cxapp/ui/workspace/upsert";
 import { Save, X } from "lucide-react";
 import { useState } from "react";
+import { productLookupDisplayLabel } from "../../shared/product-lookup-label";
 import { ContactQuickField } from "./purchase.form-section-1";
 import { numericId } from "./purchase.form-section-4";
 import {
@@ -287,6 +288,7 @@ export function purchaseProductOption(record: PurchaseLookupRecord): PurchaseLoo
   const label = record.name || record.code || record.id;
   return {
     description: [record.hsnCode, record.unitName].filter(Boolean).join(" | "),
+    displayLabel: productLookupDisplayLabel(record),
     label,
     meta: record.code || "",
     record,

@@ -67,6 +67,7 @@ export type Purchase = {
   einvoice: PurchaseEinvoiceDetails;
   eway: PurchaseEwayDetails;
   supplierEmail: string;
+  supplierGstin: string;
   supplierId: number;
   supplierName: string;
   supplierPhone: string;

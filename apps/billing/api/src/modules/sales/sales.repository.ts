@@ -571,6 +571,7 @@ export class SalesRepository {
       currencyCode: row.currency_code,
       currencyId: row.currency_id,
       customerEmail: row.customer_email ?? "",
+      customerGstin: row.customer_gstin ?? "",
       customerId: row.customer_id,
       customerName: row.customer_name,
       customerPhone: row.customer_phone ?? "",

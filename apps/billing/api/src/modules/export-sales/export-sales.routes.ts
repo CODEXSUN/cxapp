@@ -109,6 +109,7 @@ const exportSaleSchema = z.object({
   currencyCode: z.string(),
   currencyId: z.number().int().positive(),
   customerEmail: z.string(),
+  customerGstin: z.string(),
   customerId: z.number().int().positive(),
   customerName: z.string(),
   customerPhone: z.string(),

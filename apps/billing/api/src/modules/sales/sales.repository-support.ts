@@ -34,6 +34,7 @@ export type SaleHeaderRow = {
   currency_code: string;
   currency_id: number;
   customer_email: string | null;
+  customer_gstin: string | null;
   customer_id: number;
   customer_name: string;
   customer_phone: string | null;
@@ -117,6 +118,7 @@ export function selectSaleHeaders(uuid?: string) {
            s.financial_year_id, financial_year.name AS financial_year_name,
            s.line_number, s.invoice_number, s.customer_id, customer.name AS customer_name,
            customer.primary_email AS customer_email, customer.primary_phone AS customer_phone,
+           customer.gstin AS customer_gstin,
            s.billing_address_id, billing.address_line1 AS billing_address_line1,
            billing.address_line2 AS billing_address_line2, billing.city_name AS billing_city,
            billing.district_name AS billing_district, billing.state_name AS billing_state,
@@ -159,6 +161,7 @@ export function selectSalePageHeaders(
            s.financial_year_id, financial_year.name AS financial_year_name,
            s.line_number, s.invoice_number, s.customer_id, customer.name AS customer_name,
            customer.primary_email AS customer_email, customer.primary_phone AS customer_phone,
+           customer.gstin AS customer_gstin,
            s.billing_address_id, billing.address_line1 AS billing_address_line1,
            billing.address_line2 AS billing_address_line2, billing.city_name AS billing_city,
            billing.district_name AS billing_district, billing.state_name AS billing_state,

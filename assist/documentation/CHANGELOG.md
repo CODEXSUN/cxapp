@@ -40,6 +40,11 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   endpoints, database-row removal, and the print visibility contract.
 - Restored normal trailing-space typing and caret behavior for Company and Contact legal names,
   second address lines, and bank holder names while trimming those values only when saving.
+- Hydrated contact GSTIN into Quotation, Sales, Purchase, and Export Sales document responses and
+  rendered it in every Bill-to and Ship-to show/print preview, with real MariaDB coverage across all
+  four document types, and tightened the GSTIN/UIN and State Name label-to-value spacing.
+- Added each product's GST percentage to the Quotation, Sales, Purchase, and Export Sales
+  autocomplete dropdown labels while preserving the clean product name when selected and saved.
 
 ## v-1.0.50
 

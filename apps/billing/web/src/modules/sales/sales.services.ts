@@ -13,9 +13,11 @@ import {
   type SaleSavePayload,
   type SaleStatus
 } from "./sales.types";
+import { productLookupDisplayLabel } from "../../shared/product-lookup-label";
 
 export type SaleLookupOption = {
   description?: string;
+  displayLabel?: string;
   label: string;
   meta?: string;
   record?: SaleLookupRecord;
@@ -364,6 +366,7 @@ export function listSaleProducts() {
   return billingApiGet<SaleLookupRecord[]>("/billing/sales/lookups/products").then((records) =>
     records.filter(isActiveRecord).map((record) =>
       lookupOption(record, {
+        displayLabel: productLookupDisplayLabel(record),
         label: record.name || record.code || record.id,
         value: record.name || record.code || record.id
       })
@@ -533,6 +536,7 @@ function fromApiSale(record: Sale): Sale {
     ...record,
     currencyCode: record.currencyCode || "INR",
     customerEmail: record.customerEmail || "",
+    customerGstin: record.customerGstin || "",
     customerPhone: record.customerPhone || "",
     einvoice: record.einvoice ?? createEmptySaleEinvoice(),
     invoiceNumber,

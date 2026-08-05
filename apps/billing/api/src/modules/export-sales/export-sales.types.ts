@@ -72,6 +72,7 @@ export type ExportSale = {
   currencyCode: string;
   currencyId: number;
   customerEmail: string;
+  customerGstin: string;
   customerId: number;
   customerName: string;
   customerPhone: string;

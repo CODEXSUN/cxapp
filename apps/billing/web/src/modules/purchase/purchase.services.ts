@@ -10,9 +10,11 @@ import {
   type PurchaseSavePayload,
   type PurchaseStatus
 } from "./purchase.types";
+import { productLookupDisplayLabel } from "../../shared/product-lookup-label";
 
 export type PurchaseLookupOption = {
   description?: string;
+  displayLabel?: string;
   label: string;
   meta?: string;
   record?: PurchaseLookupRecord;
@@ -354,6 +356,7 @@ export function listPurchaseProducts() {
     (records) =>
       records.filter(isActiveRecord).map((record) =>
         lookupOption(record, {
+          displayLabel: productLookupDisplayLabel(record),
           label: record.name || record.code || record.id,
           value: record.name || record.code || record.id
         })
@@ -512,6 +515,7 @@ function fromApiPurchase(record: Purchase): Purchase {
     einvoice: record.einvoice ?? { ackDate: "", ackNo: "", irn: "", signedQr: "" },
     eway: record.eway ?? { billDate: "", billNo: "", transport: "", vehicleNo: "" },
     supplierEmail: record.supplierEmail || "",
+    supplierGstin: record.supplierGstin || "",
     supplierPhone: record.supplierPhone || "",
     supplierBillDate: record.supplierBillDate || "",
     supplierBillNo: record.supplierBillNo || "",

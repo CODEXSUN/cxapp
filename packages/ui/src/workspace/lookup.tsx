@@ -27,6 +27,7 @@ import { cn } from "../lib/utils";
 export interface WorkspaceLookupOption {
   value: string;
   label: string;
+  displayLabel?: string;
   description?: string;
   meta?: string;
 }
@@ -136,7 +137,7 @@ export function WorkspaceLookup({
   const filteredOptions = useMemo(
     () =>
       allOptions.filter((option) =>
-        [option.label, option.value, option.description, option.meta]
+        [option.displayLabel, option.label, option.value, option.description, option.meta]
           .filter(Boolean)
           .some((part) => String(part).toLowerCase().includes(normalizedQuery))
       ),
@@ -547,7 +548,7 @@ const LookupList = forwardRef<
                   compactOptions && "whitespace-nowrap break-normal [overflow-wrap:normal]"
                 )}
               >
-                {option.label}
+                {option.displayLabel ?? option.label}
               </span>
               {option.description || option.meta ? (
                 <span className="block whitespace-normal break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">

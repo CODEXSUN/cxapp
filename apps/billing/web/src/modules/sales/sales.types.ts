@@ -74,6 +74,7 @@ export type Sale = {
   companyName: string;
   createdAt: string;
   customerEmail: string;
+  customerGstin: string;
   customerId: number;
   customerName: string;
   customerPhone: string;

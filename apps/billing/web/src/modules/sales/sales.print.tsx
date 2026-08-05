@@ -323,10 +323,10 @@ function SalePrintPage({
             <div className="mt-1 whitespace-pre-wrap">
               {billingAddress.address || "Address not set"}
             </div>
-            <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-2">
-              <span>GSTIN/UIN</span>
-              <span>-</span>
-              <span>State Name</span>
+            <div className="mt-1 grid grid-cols-[max-content_1fr] gap-x-1">
+              <span>GSTIN/UIN :</span>
+              <span>{sale.customerGstin || "-"}</span>
+              <span>State Name :</span>
               <span>{billingAddress.state || "-"}</span>
             </div>
           </div>
@@ -339,10 +339,10 @@ function SalePrintPage({
               <div className="mt-1 whitespace-pre-wrap">
                 {shippingAddress.address || "Address not set"}
               </div>
-              <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-2">
-                <span>GSTIN/UIN</span>
-                <span>-</span>
-                <span>State Name</span>
+              <div className="mt-1 grid grid-cols-[max-content_1fr] gap-x-1">
+                <span>GSTIN/UIN :</span>
+                <span>{sale.customerGstin || "-"}</span>
+                <span>State Name :</span>
                 <span>{shippingAddress.state || "-"}</span>
               </div>
             </div>

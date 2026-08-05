@@ -505,6 +505,7 @@ export class PurchaseRepository {
       einvoice: parsePurchaseEinvoice(row.purchase_einvoice_json),
       eway: parsePurchaseEway(row.purchase_eway_json),
       supplierEmail: row.supplier_email ?? "",
+      supplierGstin: row.supplier_gstin ?? "",
       supplierId: row.supplier_id,
       supplierName: row.supplier_name,
       supplierPhone: row.supplier_phone ?? "",

@@ -10,9 +10,11 @@ import {
   type QuotationSavePayload,
   type QuotationStatus
 } from "./quotation.types";
+import { productLookupDisplayLabel } from "../../shared/product-lookup-label";
 
 export type QuotationLookupOption = {
   description?: string;
+  displayLabel?: string;
   label: string;
   meta?: string;
   record?: QuotationLookupRecord;
@@ -357,6 +359,7 @@ export function listQuotationProducts() {
     (records) =>
       records.filter(isActiveRecord).map((record) =>
         lookupOption(record, {
+          displayLabel: productLookupDisplayLabel(record),
           label: record.name || record.code || record.id,
           value: record.name || record.code || record.id
         })

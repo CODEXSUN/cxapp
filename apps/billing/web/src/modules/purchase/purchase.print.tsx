@@ -227,11 +227,11 @@ function PurchasePrintPage({
             <div className="mt-1 whitespace-pre-wrap">
               {purchase.billingAddress || "Address not set"}
             </div>
-            <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-2">
-              <span>GSTIN/UIN</span>
-              <span>:</span>
-              <span>State Name</span>
-              <span>:</span>
+            <div className="mt-1 grid grid-cols-[max-content_1fr] gap-x-1">
+              <span>GSTIN/UIN :</span>
+              <span>{purchase.supplierGstin || "-"}</span>
+              <span>State Name :</span>
+              <span>-</span>
             </div>
           </div>
           <div className="border-t border-slate-300 px-1.5 py-1.5 sm:border-l sm:border-slate-300 sm:border-t-0">
@@ -246,11 +246,11 @@ function PurchasePrintPage({
                 <div className="mt-1 whitespace-pre-wrap">
                   {purchase.shippingAddress || purchase.billingAddress || "Address not set"}
                 </div>
-                <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-2">
-                  <span>GSTIN/UIN</span>
-                  <span>:</span>
-                  <span>State Name</span>
-                  <span>:</span>
+                <div className="mt-1 grid grid-cols-[max-content_1fr] gap-x-1">
+                  <span>GSTIN/UIN :</span>
+                  <span>{purchase.supplierGstin || "-"}</span>
+                  <span>State Name :</span>
+                  <span>-</span>
                 </div>
               </>
             )}

@@ -107,6 +107,7 @@ const purchaseSchema = z.object({
   einvoice: einvoiceSchema,
   eway: ewaySchema,
   supplierEmail: z.string(),
+  supplierGstin: z.string(),
   supplierId: z.number().int().positive(),
   supplierName: z.string(),
   supplierPhone: z.string(),
