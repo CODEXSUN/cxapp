@@ -32,7 +32,7 @@ export function bumpNextVersion(rootDir, title = "version update", options = {})
     currentVersion,
     databaseUpdate,
     nextVersion,
-    reference: Number.parseInt(nextVersion.split(".")[2] ?? "0", 10),
+    reference: Number(nextVersion.split(".")[2] ?? "0"),
     title
   };
 }
@@ -113,16 +113,13 @@ function readRootVersion(rootDir) {
   return String(pkg.version);
 }
 
-function bumpPatch(version) {
-  const parts = version.split(".");
-  const patch = Number.parseInt(parts[2] ?? "0", 10);
-
-  if (parts.length !== 3 || !Number.isInteger(patch)) {
+export function bumpPatch(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/u.exec(version);
+  const patch = Number(match?.[3]);
+  if (!match || !Number.isSafeInteger(patch)) {
     throw new Error(`Unsupported version format: ${version}`);
   }
-
-  parts[2] = String(patch + 1);
-  return parts.join(".");
+  return `${match[1]}.${match[2]}.${patch + 1}`;
 }
 
 function updatePackageVersion(file, currentVersion, nextVersion) {

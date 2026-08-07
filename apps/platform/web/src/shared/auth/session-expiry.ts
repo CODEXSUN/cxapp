@@ -2,6 +2,7 @@ import type { Desk } from "../api/platform-api";
 
 export const SESSION_EXPIRED_REASON = "session-expired";
 export const SESSION_EXPIRED_ERROR_CODE = "AUTH_SESSION_EXPIRED";
+export const SESSION_REFRESHED_REASON = "session-refreshed";
 
 const loginPaths: Record<Desk, string> = {
   admin: "/admin/login",
@@ -32,6 +33,10 @@ export function sessionExpiredLoginPath(desk: Desk): string {
 
 export function hasSessionExpiredReason(search: string): boolean {
   return new URLSearchParams(search).get("reason") === SESSION_EXPIRED_REASON;
+}
+
+export function hasSessionRefreshedReason(search: string): boolean {
+  return new URLSearchParams(search).get("reason") === SESSION_REFRESHED_REASON;
 }
 
 export function redirectForExpiredSession(desk?: Desk): boolean {

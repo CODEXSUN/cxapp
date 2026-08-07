@@ -30,14 +30,14 @@ export class TenantRepository {
   async findByIdOrCode(value: string) {
     const normalized = value.trim().toLowerCase();
     const code = normalized.startsWith("tenant-") ? normalized.slice("tenant-".length) : normalized;
-    const numericId = Number.parseInt(normalized, 10);
+    const numericId = parseNumericTenantId(normalized);
 
     const row = await getPlatformDatabase()
       .selectFrom("tenants")
       .selectAll()
       .where(
         sql<boolean>`
-          ${Number.isInteger(numericId) ? sql<boolean>`id = ${numericId}` : sql<boolean>`false`}
+          ${numericId === null ? sql<boolean>`false` : sql<boolean>`id = ${numericId}`}
           OR LOWER(uuid) = ${normalized}
           OR LOWER(tenant_code) = ${normalized}
           OR LOWER(tenant_code) = ${code}
@@ -388,6 +388,13 @@ function toIsoDate(value: Date | string) {
 
 function normalizeIdentity(value: string) {
   return value.trim().toLowerCase();
+}
+
+export function parseNumericTenantId(value: string) {
+  const normalized = value.trim();
+  if (!/^\d+$/u.test(normalized)) return null;
+  const numericId = Number(normalized);
+  return Number.isSafeInteger(numericId) && numericId > 0 ? numericId : null;
 }
 
 function errorMessage(error: unknown) {

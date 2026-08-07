@@ -275,6 +275,15 @@ export async function logout(desk: Desk): Promise<void> {
   clearBrowserSession();
 }
 
+export async function resetBrowserSession(): Promise<void> {
+  clearBrowserSession();
+  try {
+    await apiPost<{ reset: true }>("/auth/session/reset", undefined, "sa");
+  } finally {
+    clearBrowserSession();
+  }
+}
+
 function clearLegacyTokens() {
   try {
     for (const key of LEGACY_TOKEN_KEYS) localStorage.removeItem(key);

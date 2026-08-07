@@ -153,6 +153,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     );
   });
 
+  app.post("/auth/session/reset", async (request, reply) => {
+    enforceBrowserRequestOrigin(request);
+    await replaceCurrentSession(request);
+    clearAllSessionCookies(reply);
+    return ok({ reset: true }, { requestId: request.id });
+  });
+
   app.post("/auth/logout", async (request, reply) => {
     await replaceCurrentSession(request);
     clearAllSessionCookies(reply);

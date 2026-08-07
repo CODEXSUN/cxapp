@@ -53,8 +53,8 @@ export function useCreateTenantDomainMutation() {
 export function useUpdateTenantDomainMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: TenantDomainSavePayload }) =>
-      updateTenantDomain(id, payload),
+    mutationFn: ({ payload, uuid }: { payload: TenantDomainSavePayload; uuid: string }) =>
+      updateTenantDomain(uuid, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tenantDomainQueryKey })
   });
 }

@@ -38,19 +38,14 @@ export class TenantDomainService {
     return tenant ? this.domains.create({ ...input, tenantId: tenant.id }) : null;
   }
 
-  async updateDomain(id: string, input: TenantDomainSavePayload) {
+  async updateDomain(uuid: string, input: TenantDomainSavePayload) {
     const tenant = await this.tenants.findByIdOrCode(String(input.tenantId));
-    const domainId = Number.parseInt(id, 10);
-    if (!tenant || !Number.isInteger(domainId)) return null;
-    return this.domains.update(domainId, { ...input, tenantId: tenant.id });
+    if (!tenant) return null;
+    return this.domains.update(uuid, { ...input, tenantId: tenant.id });
   }
 
-  async verifyDomain(id: string) {
-    const domainId = Number.parseInt(id, 10);
-    if (!Number.isInteger(domainId) || domainId <= 0) {
-      throw AppError.validation("Select a valid tenant domain.");
-    }
-    const domain = await this.domains.findById(domainId);
+  async verifyDomain(uuid: string) {
+    const domain = await this.domains.findByUuid(uuid);
     if (!domain) return null;
     let records: string[][];
     try {
@@ -62,7 +57,7 @@ export class TenantDomainService {
       .map((parts) => parts.join("").trim())
       .filter((value) => value.startsWith("cxapp-domain-verification="))
       .map((value) => value.slice("cxapp-domain-verification=".length));
-    const verified = await this.domains.verify(domainId, tokens);
+    const verified = await this.domains.verify(uuid, tokens);
     if (!verified) {
       throw AppError.conflict(
         `Publish the supplied TXT value at ${tenantDomainVerificationName(domain.domain)}, then retry.`

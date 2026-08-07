@@ -271,6 +271,23 @@ When a module is deactivated:
 - Scheduled jobs stop where safe.
 - Reports handle historical data correctly.
 
+## Client-Specific Add-On Applications
+
+Create a separate add-on application when a client request introduces its own records, workflows,
+permissions, reports, or terminology. Do not add that business domain to Billing.
+
+An add-on application can use Billing through public contracts, injected dependencies, or approved
+events. It must not import Billing private files or write directly to Billing tables.
+
+Platform Registry, Plan Access, and tenant entitlements control add-on activation. Provisioning runs
+the add-on migrations and seeds only for tenants with that application enabled.
+
+For example, a testing-lab application owns samples, tests, results, certificates, and laboratory
+reports. Billing continues to own quotations, invoices, receipts, payments, and tax reports.
+
+Use tenant settings for small presentation or configuration differences. Create an add-on application
+when the request changes the domain model or adds a separate operational workflow.
+
 ## Shared Kernel
 
 Only very stable concepts should enter the shared kernel.

@@ -9,7 +9,10 @@ import {
   login
 } from "../../shared/api/platform-api";
 import { requiredClientEnv } from "../../shared/env/client-env";
-import { hasSessionExpiredReason } from "../../shared/auth/session-expiry";
+import {
+  hasSessionExpiredReason,
+  hasSessionRefreshedReason
+} from "../../shared/auth/session-expiry";
 
 type LoginPageProps = {
   desk: Desk;
@@ -30,6 +33,7 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   } | null>(null);
   const autoLoginStarted = useRef(false);
   const sessionExpired = hasSessionExpiredReason(window.location.search);
+  const sessionRefreshed = hasSessionRefreshedReason(window.location.search);
 
   const targetPath = useMemo(() => {
     if (desk === "sa") {
@@ -124,9 +128,11 @@ export function LoginPage({ desk, title }: LoginPageProps) {
   return (
     <AuthLayout
       afterCard={
-        sessionExpired ? (
+        sessionExpired || sessionRefreshed ? (
           <p className="auth-session-badge" role="status">
-            Session expired. Please sign in again.
+            {sessionRefreshed
+              ? "Session data was cleared. Sign in again."
+              : "Session expired. Please sign in again."}
           </p>
         ) : null
       }

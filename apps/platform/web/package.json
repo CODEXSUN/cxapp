@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/platform-web",
-  "version": "1.0.54",
+  "version": "1.0.55",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,11 +9,11 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/billing-web": "^1.0.54",
-    "@cxapp/core-web": "^1.0.54",
-    "@cxapp/devkit-web": "^1.0.54",
-    "@cxapp/mail-web": "^1.0.54",
-    "@cxapp/ui": "^1.0.54",
+    "@cxapp/billing-web": "^1.0.55",
+    "@cxapp/core-web": "^1.0.55",
+    "@cxapp/devkit-web": "^1.0.55",
+    "@cxapp/mail-web": "^1.0.55",
+    "@cxapp/ui": "^1.0.55",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",

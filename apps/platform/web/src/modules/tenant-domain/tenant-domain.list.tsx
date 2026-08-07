@@ -34,7 +34,7 @@ export function TenantDomainTable({
           </thead>
           <tbody>
             {domains.map((domain) => (
-              <tr className="border-b border-border/70 last:border-b-0" key={domain.id}>
+              <tr className="border-b border-border/70 last:border-b-0" key={domain.uuid}>
                 <td className="px-4 py-2.5 font-mono text-xs">{domain.domain}</td>
                 <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                   {domain.uuid}

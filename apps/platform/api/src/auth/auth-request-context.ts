@@ -27,12 +27,14 @@ const tenants = new TenantRepository();
 const publicAuthPaths = new Set([
   "/auth/login",
   "/auth/development/tenant-login",
+  "/auth/session/reset",
   "/auth/tenant-context"
 ]);
 
 export function registerAuthRequestContext(app: FastifyInstance) {
   app.decorateRequest("authContext", undefined);
   app.addHook("onRequest", async (request) => {
+    const requestPath = request.routeOptions.url ?? request.url.split("?")[0] ?? "";
     const authentication = selectRequestAuthentication(
       bearerToken(request),
       readEncryptedSessionCookie(request)
@@ -43,8 +45,7 @@ export function registerAuthRequestContext(app: FastifyInstance) {
     const payload = verifyAuthToken(token);
     const session = payload ? await sessions.findActive(payload.jti) : null;
     if (!payload || (source === "cookie" && !session) || !claimsMatchSession(payload, session)) {
-      if (isPublicAuthenticationPath(request.routeOptions.url ?? request.url.split("?")[0] ?? ""))
-        return;
+      if (isPublicAuthenticationPath(requestPath)) return;
       throw authenticationError("AUTH_SESSION_EXPIRED", "Session expired. Please sign in again.");
     }
 
@@ -53,13 +54,16 @@ export function registerAuthRequestContext(app: FastifyInstance) {
       !hostMatchesClaims(host, payload) &&
       !isTrustedInternalBearerRequest(source, host, request.socket.remoteAddress)
     ) {
-      if (isPublicAuthenticationPath(request.routeOptions.url ?? "")) return;
+      if (isPublicAuthenticationPath(requestPath)) return;
       throw authenticationError(
         "AUTH_DOMAIN_MISMATCH",
         "This session is not valid for the requested domain."
       );
     }
     if (source === "cookie") enforceBrowserRequestOrigin(request, host);
+
+    request.authContext = { payload, session, source };
+    if (isPublicAuthenticationPath(requestPath)) return;
 
     if (payload.userType === "tenant") {
       const tenant = payload.tenantId ? await tenants.findByIdOrCode(payload.tenantId) : null;
@@ -106,14 +110,13 @@ export function registerAuthRequestContext(app: FastifyInstance) {
       request.headers.authorization = `Bearer ${token}`;
     }
 
-    request.authContext = { payload, session, source };
     if (session && Date.now() - session.lastSeenAt.getTime() > 5 * 60 * 1000) {
       await sessions.touch(payload.jti);
     }
   });
 }
 
-function isPublicAuthenticationPath(path: string) {
+export function isPublicAuthenticationPath(path: string) {
   return publicAuthPaths.has(path);
 }
 

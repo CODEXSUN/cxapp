@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.54
+Current version: 1.0.55
 
-Release tag: v-1.0.54
+Release tag: v-1.0.55
 
-Changelog label: v 1.0.54
+Changelog label: v 1.0.55
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,26 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.55
+
+### [v 1.0.55] 2026-08-07 9:46 am - Super Admin session recovery
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.55.
+- Added the public `/sa/refresh` route for recovery when an invalid tenant session holds the Super Admin desk loader.
+- Added `/auth/session/reset` to revoke the current server session and clear current and legacy authentication cookies.
+- Cleared browser tenant context and query caches before redirecting to a fresh Super Admin login.
+- Allowed public login and reset routes to continue without tenant validation after the server validates the base session claims.
+- Added focused tests for the public reset path and the refreshed-session login message.
+- Rejected partial numeric prefixes in tenant, tenant-domain, and version parsing to prevent wrong-record selection.
+- Changed tenant-domain update and verification routes to use public UUIDs instead of internal numeric IDs.
+- Documented Testing Lab software as a separate tenant-activated add-on that uses Billing only through public contracts.
 
 ## v-1.0.54
 

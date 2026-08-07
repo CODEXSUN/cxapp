@@ -100,8 +100,8 @@ export function TenantDomainList() {
     }
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: TenantDomainSavePayload }) =>
-      updateTenantDomain(id, payload),
+    mutationFn: ({ payload, uuid }: { payload: TenantDomainSavePayload; uuid: string }) =>
+      updateTenantDomain(uuid, payload),
     onError: (error) => showDomainError("Domain update failed", error),
     onSuccess: async (domain) => {
       await invalidateDomainData(queryClient);
@@ -150,7 +150,7 @@ export function TenantDomainList() {
         domain={view.domain}
         onBack={() => setView({ mode: "list" })}
         onEdit={() => setView({ domain: view.domain, mode: "upsert", returnTo: "show" })}
-        onVerify={() => verifyMutation.mutate(view.domain.id)}
+        onVerify={() => verifyMutation.mutate(view.domain.uuid)}
         verifying={verifyMutation.isPending}
       />
     );
@@ -172,7 +172,7 @@ export function TenantDomainList() {
         }
         onSubmit={(payload) => {
           if (view.domain) {
-            updateMutation.mutate({ id: view.domain.id, payload });
+            updateMutation.mutate({ payload, uuid: view.domain.uuid });
           } else {
             createMutation.mutate(payload);
           }
@@ -262,7 +262,7 @@ export function TenantDomainList() {
             </thead>
             <tbody>
               {pageDomains.map((domain, index) => (
-                <tr className="border-b border-border/70 last:border-b-0" key={domain.id}>
+                <tr className="border-b border-border/70 last:border-b-0" key={domain.uuid}>
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {(currentPage - 1) * rowsPerPage + index + 1}
                   </td>

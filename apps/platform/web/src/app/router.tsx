@@ -71,6 +71,9 @@ const TenantTermsPage = lazy(() =>
 const LoginPage = lazy(() =>
   import("../public/login/LoginPage").then((module) => ({ default: module.LoginPage }))
 );
+const SessionRefreshPage = lazy(() =>
+  import("../public/session-refresh").then((module) => ({ default: module.SessionRefreshPage }))
+);
 const ForgotPasswordPage = lazy(() =>
   import("../public/password-recovery").then((module) => ({
     default: module.ForgotPasswordPage
@@ -161,6 +164,12 @@ const saLoginRoute = createRoute({
   path: "/sa/login"
 });
 
+const saRefreshRoute = createRoute({
+  component: SessionRefreshPage,
+  getParentRoute: () => rootRoute,
+  path: "/sa/refresh"
+});
+
 const adminLoginRoute = createRoute({
   component: () => <LoginPage desk="admin" title="Staff Admin Login" />,
   getParentRoute: () => rootRoute,
@@ -235,6 +244,7 @@ const routeTree = rootRoute.addChildren([
   healthRoute,
   tenantLoginRoute,
   saLoginRoute,
+  saRefreshRoute,
   adminLoginRoute,
   forgotPasswordRoute,
   resetPasswordRoute,

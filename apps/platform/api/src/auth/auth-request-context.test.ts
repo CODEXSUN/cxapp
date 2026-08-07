@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  isPublicAuthenticationPath,
   isTrustedInternalBearerRequest,
   selectRequestAuthentication
 } from "./auth-request-context.js";
@@ -26,4 +27,9 @@ test("does not trust cookies, public hosts, or non-loopback peers as internal fo
   assert.equal(isTrustedInternalBearerRequest("cookie", "127.0.0.1", "127.0.0.1"), false);
   assert.equal(isTrustedInternalBearerRequest("bearer", "app.codexsun.com", "127.0.0.1"), false);
   assert.equal(isTrustedInternalBearerRequest("bearer", "127.0.0.1", "192.0.2.10"), false);
+});
+
+test("allows the exact session reset route to bypass broken tenant validation", () => {
+  assert.equal(isPublicAuthenticationPath("/auth/session/reset"), true);
+  assert.equal(isPublicAuthenticationPath("/auth/session/reset/other"), false);
 });

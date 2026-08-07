@@ -15,12 +15,12 @@ export function createTenantDomain(payload: TenantDomainSavePayload) {
   return apiPost<TenantDomainRecord>("/admin/tenant-domains", payload, "sa");
 }
 
-export function updateTenantDomain(id: number, payload: TenantDomainSavePayload) {
-  return apiPut<TenantDomainRecord>(`/admin/tenant-domains/${id}`, payload, "sa");
+export function updateTenantDomain(uuid: string, payload: TenantDomainSavePayload) {
+  return apiPut<TenantDomainRecord>(`/admin/tenant-domains/${uuid}`, payload, "sa");
 }
 
-export function verifyTenantDomain(id: number) {
-  return apiPost<TenantDomainRecord>(`/admin/tenant-domains/${id}/verify`, {}, "sa");
+export function verifyTenantDomain(uuid: string) {
+  return apiPost<TenantDomainRecord>(`/admin/tenant-domains/${uuid}/verify`, {}, "sa");
 }
 
 export function listTenantDomains(tenantId: number | string) {

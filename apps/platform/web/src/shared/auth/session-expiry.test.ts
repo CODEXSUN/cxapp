@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   hasSessionExpiredReason,
+  hasSessionRefreshedReason,
   installSessionExpiryInterceptor,
   isExpiredSessionResponse,
   protectedDeskFromPathname,
@@ -27,6 +28,8 @@ test("builds desk-aware login routes with a durable expiry reason", () => {
   assert.equal(sessionExpiredLoginPath("admin"), "/admin/login?reason=session-expired");
   assert.equal(hasSessionExpiredReason("?reason=session-expired"), true);
   assert.equal(hasSessionExpiredReason("?reason=invalid-credentials"), false);
+  assert.equal(hasSessionRefreshedReason("?reason=session-refreshed"), true);
+  assert.equal(hasSessionRefreshedReason("?reason=session-expired"), false);
 });
 
 test("only an explicit expired-session 401 clears session state and opens login", async () => {

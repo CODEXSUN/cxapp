@@ -114,7 +114,7 @@ export class TenantDomainRepository {
     return record ? { ...record, verificationToken } : null;
   }
 
-  async update(id: number, input: TenantDomainSavePayload) {
+  async update(uuid: string, input: TenantDomainSavePayload) {
     const domain = normalizeTenantDomain(input.domain);
     if (!domain || isCanonicalAppHost(domain)) {
       throw AppError.validation("Use a custom domain; the shared application host is reserved.");
@@ -131,17 +131,17 @@ export class TenantDomainRepository {
         verification_token_hash: hashToken(verificationToken),
         verified_at: null
       })
-      .where("id", "=", id)
+      .where("uuid", "=", uuid)
       .execute();
-    const record = await this.findById(id);
+    const record = await this.findByUuid(uuid);
     return record ? { ...record, verificationToken } : null;
   }
 
-  async verify(id: number, discoveredTokens: string[]) {
+  async verify(uuid: string, discoveredTokens: string[]) {
     const row = await getPlatformDatabase()
       .selectFrom("tenant_domains")
       .select("verification_token_hash")
-      .where("id", "=", id)
+      .where("uuid", "=", uuid)
       .executeTakeFirst();
     if (
       !row?.verification_token_hash ||
@@ -152,13 +152,13 @@ export class TenantDomainRepository {
     await getPlatformDatabase()
       .updateTable("tenant_domains")
       .set({ status: "active", verification_status: "verified", verified_at: new Date() })
-      .where("id", "=", id)
+      .where("uuid", "=", uuid)
       .execute();
-    return this.findById(id);
+    return this.findByUuid(uuid);
   }
 
-  async findById(id: number): Promise<TenantDomainRecord | null> {
-    return (await this.listAll()).find((domain) => domain.id === id) ?? null;
+  async findByUuid(uuid: string): Promise<TenantDomainRecord | null> {
+    return (await this.listAll()).find((domain) => domain.uuid === uuid) ?? null;
   }
 }
 

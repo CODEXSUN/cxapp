@@ -5,7 +5,10 @@ import { requireSuperAdmin } from "../../auth/super-admin.guard.js";
 import { TenantDomainService } from "./tenant-domain.service.js";
 
 const service = new TenantDomainService();
-const paramsSchema = z.object({ id: z.string().min(1).max(120) }).strict();
+const tenantParamsSchema = z.object({ id: z.string().min(1).max(120) }).strict();
+export const tenantDomainUuidParamsSchema = z
+  .object({ uuid: z.string().regex(/^[a-f0-9]{8}$/u) })
+  .strict();
 const payloadSchema = z
   .object({
     domain: z.string().min(1).max(191),
@@ -22,29 +25,29 @@ export async function registerTenantDomainRoutes(app: FastifyInstance) {
   app.post("/admin/tenant-domains", { preHandler: requireSuperAdmin }, async (request) =>
     ok(await service.createDomain(domainPayload(request.body)), { requestId: request.id })
   );
-  app.put("/admin/tenant-domains/:id", { preHandler: requireSuperAdmin }, async (request) => {
-    const { id } = paramsSchema.parse(request.params);
-    return ok(await service.updateDomain(id, domainPayload(request.body)), {
+  app.put("/admin/tenant-domains/:uuid", { preHandler: requireSuperAdmin }, async (request) => {
+    const { uuid } = tenantDomainUuidParamsSchema.parse(request.params);
+    return ok(await service.updateDomain(uuid, domainPayload(request.body)), {
       requestId: request.id
     });
   });
   app.post(
-    "/admin/tenant-domains/:id/verify",
+    "/admin/tenant-domains/:uuid/verify",
     { preHandler: requireSuperAdmin },
     async (request) => {
-      const { id } = paramsSchema.parse(request.params);
-      return ok(await service.verifyDomain(id), { requestId: request.id });
+      const { uuid } = tenantDomainUuidParamsSchema.parse(request.params);
+      return ok(await service.verifyDomain(uuid), { requestId: request.id });
     }
   );
   app.get("/admin/tenants/:id/domains", { preHandler: requireSuperAdmin }, async (request) => {
-    const { id } = paramsSchema.parse(request.params);
+    const { id } = tenantParamsSchema.parse(request.params);
     return ok(await service.listDomains(id), { requestId: request.id });
   });
   app.put(
     "/admin/tenants/:id/domains/primary",
     { preHandler: requireSuperAdmin },
     async (request) => {
-      const { id } = paramsSchema.parse(request.params);
+      const { id } = tenantParamsSchema.parse(request.params);
       const body = z
         .object({ domain: z.string().min(1).max(191) })
         .strict()
