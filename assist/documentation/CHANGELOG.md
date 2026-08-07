@@ -35,6 +35,12 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   Purchase, HSN, and reconciliation reports together under the `GST statement` tab.
 - Added independent Sales and Purchase print actions that render only the selected document and HSN
   report while retaining the combined GST Statement print option.
+- Separated Sales and Purchase HSN-wise reports into their own card row and stretched both document
+  report panels to the same height for a stable two-column comparison.
+- Added reversible row visibility checkboxes to both document reports, recalculated the moved bottom
+  totals from visible rows only, and aligned scoped printing with the visible document selection.
+- Fixed the shared print-sheet root so Sales and Purchase GST print actions render their selected
+  report tables instead of exposing the embedded print stylesheet as page text.
 
 ## v-1.0.53
 

@@ -11,7 +11,7 @@ import { WorkspaceDatePicker } from "@cxapp/ui/workspace/date-picker";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { GstStatementForm } from "./gst-statement.form";
 import { useGstStatement } from "./gst-statement.hooks";
-import { GstStatementList } from "./gst-statement.list";
+import { GstStatementDocumentCard, GstStatementHsnCard } from "./gst-statement.list";
 import { GstStatementPrint, type GstStatementPrintScope } from "./gst-statement.print";
 import { gstStatementFilingSchema } from "./gst-statement.schema";
 import { formatGstStatementMoney, saveGstStatementFiling } from "./gst-statement.services";
@@ -79,10 +79,20 @@ export function GstStatementWorkspace() {
     saveMutation.mutate(parsed.data);
   }
 
-  function handlePrint(scope: GstStatementPrintScope = "all") {
+  function handlePrint(
+    scope: GstStatementPrintScope = "all",
+    visiblePanel?: GstStatement["sales"]
+  ) {
     if (!statement) return;
     setPrintScope(scope);
-    setPrintStatement(statement);
+    setPrintStatement(
+      visiblePanel && scope !== "all"
+        ? {
+            ...statement,
+            [scope === "sales" ? "sales" : "purchases"]: visiblePanel
+          }
+        : statement
+    );
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
   }
 
@@ -164,15 +174,28 @@ export function GstStatementWorkspace() {
 
           <TabsContent className="mt-4 space-y-4" value="statement">
             <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-              <GstStatementList
+              <GstStatementDocumentCard
                 loading={query.isLoading}
-                onPrint={() => handlePrint("sales")}
+                onPrint={(visiblePanel) => handlePrint("sales", visiblePanel)}
                 panel={statement?.sales}
                 side="sales"
               />
-              <GstStatementList
+              <GstStatementDocumentCard
                 loading={query.isLoading}
-                onPrint={() => handlePrint("purchase")}
+                onPrint={(visiblePanel) => handlePrint("purchase", visiblePanel)}
+                panel={statement?.purchases}
+                side="purchase"
+              />
+            </div>
+
+            <div className="grid min-w-0 items-start gap-4 xl:grid-cols-2">
+              <GstStatementHsnCard
+                loading={query.isLoading}
+                panel={statement?.sales}
+                side="sales"
+              />
+              <GstStatementHsnCard
+                loading={query.isLoading}
                 panel={statement?.purchases}
                 side="purchase"
               />

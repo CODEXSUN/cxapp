@@ -33,7 +33,9 @@ export function WorkspacePrintSheet({
   className?: string;
 }) {
   return (
-    <>
+    <div
+      className={`print-sheet mx-auto w-[210mm] max-w-full origin-top bg-white font-sans text-[10px] text-black print:mx-0 print:mt-0 print:w-[202mm] print:max-w-none ${className ?? ""}`}
+    >
       <style>{`
         @page { size: A4 portrait; margin: 4mm; }
         @media print {
@@ -95,11 +97,7 @@ export function WorkspacePrintSheet({
           .billing-print-document * { border-color: #475569 !important; }
         }
       `}</style>
-      <div
-        className={`print-sheet mx-auto w-[210mm] max-w-full origin-top bg-white font-sans text-[10px] text-black print:mx-0 print:mt-0 print:w-[202mm] print:max-w-none ${className ?? ""}`}
-      >
-        {children}
-      </div>
-    </>
+      {children}
+    </div>
   );
 }

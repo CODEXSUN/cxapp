@@ -15,9 +15,9 @@ export const mailMigration = {
 
 export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
   batch: 1,
-  description: "Mail module-owned schema baseline through release 1.0.52.",
+  description: "Mail module-owned schema baseline through release 1.0.54.",
   scope: "mail",
-  version: "1.0.52",
+  version: "1.0.54",
   steps: [
     {
       checksum: `${mailMigration.key}:v1`,
@@ -58,6 +58,14 @@ export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
       name: "mail.hostinger-provider-v1",
       up: applyHostingerProviderSchema,
       version: 3
+    },
+    {
+      checksum: "mail.smtp-only-provider-v1",
+      description: "Retire the provider-specific API integration and keep manual SMTP only.",
+      down: restoreRetiredProviderSchema,
+      name: "mail.smtp-only-provider-v1",
+      up: retireProviderApiSchema,
+      version: 4
     }
   ]
 };
@@ -197,5 +205,62 @@ async function applyHostingerProviderSchema(database: Kysely<MailDatabase>) {
         ADD COLUMN IF NOT EXISTS hostinger_mailbox_id VARCHAR(191) NOT NULL DEFAULT '' AFTER provider,
         ADD COLUMN IF NOT EXISTS hostinger_api_token_secret LONGTEXT NOT NULL DEFAULT '' AFTER hostinger_mailbox_id`
     )
+    .execute(database);
+}
+
+async function retireProviderApiSchema(database: Kysely<MailDatabase>) {
+  await sql
+    .raw(`UPDATE mail_settings SET provider = 'smtp' WHERE provider = 'hostinger-api'`)
+    .execute(database);
+  await renameSettingsColumn(database, {
+    from: "hostinger_mailbox_id",
+    to: "retired_provider_mailbox_id",
+    type: "VARCHAR(191) NOT NULL DEFAULT ''"
+  });
+  await renameSettingsColumn(database, {
+    from: "hostinger_api_token_secret",
+    to: "retired_provider_api_token_secret",
+    type: "LONGTEXT NOT NULL"
+  });
+  await sql
+    .raw(
+      `UPDATE mail_settings
+       SET retired_provider_mailbox_id = '', retired_provider_api_token_secret = ''`
+    )
+    .execute(database);
+}
+
+async function restoreRetiredProviderSchema(database: Kysely<MailDatabase>) {
+  await renameSettingsColumn(database, {
+    from: "retired_provider_mailbox_id",
+    to: "hostinger_mailbox_id",
+    type: "VARCHAR(191) NOT NULL DEFAULT ''"
+  });
+  await renameSettingsColumn(database, {
+    from: "retired_provider_api_token_secret",
+    to: "hostinger_api_token_secret",
+    type: "LONGTEXT NOT NULL"
+  });
+}
+
+async function renameSettingsColumn(
+  database: Kysely<MailDatabase>,
+  input: { from: string; to: string; type: string }
+) {
+  const columns = await sql<{ column_name: string }>`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'mail_settings'
+  `.execute(database);
+  const names = new Set(columns.rows.map((row) => row.column_name));
+  if (names.has(input.to)) return;
+  if (!names.has(input.from)) {
+    await sql
+      .raw(`ALTER TABLE mail_settings ADD COLUMN ${input.to} ${input.type}`)
+      .execute(database);
+    return;
+  }
+  await sql
+    .raw(`ALTER TABLE mail_settings CHANGE COLUMN ${input.from} ${input.to} ${input.type}`)
     .execute(database);
 }

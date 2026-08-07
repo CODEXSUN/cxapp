@@ -36,13 +36,11 @@ export class MailRepository {
     return row
       ? {
           ...toSettings(row),
-          hostingerApiToken: decryptMailSecret(row.hostinger_api_token_secret, this.secretKey),
           inboundPassword: decryptMailSecret(row.inbound_password_secret, this.secretKey),
           smtpPassword: decryptMailSecret(row.smtp_password_secret, this.secretKey)
         }
       : {
           ...defaultSettings(context.companyId),
-          hostingerApiToken: "",
           inboundPassword: "",
           smtpPassword: ""
         };
@@ -64,19 +62,12 @@ export class MailRepository {
       current?.inbound_password_secret,
       this.secretKey
     );
-    const hostingerApiTokenSecret = secretValue(
-      input.hostingerApiToken,
-      current?.hostinger_api_token_secret,
-      this.secretKey
-    );
     const values = {
       company_id: context.companyId,
       enabled: input.enabled,
       fallback_enabled: input.fallbackEnabled,
       from_email: clean(input.fromEmail).toLowerCase(),
       from_name: clean(input.fromName),
-      hostinger_api_token_secret: hostingerApiTokenSecret,
-      hostinger_mailbox_id: clean(input.hostingerMailboxId),
       inbound_enabled: input.inboundEnabled,
       inbound_host: clean(input.inboundHost),
       inbound_password_secret: inboundSecret,
@@ -84,7 +75,7 @@ export class MailRepository {
       inbound_protocol: input.inboundProtocol,
       inbound_secure: input.inboundSecure,
       inbound_username: clean(input.inboundUsername),
-      provider: input.provider,
+      provider: "smtp",
       reply_to: clean(input.replyTo).toLowerCase(),
       smtp_host: clean(input.smtpHost),
       smtp_password_secret: smtpSecret,
@@ -93,18 +84,9 @@ export class MailRepository {
       smtp_username: clean(input.smtpUsername),
       updated_by: context.actorEmail
     };
-    if (input.enabled && input.provider === "smtp" && (!values.smtp_host || !values.from_email)) {
+    if (input.enabled && (!values.smtp_host || !values.from_email)) {
       throw AppError.validation(
         "SMTP host and From email are required when tenant mail is enabled."
-      );
-    }
-    if (
-      input.enabled &&
-      input.provider === "hostinger-api" &&
-      (!values.hostinger_mailbox_id || !hostingerApiTokenSecret || !values.from_email)
-    ) {
-      throw AppError.validation(
-        "Hostinger mailbox resource ID, API token, and From email are required when Hostinger Mail API is enabled."
       );
     }
     if (
@@ -487,8 +469,6 @@ function toSettings(row: Record<string, unknown>): MailSettings {
     fallbackEnabled: Boolean(row.fallback_enabled),
     fromEmail: String(row.from_email ?? ""),
     fromName: String(row.from_name ?? ""),
-    hostingerApiTokenConfigured: Boolean(row.hostinger_api_token_secret),
-    hostingerMailboxId: String(row.hostinger_mailbox_id ?? ""),
     inboundEnabled: Boolean(row.inbound_enabled),
     inboundHost: String(row.inbound_host ?? ""),
     inboundPasswordConfigured: Boolean(row.inbound_password_secret),
@@ -497,7 +477,7 @@ function toSettings(row: Record<string, unknown>): MailSettings {
     inboundSecure: Boolean(row.inbound_secure),
     inboundUsername: String(row.inbound_username ?? ""),
     passwordConfigured: Boolean(row.smtp_password_secret),
-    provider: row.provider === "hostinger-api" ? "hostinger-api" : "smtp",
+    provider: "smtp",
     replyTo: String(row.reply_to ?? ""),
     smtpHost: String(row.smtp_host ?? ""),
     smtpPort: Number(row.smtp_port ?? 587),
@@ -514,8 +494,6 @@ function defaultSettings(companyId: number): MailSettings {
     fallbackEnabled: true,
     fromEmail: "",
     fromName: "",
-    hostingerApiTokenConfigured: false,
-    hostingerMailboxId: "",
     inboundEnabled: false,
     inboundHost: "",
     inboundPasswordConfigured: false,

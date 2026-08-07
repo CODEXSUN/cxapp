@@ -48,7 +48,6 @@ export function MailSettingsForm({
     if (settings)
       setForm({
         ...settings,
-        hostingerApiToken: "",
         inboundPassword: "",
         smtpPassword: ""
       });
@@ -60,18 +59,8 @@ export function MailSettingsForm({
       setError(parsed.error.issues[0]?.message ?? "Check mail settings.");
       return;
     }
-    if (form.enabled && form.provider === "smtp" && (!form.smtpHost || !form.fromEmail)) {
+    if (form.enabled && (!form.smtpHost || !form.fromEmail)) {
       setError("SMTP host and From email are required.");
-      return;
-    }
-    if (
-      form.enabled &&
-      form.provider === "hostinger-api" &&
-      (!form.hostingerMailboxId ||
-        (!form.hostingerApiToken && !settings?.hostingerApiTokenConfigured) ||
-        !form.fromEmail)
-    ) {
-      setError("Hostinger mailbox resource ID, API token, and From email are required.");
       return;
     }
     setError("");
@@ -114,101 +103,47 @@ export function MailSettingsForm({
                         </p>
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Provider">
-                          <Select
-                            value={form.provider}
-                            onValueChange={(provider) =>
-                              setForm({ ...form, provider: provider as "hostinger-api" | "smtp" })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="smtp">SMTP</SelectItem>
-                              <SelectItem value="hostinger-api">Hostinger Mail API</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <Field label="SMTP host">
+                          <Input
+                            value={form.smtpHost}
+                            onChange={(event) => setForm({ ...form, smtpHost: event.target.value })}
+                          />
                         </Field>
-                        {form.provider === "smtp" ? (
-                          <>
-                            <Field label="SMTP host">
-                              <Input
-                                value={form.smtpHost}
-                                onChange={(event) =>
-                                  setForm({ ...form, smtpHost: event.target.value })
-                                }
-                              />
-                            </Field>
-                            <Field label="Port">
-                              <Input
-                                type="number"
-                                value={form.smtpPort}
-                                onChange={(event) =>
-                                  setForm({ ...form, smtpPort: Number(event.target.value) })
-                                }
-                              />
-                            </Field>
-                            <Field label="Username">
-                              <Input
-                                value={form.smtpUsername}
-                                onChange={(event) =>
-                                  setForm({ ...form, smtpUsername: event.target.value })
-                                }
-                              />
-                            </Field>
-                            <Field
-                              label={
-                                settings?.passwordConfigured ? "Password (configured)" : "Password"
-                              }
-                            >
-                              <Input
-                                type="password"
-                                placeholder={
-                                  settings?.passwordConfigured
-                                    ? "Leave blank to keep current"
-                                    : "SMTP password"
-                                }
-                                value={form.smtpPassword ?? ""}
-                                onChange={(event) =>
-                                  setForm({ ...form, smtpPassword: event.target.value })
-                                }
-                              />
-                            </Field>
-                          </>
-                        ) : (
-                          <>
-                            <Field label="Mailbox resource ID">
-                              <Input
-                                value={form.hostingerMailboxId}
-                                onChange={(event) =>
-                                  setForm({ ...form, hostingerMailboxId: event.target.value })
-                                }
-                                placeholder="Hostinger mailbox resource ID"
-                              />
-                            </Field>
-                            <Field
-                              label={
-                                settings?.hostingerApiTokenConfigured
-                                  ? "API token (configured)"
-                                  : "API token"
-                              }
-                            >
-                              <Input
-                                type="password"
-                                value={form.hostingerApiToken ?? ""}
-                                onChange={(event) =>
-                                  setForm({ ...form, hostingerApiToken: event.target.value })
-                                }
-                                placeholder={
-                                  settings?.hostingerApiTokenConfigured
-                                    ? "Leave blank to keep current"
-                                    : "Hostinger Mail API bearer token"
-                                }
-                              />
-                            </Field>
-                          </>
-                        )}
+                        <Field label="Port">
+                          <Input
+                            type="number"
+                            value={form.smtpPort}
+                            onChange={(event) =>
+                              setForm({ ...form, smtpPort: Number(event.target.value) })
+                            }
+                          />
+                        </Field>
+                        <Field label="Username">
+                          <Input
+                            value={form.smtpUsername}
+                            onChange={(event) =>
+                              setForm({ ...form, smtpUsername: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field
+                          label={
+                            settings?.passwordConfigured ? "Password (configured)" : "Password"
+                          }
+                        >
+                          <Input
+                            type="password"
+                            placeholder={
+                              settings?.passwordConfigured
+                                ? "Leave blank to keep current"
+                                : "SMTP password"
+                            }
+                            value={form.smtpPassword ?? ""}
+                            onChange={(event) =>
+                              setForm({ ...form, smtpPassword: event.target.value })
+                            }
+                          />
+                        </Field>
                         <Field label="From email">
                           <Input
                             type="email"
@@ -237,17 +172,15 @@ export function MailSettingsForm({
                           checked={form.enabled}
                           fieldLabel="Tenant delivery"
                           label={form.enabled ? "Enabled" : "Disabled"}
-                          description={`Use ${form.provider === "hostinger-api" ? "Hostinger Mail API" : "SMTP"} first.`}
+                          description="Use the tenant SMTP server first."
                           onCheckedChange={(enabled) => setForm({ ...form, enabled })}
                         />
-                        {form.provider === "smtp" ? (
-                          <WorkspaceSwitchCard
-                            checked={form.smtpSecure}
-                            fieldLabel="Secure SMTP"
-                            label={form.smtpSecure ? "TLS enabled" : "STARTTLS / plain"}
-                            onCheckedChange={(smtpSecure) => setForm({ ...form, smtpSecure })}
-                          />
-                        ) : null}
+                        <WorkspaceSwitchCard
+                          checked={form.smtpSecure}
+                          fieldLabel="Secure SMTP"
+                          label={form.smtpSecure ? "TLS enabled" : "STARTTLS / plain"}
+                          onCheckedChange={(smtpSecure) => setForm({ ...form, smtpSecure })}
+                        />
                         <WorkspaceSwitchCard
                           checked={form.fallbackEnabled}
                           fieldLabel="Environment fallback"
@@ -410,8 +343,6 @@ function blankSettings(): MailSettingsPayload {
     fallbackEnabled: true,
     fromEmail: "",
     fromName: "",
-    hostingerApiToken: "",
-    hostingerMailboxId: "",
     inboundEnabled: false,
     inboundHost: "",
     inboundPassword: "",

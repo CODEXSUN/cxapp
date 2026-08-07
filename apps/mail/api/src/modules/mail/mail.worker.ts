@@ -2,7 +2,6 @@ import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import Pop3Command from "node-pop3";
 import nodemailer from "nodemailer";
-import { Configuration, SendApi, type V1SendRequest } from "hostinger-mail-api-sdk";
 import { migrateMailModule } from "./mail.migration.js";
 import { MailRepository } from "./mail.repository.js";
 import { openSystemMailPayload } from "./mail.system-payload.js";
@@ -81,14 +80,7 @@ async function sendMail(
   if (message.status === "sent") return { alreadySent: true, messageUuid };
   const tenant = await repository.deliverySettings(context);
   const fallback = dependencies.fallback;
-  const tenantReady =
-    tenant.enabled &&
-    Boolean(
-      tenant.fromEmail &&
-      (tenant.provider === "hostinger-api"
-        ? tenant.hostingerMailboxId && tenant.hostingerApiToken
-        : tenant.smtpHost)
-    );
+  const tenantReady = tenant.enabled && Boolean(tenant.fromEmail && tenant.smtpHost);
   const fallbackReady =
     tenant.fallbackEnabled && fallback.enabled && Boolean(fallback.host && fallback.fromEmail);
   if (!tenantReady && !fallbackReady)
@@ -96,40 +88,27 @@ async function sendMail(
   await repository.markStatus(context, message.id, "sending");
   try {
     const sent = tenantReady
-      ? tenant.provider === "hostinger-api"
-        ? await deliverHostinger(
-            message,
-            {
-              apiToken: tenant.hostingerApiToken,
-              mailboxId: tenant.hostingerMailboxId
-            },
-            context
-          )
-        : await deliver(
-            message,
-            {
-              fromEmail: tenant.fromEmail,
-              fromName: tenant.fromName,
-              host: tenant.smtpHost,
-              password: tenant.smtpPassword,
-              port: tenant.smtpPort,
-              replyTo: tenant.replyTo,
-              secure: tenant.smtpSecure,
-              username: tenant.smtpUsername
-            },
-            context
-          )
+      ? await deliver(
+          message,
+          {
+            fromEmail: tenant.fromEmail,
+            fromName: tenant.fromName,
+            host: tenant.smtpHost,
+            password: tenant.smtpPassword,
+            port: tenant.smtpPort,
+            replyTo: tenant.replyTo,
+            secure: tenant.smtpSecure,
+            username: tenant.smtpUsername
+          },
+          context
+        )
       : await deliver(message, fallback, context);
     await repository.markStatus(context, message.id, "sent", {
       providerMessageId: String(sent.messageId ?? "")
     });
     return {
       messageUuid,
-      provider: tenantReady
-        ? tenant.provider === "hostinger-api"
-          ? "hostinger-api"
-          : "tenant-smtp"
-        : "environment",
+      provider: tenantReady ? "tenant-smtp" : "environment",
       providerMessageId: sent.messageId ?? null
     };
   } catch (tenantError) {
@@ -156,53 +135,6 @@ async function sendMail(
     });
     throw tenantError;
   }
-}
-
-async function deliverHostinger(
-  message: Awaited<ReturnType<MailRepository["requireMessage"]>>,
-  settings: { apiToken: string; mailboxId: string },
-  context: MailRuntimeContext
-) {
-  const rows = await context.database
-    .selectFrom("mail_attachments")
-    .selectAll()
-    .where("mail_message_id", "=", message.id)
-    .orderBy("id", "asc")
-    .execute();
-  const request = buildHostingerSendRequest(message, rows);
-  const api = new SendApi(new Configuration({ accessToken: settings.apiToken }));
-  await api.sendEmail(settings.mailboxId, request);
-  return { messageId: `hostinger:${message.uuid}` };
-}
-
-export function buildHostingerSendRequest(
-  message: {
-    bcc: string[];
-    bodyHtml: string;
-    bodyText: string;
-    cc: string[];
-    fromName: string;
-    subject: string;
-    to: string[];
-  },
-  attachments: Array<Record<string, unknown>>
-) {
-  return {
-    attachments: attachments.map((row) => ({
-      cid: "",
-      content: String(row.content_base64 ?? ""),
-      contentType: String(row.mime_type ?? "application/octet-stream"),
-      encoding: "base64",
-      filename: String(row.file_name ?? "attachment.bin")
-    })),
-    bcc: message.bcc,
-    cc: message.cc,
-    displayName: message.fromName,
-    html: message.bodyHtml,
-    subject: message.subject,
-    text: message.bodyText,
-    to: message.to
-  } as V1SendRequest;
 }
 
 async function deliver(

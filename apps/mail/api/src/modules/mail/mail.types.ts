@@ -4,7 +4,7 @@ import type { Kysely } from "kysely";
 export type MailStatus = "draft" | "queued" | "sending" | "sent" | "failed" | "cancelled";
 export type MailDirection = "inbound" | "outbound";
 export type MailMailbox = "inbox" | "outbox" | "drafts" | "scheduled" | "sent" | "failed" | "trash";
-export type MailProvider = "hostinger-api" | "smtp";
+export type MailProvider = "smtp";
 
 export type MailRuntimeContext = {
   actorEmail: string;
@@ -59,8 +59,6 @@ export type MailSettings = {
   fallbackEnabled: boolean;
   fromEmail: string;
   fromName: string;
-  hostingerApiTokenConfigured: boolean;
-  hostingerMailboxId: string;
   inboundEnabled: boolean;
   inboundHost: string;
   inboundPasswordConfigured: boolean;
@@ -80,9 +78,8 @@ export type MailSettings = {
 
 export type MailSettingsPayload = Omit<
   MailSettings,
-  "hostingerApiTokenConfigured" | "inboundPasswordConfigured" | "passwordConfigured" | "updatedAt"
+  "inboundPasswordConfigured" | "passwordConfigured" | "updatedAt"
 > & {
-  hostingerApiToken?: string | undefined;
   inboundPassword?: string | undefined;
   smtpPassword?: string | undefined;
 };
