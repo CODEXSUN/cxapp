@@ -22,7 +22,7 @@ function AboutPageContent() {
       <TenantPageIntro
         eyebrow={`About ${portal.brandName}`}
         title="Built for businesses that need billing to stay simple as operations grow."
-        summary="CODEXSUN is designed around the work behind every sale: accurate documents, clear accounts, timely follow-up, responsible staff access, and records that remain understandable later."
+        summary={`${portal.brandName} is designed around the work behind every sale: accurate documents, clear accounts, timely follow-up, responsible staff access, and records that remain understandable later.`}
         actions={
           <a className="tenant-portal-primary" href={portal.loginPath}>
             Open application <ArrowRight />

@@ -10,6 +10,9 @@ export class DefaultCompanyService {
   get() {
     return this.repository.get();
   }
+  getApplicationBranding() {
+    return this.repository.getApplicationBranding();
+  }
   companyLookups() {
     return this.repository.companyLookups();
   }
@@ -29,6 +32,12 @@ export class DefaultCompanyService {
 
 export function getDefaultCompanyForDatabase(databaseName: string) {
   return runWithCoreDatabase(databaseName, () => new DefaultCompanyService().get());
+}
+
+export function getApplicationCompanyBrandingForDatabase(databaseName: string) {
+  return runWithCoreDatabase(databaseName, () =>
+    new DefaultCompanyService().getApplicationBranding()
+  );
 }
 
 export function setDefaultCompanyLandingAppForDatabase(databaseName: string, landingApp: string) {

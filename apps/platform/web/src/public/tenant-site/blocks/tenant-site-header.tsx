@@ -10,7 +10,12 @@ export function TenantSiteHeader({ activePage }: { activePage: TenantPublicPageK
   return (
     <nav className="tenant-portal-nav" aria-label="Billing product navigation">
       <Link className="tenant-portal-brand" to="/" aria-label={`${portal.brandName} home`}>
-        <TenantSiteLogo className="tenant-portal-mark" />
+        <TenantSiteLogo
+          brandName={portal.brandName}
+          className="tenant-portal-mark"
+          logoDarkUrl={portal.logoDarkUrl}
+          logoUrl={portal.logoUrl}
+        />
         <span>
           <strong>{portal.brandName}</strong>
           <small>Billing &amp; Accounts</small>

@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { runWithCoreDatabase } from "../../../database/core-database.js";
 import { CompanyRepository } from "./company.repository.js";
 import type {
   CompanyAddress,
@@ -106,6 +107,10 @@ export class CompanyService {
       throw AppError.validation("Selected bank name was not found or is inactive.");
     return { ...account, bankNameId: bank?.id ?? null, bankName: bank?.name ?? null };
   }
+}
+
+export function getCompanyForDatabase(databaseName: string, companyId: number) {
+  return runWithCoreDatabase(databaseName, () => new CompanyService().find(String(companyId)));
 }
 function assertParent(
   label: string,

@@ -23,6 +23,8 @@ COPY apps/billing/api ./apps/billing/api
 COPY apps/billing/web ./apps/billing/web
 COPY apps/mail/api ./apps/mail/api
 COPY apps/mail/web ./apps/mail/web
+COPY apps/devkit/api ./apps/devkit/api
+COPY apps/devkit/web ./apps/devkit/web
 
 RUN rm -rf apps/platform/web/public/storage \
   && mkdir -p apps/platform/web/public/storage \
@@ -34,6 +36,7 @@ RUN npm run build -w @cxapp/framework \
   && npm run build -w @cxapp/core-web \
   && npm run build -w @cxapp/billing-web \
   && npm run build -w @cxapp/mail-web \
+  && npm run build -w @cxapp/devkit-web \
   && npm run build -w @cxapp/platform-web \
   && npm run dependencies:check
 

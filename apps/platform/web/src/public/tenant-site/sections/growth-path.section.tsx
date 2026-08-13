@@ -1,13 +1,16 @@
 import { ArrowUpRight, Bot, FileCheck2, Landmark, ReceiptText } from "lucide-react";
 import { TenantSectionHeading } from "../blocks/tenant-section-heading";
+import { useTenantSite } from "../tenant-site.context";
 
 export function TenantGrowthPathSection() {
+  const { portal } = useTenantSite();
+
   return (
     <section className="tenant-page-section tenant-growth-section">
       <TenantSectionHeading
         eyebrow="A stronger billing journey"
         title="Start with a simple invoice. Extend the same flow to serious operational accuracy."
-        summary="CODEXSUN keeps the first steps easy for new staff while adding deeper checks, accounts visibility, and automation exactly where the work needs them."
+        summary={`${portal.brandName} keeps the first steps easy for new staff while adding deeper checks, accounts visibility, and automation exactly where the work needs them.`}
       />
       <div className="tenant-growth-path">
         <article>

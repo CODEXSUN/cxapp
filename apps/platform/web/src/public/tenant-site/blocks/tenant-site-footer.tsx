@@ -10,7 +10,12 @@ export function TenantSiteFooter() {
     <footer className="tenant-portal-footer">
       <div className="tenant-portal-footer-brand">
         <div>
-          <TenantSiteLogo className="tenant-portal-mark" />
+          <TenantSiteLogo
+            brandName={portal.brandName}
+            className="tenant-portal-mark"
+            logoDarkUrl={portal.logoDarkUrl}
+            logoUrl={portal.logoUrl}
+          />
           <strong>{portal.brandName}</strong>
         </div>
         <p>

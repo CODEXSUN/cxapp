@@ -138,7 +138,9 @@ export class StorageManagerRepository {
 
     const tenantKey = tenant.slug || tenant.tenantCode;
     const fileName = input.variant === "logo-dark" ? "logo-dark.svg" : "logo.svg";
-    const relativePath = `logo/${fileName}`;
+    const companyId = positiveCompanyId(input.companyId);
+    const logoFolder = `companies/${companyId}/logo`;
+    const relativePath = `${logoFolder}/${fileName}`;
     const base = tenantPublicStorageRoot(tenantKey);
     const filePath = resolveInsideStorage(base, relativePath);
     const buffer = Buffer.from(input.contentBase64, "base64");
@@ -150,7 +152,7 @@ export class StorageManagerRepository {
       throw new Error("Company logos must be 640 KB or smaller.");
     }
 
-    await mkdir(resolveInsideStorage(base, "logo"), { recursive: true });
+    await mkdir(resolveInsideStorage(base, logoFolder), { recursive: true });
     await writeFile(filePath, buffer);
     await this.recordObject({
       checksum: createHash("sha256").update(buffer).digest("hex"),
@@ -167,13 +169,18 @@ export class StorageManagerRepository {
     return { path: `storage/${tenantKey}/public/${relativePath}`, variant: input.variant };
   }
 
-  async readCompanyLogo(tenantId: string, variant: "logo" | "logo-dark") {
+  async readCompanyLogo(tenantId: string, companyId: number, variant: "logo" | "logo-dark") {
     const tenant = await this.tenants.findByIdOrCode(tenantId);
     if (!tenant) throw new Error("Tenant was not found for storage.");
 
     const tenantKey = tenant.slug || tenant.tenantCode;
     const fileName = variant === "logo-dark" ? "logo-dark.svg" : "logo.svg";
-    const filePath = resolveInsideStorage(tenantPublicStorageRoot(tenantKey), `logo/${fileName}`);
+    const base = tenantPublicStorageRoot(tenantKey);
+    const filePath = await firstExistingFile(base, [
+      `companies/${positiveCompanyId(companyId)}/logo/${fileName}`,
+      `logo/${fileName}`
+    ]);
+    if (!filePath) return null;
     let info;
     try {
       info = await stat(filePath);
@@ -290,6 +297,26 @@ export class StorageManagerRepository {
       })
       .execute();
   }
+}
+
+async function firstExistingFile(base: string, paths: string[]) {
+  for (const path of paths) {
+    const filePath = resolveInsideStorage(base, path);
+    try {
+      const info = await stat(filePath);
+      if (info.isFile()) return filePath;
+    } catch (error) {
+      if (!isFileNotFound(error)) throw error;
+    }
+  }
+  return null;
+}
+
+function positiveCompanyId(value: number) {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error("Company logo storage requires a valid company ID.");
+  }
+  return value;
 }
 
 function isFileNotFound(error: unknown) {

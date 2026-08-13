@@ -102,7 +102,7 @@ export function CompanyForm({
     {
       value: "logo",
       label: "Company Logo",
-      content: <LogoTab form={form} set={set} />
+      content: <LogoTab companyId={record?.id ?? null} form={form} set={set} />
     },
     {
       value: "addresses",
@@ -247,15 +247,18 @@ function DetailsTab({
 }
 
 function LogoTab({
+  companyId,
   form,
   set
 }: {
+  companyId: number | null;
   form: CompanySavePayload;
   set: <Key extends keyof CompanySavePayload>(key: Key, value: CompanySavePayload[Key]) => void;
 }) {
   return (
     <WorkspaceFormGrid columns={2}>
       <LogoUploadCard
+        companyId={companyId}
         defaultPreview={companyLogo}
         label="Light logo"
         path={form.logoPath}
@@ -263,6 +266,7 @@ function LogoTab({
         onUploaded={(path) => set("logoPath", path)}
       />
       <LogoUploadCard
+        companyId={companyId}
         dark
         defaultPreview={companyLogoDark}
         label="Dark logo"
@@ -275,6 +279,7 @@ function LogoTab({
 }
 
 function LogoUploadCard({
+  companyId,
   dark = false,
   defaultPreview,
   label,
@@ -282,6 +287,7 @@ function LogoUploadCard({
   path,
   variant
 }: {
+  companyId: number | null;
   dark?: boolean;
   defaultPreview: string;
   label: string;
@@ -301,7 +307,8 @@ function LogoUploadCard({
       return;
     }
     let objectUrl = "";
-    void readCompanyLogo(variant)
+    if (!companyId) return;
+    void readCompanyLogo(companyId, variant)
       .then((blob) => {
         if (!blob) return;
         objectUrl = URL.createObjectURL(blob);
@@ -311,10 +318,14 @@ function LogoUploadCard({
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [defaultPreview, path, variant]);
+  }, [companyId, defaultPreview, path, variant]);
 
   async function selectFile(file: File | undefined) {
     if (!file) return;
+    if (!companyId) {
+      setError("Save the Company before uploading its logo.");
+      return;
+    }
     setError("");
     if (!file.name.toLowerCase().endsWith(".svg") && file.type !== "image/svg+xml") {
       setError("Select an SVG logo file.");
@@ -327,7 +338,7 @@ function LogoUploadCard({
     setUploading(true);
     try {
       setPreview(await filePreview(file));
-      const uploaded = await uploadCompanyLogo(file, variant);
+      const uploaded = await uploadCompanyLogo(file, companyId, variant);
       onUploaded(uploaded.path);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to upload company logo.");
@@ -365,7 +376,9 @@ function LogoUploadCard({
           <div
             className={`text-center text-sm ${dark ? "text-slate-300" : "text-muted-foreground"}`}
           >
-            Drag and drop an SVG here, or browse from your computer.
+            {companyId
+              ? "Drag and drop an SVG here, or browse from your computer."
+              : "Save the Company before uploading its logo."}
           </div>
           <input
             ref={inputRef}
@@ -379,7 +392,7 @@ function LogoUploadCard({
             }}
           />
           <Button
-            disabled={uploading}
+            disabled={uploading || !companyId}
             type="button"
             variant={dark ? "secondary" : "outline"}
             onClick={() => inputRef.current?.click()}
@@ -1084,8 +1097,8 @@ function initialPayload(
       tcsAvailable: record.tcsAvailable ?? false,
       website: record.website,
       description: record.description,
-      logoPath: record.logoPath ?? "logo.svg",
-      logoDarkPath: record.logoDarkPath ?? "logo-dark.svg",
+      logoPath: record.logoPath,
+      logoDarkPath: record.logoDarkPath,
       industryId: record.industryId,
       status: record.isActive ? "active" : "suspend",
       isActive: record.isActive,
@@ -1108,8 +1121,8 @@ function initialPayload(
     tcsAvailable: false,
     website: null,
     description: null,
-    logoPath: "logo.svg",
-    logoDarkPath: "logo-dark.svg",
+    logoPath: null,
+    logoDarkPath: null,
     industryId: null,
     status: "active",
     isActive: true,

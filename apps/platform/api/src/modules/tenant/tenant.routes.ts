@@ -39,6 +39,8 @@ export async function registerTenantRoutes(app: FastifyInstance) {
         footerText: z.string(),
         headline: z.string(),
         loginPath: z.literal("/login"),
+        logoDarkUrl: z.string().nullable(),
+        logoUrl: z.string().nullable(),
         posts: z.array(portalContentSchema.extend({ href: z.string() })),
         publicSiteUrl: z.string().nullable(),
         slides: z.array(portalContentSchema),

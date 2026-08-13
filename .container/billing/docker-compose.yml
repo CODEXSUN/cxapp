@@ -6,7 +6,6 @@ x-api-service: &api-service
   volumes:
     - billing-stack-data:/storage
     - media-data:/storage/media
-    - ../deploy.env:/app/.env:ro
   networks:
     - cxapp-network
 
@@ -107,7 +106,6 @@ services:
     volumes:
       - billing-stack-data:/storage
       - media-data:/storage/media
-      - ../deploy.env:/app/.env:ro
     networks:
       - cxapp-network
 

@@ -68,10 +68,7 @@ const child = spawn(
       ...(app === "platform-web" ? env : {}),
       ...(app === "platform-api"
         ? {
-            CXAPP_DB_FRESH_SESSION_FILE: join(
-              tmpdir(),
-              `cxapp-platform-fresh-${process.pid}.done`
-            )
+            CXAPP_DB_FRESH_SESSION_FILE: join(tmpdir(), `cxapp-platform-fresh-${process.pid}.done`)
           }
         : {}),
       [config.envKey]: String(port)
@@ -81,6 +78,12 @@ const child = spawn(
 );
 
 child.on("exit", (code) => process.exit(code ?? 0));
+
+process.on("message", (message) => {
+  if (message?.type === "cxapp:shutdown") {
+    stopChild(child, "SIGTERM");
+  }
+});
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => {
@@ -362,18 +365,21 @@ function stopChild(childProcess, signal) {
     return;
   }
 
-  if (process.platform === "win32") {
-    try {
-      execFileSync("taskkill", ["/PID", String(childProcess.pid), "/T", "/F"], {
-        stdio: ["ignore", "pipe", "pipe"]
-      });
-    } catch {
-      childProcess.kill(signal);
-    }
-    return;
-  }
-
   childProcess.kill(signal);
+
+  const forceTimer = setTimeout(() => {
+    if (childProcess.exitCode !== null || !childProcess.pid) return;
+    if (process.platform === "win32") {
+      try {
+        execFileSync("taskkill", ["/PID", String(childProcess.pid), "/T", "/F"], {
+          stdio: ["ignore", "pipe", "pipe"]
+        });
+      } catch {}
+      return;
+    }
+    childProcess.kill("SIGKILL");
+  }, 3_000);
+  forceTimer.unref();
 }
 
 function nodePackageBin(packageName, binPath) {

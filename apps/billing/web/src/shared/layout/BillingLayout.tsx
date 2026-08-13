@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCompanyBranding } from "@cxapp/core-web/modules/organisation/company";
+import { companyBrandName, useCompanyBranding } from "@cxapp/core-web/modules/organisation/company";
 import { AppLayout } from "@cxapp/ui/layouts/app-layout";
 import type { SidemenuItem } from "@cxapp/ui/blocks/menu/sidemenu/sub/sidemenu-section";
 import type { SidebarBrand } from "@cxapp/ui/blocks/menu/sidemenu/app-sidebar";
@@ -52,8 +52,10 @@ export function BillingLayout({
     ...billingBrandBase,
     ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
     ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
-    logoAlt: `${companyBranding.company?.name ?? "Company"} logo`,
-    title: companyBranding.company?.name ?? billingBrandBase.title
+    logoAlt: `${companyBranding.brandName ?? "Company"} logo`,
+    title: companyBranding.company
+      ? companyBrandName(companyBranding.company)
+      : billingBrandBase.title
   };
   const menuItems: SidemenuItem[] = [
     {

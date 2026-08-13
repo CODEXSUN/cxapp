@@ -58,6 +58,7 @@ export type StorageUploadPayload = StorageListInput & {
 };
 
 export type CompanyLogoUploadPayload = {
+  companyId: number;
   contentBase64: string;
   variant: "logo" | "logo-dark";
 };

@@ -79,20 +79,20 @@ async function exerciseCompanyIndustryAndMissingLogos(tenant: TenantRow) {
 
   const companies = await request(tenant, "GET", "/core/organisation/companies");
   assert.equal(companies.statusCode, 200, "Tenant company lookup failed.");
-  const company = (companies.data as Array<{
-    id: number;
-    industryId: number | null;
-    name: string;
-  }>)[0];
+  const company = (
+    companies.data as Array<{
+      id: number;
+      industryId: number | null;
+      name: string;
+    }>
+  )[0];
   assert.ok(company, "A seeded tenant company is required for company validation E2E.");
 
   try {
-    const updated = await request(
-      tenant,
-      "PUT",
-      `/core/organisation/companies/${company.id}`,
-      { industryId: industry.id, name: company.name }
-    );
+    const updated = await request(tenant, "PUT", `/core/organisation/companies/${company.id}`, {
+      industryId: industry.id,
+      name: company.name
+    });
     assert.equal(updated.statusCode, 200, "Company industry validation lost tenant context.");
     assert.equal(
       (updated.data as { industryName: string | null }).industryName,
@@ -100,17 +100,19 @@ async function exerciseCompanyIndustryAndMissingLogos(tenant: TenantRow) {
       "Company did not persist the Platform-owned industry name."
     );
   } finally {
-    const restored = await request(
-      tenant,
-      "PUT",
-      `/core/organisation/companies/${company.id}`,
-      { industryId: company.industryId, name: company.name }
-    );
+    const restored = await request(tenant, "PUT", `/core/organisation/companies/${company.id}`, {
+      industryId: company.industryId,
+      name: company.name
+    });
     assert.equal(restored.statusCode, 200, "Company industry E2E cleanup failed.");
   }
 
   for (const variant of ["logo", "logo-dark"] as const) {
-    const logo = await request(tenant, "GET", `/tenant/media/company-logo/${variant}`);
+    const logo = await request(
+      tenant,
+      "GET",
+      `/tenant/media/companies/${company.id}/company-logo/${variant}`
+    );
     assert.equal(logo.statusCode, 404, `Missing ${variant} returned a server error.`);
     assert.equal(
       logo.error?.code,

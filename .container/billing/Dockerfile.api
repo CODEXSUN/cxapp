@@ -11,12 +11,14 @@ COPY apps/platform/api ./apps/platform/api
 COPY apps/core/api ./apps/core/api
 COPY apps/billing/api ./apps/billing/api
 COPY apps/mail/api ./apps/mail/api
+COPY apps/devkit/api ./apps/devkit/api
 
 RUN npm ci \
   && npm run build -w @cxapp/framework \
   && npm run build -w @cxapp/core-api \
   && npm run build -w @cxapp/billing-api \
   && npm run build -w @cxapp/mail-api \
+  && npm run build -w @cxapp/devkit-api \
   && npm run build -w @cxapp/platform-api \
   && npm run dependencies:check
 
@@ -44,9 +46,10 @@ RUN npm install --global npm@${NPM_RUNTIME_VERSION} \
   && apt-get install -y --no-install-recommends ca-certificates mariadb-client \
   && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /storage /app/apps/platform/web/public \
+  && touch /app/.env \
   && ln -s /storage/tenants /app/storage \
   && ln -s /storage/app/public /app/apps/platform/web/public/storage \
-  && chown -R node:node /storage /app/apps/platform
+  && chown -R node:node /storage /app/apps/platform /app/.env
 
 COPY --from=production-dependencies /app/node_modules ./node_modules
 COPY --from=build /app/packages/framework ./packages/framework
@@ -54,9 +57,11 @@ COPY --from=build /app/apps/platform/api/package.json ./apps/platform/api/packag
 COPY --from=build /app/apps/core/api/package.json ./apps/core/api/package.json
 COPY --from=build /app/apps/billing/api/package.json ./apps/billing/api/package.json
 COPY --from=build /app/apps/mail/api/package.json ./apps/mail/api/package.json
+COPY --from=build /app/apps/devkit/api/package.json ./apps/devkit/api/package.json
 COPY --from=build /app/dist/apps/core/api ./apps/core/api/dist
 COPY --from=build /app/dist/apps/billing/api ./apps/billing/api/dist
 COPY --from=build /app/dist/apps/mail/api ./apps/mail/api/dist
+COPY --from=build /app/dist/apps/devkit/api ./apps/devkit/api/dist
 COPY --from=build /app/dist ./dist
 COPY .container/scripts/api-entrypoint.sh /usr/local/bin/cxapp-api-entrypoint
 
@@ -64,6 +69,7 @@ RUN sed -i 's#\./src/index\.ts#./dist/index.js#g; s#\./src/modules/mail/index\.t
       /app/apps/core/api/package.json \
       /app/apps/billing/api/package.json \
       /app/apps/mail/api/package.json \
+      /app/apps/devkit/api/package.json \
   && chmod +x /usr/local/bin/cxapp-api-entrypoint
 ENV NODE_ENV=production
 USER node

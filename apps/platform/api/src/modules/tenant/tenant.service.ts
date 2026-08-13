@@ -18,7 +18,11 @@ import {
   defaultTenantDomainForSlug,
   normalizeTenantDomain
 } from "../tenant-domain/tenant-domain.repository.js";
-import { getDefaultCompanyForDatabase } from "@cxapp/core-api";
+import {
+  getApplicationCompanyBrandingForDatabase,
+  getDefaultCompanyForDatabase,
+  type ApplicationCompanyBranding
+} from "@cxapp/core-api";
 import { AppError, isAppError } from "@cxapp/framework/errors";
 
 export class TenantService {
@@ -53,6 +57,11 @@ export class TenantService {
   }
 
   async getPublicPortal(value: string): Promise<TenantPublicPortal> {
+    const { company, domain, tenant } = await this.getPublicApplicationCompany(value);
+    return publicPortalForTenant(tenant, domain, company);
+  }
+
+  async getPublicApplicationCompany(value: string) {
     const domain = normalizeTenantDomain(value);
     let tenant = domain ? await this.repository.findByDomain(domain) : null;
     const canonicalDomain = normalizeTenantDomain(env.PLATFORM_WEB_ORIGIN);
@@ -61,7 +70,10 @@ export class TenantService {
       tenant = await this.repository.findByCorporateId(env.DEFAULT_TENANT_CORPORATE_ID);
     }
 
-    return publicPortalForTenant(tenant, domain);
+    const company = tenant
+      ? await getApplicationCompanyBrandingForDatabase(tenant.dbName).catch(() => null)
+      : null;
+    return { company, domain, tenant };
   }
 
   async createTenant(input: TenantSavePayload) {
@@ -155,10 +167,19 @@ export class TenantService {
 
 const portalThemes = new Set<TenantPortalTheme>(["blue", "emerald", "slate", "violet"]);
 
-function publicPortalForTenant(tenant: Tenant | null, domain: string): TenantPublicPortal {
+export function publicPortalForTenant(
+  tenant: Tenant | null,
+  domain: string,
+  company: ApplicationCompanyBranding | null = null
+): TenantPublicPortal {
   const settings =
     tenant && isRecord(tenant.payloadSettings.appPortal) ? tenant.payloadSettings.appPortal : {};
-  const brandName = portalText(settings.brandName, tenant?.tenantName ?? "Your workspace", 80);
+  const configuredBrandName = portalText(
+    settings.brandName,
+    tenant?.tenantName ?? "Your workspace",
+    80
+  );
+  const brandName = portalText(company?.brandName, configuredBrandName, 80);
   const publicSiteUrl = safePublicUrl(settings.publicSiteUrl);
   const theme = portalThemes.has(settings.theme as TenantPortalTheme)
     ? (settings.theme as TenantPortalTheme)
@@ -238,6 +259,10 @@ function publicPortalForTenant(tenant: Tenant | null, domain: string): TenantPub
     ),
     headline: portalText(settings.headline, "One workspace. Clear work. Every day.", 140),
     loginPath: "/login",
+    logoDarkUrl: company?.logoDarkPath
+      ? publicCompanyLogoUrl("logo-dark", company.updatedAt)
+      : null,
+    logoUrl: company?.logoPath ? publicCompanyLogoUrl("logo", company.updatedAt) : null,
     posts: portalPostList(settings.posts, fallbackPosts),
     publicSiteUrl,
     slides: portalContentList(settings.slides, fallbackSlides),
@@ -249,6 +274,10 @@ function publicPortalForTenant(tenant: Tenant | null, domain: string): TenantPub
     tenantCode: tenant?.tenantCode ?? null,
     theme
   };
+}
+
+function publicCompanyLogoUrl(variant: "logo" | "logo-dark", updatedAt: string) {
+  return `/public/app-portal/company-logo/${variant}?v=${encodeURIComponent(updatedAt)}`;
 }
 
 function portalContentList(value: unknown, fallback: TenantPortalContent[]) {

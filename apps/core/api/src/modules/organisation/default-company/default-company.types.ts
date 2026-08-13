@@ -23,3 +23,13 @@ export type DefaultCompanySavePayload = {
 };
 
 export type DefaultCompanyLookup = { id: number; label: string; code?: string };
+
+export type ApplicationCompanyBranding = {
+  brandName: string;
+  companyId: number;
+  legalName: string | null;
+  logoDarkPath: string | null;
+  logoPath: string | null;
+  name: string;
+  updatedAt: string;
+};

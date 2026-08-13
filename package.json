@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.55",
+  "version": "1.0.57",
   "private": true,
   "packageManager": "npm@12.0.1",
   "description": "CODEXSUN",
@@ -14,6 +14,7 @@
     "dev": "node tools/dev-stack.mjs",
     "dev:api": "node tools/preflight.mjs platform-api",
     "dev:web": "node tools/preflight.mjs platform-web",
+    "test:dev-stack": "node --test tools/dev-stack-contract.test.mjs",
     "test:product-stacks": "node --test tools/product-stack-contract.test.mjs",
     "test:platform-runtime": "npm run build -w @cxapp/framework && node --test tools/platform-runtime-contract.test.mjs",
     "test:platform-persistence": "node --test tools/platform-persistence-contract.test.mjs",

@@ -40,11 +40,15 @@ test("development and deployment samples own independent runtime endpoints", asy
 test("container tooling and Compose consume deploy.env only", async () => {
   const common = await read(".container/scripts/common.sh");
   const compose = await read(".container/billing/docker-compose.yml");
+  const apiDockerfile = await read(".container/billing/Dockerfile.api");
 
   assert.match(common, /DEPLOY_ENV=\$CONTAINER_DIR\/deploy\.env/u);
   assert.doesNotMatch(common, /DEPLOY_ENV=\$PROJECT_ROOT\/\.env/u);
   assert.match(compose, /\.\.\/deploy\.env/u);
   assert.doesNotMatch(compose, /\.\.\/\.\.\/\.env/u);
+  assert.doesNotMatch(compose, /deploy\.env:\/app\/\.env/u);
+  assert.match(apiDockerfile, /touch \/app\/\.env/u);
+  assert.match(apiDockerfile, /chown[^\n]*\/app\/\.env/u);
 });
 
 test("guarded updates enforce reproducible versions and recoverable deployment evidence", async () => {
@@ -57,8 +61,19 @@ test("guarded updates enforce reproducible versions and recoverable deployment e
   assert.match(update, /BILLING_STACK_MIGRATIONS_IMAGE_TAG/u);
   assert.match(update, /--allow-dirty/u);
   assert.match(update, /sha256sum --check/u);
+  assert.match(update, /mariadb-dump \\\n+  --no-defaults/u);
   assert.match(update, /CXAPP_UPDATE_MIN_DOCKER_FREE_MB/u);
   assert.match(update, /cxapp-deployment-\$timestamp\.json/u);
+});
+
+test("deployment smoke test uses the current tenant schema and configured identity", async () => {
+  const smokeTest = await read(".container/smoke-test.sh");
+
+  assert.match(smokeTest, /FROM tenants/u);
+  assert.doesNotMatch(smokeTest, /FROM app_tenants/u);
+  assert.match(smokeTest, /env_value DEFAULT_TENANT_CORPORATE_ID/u);
+  assert.match(smokeTest, /env_value DEFAULT_TENANT_DB_NAME/u);
+  assert.doesNotMatch(smokeTest, /CODEXSUN:cxapp_db/u);
 });
 
 test("cloud environment preparation is separate from setup and never copies local env", async () => {

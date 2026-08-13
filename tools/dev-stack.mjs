@@ -5,104 +5,160 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const services = {
-  "platform-api": { color: "\x1b[36m", label: "api", preflight: "platform-api" },
-  "platform-web": { color: "\x1b[32m", label: "web", preflight: "platform-web" }
+  "platform-api": {
+    color: "\x1b[36m",
+    healthUrl: "http://127.0.0.1:7010/health",
+    label: "api",
+    readyTimeoutMs: 90_000
+  },
+  "platform-web": {
+    color: "\x1b[32m",
+    healthUrl: "http://127.0.0.1:7020/",
+    label: "web",
+    readyTimeoutMs: 30_000
+  }
 };
 const reset = "\x1b[0m";
-const children = new Set();
+const runtimes = new Map(
+  Object.keys(services).map((serviceName) => [
+    serviceName,
+    {
+      child: null,
+      failures: 0,
+      restartHistory: [],
+      restarting: false
+    }
+  ])
+);
+let healthTimer;
 let stopping = false;
 
-console.log("\nCODEXSUN Platform runtime");
-await startStack();
+console.log("\nCXApp Platform development runtime");
+
+try {
+  await startAndWait("platform-api");
+  await startAndWait("platform-web");
+  console.log("  ok Platform API and Web are ready");
+  console.log("  - API and Web restart independently after local changes or failures\n");
+  monitorStackHealth();
+} catch (error) {
+  console.error(`  x ${errorMessage(error)}`);
+  await shutdown(1);
+}
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.once(signal, () => {
-    stopChildren();
-    process.exit(0);
-  });
+  process.once(signal, () => void shutdown(0));
 }
 
-function startService(serviceName) {
+async function startAndWait(serviceName) {
+  launchService(serviceName);
   const service = services[serviceName];
-  const child = spawn(process.execPath, ["tools/preflight.mjs", service.preflight], {
+  console.log(`  - Waiting for ${service.label}`);
+  await waitForHealthyUrl(service.healthUrl, service.label, service.readyTimeoutMs);
+  runtimes.get(serviceName).failures = 0;
+}
+
+function launchService(serviceName) {
+  const service = services[serviceName];
+  const runtime = runtimes.get(serviceName);
+  const child = spawn(process.execPath, ["tools/preflight.mjs", serviceName], {
     cwd: root,
     env: process.env,
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe", "ipc"]
   });
 
-  children.add(child);
+  runtime.child = child;
   child.stdout.on("data", (chunk) => writeServiceLines(service, chunk));
   child.stderr.on("data", (chunk) => writeServiceLines(service, chunk));
-  child.on("exit", (code) => {
-    children.delete(child);
-    if (stopping) return;
-
-    const exitCode = code ?? 1;
-    console.error(`${service.color}[${service.label}]${reset} exited with code ${exitCode}`);
-    stopChildren(child);
-    process.exit(exitCode || 1);
+  child.on("exit", (code, signal) => {
+    if (runtime.child !== child) return;
+    runtime.child = null;
+    if (stopping || runtime.restarting) return;
+    const reason = signal ? `signal ${signal}` : `code ${code ?? 1}`;
+    console.error(`${service.color}[${service.label}]${reset} exited with ${reason}`);
+    void restartService(serviceName, "process exit");
   });
-
-  return child;
 }
 
-async function startStack() {
-  console.log(`  - ${services["platform-api"].label}`);
-  startService("platform-api");
-  await waitForHealthyUrl("http://127.0.0.1:7010/health", "Platform API", 90_000);
+async function restartService(serviceName, reason) {
+  const runtime = runtimes.get(serviceName);
+  const service = services[serviceName];
+  if (stopping || runtime.restarting) return;
 
-  console.log(`  - ${services["platform-web"].label}`);
-  startService("platform-web");
-  await waitForHealthyUrl("http://127.0.0.1:7020/", "Platform Web", 30_000);
-  console.log("  ok Platform API and Web are ready\n");
-  monitorStackHealth();
+  runtime.restarting = true;
+  runtime.restartHistory = recentRestarts(runtime.restartHistory);
+  if (runtime.restartHistory.length >= 5) {
+    console.error(
+      `${service.color}[${service.label}]${reset} stopped after five restart attempts in 30 seconds`
+    );
+    await shutdown(1);
+    return;
+  }
+  runtime.restartHistory.push(Date.now());
+
+  try {
+    console.log(`${service.color}[${service.label}]${reset} restarting after ${reason}`);
+    await stopServiceChild(runtime.child);
+    if (stopping) return;
+    await wait(500);
+    launchService(serviceName);
+    await waitForHealthyUrl(service.healthUrl, service.label, service.readyTimeoutMs);
+    runtime.failures = 0;
+    console.log(`${service.color}[${service.label}]${reset} restart complete`);
+  } catch (error) {
+    console.error(
+      `${service.color}[${service.label}]${reset} restart failed: ${errorMessage(error)}`
+    );
+    runtime.restarting = false;
+    if (!stopping) void restartService(serviceName, "failed restart");
+    return;
+  }
+
+  runtime.restarting = false;
 }
 
 async function waitForHealthyUrl(url, label, timeoutMs) {
   const startedAt = Date.now();
   let lastStatus = "not reachable";
 
-  while (Date.now() - startedAt < timeoutMs) {
+  while (!stopping && Date.now() - startedAt < timeoutMs) {
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(2_000) });
       lastStatus = `HTTP ${response.status}`;
       if (response.ok) return;
     } catch (error) {
-      lastStatus = error instanceof Error ? error.message : String(error);
+      lastStatus = errorMessage(error);
     }
 
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await wait(500);
   }
 
-  console.error(`  x ${label} did not become healthy: ${lastStatus}`);
-  stopChildren();
-  process.exit(1);
+  throw new Error(`${label} did not become healthy: ${lastStatus}`);
 }
 
 function monitorStackHealth() {
-  const targets = [
-    { failures: 0, label: "Platform API", url: "http://127.0.0.1:7010/health" },
-    { failures: 0, label: "Platform Web", url: "http://127.0.0.1:7020/" }
-  ];
   let checking = false;
-
-  setInterval(async () => {
+  healthTimer = setInterval(async () => {
     if (checking || stopping) return;
     checking = true;
 
     try {
-      for (const target of targets) {
+      for (const [serviceName, service] of Object.entries(services)) {
+        const runtime = runtimes.get(serviceName);
+        if (runtime.restarting) continue;
+
         try {
-          const response = await fetch(target.url, { signal: AbortSignal.timeout(2_000) });
-          target.failures = response.ok ? 0 : target.failures + 1;
+          const response = await fetch(service.healthUrl, {
+            signal: AbortSignal.timeout(2_000)
+          });
+          runtime.failures = response.ok ? 0 : runtime.failures + 1;
         } catch {
-          target.failures += 1;
+          runtime.failures += 1;
         }
 
-        if (target.failures >= 3) {
-          console.error(`  x ${target.label} became unavailable; stopping Platform runtime`);
-          stopChildren();
-          process.exit(1);
+        if (runtime.failures >= 3) {
+          runtime.failures = 0;
+          void restartService(serviceName, "failed health checks");
         }
       }
     } finally {
@@ -118,14 +174,52 @@ function writeServiceLines(service, chunk) {
   }
 }
 
-function stopChildren(skipChild) {
+async function shutdown(exitCode) {
+  if (stopping) return;
   stopping = true;
-  for (const child of children) {
-    if (child === skipChild || child.killed || !child.pid) continue;
-    if (process.platform === "win32") {
-      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
-    } else {
-      child.kill("SIGTERM");
-    }
+  if (healthTimer) clearInterval(healthTimer);
+  await Promise.all(Array.from(runtimes.values(), (runtime) => stopServiceChild(runtime.child)));
+  process.exit(exitCode);
+}
+
+async function stopServiceChild(child) {
+  if (!child || child.exitCode !== null || !child.pid) return;
+
+  const exited = waitForExit(child, 3_000);
+  if (child.connected) child.send({ type: "cxapp:shutdown" });
+  else child.kill("SIGTERM");
+  if (await exited) return;
+
+  if (process.platform === "win32") {
+    spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+  } else {
+    child.kill("SIGKILL");
   }
+}
+
+function waitForExit(child, timeoutMs) {
+  return new Promise((resolveWait) => {
+    if (child.exitCode !== null) {
+      resolveWait(true);
+      return;
+    }
+    const timer = setTimeout(() => resolveWait(false), timeoutMs);
+    child.once("exit", () => {
+      clearTimeout(timer);
+      resolveWait(true);
+    });
+  });
+}
+
+function recentRestarts(history) {
+  const threshold = Date.now() - 30_000;
+  return history.filter((startedAt) => startedAt >= threshold);
+}
+
+function wait(milliseconds) {
+  return new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
 }

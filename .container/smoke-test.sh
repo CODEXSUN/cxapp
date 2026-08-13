@@ -73,7 +73,7 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
     tenant_count=$(docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
-      -e "SELECT COUNT(*) FROM app_tenants;")
+      -e "SELECT COUNT(*) FROM tenants;")
     [ "$tenant_count" = "1" ] || {
       echo "Single-tenant deployment expected exactly one tenant; found: $tenant_count" >&2
       exit 69
@@ -81,12 +81,13 @@ if [ "$(env_value ENABLE_DEFAULT_TENANT_SEED)" = "1" ]; then
     default_tenant=$(docker exec -e MYSQL_PWD="$db_password" cxapp-mariadb \
       mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u "$db_user" \
       --batch --skip-column-names "$master_db" \
-      -e "SELECT CONCAT(corporate_id, ':', db_name) FROM app_tenants LIMIT 1;")
-    [ "$default_tenant" = "CODEXSUN:cxapp_db" ] || {
+      -e "SELECT CONCAT(corporate_id, ':', db_name) FROM tenants LIMIT 1;")
+    expected_default_tenant="$(env_value DEFAULT_TENANT_CORPORATE_ID):$(env_value DEFAULT_TENANT_DB_NAME)"
+    [ "$default_tenant" = "$expected_default_tenant" ] || {
       echo "Unexpected default tenant mapping: $default_tenant" >&2
       exit 69
     }
-    echo "ok single default tenant mapping: CODEXSUN -> cxapp_db"
+    echo "ok single default tenant mapping: $expected_default_tenant"
   fi
 fi
 

@@ -29,6 +29,16 @@ npm run dev
 ```
 
 The single root command starts the Platform API and Platform web shell together.
+It supervises each process separately. An API restart does not stop the web process,
+and a web restart does not stop the API process.
+
+The API watcher restarts after backend source or `.env` changes. Vite updates frontend
+source through hot reload and restarts its server when its configuration changes. The
+supervisor also restarts only the unhealthy process after repeated health-check failures.
+
+Use `npm run dev:api` or `npm run dev:web` when you need only one development process.
+The separate web command waits for a healthy API before it starts.
+
 Core, Billing, and Mail attach as packages; they have no standalone development
 entrypoints.
 

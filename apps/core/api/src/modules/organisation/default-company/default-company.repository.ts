@@ -1,6 +1,10 @@
 import { sql } from "kysely";
 import { getCoreDatabase } from "../../../database/core-database.js";
-import type { DefaultCompanyRecord, DefaultCompanySavePayload } from "./default-company.types.js";
+import type {
+  ApplicationCompanyBranding,
+  DefaultCompanyRecord,
+  DefaultCompanySavePayload
+} from "./default-company.types.js";
 
 type Row = {
   id: number | string;
@@ -14,6 +18,15 @@ type Row = {
   landing_app: string;
   status: string;
   created_at: string;
+  updated_at: string;
+};
+
+type BrandingRow = {
+  company_id: number | string;
+  legal_name: string | null;
+  logo_dark_path: string | null;
+  logo_path: string | null;
+  name: string;
   updated_at: string;
 };
 
@@ -37,6 +50,28 @@ export class DefaultCompanyRepository {
       );
     }
     return (await this.get())!;
+  }
+  async getApplicationBranding(): Promise<ApplicationCompanyBranding | null> {
+    const rows = await sql<BrandingRow>`
+      SELECT c.id AS company_id,c.name,c.legal_name,c.logo_path,c.logo_dark_path,c.updated_at
+      FROM core_default_company_settings d
+      INNER JOIN core_companies c ON c.id=d.company_id
+      WHERE d.singleton_key=1 AND d.status='active' AND c.status='active'
+      LIMIT 1
+    `.execute(getCoreDatabase());
+    const row = rows.rows[0];
+    if (!row) return null;
+    const name = row.name.trim();
+    const legalName = nullableText(row.legal_name);
+    return {
+      brandName: legalName ?? name,
+      companyId: Number(row.company_id),
+      legalName,
+      logoDarkPath: nullableText(row.logo_dark_path),
+      logoPath: nullableText(row.logo_path),
+      name,
+      updatedAt: String(row.updated_at)
+    };
   }
   async findCompany(id: number) {
     const rows = await sql<{
@@ -97,6 +132,11 @@ export class DefaultCompanyRepository {
     );
     return rows.rows.map((row) => ({ id: Number(row.id), label: row.name }));
   }
+}
+
+function nullableText(value: string | null) {
+  const normalized = value?.trim() ?? "";
+  return normalized || null;
 }
 function mapRow(row: Row): DefaultCompanyRecord {
   return {

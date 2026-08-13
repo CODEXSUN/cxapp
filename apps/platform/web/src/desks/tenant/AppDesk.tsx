@@ -36,7 +36,10 @@ import {
   type PlatformAppId
 } from "../../app/app-registry";
 import { getTenantRuntime } from "../../modules/tenant/tenant.services";
-import { useCompanyBranding } from "@cxapp/core-web/modules/organisation/company/branding";
+import {
+  companyBrandName,
+  useCompanyBranding
+} from "@cxapp/core-web/modules/organisation/company/branding";
 import { listCompanies } from "@cxapp/core-web/modules/organisation/company/services";
 import { defaultCompanyQueryKey } from "@cxapp/core-web/modules/organisation/default-company/hooks";
 import {
@@ -647,11 +650,11 @@ export function AppDesk() {
                   : "/app/application/overview",
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
           ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
-          logoAlt: `${selectedCompany?.name ?? "Company"} logo`,
+          logoAlt: `${companyBranding.brandName ?? "Company"} logo`,
           options: activeCompanies.map((company) => ({
             id: String(company.id),
             subtitle: accountingYear,
-            title: company.name
+            title: companyBrandName(company)
           })),
           optionsLabel: "Company",
           onOptionSelect: (id) => {
@@ -674,7 +677,7 @@ export function AppDesk() {
           subtitle: selectedFinancialYear
             ? selectedFinancialYear.name
             : `${activeWorkspaceTitle.toLowerCase()} workspace`,
-          title: selectedCompany?.name ?? activeWorkspaceTitle
+          title: companyBranding.brandName ?? activeWorkspaceTitle
         }}
         headerTitle={activePageTitle}
         homeHref="/"

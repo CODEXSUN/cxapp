@@ -26,6 +26,8 @@ export const fallbackTenantPortal: TenantPublicPortal = {
     "Billing, accounts, compliance documents, staff controls, and daily follow-up in one clear business flow.",
   headline: "Invoice faster. Stay accurate. Know what happens next.",
   loginPath: "/login",
+  logoDarkUrl: null,
+  logoUrl: null,
   posts: [
     {
       description: "A clear billing flow that a new team member can understand quickly.",

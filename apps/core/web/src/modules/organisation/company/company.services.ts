@@ -70,14 +70,19 @@ export const deactivateCompany = (id: number) =>
 export const forceDeleteCompany = (id: number) =>
   request<CompanyRecord>(`${companyPath}/${id}/force`, { method: "DELETE" });
 
-export async function uploadCompanyLogo(file: File, variant: "logo" | "logo-dark") {
+export async function uploadCompanyLogo(
+  file: File,
+  companyId: number,
+  variant: "logo" | "logo-dark"
+) {
   if (!file.name.toLowerCase().endsWith(".svg") && file.type !== "image/svg+xml") {
     throw new Error("Select an SVG logo file.");
   }
   if (file.size > 640 * 1024) throw new Error("Company logos must be 640 KB or smaller.");
   const token = getToken("tenant");
   const response = await fetch(`${platformBase}/tenant/media/company-logo`, {
-    body: JSON.stringify({ contentBase64: await fileToBase64(file), variant }),
+    body: JSON.stringify({ companyId, contentBase64: await fileToBase64(file), variant }),
+    credentials: "include",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -94,14 +99,18 @@ export async function uploadCompanyLogo(file: File, variant: "logo" | "logo-dark
   return body.data;
 }
 
-export async function readCompanyLogo(variant: "logo" | "logo-dark") {
+export async function readCompanyLogo(companyId: number, variant: "logo" | "logo-dark") {
   const token = getToken("tenant");
-  const response = await fetch(`${platformBase}/tenant/media/company-logo/${variant}`, {
-    headers: {
-      Accept: "image/svg+xml",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+  const response = await fetch(
+    `${platformBase}/tenant/media/companies/${companyId}/company-logo/${variant}`,
+    {
+      credentials: "include",
+      headers: {
+        Accept: "image/svg+xml",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
     }
-  });
+  );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Unable to load the stored company logo.");
   return response.blob();

@@ -19,6 +19,8 @@ export type TenantPublicPortal = {
   footerText: string;
   headline: string;
   loginPath: "/login";
+  logoDarkUrl: string | null;
+  logoUrl: string | null;
   posts: TenantPortalPost[];
   publicSiteUrl: string | null;
   slides: TenantPortalContent[];

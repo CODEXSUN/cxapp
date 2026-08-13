@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.55
+Current version: 1.0.57
 
-Release tag: v-1.0.55
+Release tag: v-1.0.57
 
-Changelog label: v 1.0.55
+Changelog label: v 1.0.57
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,56 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.57
+
+### [v 1.0.57] 2026-08-13 2:01 am - Development restart and deployment compatibility
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.57.
+- Changed `npm run dev` to supervise the Platform API and Platform Web as separate processes.
+- Restarted only the failed process after a process exit or three failed health checks.
+- Kept the sibling process available during an API or web restart.
+- Added a graceful child shutdown request with a three-second forced-stop fallback.
+- Limited restart loops to five attempts within 30 seconds.
+- Kept backend source and `.env` watching in the API process.
+- Kept frontend hot reload and configuration restart behavior in Vite.
+- Retained `npm run dev:api` and `npm run dev:web` for separate local development processes.
+- Added contract tests for independent restarts and graceful shutdown order.
+- Verified both restart directions live with HTTP 200 responses on ports 7010 and 7020.
+- Documented the combined and separate local development commands.
+- Added DevKit API and Web packages to the production container build and runtime images.
+- Replaced the host deployment-file bind with an image-owned empty `.env` and Compose runtime variables.
+- Updated the deployment smoke test to use the `tenants` table and configured default tenant identity.
+- Added `mariadb-dump --no-defaults` to prevent host or container client settings from changing backups.
+- Added deployment contract tests for the container environment, backup, tenant table, and tenant identity rules.
+
+## v-1.0.56
+
+### [v 1.0.56] 2026-08-11 6:29 pm - Application company branding
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.56.
+- Used the Application Company legal name as the public home and desk brand name.
+- Used the Company name when the legal name is empty.
+- Connected the public tenant home, tenant desk, Billing desk, and document header to the Company logos.
+- Added a tenant-resolved public logo route for the Application Company.
+- Scoped new logo files by Company ID and kept a read fallback for old tenant-wide logo files.
+- Fixed logo upload and read requests for HttpOnly cookie sessions.
+- Checked Company access before upload and read operations.
+- Disabled logo upload until the Company record exists and removed placeholder logo paths.
+- Updated the tenant access test for the Company-scoped logo route.
+- Documented the Storage Manager Company logo routes and storage rules.
 
 ## v-1.0.55
 

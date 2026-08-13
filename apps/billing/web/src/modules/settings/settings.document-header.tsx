@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { useCompanyBranding } from "@cxapp/core-web/modules/organisation/company";
+import { companyBrandName, useCompanyBranding } from "@cxapp/core-web/modules/organisation/company";
 import { cn } from "@cxapp/ui/lib/utils";
 import { useBillingSettings, useCompanyContextId } from "./settings.hooks";
 import { defaultBillingSettings, type BillingSettings } from "./settings.types";
@@ -37,7 +37,7 @@ export function BillingDocumentHeader({
     >
       {settings.printing.printWithLogo && branding.lightLogoUrl ? (
         <img
-          alt={`${company?.name ?? "Company"} logo`}
+          alt={`${branding.brandName ?? "Company"} logo`}
           className="absolute object-contain"
           src={branding.lightLogoUrl}
           style={{
@@ -57,7 +57,7 @@ export function BillingDocumentHeader({
             fontSize: `${Math.max(10, letterhead.companySize)}px`
           }}
         >
-          {company?.name ?? "Company"}
+          {company ? companyBrandName(company) : "Company"}
         </div>
         {addressLines.map((line) => (
           <div
@@ -109,7 +109,7 @@ export function BillingDocumentHeader({
 
 export function BillingCompanyName({ fallback = "Company" }: { fallback?: string }) {
   const companyId = useCompanyContextId();
-  return <>{useCompanyBranding(companyId).company?.name ?? fallback}</>;
+  return <>{useCompanyBranding(companyId).brandName ?? fallback}</>;
 }
 
 function formatAddress(

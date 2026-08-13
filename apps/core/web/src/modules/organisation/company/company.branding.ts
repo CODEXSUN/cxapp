@@ -11,23 +11,28 @@ export function useCompanyBranding(companyId: number | null) {
   const company = companyQuery.data;
   const lightLogoQuery = useQuery({
     enabled: Boolean(company?.logoPath),
-    queryFn: () => readCompanyLogo("logo"),
+    queryFn: () => readCompanyLogo(companyId!, "logo"),
     queryKey: ["core", "organisation", "companies", companyId, "logo", company?.updatedAt]
   });
   const darkLogoQuery = useQuery({
     enabled: Boolean(company?.logoDarkPath),
-    queryFn: () => readCompanyLogo("logo-dark"),
+    queryFn: () => readCompanyLogo(companyId!, "logo-dark"),
     queryKey: ["core", "organisation", "companies", companyId, "logo-dark", company?.updatedAt]
   });
   const lightLogoUrl = useBlobUrl(lightLogoQuery.data);
   const darkLogoUrl = useBlobUrl(darkLogoQuery.data) ?? lightLogoUrl;
 
   return {
+    brandName: company ? companyBrandName(company) : null,
     company,
     darkLogoUrl,
     isLoading: companyQuery.isLoading || lightLogoQuery.isLoading || darkLogoQuery.isLoading,
     lightLogoUrl
   };
+}
+
+export function companyBrandName(company: { legalName: string | null; name: string }) {
+  return company.legalName?.trim() || company.name.trim();
 }
 
 function useBlobUrl(blob: Blob | null | undefined) {

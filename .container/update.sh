@@ -387,6 +387,7 @@ if ! MSYS_NO_PATHCONV=1 docker exec \
   -e MYSQL_PWD="$(env_value DB_PASSWORD)" \
   cxapp-mariadb \
   mariadb-dump \
+  --no-defaults \
   --user="$(env_value DB_USER)" \
   --all-databases \
   --single-transaction \

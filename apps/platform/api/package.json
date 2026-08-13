@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/platform-api",
-  "version": "1.0.55",
+  "version": "1.0.57",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,11 +9,11 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@cxapp/billing-api": "^1.0.55",
-    "@cxapp/core-api": "^1.0.55",
-    "@cxapp/devkit-api": "^1.0.55",
-    "@cxapp/framework": "^1.0.55",
-    "@cxapp/mail-api": "^1.0.55",
+    "@cxapp/billing-api": "^1.0.57",
+    "@cxapp/core-api": "^1.0.57",
+    "@cxapp/devkit-api": "^1.0.57",
+    "@cxapp/framework": "^1.0.57",
+    "@cxapp/mail-api": "^1.0.57",
     "bullmq": "^5.79.3",
     "fastify": "^5.2.1",
     "kysely": "^0.29.0",
