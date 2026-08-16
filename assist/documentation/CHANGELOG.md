@@ -53,6 +53,8 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   private sideloading release can continue to GitHub publication.
 - Made GitHub publication replace assets when a release tag is rebuilt. A failed installer fix can
   now update the same release without creating a duplicate release.
+- Updated the GitHub checkout, Node.js setup, and .NET setup actions to their current runtimes. This
+  removes the deprecated Node.js 20 action warning from the Windows release.
 - Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
   current limitation: the Windows host is an enrollment foundation until the local runtime and
   module-owned synchronization implementations are complete.
