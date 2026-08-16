@@ -7,6 +7,13 @@ import { findWorkspacePackageFiles } from "./version-bump.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const CHANGELOG_PATH = join(ROOT, "assist", "documentation", "CHANGELOG.md");
+const WINDOWS_PACKAGE_MANIFEST = join(
+  ROOT,
+  "apps",
+  "platform",
+  "windows",
+  "Package.appxmanifest"
+);
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, "utf8"));
@@ -61,6 +68,16 @@ function checkVersions(rootDir) {
 
   if (!changelog.includes(`## ${expectedTag}`)) {
     failures.push(`Changelog must contain section ## ${expectedTag}.`);
+  }
+
+  if (existsSync(WINDOWS_PACKAGE_MANIFEST)) {
+    const manifest = readFileSync(WINDOWS_PACKAGE_MANIFEST, "utf8");
+    const packageVersion = manifest.match(/<Identity\b[^>]*\bVersion="([^"]+)"/u)?.[1];
+    if (packageVersion !== `${rootVersion}.0`) {
+      failures.push(
+        `Windows Package.appxmanifest version is ${packageVersion ?? "missing"}; expected ${rootVersion}.0.`
+      );
+    }
   }
 
   const deploymentSample = join(rootDir, ".container", "deploy.env.sample");

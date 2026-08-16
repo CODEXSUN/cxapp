@@ -73,7 +73,6 @@ $releaseRoot = Join-Path $distRoot "releases\windows"
 $stagingRoot = Join-Path $distRoot ".package\windows"
 $projectPath = Join-Path $windowsRoot "CXApp.Windows.csproj"
 $dotnet = Resolve-Tool "dotnet.exe" "C:\Program Files\dotnet\dotnet.exe"
-$makeAppx = Resolve-SdkTool "makeappx.exe"
 $signTool = Resolve-SdkTool "signtool.exe"
 
 if (-not $Version) {
@@ -92,24 +91,26 @@ Assert-DistPath $stagingRoot
 Reset-Directory $releaseRoot
 Reset-Directory $stagingRoot
 
-& $dotnet publish $projectPath --configuration Release --runtime win-x64 --self-contained true
+& $dotnet publish $projectPath `
+    --configuration Release `
+    --runtime win-x64 `
+    --self-contained true `
+    -p:GenerateAppxPackageOnBuild=true `
+    -p:AppxPackageSigningEnabled=false `
+    -p:AppxBundle=Never `
+    -p:AppxSymbolPackageEnabled=false `
+    -p:UapAppxPackageBuildMode=SideloadOnly `
+    -p:AppxPackageDir="$stagingRoot\"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$publishRoot = Join-Path $distRoot "apps\platform\windows\Release\net10.0-windows10.0.26100.0\win-x64\publish"
-if (-not (Test-Path -LiteralPath $publishRoot)) {
-    throw "Windows publish output was not found at $publishRoot."
+$generatedMsix = Get-ChildItem -LiteralPath $stagingRoot -Recurse -File -Filter "*.msix" |
+    Select-Object -First 1
+if (-not $generatedMsix) {
+    throw "The WinUI packaging target did not create an MSIX package."
 }
 
-Copy-Item -Path (Join-Path $publishRoot "*") -Destination $stagingRoot -Recurse -Force
-Copy-Item -LiteralPath (Join-Path $windowsRoot "Packaging\Assets") -Destination $stagingRoot -Recurse -Force
-
-$manifestTemplate = Join-Path $windowsRoot "Packaging\Package.appxmanifest.template"
-$manifestPath = Join-Path $stagingRoot "AppxManifest.xml"
-Write-Template $manifestTemplate $manifestPath $packageVersion $Publisher
-
 $msixPath = Join-Path $releaseRoot "CXApp.Windows.msix"
-& $makeAppx pack /d $stagingRoot /p $msixPath /o /h SHA256
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Copy-Item -LiteralPath $generatedMsix.FullName -Destination $msixPath -Force
 
 if ($SigningPfx) {
     if (-not (Test-Path -LiteralPath $SigningPfx)) {

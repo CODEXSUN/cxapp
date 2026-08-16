@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const CHANGELOG_FILE = join("assist", "documentation", "CHANGELOG.md");
+const WINDOWS_PACKAGE_MANIFEST = join("apps", "platform", "windows", "Package.appxmanifest");
 
 export function bumpNextVersion(rootDir, title = "version update", options = {}) {
   const currentVersion = readRootVersion(rootDir);
@@ -27,6 +28,7 @@ export function bumpNextVersion(rootDir, title = "version update", options = {})
   );
   updateChangelog(rootDir, nextVersion, title, databaseUpdate);
   updateDeploymentSample(rootDir, currentVersion, nextVersion);
+  updateWindowsPackageManifest(rootDir, nextVersion);
 
   return {
     currentVersion,
@@ -35,6 +37,16 @@ export function bumpNextVersion(rootDir, title = "version update", options = {})
     reference: Number(nextVersion.split(".")[2] ?? "0"),
     title
   };
+}
+
+function updateWindowsPackageManifest(rootDir, nextVersion) {
+  const file = resolve(rootDir, WINDOWS_PACKAGE_MANIFEST);
+  if (!existsSync(file)) return;
+  const content = readFileSync(file, "utf8").replace(
+    /(<Identity\b[^>]*\bVersion=")[^"]+("[^>]*>)/u,
+    `$1${nextVersion}.0$2`
+  );
+  writeFileSync(file, content, "utf8");
 }
 
 function updateDeploymentSample(rootDir, currentVersion, nextVersion) {

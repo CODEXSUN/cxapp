@@ -4,11 +4,7 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
-  <Identity
-    Name="CODEXSUN.CXApp.Windows"
-    Publisher="__PUBLISHER__"
-    Version="__VERSION__"
-    ProcessorArchitecture="x64" />
+  <Identity Name="CODEXSUN.CXApp.Windows" Publisher="CN=CODEXSUN" Version="1.0.60.0" />
   <Properties>
     <DisplayName>CXApp</DisplayName>
     <PublisherDisplayName>CODEXSUN</PublisherDisplayName>
@@ -16,19 +12,14 @@
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Resources>
-    <Resource Language="en-us" />
+    <Resource Language="x-generate" />
   </Resources>
   <Dependencies>
-    <TargetDeviceFamily
-      Name="Windows.Desktop"
-      MinVersion="10.0.19041.0"
-      MaxVersionTested="10.0.26200.0" />
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26200.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26200.0" />
   </Dependencies>
   <Applications>
-    <Application
-      Id="CXApp"
-      Executable="CXApp.Windows.exe"
-      EntryPoint="Windows.FullTrustApplication">
+    <Application Id="CXApp" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="CXApp"
         Description="CXApp Windows client"

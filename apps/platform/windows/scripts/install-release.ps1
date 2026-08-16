@@ -8,6 +8,7 @@ $packageName = "CODEXSUN.CXApp.Windows"
 $downloadRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cxapp-install-" + [guid]::NewGuid().ToString("N"))
 $certificatePath = Join-Path $downloadRoot "CXApp.Windows.cer"
 $appInstallerPath = Join-Path $downloadRoot "CXApp.Windows.appinstaller"
+$msixPath = Join-Path $downloadRoot "CXApp.Windows.msix"
 
 function Test-Administrator {
     $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -54,6 +55,7 @@ try {
     New-Item -ItemType Directory -Path $downloadRoot | Out-Null
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.cer" -OutFile $certificatePath
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.appinstaller" -OutFile $appInstallerPath
+    Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.msix" -OutFile $msixPath
 
     $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certificatePath)
     if ($certificate.Subject -ne "CN=CODEXSUN") {
@@ -73,10 +75,23 @@ try {
 
     Add-ReleaseCertificate $certificate $certificatePath
 
+    $signature = Get-AuthenticodeSignature -LiteralPath $msixPath
+    if (-not $signature.SignerCertificate -or
+        $signature.SignerCertificate.Thumbprint -ne $certificate.Thumbprint -or
+        $signature.Status -ne "Valid") {
+        throw "The CXApp package signature does not match the trusted release certificate."
+    }
+
+    [xml]$appInstaller = Get-Content -LiteralPath $appInstallerPath -Raw
+    $expectedVersion = [version]$appInstaller.AppInstaller.MainPackage.Version
+    Add-AppxPackage -Path $msixPath -ForceApplicationShutdown -ForceUpdateFromAnyVersion
     Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
     $package = Get-AppxPackage -Name $packageName
     if (-not $package) {
         throw "Windows did not register the CXApp package."
+    }
+    if ([version]$package.Version -ne $expectedVersion) {
+        throw "Windows registered CXApp $($package.Version), but the release requires $expectedVersion."
     }
     Write-Host "CXApp $($package.Version) was installed for the current Windows user."
 } finally {

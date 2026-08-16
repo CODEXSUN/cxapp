@@ -10,7 +10,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <WinUISDKReferences>false</WinUISDKReferences>
-    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="Packaging\Assets\Square150x150Logo.png" Link="Assets\Square150x150Logo.png" />
+    <Content Include="Packaging\Assets\Square44x44Logo.png" Link="Assets\Square44x44Logo.png" />
+    <Content Include="Packaging\Assets\StoreLogo.png" Link="Assets\StoreLogo.png" />
+    <Manifest Include="$(ApplicationManifest)" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
   </ItemGroup>

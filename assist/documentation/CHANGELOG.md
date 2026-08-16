@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.59
+Current version: 1.0.60
 
-Release tag: v-1.0.59
+Release tag: v-1.0.60
 
-Changelog label: v 1.0.59
+Changelog label: v 1.0.60
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,29 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.60
+
+### [v 1.0.60] 2026-08-16 11:38 am - Windows packaged runtime activation
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.60.
+- Superseded the 1.0.59 Windows package after installed-runtime verification showed that it still
+  stopped before the WebView2 control reached its loaded state.
+- Replaced manual MSIX assembly with the supported Windows App SDK packaging target so the package
+  includes the generated `resources.pri`, WinUI activation metadata, and WebView2 registration as
+  one validated contract.
+- Added the Windows package manifest to lockstep version updates and `check:versions`; release tags
+  can no longer publish a package whose identity version differs from the workspace version.
+- Changed the release installer to download and validate the signed MSIX, force an in-place update,
+  register the App Installer update feed, and verify the exact installed release version.
+- Replaced the packaging checksum cmdlet dependency with a direct SHA-256 implementation that works
+  consistently in Windows PowerShell and GitHub Actions.
 
 ## v-1.0.59
 
