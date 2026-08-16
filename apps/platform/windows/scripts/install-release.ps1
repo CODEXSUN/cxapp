@@ -8,6 +8,26 @@ $downloadRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cxapp-install-" + 
 $certificatePath = Join-Path $downloadRoot "CXApp.Windows.cer"
 $appInstallerPath = Join-Path $downloadRoot "CXApp.Windows.appinstaller"
 
+function Add-ReleaseCertificate(
+    [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
+    [string]$CertificatePath
+) {
+    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new(
+        [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPeople,
+        [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+    )
+    try {
+        $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+        $store.Add($Certificate)
+    } finally {
+        $store.Close()
+    }
+    & certutil.exe -user -f -addstore Root $CertificatePath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Windows could not trust the CXApp release certificate."
+    }
+}
+
 try {
     New-Item -ItemType Directory -Path $downloadRoot | Out-Null
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.cer" -OutFile $certificatePath
@@ -29,16 +49,7 @@ try {
         throw "The release certificate cannot sign application code."
     }
 
-    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new(
-        [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPeople,
-        [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-    )
-    try {
-        $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-        $store.Add($certificate)
-    } finally {
-        $store.Close()
-    }
+    Add-ReleaseCertificate $certificate $certificatePath
 
     Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
     $package = Get-AppxPackage -Name $packageName

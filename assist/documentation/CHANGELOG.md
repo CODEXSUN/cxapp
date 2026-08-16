@@ -45,6 +45,8 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   certificate for the current user before it installs the automatic-update feed.
 - Added the public signing certificate and install/uninstall scripts to the release assets. The
   private certificate stays only in GitHub Actions secrets.
+- Added the self-signed release certificate to the current-user root and trusted-people stores so
+  Windows and SignTool can validate the complete first-release signing chain.
 - Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
   current limitation: the Windows host is an enrollment foundation until the local runtime and
   module-owned synchronization implementations are complete.

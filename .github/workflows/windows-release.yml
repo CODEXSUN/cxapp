@@ -77,6 +77,10 @@ jobs:
           } finally {
             $store.Close()
           }
+          certutil.exe -user -f -addstore Root $certificatePath
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not trust the release certificate on the build runner."
+          }
           "pfx_path=$pfxPath" >> $env:GITHUB_OUTPUT
           "publisher=$publisher" >> $env:GITHUB_OUTPUT
           "certificate_path=$certificatePath" >> $env:GITHUB_OUTPUT
