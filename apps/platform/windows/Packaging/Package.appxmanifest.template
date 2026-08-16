@@ -2,9 +2,8 @@
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap10 rescap">
+  IgnorableNamespaces="uap rescap">
   <Identity
     Name="CODEXSUN.CXApp.Windows"
     Publisher="__PUBLISHER__"
@@ -29,8 +28,7 @@
     <Application
       Id="CXApp"
       Executable="CXApp.Windows.exe"
-      uap10:RuntimeBehavior="packagedClassicApp"
-      uap10:TrustLevel="mediumIL">
+      EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="CXApp"
         Description="CXApp Windows client"
@@ -44,4 +42,14 @@
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
+  <Extensions>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Web.WebView2.Core.dll</Path>
+        <ActivatableClass
+          ActivatableClassId="Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions"
+          ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+  </Extensions>
 </Package>

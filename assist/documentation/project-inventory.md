@@ -200,9 +200,9 @@ Database commands currently route through `@cxapp/platform-api` and `apps/platfo
 
 ## Current Version And Work Update
 
-Current recorded version: `1.0.58`.
+Current recorded version: `1.0.59`.
 
-Latest changelog entry: `v-1.0.58` on 2026-08-16 at 9:37 am.
+Latest changelog entry: `v-1.0.59` on 2026-08-16 at 11:18 am.
 
 Latest recorded work:
 
@@ -210,7 +210,7 @@ Latest recorded work:
 - Added signed MSIX packaging and App Installer updates through GitHub Releases.
 - Added current-user install and uninstall scripts.
 - Added a private sideloading certificate contract for the first Windows release.
-- Workspace version is `1.0.58`.
+- Workspace version is `1.0.59`.
 
 Current working tree note:
 

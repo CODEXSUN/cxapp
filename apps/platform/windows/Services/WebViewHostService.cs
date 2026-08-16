@@ -31,23 +31,20 @@ internal sealed class WebViewHostService : IDisposable
         StatusChanged?.Invoke(this, HostStatus.Connecting);
         try
         {
+            DesktopDiagnostics.Write("Initializing the local workspace database.");
             await workspaceStore.InitializeAsync();
-            var options = new CoreWebView2EnvironmentOptions
-            {
-                AdditionalBrowserArguments = "--disable-features=msEdgeAutofillSaveCard"
-            };
-            var environment = await CoreWebView2Environment.CreateWithOptionsAsync(
-                null,
-                DesktopPaths.WebViewProfile,
-                options
-            );
-            await webView.EnsureCoreWebView2Async(environment);
+            DesktopDiagnostics.Write("Local workspace database initialized.");
+            DesktopDiagnostics.Write("Creating the WebView2 environment.");
+            await webView.EnsureCoreWebView2Async();
+            DesktopDiagnostics.Write("WebView2 control initialized.");
             ConfigureWebView(webView.CoreWebView2);
             initialized = true;
             webView.Source = DesktopOptions.StartUri;
+            DesktopDiagnostics.Write($"Navigating to {DesktopOptions.StartUri}.");
         }
         catch (Exception exception)
         {
+            DesktopDiagnostics.Write("Windows host initialization failed.", exception);
             StatusChanged?.Invoke(this, HostStatus.Failed(SafeErrorMessage(exception)));
         }
     }

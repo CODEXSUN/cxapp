@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.58
+Current version: 1.0.59
 
-Release tag: v-1.0.58
+Release tag: v-1.0.59
 
-Changelog label: v 1.0.58
+Changelog label: v 1.0.59
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,28 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.59
+
+### [v 1.0.59] 2026-08-16 11:18 am - Windows runtime launch fix
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.59.
+- Fixed installed Windows startup by adding the WebView2 in-process COM registration required by
+  the MSIX package contract.
+- Aligned the .NET 10 host target with the current Windows 10 SDK contract while keeping Windows
+  10 version 2004 as the minimum supported client version.
+- Delayed WebView2 startup until its WinUI control is loaded and removed the redundant direct
+  WebView2 NuGet reference supplied by the Windows App SDK.
+- Added bounded local startup diagnostics under `%LOCALAPPDATA%\CXApp\Desktop\startup.log` so a
+  packaged launch failure can be diagnosed without exposing tenant credentials or session tokens.
+- Kept the current Windows release scoped to tenant enrollment and the canonical cloud workspace;
+  offline Billing runtime and synchronization remain later release gates.
 
 ## v-1.0.58
 

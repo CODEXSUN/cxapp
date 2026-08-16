@@ -81,5 +81,7 @@ Release procedure:
 4. Check the Windows release workflow.
 5. Install `CXApp.Windows.appinstaller` from the latest GitHub release.
 
-Version `1.0.58` is the first private Windows enrollment release. Do not describe it as an offline
-billing release. The local runtime and module sync gates remain open.
+Version `1.0.59` is the corrected first private Windows enrollment release. It includes the package
+registration required for WinUI-hosted WebView2 startup and writes bounded startup diagnostics to
+`%LOCALAPPDATA%\CXApp\Desktop\startup.log`. Do not describe it as an offline billing release. The
+local runtime and module sync gates remain open.

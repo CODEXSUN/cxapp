@@ -55,6 +55,20 @@ function Write-Template([string]$Source, [string]$Destination, [string]$Template
     [System.IO.File]::WriteAllText($Destination, $content, [System.Text.UTF8Encoding]::new($false))
 }
 
+function Get-Sha256Hex([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            return [System.BitConverter]::ToString($sha256.ComputeHash($stream)).Replace("-", "").ToLowerInvariant()
+        } finally {
+            $sha256.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+}
+
 $releaseRoot = Join-Path $distRoot "releases\windows"
 $stagingRoot = Join-Path $distRoot ".package\windows"
 $projectPath = Join-Path $windowsRoot "CXApp.Windows.csproj"
@@ -81,7 +95,7 @@ Reset-Directory $stagingRoot
 & $dotnet publish $projectPath --configuration Release --runtime win-x64 --self-contained true
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$publishRoot = Join-Path $distRoot "apps\platform\windows\Release\net10.0-windows10.0.19041.0\win-x64\publish"
+$publishRoot = Join-Path $distRoot "apps\platform\windows\Release\net10.0-windows10.0.26100.0\win-x64\publish"
 if (-not (Test-Path -LiteralPath $publishRoot)) {
     throw "Windows publish output was not found at $publishRoot."
 }
@@ -144,7 +158,7 @@ $hashPath = Join-Path $releaseRoot "SHA256SUMS.txt"
 $hashes = Get-ChildItem -LiteralPath $releaseRoot -File |
     Where-Object Name -ne "SHA256SUMS.txt" |
     Sort-Object Name |
-    ForEach-Object { "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name }
+    ForEach-Object { "{0}  {1}" -f (Get-Sha256Hex $_.FullName), $_.Name }
 [System.IO.File]::WriteAllLines($hashPath, $hashes)
 
 Write-Host "Windows release assets are ready at $releaseRoot"
