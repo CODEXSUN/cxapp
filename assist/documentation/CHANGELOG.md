@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.61
+Current version: 1.0.62
 
-Release tag: v-1.0.61
+Release tag: v-1.0.62
 
-Changelog label: v 1.0.61
+Changelog label: v 1.0.62
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,24 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.62
+
+### [v 1.0.62] 2026-08-16 12:20 pm - Windows update feed registration
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.62.
+- Replaced the timeout-prone update-feed reinstall with direct Windows package auto-update settings
+  registration after the signed MSIX is installed.
+- Added post-registration checks for the App Installer URI, launch-time update checks, and the
+  automatic background update task.
+- Kept App Installer deployment as the compatibility fallback on Windows versions that do not expose
+  the direct update-settings command.
 
 ## v-1.0.61
 

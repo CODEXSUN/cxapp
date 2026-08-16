@@ -95,17 +95,36 @@ try {
     $expectedVersion = [version]$appInstaller.AppInstaller.MainPackage.Version
     Add-AppxPackage -Path $runtimeDependencyPath -ForceUpdateFromAnyVersion
     Add-AppxPackage -Path $msixPath -ForceApplicationShutdown -ForceUpdateFromAnyVersion
-    try {
-        Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
-    } catch {
-        Write-Warning "CXApp was installed, but Windows could not register the automatic update feed: $($_.Exception.Message)"
-    }
+
     $package = Get-AppxPackage -Name $packageName
     if (-not $package) {
         throw "Windows did not register the CXApp package."
     }
     if ([version]$package.Version -ne $expectedVersion) {
         throw "Windows registered CXApp $($package.Version), but the release requires $expectedVersion."
+    }
+
+    $appInstallerUri = $appInstaller.AppInstaller.Uri
+    if (Get-Command Set-AppxPackageAutoUpdateSettings -ErrorAction SilentlyContinue) {
+        Set-AppxPackageAutoUpdateSettings `
+            -PackageFamilyName $package.PackageFamilyName `
+            -AppInstallerUri $appInstallerUri `
+            -ClearPreviousSettings `
+            -EnableAutomaticBackgroundTask $true `
+            -CheckOnLaunch $true `
+            -HoursBetweenUpdateChecks 0 `
+            -ShowPrompt $false `
+            -UpdateBlocksActivation $false `
+            -Version $expectedVersion.ToString() `
+            -Confirm:$false
+        $updateSettings = Get-AppxPackageAutoUpdateSettings -PackageFamilyName $package.PackageFamilyName
+        if ($updateSettings.AppInstallerUri -ne $appInstallerUri -or
+            -not $updateSettings.CheckForUpdatesOnLaunch -or
+            -not $updateSettings.AutomaticBackgroundTaskUpdatesEnabled) {
+            throw "Windows did not preserve the CXApp automatic update settings."
+        }
+    } else {
+        Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
     }
     Write-Host "CXApp $($package.Version) was installed for the current Windows user."
 } finally {

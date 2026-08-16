@@ -55,8 +55,8 @@ checks for unsynchronized work.
 The `.appinstaller` file checks the latest GitHub release at each launch and also registers a
 background update check. GitHub release assets use stable names so installed clients keep one update
 feed URL. The release installer first installs the Microsoft-signed x64 Windows App Runtime and the
-signed CXApp MSIX directly, then registers the feed. A temporary feed timeout does not roll back a
-verified application install; rerunning the installer retries feed registration.
+signed CXApp MSIX directly, then registers and verifies launch plus background update settings. On
+older Windows builds without the direct update-settings command, it falls back to App Installer.
 
 The `windows-release.yml` workflow runs for a `v-<version>` tag. The tag must match the root package
 version. The workflow validates the source, builds the host, signs the MSIX, writes SHA-256 checksums,
@@ -83,7 +83,7 @@ Release procedure:
 4. Check the Windows release workflow.
 5. Install `CXApp.Windows.appinstaller` from the latest GitHub release.
 
-Version `1.0.61` is the corrected first private Windows enrollment release. It uses the Windows App
+Version `1.0.62` is the corrected first private Windows enrollment release. It uses the Windows App
 SDK packaging target, declares the packaged runtime contract, and ships the required Microsoft-signed
 x64 runtime dependency. It writes bounded startup diagnostics to
 `%LOCALAPPDATA%\CXApp\Desktop\startup.log`. Do not describe it as an offline billing release. The
