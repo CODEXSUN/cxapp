@@ -18,8 +18,9 @@
 - Switchable file storage with local filesystem, S3-compatible object storage, and MinIO support.
 - Custom storage utility container with MinIO and FileBrowser.org where useful.
 - Docker for local and production containers.
-- Electron for desktop app.
-- React Native with Expo for mobile app.
+- WinUI 3 and .NET 10 for the Windows-native desktop shell.
+- WebView2 for hosting the shared React application in the Windows shell.
+- Capacitor for future Android and iOS hosts that reuse the shared React application.
 
 ## Backend Direction
 
@@ -56,18 +57,19 @@ TanStack Query should manage server state. Local UI state should stay close to c
 
 ## Desktop Direction
 
-Electron should support:
+The WinUI 3 host owns Windows lifecycle, WebView2, device integration, local printing, packaging,
+and secure updates. React remains the only product UI, and the Node.js Platform API remains the
+authority for authentication, tenancy, permissions, and business data.
 
-- Offline store.
-- Device identity.
-- Background sync.
-- Local printing.
-- POS hardware where needed.
-- Secure update flow.
+The Windows release target is offline-first and single-tenant per installation. Packaged React assets
+use a bundled Node.js loopback API backed by SQLite. The cloud remains the control plane,
+synchronization hub, backup projection, and auditor web. Offline business persistence is enabled only
+after each owning module supplies its SQLite repository, sync schema, conflict policy, audit, and
+cloud endpoints.
 
 ## Mobile Direction
 
-Expo should support:
+Capacitor should support:
 
 - Tenant login.
 - Mobile-friendly workflows.

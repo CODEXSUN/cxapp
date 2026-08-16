@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <CxAppRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\'))</CxAppRepositoryRoot>
+    <BaseOutputPath>$(CxAppRepositoryRoot)dist\apps\platform\windows\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(CxAppRepositoryRoot)dist\.obj\apps\platform\windows\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)$(MSBuildProjectName)\</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+</Project>

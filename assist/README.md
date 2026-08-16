@@ -273,8 +273,8 @@ Preferred technology stack:
 - TanStack Table.
 - MariaDB.
 - Docker.
-- Electron for desktop.
-- React Native with Expo for mobile.
+- WinUI 3 and .NET 10 with WebView2 for Windows desktop.
+- Capacitor for future Android and iOS hosts that reuse the React UI.
 
 Technology choices should support modular development, type safety, clean boundaries, scalable deployment, offline
 workflows, and developer productivity.

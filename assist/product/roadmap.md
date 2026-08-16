@@ -58,7 +58,7 @@ Goals:
 
 Goals:
 
-- Electron app shell.
+- WinUI 3/.NET 10 Windows shell with WebView2.
 - Local tenant store.
 - Offline sync manager.
 - Conflict workflow.
@@ -69,7 +69,7 @@ Goals:
 
 Goals:
 
-- Expo mobile app.
+- Capacitor mobile host for the shared React application.
 - Mobile authentication.
 - Mobile dashboards.
 - Tasks and activity.

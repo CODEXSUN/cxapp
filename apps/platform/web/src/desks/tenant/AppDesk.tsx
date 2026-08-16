@@ -50,6 +50,7 @@ import type { LandingAppOption } from "@cxapp/core-web/modules/organisation/defa
 import { listFinancialYears } from "@cxapp/core-web/modules/organisation/financial-year/services";
 import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
+import { publishDesktopWorkspace } from "../../shared/desktop/desktop-bridge";
 import { publishAccountingYear, publishCompanyContext } from "../../shared/tenant/runtime-context";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
@@ -503,6 +504,23 @@ export function AppDesk() {
     publishAccountingYear(selectedFinancialYear.id);
     setFinancialYearContextId(selectedFinancialYear.id);
   }, [selectedFinancialYear]);
+
+  useEffect(() => {
+    const tenant = runtime?.tenant;
+    if (!tenant?.corporateId || !defaultCompanyQuery.isFetched) return;
+
+    publishDesktopWorkspace({
+      companyId: activeDefaultCompany?.companyId ?? null,
+      companyName: activeDefaultCompany?.companyName ?? null,
+      corporateId: tenant.corporateId,
+      financialYearId: activeDefaultCompany?.financialYearId ?? null,
+      financialYearName: activeDefaultCompany?.financialYearName ?? null,
+      landingPage: `/app/${pageForApp(landingApp).replaceAll(".", "/")}`,
+      tenantCode: tenant.tenantCode,
+      tenantName: tenant.tenantName,
+      tenantUuid: tenant.uuid
+    });
+  }, [activeDefaultCompany, defaultCompanyQuery.isFetched, landingApp, runtime?.tenant]);
 
   useEffect(() => {
     if (!shouldResolveLandingPath) return;

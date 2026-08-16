@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.57
+Current version: 1.0.58
 
-Release tag: v-1.0.57
+Release tag: v-1.0.58
 
-Changelog label: v 1.0.57
+Changelog label: v 1.0.58
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,35 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.58
+
+### [v 1.0.58] 2026-08-16 9:37 am - Windows installer and automatic updates
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.58.
+- Added the x64 WinUI 3 and .NET 10 Windows host with WebView2, a safe tenant workspace bridge, and
+  device-local SQLite enrollment state.
+- Added deterministic MSIX packaging, CXApp package icons, SHA-256 checksums, current-user install
+  and uninstall commands, and stable App Installer release assets.
+- Added a GitHub Actions release workflow for `v-<version>` tags. It rejects version/tag mismatch,
+  validates the source, builds the Windows host, signs the MSIX, and publishes the release assets.
+- Required the `CXAPP_WINDOWS_SIGNING_PFX` and `CXAPP_WINDOWS_SIGNING_PASSWORD` repository secrets.
+  The release stops before publication if the trusted signing identity is unavailable.
+- Connected App Installer launch and background update checks to stable assets under the latest
+  CODEXSUN/cxapp GitHub release.
+- Added a first-release installer that validates and trusts the private CODEXSUN sideloading
+  certificate for the current user before it installs the automatic-update feed.
+- Added the public signing certificate and install/uninstall scripts to the release assets. The
+  private certificate stays only in GitHub Actions secrets.
+- Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
+  current limitation: the Windows host is an enrollment foundation until the local runtime and
+  module-owned synchronization implementations are complete.
 
 ## v-1.0.57
 

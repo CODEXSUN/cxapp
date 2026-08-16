@@ -53,6 +53,9 @@ CODEXSUN is intended to be:
 - Industry packs do not yet activate modules, default settings, roles, print formats, reports, dashboards, or offline rules for a tenant.
 - Tenant-local roles and permissions are not yet fully database-backed and tenant-configurable.
 - Tenant-scoped file metadata, notifications, jobs, events, outbox, queue payloads, and offline sync metadata are not fully implemented.
+- The Windows enrollment host has only a safe local workspace projection; tenant-bound SQLite business
+  repositories, device enrollment, offline authorization, module change capture, cloud sync routes,
+  conflicts, numbering reservations, and auditor projection freshness are not implemented yet.
 
 ## Non-Negotiable Rules
 

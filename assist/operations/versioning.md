@@ -194,6 +194,27 @@ Rules:
 - Version bumps only happen as explicit release tasks.
 - Run `npm run check` before finalizing work that changes code, service boundaries, rules, documentation workflow, changelog policy, or package versions.
 
+### Windows release
+
+A lockstep `v-<version>` tag starts `.github/workflows/windows-release.yml`. The workflow must stop if
+the tag does not match the root package version. It builds and validates the repository, creates a
+self-contained x64 MSIX, signs the package, writes checksums, and publishes stable asset names to the
+GitHub release. The stable `.appinstaller` URL is the Windows automatic-update feed.
+
+The repository must have these secrets before a Windows release tag is pushed:
+
+- `CXAPP_WINDOWS_SIGNING_PFX`
+- `CXAPP_WINDOWS_SIGNING_PASSWORD`
+
+The PFX must be a production code-signing certificate trusted by the target Windows devices. Keep the
+package identity and certificate publisher subject unchanged between releases. A local unsigned MSIX
+is only a build artifact and must not be distributed as a production installer.
+
+The first private sideloading release may use a dedicated self-signed CODEXSUN certificate. Publish
+only its public certificate. Store its private PFX and password only in GitHub Actions secrets. The
+release installer must validate and trust the certificate for the current user before installation.
+Replace this certificate with a public trusted signing service before broad public distribution.
+
 ## Build Output
 
 Runnable app builds go to the root `dist/apps/...` tree.

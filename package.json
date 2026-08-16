@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.57",
+  "version": "1.0.58",
   "private": true,
   "packageManager": "npm@12.0.1",
   "description": "CODEXSUN",
@@ -70,7 +70,15 @@
     "env:check": "node tools/configure-env.mjs --check",
     "env:deploy:configure": "node tools/configure-env.mjs --deployment",
     "env:deployment:check": "node tools/configure-env.mjs --deployment --check",
-    "env:smoke": "tsx tools/env-startup-smoke.ts"
+    "env:smoke": "tsx tools/env-startup-smoke.ts",
+    "desktop:restore": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 restore",
+    "desktop:build": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 build",
+    "desktop:run": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 run",
+    "desktop:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 publish",
+    "desktop:assets": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/generate-assets.ps1",
+    "desktop:package": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 package",
+    "desktop:install": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 install",
+    "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

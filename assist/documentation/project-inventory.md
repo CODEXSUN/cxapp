@@ -7,7 +7,7 @@
 This document records what is present in the current CODEXSUN workspace. Use it as the first practical inventory before
 planning new work, because some assist files describe future direction or older foundation snapshots.
 
-Last reviewed: 2026-07-30.
+Last reviewed: 2026-08-16.
 
 ## Working Repository
 
@@ -28,6 +28,7 @@ apps/
   platform/
     api/
     web/
+    windows/
   core/
     api/
     web/
@@ -75,6 +76,8 @@ Platform owns the SaaS foundation.
   platform operations.
 - `apps/platform/web`: React/Vite shell for the domain-resolved tenant app portal, login, super-admin desk, admin
   desk, tenant desk, tenant UI, and design-system gallery.
+- `apps/platform/windows`: WinUI 3/.NET 10 host that opens the shared Platform React UI through WebView2 and stores
+  only a safe one-workspace projection in device-local SQLite.
 
 Platform is the only runnable application: API `7010` and Web `7020`.
 
@@ -161,6 +164,12 @@ Important root commands:
 
 ```text
 npm run dev
+npm run desktop:build
+npm run desktop:run
+npm run desktop:publish
+npm run desktop:package
+npm run desktop:install
+npm run desktop:uninstall
 npm run build
 npm run typecheck
 npm run lint
@@ -191,19 +200,17 @@ Database commands currently route through `@cxapp/platform-api` and `apps/platfo
 
 ## Current Version And Work Update
 
-Current recorded version: `1.0.42`.
+Current recorded version: `1.0.58`.
 
-Latest changelog entry: `v-1.0.42` on 2026-07-21 at 11:52 pm.
+Latest changelog entry: `v-1.0.58` on 2026-08-16 at 9:37 am.
 
 Latest recorded work:
 
-- Added Traefik HTTPS routing for the Platform Web and Media services.
-- Added canonical and tenant host routing plus the permanent `www.codexsun.com` redirect.
-- Added multiple configured Platform Web origins for production CORS.
-- Added tenant host allowlisting to the Platform Web development server.
-- Made the MariaDB bind address independently configurable for host deployment.
-- Added `.container/setup.md` with the current host, port, route, database, account, firewall, and verification contract.
-- Workspace version is `1.0.42`.
+- Added the WinUI 3 and .NET 10 Windows enrollment host.
+- Added signed MSIX packaging and App Installer updates through GitHub Releases.
+- Added current-user install and uninstall scripts.
+- Added a private sideloading certificate contract for the first Windows release.
+- Workspace version is `1.0.58`.
 
 Current working tree note:
 

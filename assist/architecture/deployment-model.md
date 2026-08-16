@@ -15,8 +15,8 @@ Local testing and cloud deployment should follow the same strict rules and servi
 - Background workers.
 - Queue processor.
 - Scheduler.
-- Desktop app through Electron.
-- Mobile app through Expo.
+- Windows desktop app through a WinUI 3/.NET 10 shell and WebView2.
+- Mobile app through a future Capacitor host for the shared React UI.
 - Tenant databases.
 - File storage.
 - Integration services.
@@ -185,6 +185,22 @@ Possible tenant deployment models:
 - Dedicated app and database containers for selected tenants.
 - Hybrid local desktop plus cloud sync.
 - On-premise private deployment if business requires it.
+
+### Offline-first Windows client
+
+One Windows installation binds to one tenant and runs packaged React assets, a bundled Node.js
+loopback API, and a tenant-local SQLite database. It communicates outward to the cloud sync API over
+HTTPS. The cloud must not connect directly to the client or require an inbound customer firewall
+rule. The WinUI 3/.NET host supervises the local runtime and owns Windows integrations; it does not
+duplicate module business logic.
+
+Cloud web is the control plane and auditor/back-office projection. It must show synchronization
+freshness and must not present stale replicated data as current local state.
+
+The Windows client ships as a signed MSIX package. Windows provides current-user install and
+uninstall behavior. An App Installer feed at the latest GitHub release checks for updates on launch
+and in the background. A `v-<version>` Git tag must match the lockstep repository version before the
+release workflow can build, sign, checksum, and publish the package.
 
 ## Scaling Direction
 
