@@ -9,6 +9,7 @@ $downloadRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cxapp-install-" + 
 $certificatePath = Join-Path $downloadRoot "CXApp.Windows.cer"
 $appInstallerPath = Join-Path $downloadRoot "CXApp.Windows.appinstaller"
 $msixPath = Join-Path $downloadRoot "CXApp.Windows.msix"
+$runtimeDependencyPath = Join-Path $downloadRoot "Microsoft.WindowsAppRuntime.2.msix"
 
 function Test-Administrator {
     $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -56,6 +57,7 @@ try {
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.cer" -OutFile $certificatePath
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.appinstaller" -OutFile $appInstallerPath
     Invoke-WebRequest -Uri "$ReleaseBaseUrl/CXApp.Windows.msix" -OutFile $msixPath
+    Invoke-WebRequest -Uri "$ReleaseBaseUrl/Microsoft.WindowsAppRuntime.2.msix" -OutFile $runtimeDependencyPath
 
     $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certificatePath)
     if ($certificate.Subject -ne "CN=CODEXSUN") {
@@ -82,10 +84,22 @@ try {
         throw "The CXApp package signature does not match the trusted release certificate."
     }
 
+    $runtimeSignature = Get-AuthenticodeSignature -LiteralPath $runtimeDependencyPath
+    if (-not $runtimeSignature.SignerCertificate -or
+        $runtimeSignature.SignerCertificate.Subject -notmatch "CN=Microsoft Corporation" -or
+        $runtimeSignature.Status -ne "Valid") {
+        throw "The Windows App SDK runtime dependency is not signed by Microsoft."
+    }
+
     [xml]$appInstaller = Get-Content -LiteralPath $appInstallerPath -Raw
     $expectedVersion = [version]$appInstaller.AppInstaller.MainPackage.Version
+    Add-AppxPackage -Path $runtimeDependencyPath -ForceUpdateFromAnyVersion
     Add-AppxPackage -Path $msixPath -ForceApplicationShutdown -ForceUpdateFromAnyVersion
-    Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
+    try {
+        Add-AppxPackage -Path $appInstallerPath -AppInstallerFile
+    } catch {
+        Write-Warning "CXApp was installed, but Windows could not register the automatic update feed: $($_.Exception.Message)"
+    }
     $package = Get-AppxPackage -Name $packageName
     if (-not $package) {
         throw "Windows did not register the CXApp package."

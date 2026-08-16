@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         DesktopDiagnostics.Write("Building the main window.");
+        Title = "CXApp";
         BuildContent();
         ConfigureWindow();
         DesktopDiagnostics.Write("Main window size configured.");

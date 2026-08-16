@@ -104,13 +104,28 @@ Reset-Directory $stagingRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $generatedMsix = Get-ChildItem -LiteralPath $stagingRoot -Recurse -File -Filter "*.msix" |
+    Where-Object FullName -NotMatch "[\\/]Dependencies[\\/]" |
     Select-Object -First 1
 if (-not $generatedMsix) {
     throw "The WinUI packaging target did not create an MSIX package."
 }
 
+$runtimeDependency = Get-ChildItem -LiteralPath $stagingRoot -Recurse -File -Filter "Microsoft.WindowsAppRuntime.2.msix" |
+    Where-Object FullName -Match "[\\/]Dependencies[\\/]x64[\\/]" |
+    Select-Object -First 1
+if (-not $runtimeDependency) {
+    throw "The Windows App SDK x64 runtime dependency was not generated."
+}
+
 $msixPath = Join-Path $releaseRoot "CXApp.Windows.msix"
+$runtimeDependencyPath = Join-Path $releaseRoot "Microsoft.WindowsAppRuntime.2.msix"
 Copy-Item -LiteralPath $generatedMsix.FullName -Destination $msixPath -Force
+Copy-Item -LiteralPath $runtimeDependency.FullName -Destination $runtimeDependencyPath -Force
+
+& $signTool verify /pa /all $runtimeDependencyPath
+if ($LASTEXITCODE -ne 0) {
+    throw "The generated Windows App SDK runtime dependency does not have a valid Microsoft signature."
+}
 
 if ($SigningPfx) {
     if (-not (Test-Path -LiteralPath $SigningPfx)) {

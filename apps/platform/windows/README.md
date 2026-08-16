@@ -32,10 +32,10 @@ npm run desktop:uninstall
 The machine needs the .NET 10 SDK, a supported Windows SDK, and the Evergreen WebView2 Runtime. Build
 and intermediate files are written only below the repository root `dist/` directory.
 
-The current publish command creates an unpackaged, self-contained enrollment host for controlled
-local testing. The package command creates the MSIX and App Installer release assets. This host is
-still not the offline production client because the local runtime and module sync implementations
-are not complete.
+The current publish command creates an unpackaged enrollment host for controlled local testing. The
+package command creates the MSIX, Microsoft Windows App Runtime dependency, and App Installer release
+assets. This host is still not the offline production client because the local runtime and module
+sync implementations are not complete.
 
 ## Install and uninstall
 
@@ -54,7 +54,9 @@ checks for unsynchronized work.
 
 The `.appinstaller` file checks the latest GitHub release at each launch and also registers a
 background update check. GitHub release assets use stable names so installed clients keep one update
-feed URL.
+feed URL. The release installer first installs the Microsoft-signed x64 Windows App Runtime and the
+signed CXApp MSIX directly, then registers the feed. A temporary feed timeout does not roll back a
+verified application install; rerunning the installer retries feed registration.
 
 The `windows-release.yml` workflow runs for a `v-<version>` tag. The tag must match the root package
 version. The workflow validates the source, builds the host, signs the MSIX, writes SHA-256 checksums,
@@ -81,7 +83,8 @@ Release procedure:
 4. Check the Windows release workflow.
 5. Install `CXApp.Windows.appinstaller` from the latest GitHub release.
 
-Version `1.0.60` is the corrected first private Windows enrollment release. It uses the Windows App
-SDK packaging target and includes the resource index and activation metadata required by WinUI and
-WebView2. It writes bounded startup diagnostics to `%LOCALAPPDATA%\CXApp\Desktop\startup.log`. Do not
-describe it as an offline billing release. The local runtime and module sync gates remain open.
+Version `1.0.61` is the corrected first private Windows enrollment release. It uses the Windows App
+SDK packaging target, declares the packaged runtime contract, and ships the required Microsoft-signed
+x64 runtime dependency. It writes bounded startup diagnostics to
+`%LOCALAPPDATA%\CXApp\Desktop\startup.log`. Do not describe it as an offline billing release. The
+local runtime and module sync gates remain open.

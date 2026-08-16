@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/devkit-web",
-  "version": "1.0.60",
+  "version": "1.0.61",
   "private": true,
   "type": "module",
   "exports": {
@@ -14,7 +14,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/ui": "^1.0.60",
+    "@cxapp/ui": "^1.0.61",
     "@tanstack/react-query": "^5.100.10",
     "@tanstack/react-table": "^8.21.3",
     "lucide-react": "^1.22.0",

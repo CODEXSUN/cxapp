@@ -9,6 +9,14 @@
     Version="__VERSION__"
     ProcessorArchitecture="x64"
     Uri="https://github.com/CODEXSUN/cxapp/releases/latest/download/CXApp.Windows.msix" />
+  <Dependencies>
+    <Package
+      Name="Microsoft.WindowsAppRuntime.2"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+      Version="2.4.0.0"
+      ProcessorArchitecture="x64"
+      Uri="https://github.com/CODEXSUN/cxapp/releases/latest/download/Microsoft.WindowsAppRuntime.2.msix" />
+  </Dependencies>
   <UpdateSettings>
     <OnLaunch
       HoursBetweenUpdateChecks="0"

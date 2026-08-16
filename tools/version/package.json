@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/version-tools",
-  "version": "1.0.60",
+  "version": "1.0.61",
   "private": true,
   "type": "module",
   "bin": {

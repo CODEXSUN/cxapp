@@ -104,6 +104,7 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $assets = @(
             "dist/releases/windows/CXApp.Windows.msix",
+            "dist/releases/windows/Microsoft.WindowsAppRuntime.2.msix",
             "dist/releases/windows/CXApp.Windows.appinstaller",
             "dist/releases/windows/CXApp.Windows.cer",
             "dist/releases/windows/Install-CXApp.ps1",

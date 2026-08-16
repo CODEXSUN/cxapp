@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.60
+Current version: 1.0.61
 
-Release tag: v-1.0.60
+Release tag: v-1.0.61
 
-Changelog label: v 1.0.60
+Changelog label: v 1.0.61
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,28 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.61
+
+### [v 1.0.61] 2026-08-16 11:57 am - Windows framework runtime activation
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.61.
+- Superseded 1.0.60 after the installed package failed before application startup with WinUI
+  activation error `0x80040111`.
+- Declared the Windows host as an MSIX application and changed the package to the supported
+  framework-dependent Windows App SDK deployment model.
+- Added the Microsoft-signed x64 Windows App Runtime package to every release, checksum manifest,
+  GitHub release, App Installer dependency graph, and verified installer path.
+- Restored `XamlControlsResources` so WinUI and WebView2 controls resolve their theme resources at
+  runtime.
+- Kept direct signed-package installation authoritative and made update-feed registration
+  non-destructive when the remote GitHub feed is temporarily unavailable.
 
 ## v-1.0.60
 
