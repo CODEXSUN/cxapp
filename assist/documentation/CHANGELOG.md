@@ -46,7 +46,9 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Added the public signing certificate and install/uninstall scripts to the release assets. The
   private certificate stays only in GitHub Actions secrets.
 - Added the self-signed release certificate to the current-user root and trusted-people stores so
-  Windows and SignTool can validate the complete first-release signing chain.
+  Windows can validate the first-release signing chain after user installation.
+- Changed CI verification to match the MSIX signer thumbprint against the generated public
+  certificate. This avoids an interactive root-trust prompt on the GitHub runner.
 - Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
   current limitation: the Windows host is an enrollment foundation until the local runtime and
   module-owned synchronization implementations are complete.

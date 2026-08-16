@@ -4,6 +4,7 @@ param(
     [string]$SigningPfx,
     [string]$SigningPassword,
     [string]$PublicCertificatePath,
+    [switch]$AllowSelfSignedCertificate,
     [string]$TimestampUrl = "http://timestamp.digicert.com"
 )
 
@@ -108,7 +109,19 @@ if ($SigningPfx) {
     & $signTool @signArguments
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & $signTool verify /pa /all $msixPath
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if ($LASTEXITCODE -ne 0) {
+        if (-not $AllowSelfSignedCertificate -or -not $PublicCertificatePath) {
+            exit $LASTEXITCODE
+        }
+        $expectedCertificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($PublicCertificatePath)
+        $signature = Get-AuthenticodeSignature -LiteralPath $msixPath
+        if (-not $signature.SignerCertificate -or
+            $signature.SignerCertificate.Thumbprint -ne $expectedCertificate.Thumbprint -or
+            $signature.Status -in @("HashMismatch", "NotSigned")) {
+            throw "The self-signed MSIX signature did not match the release certificate."
+        }
+        Write-Warning "The MSIX signature matches the private release certificate. Public trust is not available."
+    }
 } else {
     Write-Warning "The MSIX package is unsigned. It cannot be installed as a production release."
 }
