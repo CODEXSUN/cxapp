@@ -121,6 +121,7 @@ if ($SigningPfx) {
             throw "The self-signed MSIX signature did not match the release certificate."
         }
         Write-Warning "The MSIX signature matches the private release certificate. Public trust is not available."
+        $global:LASTEXITCODE = 0
     }
 } else {
     Write-Warning "The MSIX package is unsigned. It cannot be installed as a production release."

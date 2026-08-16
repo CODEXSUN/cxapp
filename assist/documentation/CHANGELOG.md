@@ -49,6 +49,8 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   Windows can validate the first-release signing chain after user installation.
 - Changed CI verification to match the MSIX signer thumbprint against the generated public
   certificate. This avoids an interactive root-trust prompt on the GitHub runner.
+- Cleared SignTool's handled untrusted-root exit code after the signer thumbprint check so the
+  private sideloading release can continue to GitHub publication.
 - Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
   current limitation: the Windows host is an enrollment foundation until the local runtime and
   module-owned synchronization implementations are complete.
