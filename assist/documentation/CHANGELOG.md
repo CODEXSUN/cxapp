@@ -45,12 +45,14 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   certificate for the current user before it installs the automatic-update feed.
 - Added the public signing certificate and install/uninstall scripts to the release assets. The
   private certificate stays only in GitHub Actions secrets.
-- Added the self-signed release certificate to the current-user root and trusted-people stores so
-  Windows can validate the first-release signing chain after user installation.
+- Added administrator elevation to trust the self-signed release certificate in the machine root
+  and trusted-people stores. Windows AppX requires machine trust for this private certificate.
 - Changed CI verification to match the MSIX signer thumbprint against the generated public
   certificate. This avoids an interactive root-trust prompt on the GitHub runner.
 - Cleared SignTool's handled untrusted-root exit code after the signer thumbprint check so the
   private sideloading release can continue to GitHub publication.
+- Made GitHub publication replace assets when a release tag is rebuilt. A failed installer fix can
+  now update the same release without creating a duplicate release.
 - Documented the one-tenant offline-first target, cloud control-plane boundary, release process, and
   current limitation: the Windows host is an enrollment foundation until the local runtime and
   module-owned synchronization implementations are complete.

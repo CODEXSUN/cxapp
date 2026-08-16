@@ -69,9 +69,9 @@ The certificate subject becomes the package publisher. Keep that publisher subje
 certificate renewals. Windows will reject an update if the package identity or publisher changes.
 
 The first private release uses a dedicated CODEXSUN sideloading certificate. Run `Install-CXApp.ps1`
-from the GitHub release. The script validates the certificate, trusts it for the current user, and
-installs the App Installer feed. Replace this certificate with a public code-signing certificate or
-Microsoft Trusted Signing before broad public distribution.
+from the GitHub release. The script requests administrator approval, validates the certificate,
+trusts it for this Windows machine, and installs the App Installer feed. Replace this certificate
+with a public code-signing certificate or Microsoft Trusted Signing before broad public distribution.
 
 Release procedure:
 

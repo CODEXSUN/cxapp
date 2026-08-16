@@ -1,5 +1,6 @@
 param(
-    [string]$ReleaseBaseUrl = "https://github.com/CODEXSUN/cxapp/releases/latest/download"
+    [string]$ReleaseBaseUrl = "https://github.com/CODEXSUN/cxapp/releases/latest/download",
+    [switch]$Elevated
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,13 +9,34 @@ $downloadRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cxapp-install-" + 
 $certificatePath = Join-Path $downloadRoot "CXApp.Windows.cer"
 $appInstallerPath = Join-Path $downloadRoot "CXApp.Windows.appinstaller"
 
+function Test-Administrator {
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+    return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+if (-not (Test-Administrator)) {
+    if ($Elevated) {
+        throw "Administrator access is required to trust the private CXApp release certificate."
+    }
+    $arguments = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", "`"$PSCommandPath`"",
+        "-ReleaseBaseUrl", "`"$ReleaseBaseUrl`"",
+        "-Elevated"
+    )
+    $process = Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -Wait -PassThru
+    exit $process.ExitCode
+}
+
 function Add-ReleaseCertificate(
     [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
     [string]$CertificatePath
 ) {
     $store = [System.Security.Cryptography.X509Certificates.X509Store]::new(
         [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPeople,
-        [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+        [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine
     )
     try {
         $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
@@ -22,7 +44,7 @@ function Add-ReleaseCertificate(
     } finally {
         $store.Close()
     }
-    & certutil.exe -user -f -addstore Root $CertificatePath | Out-Null
+    & certutil.exe -f -addstore Root $CertificatePath | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "Windows could not trust the CXApp release certificate."
     }

@@ -212,8 +212,9 @@ is only a build artifact and must not be distributed as a production installer.
 
 The first private sideloading release may use a dedicated self-signed CODEXSUN certificate. Publish
 only its public certificate. Store its private PFX and password only in GitHub Actions secrets. The
-release installer must validate and trust the certificate for the current user before installation.
-Replace this certificate with a public trusted signing service before broad public distribution.
+release installer must request administrator approval, validate the certificate, and trust it for
+the Windows machine before installation. Replace this certificate with a public trusted signing
+service before broad public distribution.
 
 ## Build Output
 
