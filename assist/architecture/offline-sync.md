@@ -15,17 +15,18 @@ Corporate ID can be enrolled.
 The Windows runtime is composed as follows:
 
 ```text
-WinUI 3/.NET 10 host
+Tauri 2/Rust host
   -> WebView2 with packaged React assets
-  -> bundled Node.js loopback API
+  -> narrow typed Rust commands
   -> tenant-bound SQLite database
   -> outbound HTTPS synchronization to the Platform cloud API
 ```
 
-.NET owns process supervision, Windows lifecycle, secure device credential access, printing, files,
-and hardware. Node.js owns the local API, module business rules, SQLite repositories, migrations,
-outbox, inbox, and synchronization worker. React remains the only product UI. The .NET bridge must
-not become a second business API.
+Rust owns Windows lifecycle, secure device credential access, printing, files, hardware, SQLite
+infrastructure, outbox, inbox, and synchronization transport. Node.js remains the cloud runtime and
+frontend/build tool; it is not shipped as a permanent desktop sidecar. React remains the only product
+UI. Every offline business repository and conflict rule remains owned by its Core or Billing module;
+the Tauri bridge must not become a generic second business API.
 
 The local API listens only on `127.0.0.1` on an ephemeral port. The host supplies a random per-launch
 credential to both WebView2 and the child process. The runtime must reject other origins and callers.
@@ -87,7 +88,7 @@ database for the Windows client.
 
 Offline support may be required for:
 
-- WinUI 3 desktop host with WebView2.
+- Tauri 2 desktop host with WebView2.
 - Capacitor mobile host.
 - Browser app with limited offline capability.
 

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.62
+Current version: 1.0.63
 
-Release tag: v-1.0.62
+Release tag: v-1.0.63
 
-Changelog label: v 1.0.62
+Changelog label: v 1.0.63
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,18 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.63
+
+### [v 1.0.63] 2026-08-17 5:38 pm - Desktop Top Version working
+
+#### Database Changes
+
+- Database update: No (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.63.
 
 ## v-1.0.62
 
@@ -37,6 +49,19 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
   automatic background update task.
 - Kept App Installer deployment as the compatibility fallback on Windows versions that do not expose
   the direct update-settings command.
+- Replaced the WinUI 3/.NET 10 host with a Tauri 2/Rust host that reuses the Platform React login and
+  desk through the installed WebView2 runtime.
+- Preserved the existing `%LOCALAPPDATA%\CXApp\Desktop\workspace.db` projection and added Rust
+  validation plus WAL-backed SQLite tests for canonical tenant identity data.
+- Restricted desktop navigation to local launcher content and `https://app.codexsun.com`, kept
+  Corporate ID visible and mandatory, and exposed only the safe workspace-projection bridge.
+- Replaced MSIX/App Installer release assembly with a current-user NSIS installer, Windows
+  Authenticode signing, Tauri updater signatures, a GitHub `latest.json` feed, checksums, install,
+  uninstall, and WinUI migration scripts.
+- Added a separate updater signing identity and GitHub Actions secret contract. Node.js remains the
+  cloud runtime and build tool and is not shipped as a permanent desktop sidecar.
+- Verified the Tauri development host in the real Windows UI: one responsive CXApp window rendered
+  the cloud login with Corporate ID, Email, Password, Forgot password, and Sign in controls.
 
 ## v-1.0.61
 

@@ -1,23 +1,23 @@
 param(
-    [string]$PackagePath,
-    [switch]$UseUpdateFeed
+    [string]$InstallerPath
 )
 
 $ErrorActionPreference = "Stop"
 $windowsRoot = Split-Path -Parent $PSScriptRoot
-$repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $windowsRoot "..\..\.."))
+$repositoryRoot = [IO.Path]::GetFullPath((Join-Path $windowsRoot "..\..\.."))
+if (-not $InstallerPath) {
+    $InstallerPath = Join-Path $repositoryRoot "dist\releases\windows\CXApp.Windows.Setup.exe"
+}
+$resolvedInstaller = Resolve-Path -LiteralPath $InstallerPath
 
-if ($UseUpdateFeed -and -not $PackagePath) {
-    $PackagePath = "https://github.com/CODEXSUN/cxapp/releases/latest/download/CXApp.Windows.appinstaller"
-} elseif (-not $PackagePath) {
-    $PackagePath = Join-Path $repositoryRoot "dist\releases\windows\CXApp.Windows.msix"
+Get-Process -Name "cxapp-windows" -ErrorAction SilentlyContinue | Stop-Process -Force
+$legacyPackage = Get-AppxPackage -Name "CODEXSUN.CXApp.Windows"
+if ($legacyPackage) {
+    $legacyPackage | Remove-AppxPackage
 }
 
-if ($PackagePath -match '^https://') {
-    Start-Process $PackagePath
-    Write-Host "Windows App Installer was opened. Complete the signed release installation in that window."
-} else {
-    $resolvedPackage = Resolve-Path -LiteralPath $PackagePath
-    Add-AppxPackage -Path $resolvedPackage
-    Write-Host "CXApp was installed for the current Windows user from the local MSIX."
+$process = Start-Process -FilePath $resolvedInstaller -ArgumentList "/S" -PassThru -Wait
+if ($process.ExitCode -ne 0) {
+    throw "The CXApp installer exited with code $($process.ExitCode)."
 }
+Write-Host "CXApp Tauri was installed for the current Windows user. Local workspace data was preserved."

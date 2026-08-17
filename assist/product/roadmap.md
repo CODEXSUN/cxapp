@@ -58,7 +58,7 @@ Goals:
 
 Goals:
 
-- WinUI 3/.NET 10 Windows shell with WebView2.
+- Tauri 2/Rust Windows shell with WebView2 and shared React UI.
 - Local tenant store.
 - Offline sync manager.
 - Conflict workflow.

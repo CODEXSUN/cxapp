@@ -76,8 +76,8 @@ Platform owns the SaaS foundation.
   platform operations.
 - `apps/platform/web`: React/Vite shell for the domain-resolved tenant app portal, login, super-admin desk, admin
   desk, tenant desk, tenant UI, and design-system gallery.
-- `apps/platform/windows`: WinUI 3/.NET 10 host that opens the shared Platform React UI through WebView2 and stores
-  only a safe one-workspace projection in device-local SQLite.
+- `apps/platform/windows`: Tauri 2/Rust host that opens the shared Platform React UI through WebView2 and stores
+  only a validated, non-secret one-workspace projection in device-local SQLite.
 
 Platform is the only runnable application: API `7010` and Web `7020`.
 
@@ -200,17 +200,17 @@ Database commands currently route through `@cxapp/platform-api` and `apps/platfo
 
 ## Current Version And Work Update
 
-Current recorded version: `1.0.60`.
+Current recorded version: `1.0.62`.
 
-Latest changelog entry: `v-1.0.60` on 2026-08-16 at 11:38 am.
+Latest changelog entry: `v-1.0.62` on 2026-08-16.
 
 Latest recorded work:
 
-- Added the WinUI 3 and .NET 10 Windows enrollment host.
-- Added signed MSIX packaging and App Installer updates through GitHub Releases.
-- Added current-user install and uninstall scripts.
-- Added a private sideloading certificate contract for the first Windows release.
-- Workspace version is `1.0.60`.
+- Replaced the WinUI 3/.NET host with Tauri 2, Rust, React, WebView2, and SQLite.
+- Replaced MSIX/App Installer packaging with current-user NSIS and signed Tauri updates through GitHub Releases.
+- Preserved the existing desktop SQLite path during WinUI-to-Tauri installation.
+- Kept the desktop release scoped to verified cloud enrollment; module-owned offline Billing remains open.
+- Workspace version is `1.0.62`.
 
 Current working tree note:
 

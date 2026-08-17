@@ -273,7 +273,7 @@ Preferred technology stack:
 - TanStack Table.
 - MariaDB.
 - Docker.
-- WinUI 3 and .NET 10 with WebView2 for Windows desktop.
+- Tauri 2 and Rust with WebView2 for Windows desktop.
 - Capacitor for future Android and iOS hosts that reuse the React UI.
 
 Technology choices should support modular development, type safety, clean boundaries, scalable deployment, offline

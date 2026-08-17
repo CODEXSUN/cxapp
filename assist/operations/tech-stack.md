@@ -18,8 +18,8 @@
 - Switchable file storage with local filesystem, S3-compatible object storage, and MinIO support.
 - Custom storage utility container with MinIO and FileBrowser.org where useful.
 - Docker for local and production containers.
-- WinUI 3 and .NET 10 for the Windows-native desktop shell.
-- WebView2 for hosting the shared React application in the Windows shell.
+- Tauri 2 and Rust for the Windows desktop shell.
+- WebView2 for hosting the shared React application in the Tauri shell on Windows.
 - Capacitor for future Android and iOS hosts that reuse the shared React application.
 
 ## Backend Direction
@@ -57,15 +57,17 @@ TanStack Query should manage server state. Local UI state should stay close to c
 
 ## Desktop Direction
 
-The WinUI 3 host owns Windows lifecycle, WebView2, device integration, local printing, packaging,
-and secure updates. React remains the only product UI, and the Node.js Platform API remains the
-authority for authentication, tenancy, permissions, and business data.
+The Tauri 2 Rust host owns Windows lifecycle, WebView2, device integration, local printing,
+tenant-bound SQLite infrastructure, packaging, and secure updates. React remains the only product UI,
+and the Node.js Platform API remains the authority for authentication, tenancy, permissions, and
+cloud business data.
 
-The Windows release target is offline-first and single-tenant per installation. Packaged React assets
-use a bundled Node.js loopback API backed by SQLite. The cloud remains the control plane,
-synchronization hub, backup projection, and auditor web. Offline business persistence is enabled only
-after each owning module supplies its SQLite repository, sync schema, conflict policy, audit, and
-cloud endpoints.
+The Windows release target is offline-first and single-tenant per installation. The installed client
+does not carry a permanent Node.js sidecar; Node.js remains the cloud runtime and build tool. Rust
+exposes narrow native commands to packaged React and owns SQLite plus sync infrastructure. The cloud
+remains the control plane, synchronization hub, backup projection, and auditor web. Offline business
+persistence is enabled only after each owning module supplies its SQLite repository contract, sync
+schema, conflict policy, audit, and cloud endpoints.
 
 ## Mobile Direction
 

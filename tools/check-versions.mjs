@@ -7,13 +7,15 @@ import { findWorkspacePackageFiles } from "./version-bump.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const CHANGELOG_PATH = join(ROOT, "assist", "documentation", "CHANGELOG.md");
-const WINDOWS_PACKAGE_MANIFEST = join(
+const WINDOWS_TAURI_CONFIG = join(
   ROOT,
   "apps",
   "platform",
   "windows",
-  "Package.appxmanifest"
+  "src-tauri",
+  "tauri.conf.json"
 );
+const WINDOWS_CARGO_MANIFEST = join(ROOT, "apps", "platform", "windows", "src-tauri", "Cargo.toml");
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, "utf8"));
@@ -70,12 +72,21 @@ function checkVersions(rootDir) {
     failures.push(`Changelog must contain section ## ${expectedTag}.`);
   }
 
-  if (existsSync(WINDOWS_PACKAGE_MANIFEST)) {
-    const manifest = readFileSync(WINDOWS_PACKAGE_MANIFEST, "utf8");
-    const packageVersion = manifest.match(/<Identity\b[^>]*\bVersion="([^"]+)"/u)?.[1];
-    if (packageVersion !== `${rootVersion}.0`) {
+  if (existsSync(WINDOWS_TAURI_CONFIG)) {
+    const packageVersion = String(readJson(WINDOWS_TAURI_CONFIG).version ?? "");
+    if (packageVersion !== rootVersion) {
       failures.push(
-        `Windows Package.appxmanifest version is ${packageVersion ?? "missing"}; expected ${rootVersion}.0.`
+        `Windows tauri.conf.json version is ${packageVersion}; expected ${rootVersion}.`
+      );
+    }
+  }
+
+  if (existsSync(WINDOWS_CARGO_MANIFEST)) {
+    const cargoManifest = readFileSync(WINDOWS_CARGO_MANIFEST, "utf8");
+    const packageVersion = cargoManifest.match(/^version\s*=\s*"([^"]+)"/mu)?.[1];
+    if (packageVersion !== rootVersion) {
+      failures.push(
+        `Windows Cargo.toml version is ${packageVersion ?? "missing"}; expected ${rootVersion}.`
       );
     }
   }

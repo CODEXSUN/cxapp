@@ -1,6 +1,35 @@
 # Logs
 logs
 *.log
+
+# Build output and native toolchains
+/dist/
+**/dist/
+**/target/
+**/build/
+**/out/
+**/bin/
+**/obj/
+**/coverage/
+**/.turbo/
+**/.vite/
+*.pdb
+*.dmp
+*.msix
+*.appx
+*.appinstaller
+*.exe
+*.msi
+*.zip
+
+# Local runtime database journals
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+
 .codex/
 .codex-runtime/
 npm-debug.log*
@@ -44,7 +73,8 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
+/node_modules/
+**/node_modules/
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -52,9 +82,6 @@ web_modules/
 
 # TypeScript cache
 *.tsbuildinfo
-
-# Turbo cache
-.turbo/
 
 # Optional npm cache directory
 .npm
@@ -96,7 +123,6 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 .output
 
 # Gatsby files

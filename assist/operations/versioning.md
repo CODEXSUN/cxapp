@@ -198,23 +198,25 @@ Rules:
 
 A lockstep `v-<version>` tag starts `.github/workflows/windows-release.yml`. The workflow must stop if
 the tag does not match the root package version. It builds and validates the repository, creates a
-self-contained x64 MSIX, signs the package, writes checksums, and publishes stable asset names to the
-GitHub release. The stable `.appinstaller` URL is the Windows automatic-update feed.
+current-user x64 NSIS installer, applies Windows Authenticode and Tauri updater signatures, writes
+checksums plus `latest.json`, and publishes stable asset names to the GitHub release.
 
 The repository must have these secrets before a Windows release tag is pushed:
 
 - `CXAPP_WINDOWS_SIGNING_PFX`
 - `CXAPP_WINDOWS_SIGNING_PASSWORD`
+- `CXAPP_TAURI_SIGNING_PRIVATE_KEY`
+- `CXAPP_TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
 The PFX must be a production code-signing certificate trusted by the target Windows devices. Keep the
-package identity and certificate publisher subject unchanged between releases. A local unsigned MSIX
-is only a build artifact and must not be distributed as a production installer.
+certificate publisher and the separate Tauri updater key unchanged between releases. A local unsigned
+NSIS installer is only a build artifact and must not be distributed as a production installer.
 
-The first private sideloading release may use a dedicated self-signed CODEXSUN certificate. Publish
-only its public certificate. Store its private PFX and password only in GitHub Actions secrets. The
-release installer must request administrator approval, validate the certificate, and trust it for
-the Windows machine before installation. Replace this certificate with a public trusted signing
-service before broad public distribution.
+The first private release may use a dedicated self-signed CODEXSUN certificate. Publish only its
+public certificate. Store both private signing keys and passwords only in GitHub Actions secrets and
+an approved recovery vault. The release installer must request administrator approval, validate the
+certificate, and trust it for the Windows machine before installation. Replace this certificate with
+a public trusted signing service before broad public distribution.
 
 ## Build Output
 

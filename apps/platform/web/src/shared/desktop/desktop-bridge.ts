@@ -15,13 +15,24 @@ type WindowsWebView = {
 };
 
 type DesktopWindow = Window & {
+  __TAURI__?: {
+    core?: {
+      invoke(command: string, args?: Record<string, unknown>): Promise<unknown>;
+    };
+  };
   chrome?: {
     webview?: WindowsWebView;
   };
 };
 
 export function publishDesktopWorkspace(workspace: DesktopWorkspace): void {
-  const webView = (window as DesktopWindow).chrome?.webview;
+  const desktopWindow = window as DesktopWindow;
+  const tauriInvoke = desktopWindow.__TAURI__?.core?.invoke;
+  if (tauriInvoke) {
+    void tauriInvoke("save_workspace_projection", { workspace }).catch(() => undefined);
+  }
+
+  const webView = desktopWindow.chrome?.webview;
   if (!webView) return;
 
   webView.postMessage(

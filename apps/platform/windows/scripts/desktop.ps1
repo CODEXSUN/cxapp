@@ -4,32 +4,45 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$projectPath = Join-Path $projectRoot "CXApp.Windows.csproj"
-$dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
+$windowsRoot = Split-Path -Parent $PSScriptRoot
+$repositoryRoot = [IO.Path]::GetFullPath((Join-Path $windowsRoot "..\..\.."))
+$manifestPath = Join-Path $windowsRoot "src-tauri\Cargo.toml"
+$env:CARGO_TARGET_DIR = Join-Path $repositoryRoot "dist\.cargo\windows"
 
-if (-not $dotnet) {
-    $dotnet = "C:\Program Files\dotnet\dotnet.exe"
-}
-
-if (-not (Test-Path -LiteralPath $dotnet)) {
-    throw ".NET 10 SDK was not found. Install Microsoft.DotNet.SDK.10 before building CXApp Windows."
+function Invoke-Checked([scriptblock]$Command) {
+    & $Command
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
 }
 
 switch ($Action) {
-    "restore" { & $dotnet restore $projectPath }
-    "build" { & $dotnet build $projectPath --configuration Release }
-    "run" { & $dotnet run --project $projectPath --configuration Debug }
-    "publish" { & $dotnet publish $projectPath --configuration Release --self-contained true }
-    "package" {
-        $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot "..\..\.."))
-        $package = Get-Content -LiteralPath (Join-Path $repositoryRoot "package.json") -Raw | ConvertFrom-Json
-        & (Join-Path $PSScriptRoot "package.ps1") -Version $package.version
+    "restore" {
+        Invoke-Checked { cargo fetch --manifest-path $manifestPath }
     }
-    "install" { & (Join-Path $PSScriptRoot "install.ps1") }
-    "uninstall" { & (Join-Path $PSScriptRoot "uninstall.ps1") }
-}
-
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
+    "build" {
+        Invoke-Checked { npm.cmd run build -w @cxapp/windows }
+        Invoke-Checked { cargo build --manifest-path $manifestPath --release }
+    }
+    "run" {
+        Push-Location $windowsRoot
+        try {
+            Invoke-Checked { node.exe "..\..\..\node_modules\@tauri-apps\cli\tauri.js" dev }
+        } finally {
+            Pop-Location
+        }
+    }
+    "publish" {
+        Invoke-Checked { npm.cmd run build -w @cxapp/windows }
+        Invoke-Checked { cargo build --manifest-path $manifestPath --release }
+    }
+    "package" {
+        & (Join-Path $PSScriptRoot "package.ps1")
+    }
+    "install" {
+        & (Join-Path $PSScriptRoot "install.ps1")
+    }
+    "uninstall" {
+        & (Join-Path $PSScriptRoot "uninstall.ps1")
+    }
 }

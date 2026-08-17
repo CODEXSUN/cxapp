@@ -1,19 +1,21 @@
 # CXApp Windows Host
 
-The Windows product target is an offline-first WinUI 3 and .NET 10 shell. WebView2 will load packaged
-React assets from a bundled Node.js loopback runtime backed by a tenant-bound SQLite database. The
-cloud is the control plane, synchronization hub, backup projection, and auditor/back-office web.
+CXApp Windows uses Tauri 2, Rust, React, SQLite, and the installed Microsoft Edge WebView2 runtime.
+Rust owns the native lifecycle, navigation allowlist, safe workspace projection, diagnostics,
+packaging, and signed updates. React remains the only product UI. Node.js is used for the cloud API
+and frontend/build tooling; the installed desktop client does not run a permanent Node.js sidecar.
 
-The current source is the enrollment foundation only: it opens the canonical cloud workspace and
-persists a safe one-row workspace projection after a verified tenant login. It does not yet provide
-offline billing. Before release, the host must supervise the bundled local runtime and switch WebView2
-to its authenticated loopback origin; module-owned SQLite repositories and cloud sync contracts must
-then replace cloud-only business calls.
+The current release is the tenant enrollment desktop host. It opens only
+`https://app.codexsun.com/app/`, keeps Corporate ID mandatory through the shared cloud login, and
+stores only a validated, non-secret one-workspace projection in
+`%LOCALAPPDATA%\CXApp\Desktop\workspace.db`. It does not yet provide offline Billing. Module-owned
+SQLite repositories and cloud synchronization contracts are still required before a Billing/Core
+workflow can be described as offline-capable.
 
-One installation can hold one tenant workspace. A tenant change must be an explicit reset that clears
-SQLite, WebView2 state, device credentials, cached authorization, and unsynchronized work before new
-Corporate ID enrollment. Tenant secrets, passwords, browser cookies, JWTs, and raw database
-credentials must never be copied into SQLite.
+One installation can hold one tenant workspace. A future tenant reset must clear SQLite, WebView2
+state, device credentials, cached authorization, and unsynchronized work before another Corporate ID
+is enrolled. Tenant secrets, passwords, cookies, JWTs, and database credentials must never enter the
+desktop SQLite database.
 
 ## Commands
 
@@ -29,62 +31,43 @@ npm run desktop:install
 npm run desktop:uninstall
 ```
 
-The machine needs the .NET 10 SDK, a supported Windows SDK, and the Evergreen WebView2 Runtime. Build
-and intermediate files are written only below the repository root `dist/` directory.
+The machine needs the Rust toolchain, Node.js/npm versions declared by the root package, Microsoft C++
+Build Tools, and WebView2. Generated web, Cargo, bundle, and release output stays below root `dist/`.
 
-The current publish command creates an unpackaged enrollment host for controlled local testing. The
-package command creates the MSIX, Microsoft Windows App Runtime dependency, and App Installer release
-assets. This host is still not the offline production client because the local runtime and module
-sync implementations are not complete.
+`desktop:package` creates a current-user NSIS installer at
+`dist/releases/windows/CXApp.Windows.Setup.exe`. `desktop:install` removes the superseded WinUI MSIX,
+installs the Tauri client silently, and preserves `%LOCALAPPDATA%\CXApp\Desktop`. Uninstall also keeps
+that local data by design.
 
-## Install and uninstall
+## Signed updates and GitHub releases
 
-`desktop:package` creates an unsigned local package in `dist/releases/windows`. Use an unsigned
-package only to inspect and validate package contents. Windows requires a trusted signature for
-normal installation and production distribution.
+The Tauri updater checks the stable GitHub `latest.json` endpoint. It accepts only artifacts signed
+with the updater public key embedded in `tauri.conf.json`. Windows Authenticode signing remains a
+separate trust layer for the installer.
 
-`desktop:install` installs the generated MSIX for the current user for local validation. Run the
-install script with `-UseUpdateFeed`, or open the release `.appinstaller` file, for a production
-installation that remains connected to the update feed. Windows Settings can remove the app. The
-`desktop:uninstall` command performs the same current-user package removal. Uninstall keeps the local
-application data by design. A future explicit tenant reset command will remove that data after it
-checks for unsynchronized work.
+The `windows-release.yml` workflow runs for a `v-<version>` tag that matches the lockstep repository
+version. It validates the repository, tests and builds Rust, signs the NSIS installer, creates the
+Tauri updater signature and `latest.json`, writes SHA-256 checksums, and publishes stable asset names.
 
-## Automatic updates and GitHub releases
+Required GitHub repository secrets:
 
-The `.appinstaller` file checks the latest GitHub release at each launch and also registers a
-background update check. GitHub release assets use stable names so installed clients keep one update
-feed URL. The release installer first installs the Microsoft-signed x64 Windows App Runtime and the
-signed CXApp MSIX directly, then registers and verifies launch plus background update settings. On
-older Windows builds without the direct update-settings command, it falls back to App Installer.
+- `CXAPP_WINDOWS_SIGNING_PFX`
+- `CXAPP_WINDOWS_SIGNING_PASSWORD`
+- `CXAPP_TAURI_SIGNING_PRIVATE_KEY`
+- `CXAPP_TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
-The `windows-release.yml` workflow runs for a `v-<version>` tag. The tag must match the root package
-version. The workflow validates the source, builds the host, signs the MSIX, writes SHA-256 checksums,
-and creates the GitHub release.
-
-Add these GitHub repository secrets before creating a release tag:
-
-- `CXAPP_WINDOWS_SIGNING_PFX`: Base64 text for the production code-signing PFX.
-- `CXAPP_WINDOWS_SIGNING_PASSWORD`: Password for that PFX.
-
-The certificate subject becomes the package publisher. Keep that publisher subject unchanged across
-certificate renewals. Windows will reject an update if the package identity or publisher changes.
-
-The first private release uses a dedicated CODEXSUN sideloading certificate. Run `Install-CXApp.ps1`
-from the GitHub release. The script requests administrator approval, validates the certificate,
-trusts it for this Windows machine, and installs the App Installer feed. Replace this certificate
-with a public code-signing certificate or Microsoft Trusted Signing before broad public distribution.
+Keep both signing identities stable. Losing the Tauri updater private key or password prevents
+existing installations from accepting future updates. The current local recovery copy is outside the
+repository under `%USERPROFILE%\.cxapp\signing`; back it up in an approved secure vault before broad
+distribution.
 
 Release procedure:
 
-1. Bump and validate the repository version.
+1. Explicitly bump and validate the repository version.
 2. Commit and push the release source.
 3. Create and push `v-<version>`.
-4. Check the Windows release workflow.
-5. Install `CXApp.Windows.appinstaller` from the latest GitHub release.
+4. Confirm the Windows release workflow succeeds.
+5. Run `Install-CXApp.ps1` from the release as administrator for the private signing certificate.
 
-Version `1.0.62` is the corrected first private Windows enrollment release. It uses the Windows App
-SDK packaging target, declares the packaged runtime contract, and ships the required Microsoft-signed
-x64 runtime dependency. It writes bounded startup diagnostics to
-`%LOCALAPPDATA%\CXApp\Desktop\startup.log`. Do not describe it as an offline billing release. The
-local runtime and module sync gates remain open.
+Version 1.0.62 remains the existing release baseline. The Tauri migration is recorded in that active
+version until an explicit version-bump request creates the next tag.

@@ -15,7 +15,7 @@ Local testing and cloud deployment should follow the same strict rules and servi
 - Background workers.
 - Queue processor.
 - Scheduler.
-- Windows desktop app through a WinUI 3/.NET 10 shell and WebView2.
+- Windows desktop app through a Tauri 2/Rust shell and WebView2.
 - Mobile app through a future Capacitor host for the shared React UI.
 - Tenant databases.
 - File storage.
@@ -188,19 +188,19 @@ Possible tenant deployment models:
 
 ### Offline-first Windows client
 
-One Windows installation binds to one tenant and runs packaged React assets, a bundled Node.js
-loopback API, and a tenant-local SQLite database. It communicates outward to the cloud sync API over
-HTTPS. The cloud must not connect directly to the client or require an inbound customer firewall
-rule. The WinUI 3/.NET host supervises the local runtime and owns Windows integrations; it does not
-duplicate module business logic.
+One Windows installation binds to one tenant and runs packaged React assets with a Tauri 2/Rust host
+and a tenant-local SQLite database. It communicates outward to the cloud sync API over HTTPS. The
+cloud must not connect directly to the client or require an inbound customer firewall rule. Rust
+owns native and synchronization infrastructure; it does not duplicate module business logic. Node.js
+remains the cloud runtime and build tool rather than an installed sidecar.
 
 Cloud web is the control plane and auditor/back-office projection. It must show synchronization
 freshness and must not present stale replicated data as current local state.
 
-The Windows client ships as a signed MSIX package. Windows provides current-user install and
-uninstall behavior. An App Installer feed at the latest GitHub release checks for updates on launch
-and in the background. A `v-<version>` Git tag must match the lockstep repository version before the
-release workflow can build, sign, checksum, and publish the package.
+The Windows client ships as a signed current-user NSIS installer. Tauri checks the latest GitHub
+`latest.json` feed and accepts only updater-key-signed artifacts. A `v-<version>` Git tag must match
+the lockstep repository version before the release workflow can build, Authenticode-sign,
+updater-sign, checksum, and publish the package.
 
 ## Scaling Direction
 
