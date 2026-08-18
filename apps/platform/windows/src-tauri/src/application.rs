@@ -1,4 +1,5 @@
 use crate::{
+    desktop_config::{self, DesktopConfig},
     diagnostics, navigation, updates,
     workspace::{WorkspacePayload, WorkspaceProjection, WorkspaceStore},
 };
@@ -17,12 +18,30 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            load_desktop_config,
+            save_desktop_config,
+            test_local_database,
             load_workspace_projection,
             open_workspace,
             save_workspace_projection
         ])
         .run(tauri::generate_context!())
         .expect("CXApp desktop host failed");
+}
+
+#[tauri::command]
+fn load_desktop_config() -> Result<DesktopConfig, String> {
+    desktop_config::load()
+}
+
+#[tauri::command]
+fn save_desktop_config(config: DesktopConfig) -> Result<DesktopConfig, String> {
+    desktop_config::save(config)
+}
+
+#[tauri::command]
+fn test_local_database(config: DesktopConfig) -> Result<(), String> {
+    desktop_config::test_database(&config)
 }
 
 #[tauri::command]

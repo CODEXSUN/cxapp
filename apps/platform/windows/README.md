@@ -12,6 +12,11 @@ stores only a validated, non-secret one-workspace projection in
 SQLite repositories and cloud synchronization contracts are still required before a Billing/Core
 workflow can be described as offline-capable.
 
+The desktop launcher also exposes a local MariaDB configuration surface. Its editable configuration
+file is `%LOCALAPPDATA%\CXApp\Desktop\desktop-config.json`; it contains the runtime mode, MariaDB
+host, port, database name, and database user. It intentionally does not contain a database password.
+The launcher can save the file and test TCP reachability before the Local API is enabled.
+
 One installation can hold one tenant workspace. A future tenant reset must clear SQLite, WebView2
 state, device credentials, cached authorization, and unsynchronized work before another Corporate ID
 is enrolled. Tenant secrets, passwords, cookies, JWTs, and database credentials must never enter the
