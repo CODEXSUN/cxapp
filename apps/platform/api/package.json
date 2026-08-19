@@ -9,6 +9,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "@cxapp/accounts-api": "^1.0.63",
     "@cxapp/billing-api": "^1.0.63",
     "@cxapp/core-api": "^1.0.63",
     "@cxapp/devkit-api": "^1.0.63",

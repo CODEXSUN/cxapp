@@ -2,6 +2,10 @@ import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxap
 import { registerModules } from "@cxapp/framework/modules";
 import { createMailModule } from "@cxapp/mail-api";
 import {
+  accountsApiModuleKeys,
+  registerAccountsApi
+} from "@cxapp/accounts-api";
+import {
   billingApiModuleKeys,
   closeAllBillingDatabases,
   registerBillingApi
@@ -90,6 +94,7 @@ export async function createApp() {
           modules: [
             ...coreApiModuleKeys,
             ...billingApiModuleKeys,
+            ...accountsApiModuleKeys,
             ...devkitApiModuleKeys,
             appRegistryModule.key,
             tenantModule.key,
@@ -140,6 +145,8 @@ export async function createApp() {
   console.info("[platform.routes] Core package ready");
   await registerBillingApi(app);
   console.info("[platform.routes] Billing package ready");
+  await registerAccountsApi(app);
+  console.info("[platform.routes] Accounts package ready");
   await registerModules(
     [
       appRegistryModule,

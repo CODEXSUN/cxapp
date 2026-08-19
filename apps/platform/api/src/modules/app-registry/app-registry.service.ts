@@ -8,6 +8,7 @@ import { AppRegistryRepository } from "./app-registry.repository.js";
 export const defaultTenantModuleKeys = [
   "platform.application",
   "billing.sales",
+  "accounts.overview",
   "mail",
   "platform.task-manager"
 ] as const;
@@ -56,6 +57,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Mail",
     moduleKey: "mail",
     stack: "mail",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Chart of accounts, ledger groups, ledgers, journal, and accounting overview.",
+    appId: "accounts",
+    id: 0,
+    label: "Accounts",
+    moduleKey: "accounts.overview",
+    stack: "accounts",
     uuid: ""
   },
   {

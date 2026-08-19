@@ -17,6 +17,12 @@
   "files": [],
   "references": [
     {
+      "path": "./apps/accounts/api"
+    },
+    {
+      "path": "./apps/accounts/web"
+    },
+    {
       "path": "./apps/billing/api"
     },
     {

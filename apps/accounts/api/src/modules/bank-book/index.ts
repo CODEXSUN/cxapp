@@ -1,0 +1,1 @@
+export { bankBookModule } from "./bank-book.module.js";

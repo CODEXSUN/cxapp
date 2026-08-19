@@ -49,6 +49,7 @@
     "db:restore:test": "tsx apps/platform/api/src/database/db-cli.ts restore:test",
     "db:backup:verify": "tsx apps/platform/api/src/database/db-cli.ts backup:verify",
     "test:e2e:organisation": "tsx apps/core/api/src/modules/organisation/organisation.e2e.ts",
+    "test:e2e:accounting": "tsx apps/accounts/api/src/modules/accounting/accounting.e2e.ts",
     "test:e2e:bootstrap": "tsx tools/e2e/platform-core-billing-bootstrap.e2e.ts",
     "test:e2e:composed-runtime": "tsx tools/e2e/composed-platform-runtime.e2e.ts",
     "test:e2e:devkit": "tsx tools/e2e/devkit-isolation.e2e.ts",

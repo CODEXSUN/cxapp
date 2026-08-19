@@ -5,6 +5,12 @@ import {
   seedBillingTenantDatabase
 } from "@cxapp/billing-api";
 import {
+  accountsTenantMigrations,
+  migrateAccountsTenantDatabase,
+  rollbackAccountsTenantDatabase,
+  seedAccountsTenantDatabase
+} from "@cxapp/accounts-api";
+import {
   coreTenantMigrations,
   migrateCoreTenantDatabase,
   rollbackCoreTenantDatabase,
@@ -51,6 +57,12 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
           statements: [`RUN ${migration.name}`]
         }))
       : []),
+    ...(enabled.has("accounts.accounting")
+      ? accountsTenantMigrations.map((migration) => ({
+          ...migration,
+          statements: [`RUN ${migration.name}`]
+        }))
+      : []),
     ...(enabled.has("mail")
       ? mailTenantMigrations.map((migration) => ({
           ...migration,
@@ -76,6 +88,11 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   if (enabled.has("billing.sales")) {
     await migrateBillingTenantDatabase(tenant.dbName);
     provisionedApps.push("billing");
+  }
+
+  if (enabled.has("accounts.accounting")) {
+    await migrateAccountsTenantDatabase(tenant.dbName);
+    provisionedApps.push("accounts");
   }
 
   if (enabled.has("mail")) {
@@ -106,6 +123,11 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     seededApps.push("billing");
   }
 
+  if (enabled.has("accounts.accounting")) {
+    await seedAccountsTenantDatabase(tenant.dbName);
+    seededApps.push("accounts");
+  }
+
   if (enabled.has("mail")) {
     await seedMailModule(database as never);
     seededApps.push("mail");
@@ -127,6 +149,7 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
     await rollbackTaskManagerTenantModule(database as never);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
+  if (enabled.has("accounts.accounting")) await rollbackAccountsTenantDatabase(tenant.dbName);
   await rollbackCoreTenantDatabase(tenant.dbName);
 }
 

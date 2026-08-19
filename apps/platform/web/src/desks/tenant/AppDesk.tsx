@@ -10,6 +10,7 @@ import {
 import {
   Building2Icon,
   CreditCardIcon,
+  LayersIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
   MailIcon,
@@ -65,6 +66,8 @@ const loadExportSalesModule = () => import("@cxapp/billing-web/modules/export-sa
 const loadPaymentModule = () => import("@cxapp/billing-web/modules/payment");
 const loadReceiptModule = () => import("@cxapp/billing-web/modules/receipt");
 const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/reports");
+const loadAccountsOverviewModule = () => import("@cxapp/accounts-web/modules/overview");
+const loadAccountingModule = () => import("@cxapp/accounts-web/modules/accounting");
 
 const billingWorkspacePreloaders = [
   loadBillingDashboardModule,
@@ -296,6 +299,24 @@ const ReceiptWorkspace = lazyWorkspace(() =>
 const MailWorkspace = lazyWorkspace(() =>
   import("@cxapp/mail-web/modules/mail").then((module) => module.MailWorkspace)
 );
+const AccountsOverviewWorkspace = lazyWorkspace(() =>
+  loadAccountsOverviewModule().then((module) => module.AccountsOverviewWorkspace)
+);
+const AccountingWorkspace = lazyWorkspace(() =>
+  loadAccountingModule().then((module) => module.AccountingWorkspace)
+);
+const AccountingLedgerWorkspace = lazyWorkspace(() =>
+  loadAccountingModule().then((module) => module.AccountingLedgerWorkspace)
+);
+const AccountingPeriodsWorkspace = lazyWorkspace(() =>
+  loadAccountingModule().then((module) => module.AccountingPeriodsWorkspace)
+);
+const CashBookWorkspace = lazyWorkspace(() =>
+  loadAccountingModule().then((module) => module.CashBookWorkspace)
+);
+const BankBookWorkspace = lazyWorkspace(() =>
+  loadAccountingModule().then((module) => module.BankBookWorkspace)
+);
 
 const TenantUserWorkspace = lazy(() =>
   import("../../modules/tenant-user").then((module) => ({ default: module.TenantUserWorkspace }))
@@ -346,6 +367,14 @@ type AppPage =
   | "billing.reports.gst-statement"
   | "billing.settings"
   | "billing.document-settings"
+  | "accounts.overview"
+  | "accounts.ledger-groups"
+  | "accounts.ledgers"
+  | "accounts.journal"
+  | "accounts.ledger"
+  | "accounts.periods"
+  | "accounts.cash-book"
+  | "accounts.bank-book"
   | "mail.inbox"
   | "mail.outbox"
   | "mail.drafts"
@@ -434,11 +463,13 @@ export function AppDesk() {
   });
   const appSafePage = page.startsWith("devkit")
     ? pageForApp(landingApp)
-    : (page.startsWith("billing") ||
-          (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
-        !switchableApps.includes("billing")
+    : page.startsWith("accounts") && !switchableApps.includes("accounts")
       ? pageForApp(landingApp)
-      : page;
+      : (page.startsWith("billing") ||
+            (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
+          !switchableApps.includes("billing")
+        ? pageForApp(landingApp)
+        : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle = titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
@@ -580,11 +611,13 @@ export function AppDesk() {
   const activeWorkspaceTitle =
     activeApp === "billing"
       ? "Billing"
-      : activeApp === "mail"
-        ? "Mail"
-        : activeApp === "task-manager"
-          ? "Task Manager"
-          : "Application";
+      : activeApp === "accounts"
+        ? "Accounts"
+        : activeApp === "mail"
+          ? "Mail"
+          : activeApp === "task-manager"
+            ? "Task Manager"
+            : "Application";
   const menuItems = appMenuItemsFor(
     activeApp,
     safePage,
@@ -599,18 +632,22 @@ export function AppDesk() {
           ? "application.overview"
           : item.title === "Billing"
             ? "billing.overview"
-            : item.title === "Mail"
-              ? "mail.inbox"
-              : "task-manager.overview"
+            : item.title === "Accounts"
+              ? "accounts.overview"
+              : item.title === "Mail"
+                ? "mail.inbox"
+                : "task-manager.overview"
       ),
     url:
       item.title === "Application"
         ? "/app/application/overview"
         : item.title === "Billing"
           ? "/app/billing/overview"
-          : item.title === "Mail"
-            ? "/app/mail/inbox"
-            : "/app/task-manager/overview"
+          : item.title === "Accounts"
+            ? "/app/accounts/overview"
+            : item.title === "Mail"
+              ? "/app/mail/inbox"
+              : "/app/task-manager/overview"
   }));
 
   const contextError =
@@ -661,11 +698,13 @@ export function AppDesk() {
           href:
             activeApp === "billing"
               ? "/app/billing/overview"
-              : activeApp === "mail"
-                ? "/app/mail/inbox"
-                : activeApp === "task-manager"
-                  ? "/app/task-manager/overview"
-                  : "/app/application/overview",
+              : activeApp === "accounts"
+                ? "/app/accounts/overview"
+                : activeApp === "mail"
+                  ? "/app/mail/inbox"
+                  : activeApp === "task-manager"
+                    ? "/app/task-manager/overview"
+                    : "/app/application/overview",
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
           ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
           logoAlt: `${companyBranding.brandName ?? "Company"} logo`,
@@ -762,6 +801,20 @@ export function AppDesk() {
             {safePage === "billing.reports.gst-statement" ? <GstStatementWorkspace /> : null}
             {safePage === "billing.settings" ? <BillingSettingsWorkspace /> : null}
             {safePage === "billing.document-settings" ? <DocumentSettingsWorkspace /> : null}
+            {safePage === "accounts.overview" ? <AccountsOverviewWorkspace /> : null}
+            {safePage === "accounts.ledger-groups" ? <LedgerGroupsWorkspace /> : null}
+            {safePage === "accounts.ledgers" ? <LedgersWorkspace /> : null}
+            {safePage === "accounts.journal" ? (
+              <AccountingWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "accounts.ledger" ? (
+              <AccountingLedgerWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "accounts.periods" ? (
+              <AccountingPeriodsWorkspace initialRecordId={recordIdFromUrl()} />
+            ) : null}
+            {safePage === "accounts.cash-book" ? <CashBookWorkspace /> : null}
+            {safePage === "accounts.bank-book" ? <BankBookWorkspace /> : null}
             {safePage.startsWith("mail.") ? (
               <MailWorkspace mailbox={mailboxForPage(safePage)} />
             ) : null}
@@ -851,6 +904,14 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
     key === "billing.reports.gst-statement" ||
     key === "billing.settings" ||
     key === "billing.document-settings" ||
+    key === "accounts.overview" ||
+    key === "accounts.ledger-groups" ||
+    key === "accounts.ledgers" ||
+    key === "accounts.journal" ||
+    key === "accounts.ledger" ||
+    key === "accounts.periods" ||
+    key === "accounts.cash-book" ||
+    key === "accounts.bank-book" ||
     key === "mail.inbox" ||
     key === "mail.outbox" ||
     key === "mail.drafts" ||
@@ -899,34 +960,42 @@ function LandingDesk({
     description:
       appId === "billing"
         ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
-        : appId === "mail"
-          ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-          : "Shared workspace, company setup, roles, and cross-app launch desk.",
+        : appId === "accounts"
+          ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
+          : appId === "mail"
+            ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
+            : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
       appId === "billing"
         ? CreditCardIcon
-        : appId === "mail"
-          ? MailIcon
-          : appId === "task-manager"
-            ? ListChecksIcon
-            : LayoutDashboardIcon,
+        : appId === "accounts"
+          ? LayersIcon
+          : appId === "mail"
+            ? MailIcon
+            : appId === "task-manager"
+              ? ListChecksIcon
+              : LayoutDashboardIcon,
     iconClass:
       appId === "billing"
         ? "bg-emerald-600 text-white"
-        : appId === "mail"
-          ? "bg-sky-600 text-white"
-          : appId === "task-manager"
-            ? "bg-violet-600 text-white"
-            : "bg-slate-950 text-white",
+        : appId === "accounts"
+          ? "bg-cyan-600 text-white"
+          : appId === "mail"
+            ? "bg-sky-600 text-white"
+            : appId === "task-manager"
+              ? "bg-violet-600 text-white"
+              : "bg-slate-950 text-white",
     id: appId,
     label:
       appId === "billing"
         ? "Billing"
-        : appId === "mail"
-          ? "Mail"
-          : appId === "task-manager"
-            ? "Task Manager"
-            : "Application"
+        : appId === "accounts"
+          ? "Accounts"
+          : appId === "mail"
+            ? "Mail"
+            : appId === "task-manager"
+              ? "Task Manager"
+              : "Application"
   })) satisfies Array<{
     description: string;
     icon: typeof LayoutDashboardIcon;
@@ -1317,6 +1386,14 @@ function titleForPage(page: AppPage) {
     "billing.reports.gst-statement": "GST Statement",
     "billing.settings": "Billing Settings",
     "billing.document-settings": "Document Settings",
+    "accounts.overview": "Overview",
+    "accounts.ledger-groups": "Ledger Groups",
+    "accounts.ledgers": "Ledgers",
+    "accounts.journal": "Journal",
+    "accounts.ledger": "Ledger",
+    "accounts.periods": "Accounting Periods",
+    "accounts.cash-book": "Cash Book",
+    "accounts.bank-book": "Bank Book",
     "mail.inbox": "Inbox",
     "mail.outbox": "Outbox",
     "mail.drafts": "Drafts",
@@ -1410,6 +1487,8 @@ function appFromPage(
     return enabledApps.includes("billing") ? "billing" : landingApp;
   if (page.startsWith("task-manager"))
     return enabledApps.includes("task-manager") ? "task-manager" : landingApp;
+  if (page.startsWith("accounts"))
+    return enabledApps.includes("accounts") ? "accounts" : landingApp;
   if (page.startsWith("devkit")) return landingApp;
   if (page.startsWith("mail")) return enabledApps.includes("mail") ? "mail" : landingApp;
   return "application";
@@ -1431,6 +1510,7 @@ function pageForApp(app: PlatformAppId): AppPage {
   if (app === "devkit") return "application.overview";
   if (app === "task-manager") return "task-manager.overview";
   if (app === "mail") return "mail.inbox";
+  if (app === "accounts") return "accounts.overview";
   return app === "billing" ? "billing.overview" : "application.overview";
 }
 

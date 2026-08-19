@@ -10,6 +10,7 @@ import {
   Globe2Icon,
   InboxIcon,
   LandmarkIcon,
+  LayersIcon,
   MailIcon,
   MapPinnedIcon,
   PackageIcon,
@@ -25,7 +26,13 @@ import {
 } from "lucide-react";
 import type { SidemenuItem } from "@cxapp/ui/blocks/menu/sidemenu/sub/sidemenu-section";
 
-export type PlatformAppId = "application" | "billing" | "devkit" | "mail" | "task-manager";
+export type PlatformAppId =
+  | "application"
+  | "billing"
+  | "accounts"
+  | "devkit"
+  | "mail"
+  | "task-manager";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -41,12 +48,13 @@ export type PlatformAppDefinition = {
   icon: LucideIcon;
   label: string;
   moduleKey: string;
-  stack: "platform" | "billing" | "devkit" | "mail" | "platform-task-manager";
+  stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager";
 };
 
 export const defaultTenantModuleKeys = [
   "platform.application",
   "billing.sales",
+  "accounts.overview",
   "mail",
   "platform.task-manager"
 ] as const;
@@ -85,6 +93,18 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Mail",
     moduleKey: "mail",
     stack: "mail"
+  },
+  {
+    accentClass: "bg-cyan-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Chart of accounts, ledger groups, ledgers, journal, and accounting overview.",
+    icon: LayersIcon,
+    id: "accounts",
+    label: "Accounts",
+    moduleKey: "accounts.overview",
+    stack: "accounts"
   },
   {
     accentClass: "bg-violet-600",
@@ -135,6 +155,30 @@ export function appMenuFor(
       isActive: activePage.startsWith("mail"),
       onSelect: () => onSelect("mail.inbox"),
       title: "Mail"
+    };
+  }
+  if (appId === "accounts") {
+    return {
+      icon: LayersIcon,
+      isActive: activePage.startsWith("accounts"),
+      title: "Accounts",
+      items: [
+        {
+          title: "Overview",
+          isActive: activePage === "accounts.overview",
+          onSelect: () => onSelect("accounts.overview")
+        },
+        {
+          title: "Journal",
+          isActive: activePage === "accounts.journal",
+          onSelect: () => onSelect("accounts.journal")
+        },
+        {
+          title: "Accounting Periods",
+          isActive: activePage === "accounts.periods",
+          onSelect: () => onSelect("accounts.periods")
+        }
+      ]
     };
   }
   if (appId === "billing") {
@@ -421,6 +465,63 @@ export function appMenuItemsFor(
         isActive: activePage === "mail.trash",
         onSelect: () => onSelect("mail.trash"),
         title: "Trash"
+      }
+    ];
+  }
+  if (appId === "accounts") {
+    return [
+      {
+        icon: CircleGaugeIcon,
+        isActive: activePage === "accounts.overview",
+        onSelect: () => onSelect("accounts.overview"),
+        title: "Overview"
+      },
+      {
+        icon: LandmarkIcon,
+        isActive:
+          activePage.startsWith("accounts.ledgers") ||
+          activePage === "accounts.journal" ||
+          activePage === "accounts.ledger" ||
+          activePage === "accounts.cash-book" ||
+          activePage === "accounts.bank-book",
+        title: "Accounting",
+        items: [
+          {
+            title: "Journal",
+            isActive: activePage === "accounts.journal",
+            onSelect: () => onSelect("accounts.journal")
+          },
+          {
+            title: "Ledger",
+            isActive: activePage === "accounts.ledger",
+            onSelect: () => onSelect("accounts.ledger")
+          },
+          {
+            title: "Ledger Groups",
+            isActive: activePage === "accounts.ledger-groups",
+            onSelect: () => onSelect("accounts.ledger-groups")
+          },
+          {
+            title: "Ledgers",
+            isActive: activePage === "accounts.ledgers",
+            onSelect: () => onSelect("accounts.ledgers")
+          },
+          {
+            title: "Cash Book",
+            isActive: activePage === "accounts.cash-book",
+            onSelect: () => onSelect("accounts.cash-book")
+          },
+          {
+            title: "Bank Book",
+            isActive: activePage === "accounts.bank-book",
+            onSelect: () => onSelect("accounts.bank-book")
+          },
+          {
+            title: "Accounting Periods",
+            isActive: activePage === "accounts.periods",
+            onSelect: () => onSelect("accounts.periods")
+          }
+        ]
       }
     ];
   }

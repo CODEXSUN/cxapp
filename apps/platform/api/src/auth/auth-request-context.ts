@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { AppError } from "@cxapp/framework/errors";
 import { registerCoreTenantDatabaseConnection } from "@cxapp/core-api";
 import { registerBillingTenantDatabaseConnection } from "@cxapp/billing-api";
+import { registerAccountsTenantDatabaseConnection } from "@cxapp/accounts-api";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
 import {
   isSharedApplicationHost,
@@ -96,6 +97,7 @@ export function registerAuthRequestContext(app: FastifyInstance) {
       };
       registerCoreTenantDatabaseConnection(connection);
       registerBillingTenantDatabaseConnection(connection);
+      registerAccountsTenantDatabaseConnection(connection);
       getTenantDatabase(tenant);
       request.headers.authorization = `Bearer ${token}`;
       request.headers["x-tenant-id"] = tenant.uuid;

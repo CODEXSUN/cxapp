@@ -7,7 +7,7 @@ export type Tenant = {
   dbType: string;
   dbUser: string;
   enabledModuleKeys: string[];
-  defaultLandingApp: "application" | "billing" | "devkit" | "mail" | "task-manager";
+  defaultLandingApp: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -31,7 +31,7 @@ export type TenantSavePayload = {
   dbType: string;
   dbUser: string;
   enabledModuleKeys: string[];
-  defaultLandingApp: "application" | "billing" | "devkit" | "mail" | "task-manager";
+  defaultLandingApp: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -54,11 +54,11 @@ export type TenantRuntime = {
     defaultLanding: boolean;
     description: string;
     enabled: boolean;
-    id: "application" | "billing" | "devkit" | "mail" | "task-manager";
+    id: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
     label: string;
     moduleKey: string;
-    stack: "platform" | "billing" | "devkit" | "mail" | "platform-task-manager";
+    stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager";
   }>;
-  defaultLandingApp: "application" | "billing" | "devkit" | "mail" | "task-manager";
+  defaultLandingApp: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
   tenant: Tenant | null;
 };
