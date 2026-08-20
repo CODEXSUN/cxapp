@@ -1,13 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
+import { AppError } from "@cxapp/framework/errors";
 import { registerContractRoute } from "@cxapp/framework/http";
 import { resolveAccountsDatabaseName } from "../../database/accounts-database.js";
-import { BookService } from "./book.service.js";
-import type { BookEntryType } from "./book.types.js";
+import { BankBookService } from "./bank-book.service.js";
 
-const service = new BookService();
+const service = new BankBookService();
 
-const bookAccountSchema = z.object({
+const bankBookAccountSchema = z.object({
   accountId: z.number().int().positive(),
   accountType: z.string(),
   balance: z.number(),
@@ -17,7 +17,7 @@ const bookAccountSchema = z.object({
   openingBalance: z.number()
 });
 
-const bookRegisterLineSchema = z.object({
+const bankBookRegisterLineSchema = z.object({
   accountCode: z.string(),
   accountId: z.number(),
   accountName: z.string(),
@@ -31,15 +31,14 @@ const bookRegisterLineSchema = z.object({
   journalId: z.string()
 });
 
-const bookRegisterSchema = z.object({
-  accounts: z.array(bookAccountSchema),
+const bankBookRegisterSchema = z.object({
+  accounts: z.array(bankBookAccountSchema),
   closingBalance: z.number(),
-  lines: z.array(bookRegisterLineSchema),
+  lines: z.array(bankBookRegisterLineSchema),
   openingBalance: z.number()
 });
 
-const entryTypeSchema = z.enum(["receipt", "payment"]);
-const bookEntrySchema = z.object({
+const bankBookEntrySchema = z.object({
   accountId: z.string().regex(/^[0-9a-f]{8}$/, "Account must be 8 hex characters."),
   amount: z.coerce.number().finite().positive(),
   companyId: z.number().int().positive(),
@@ -49,29 +48,29 @@ const bookEntrySchema = z.object({
   entryNumber: z.string().optional(),
   financialYearId: z.number().int().positive(),
   reference: z.string().optional(),
-  type: entryTypeSchema
+  type: z.enum(["receipt", "payment"])
 });
 
-const bookJournalSchema = z.object({
+const bankBookJournalSchema = z.object({
   id: z.string(),
   entryNumber: z.string(),
   status: z.string()
 });
 
-export function registerBookRoutes(app: FastifyInstance, kind: "cash" | "bank") {
+export async function registerBankBookRoutes(app: FastifyInstance) {
   registerContractRoute(app, {
     method: "GET",
-    url: `/${kind}-book`,
-    schemas: { response: bookRegisterSchema },
+    url: "/bank-book",
+    schemas: { response: bankBookRegisterSchema },
     handler: async ({ request }) =>
-      required(await service.register(databaseName(request), kind))
+      required(await service.register(databaseName(request)))
   });
 
   registerContractRoute(app, {
     method: "POST",
-    url: `/${kind}-book/entries`,
-    schemas: { body: bookEntrySchema, response: bookJournalSchema },
-    handler: ({ body, request }) => service.postEntry(databaseName(request), kind, body)
+    url: "/bank-book/entries",
+    schemas: { body: bankBookEntrySchema, response: bankBookJournalSchema },
+    handler: ({ body, request }) => service.postEntry(databaseName(request), body)
   });
 }
 
@@ -81,9 +80,6 @@ function databaseName(request: FastifyRequest) {
 }
 
 function required<T>(value: T | null): T {
-  if (!value)
-    throw Object.assign(new Error("The book has no cash or bank accounts configured yet."), {
-      statusCode: 404
-    });
+  if (!value) throw AppError.notFound("No bank accounts are configured yet.");
   return value;
 }

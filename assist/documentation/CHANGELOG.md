@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.63
+Current version: 1.0.64
 
-Release tag: v-1.0.63
+Release tag: v-1.0.64
 
-Changelog label: v 1.0.63
+Changelog label: v 1.0.64
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,24 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.64
+
+### [v 1.0.64] 2026-08-20 10:42 am - Accounts security and workspace hardening
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.64.
+- Enforced Accounts permissions for view, create, update, delete, lifecycle, and posting actions.
+- Bound Accounts actor identity to the request scope and recorded authenticated users in accounting audit fields.
+- Made journal line allocation and journal posting transaction-safe for concurrent requests.
+- Added automatic `JV-######` journal numbering when the entry number is blank.
+- Kept company and financial-year browser context session-scoped to prevent stale tenant context after login changes.
+- Verified Accounts API/web typechecks, module boundaries, and accounting E2E flows.
 
 ## v-1.0.63
 

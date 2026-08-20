@@ -50,6 +50,7 @@ const allocationSchema = allocationInputSchema.extend({
   previousBalance: z.number()
 });
 const paymentSchema = z.object({
+  numberingWarning: z.string().optional(),
   allocatedAmount: z.number(),
   allocations: z.array(allocationSchema),
   amount: z.number(),

@@ -9,6 +9,8 @@ import {
 import { env } from "../../env.js";
 import { runWithAccountsScopeData, type AccountsScope } from "../../auth/accounts-scope.js";
 import { AccountingService } from "./accounting.service.js";
+import { CashBookService } from "../cash-book/cash-book.service.js";
+import { BankBookService } from "../bank-book/bank-book.service.js";
 import type { AccountGroup, JournalEntry, LedgerView } from "./accounting.types.js";
 
 export async function runAccountingE2e() {
@@ -34,6 +36,8 @@ export async function runAccountingE2e() {
     await bootstrapAccountsDatabase(databaseName);
 
     const service = new AccountingService();
+    const cashBook = new CashBookService();
+    const bankBook = new BankBookService();
 
     await runWithAccountsScopeData(scope, async () => {
       // 1. Chart of accounts is seeded with groups and postable accounts.
@@ -202,6 +206,92 @@ export async function runAccountingE2e() {
       assert.equal(createdPeriod.status, "open");
       const closedPeriod = await service.setPeriodStatus(databaseName, createdPeriod.id, "closed");
       assert.equal(closedPeriod?.status, "closed");
+
+      // 10. Cash and bank accounts are classified for the cash and bank books.
+      const bank = accounts.find((account) => account.code === "1002");
+      assert.ok(bank, "Bank Account must be seeded.");
+      const flaggedAccounts = await service.listAccounts(databaseName);
+      assert.ok(
+        flaggedAccounts.some((account) => account.code === "1001" && account.isCash),
+        "Cash in Hand must be classified as a cash account."
+      );
+      assert.ok(
+        flaggedAccounts.some((account) => account.code === "1002" && account.isBank),
+        "Bank Account must be classified as a bank account."
+      );
+
+      // 11. Cash book register reflects posted activity and quick entries post balanced journals.
+      const cashRegister = await cashBook.register(databaseName);
+      assert.ok(cashRegister, "Cash book register must resolve cash accounts.");
+      assert.ok(
+        cashRegister.accounts.some((account) => account.code === "1001"),
+        "Cash book must list the Cash in Hand account."
+      );
+      assert.ok(
+        cashRegister.lines.length > 0,
+        "Cash book register must include previously posted cash activity."
+      );
+
+      const receipt = await cashBook.postEntry(databaseName, {
+        accountId: cash.id,
+        amount: 250,
+        companyId: scope.companyId,
+        counterpartAccountId: sales.id,
+        description: "Cash receipt from quick entry",
+        entryDate,
+        entryNumber: "",
+        financialYearId: scope.financialYearId,
+        type: "receipt"
+      });
+      assert.ok(receipt, "Quick cash receipt must post a journal entry.");
+      assert.equal(receipt.status, "posted");
+
+      const registerAfterReceipt = await cashBook.register(databaseName);
+      assert.equal(
+        registerAfterReceipt?.closingBalance,
+        300,
+        "Cash book closing balance must increase by the 250 receipt (50 + 250)."
+      );
+
+      // 12. A bank payment posts the bank side and is rejected when unbalanced period is missing.
+      const bankBookRegister = await bankBook.register(databaseName);
+      assert.ok(bankBookRegister, "Bank book register must resolve bank accounts.");
+      assert.ok(bankBookRegister.accounts.some((account) => account.code === "1002"));
+
+      const payment = await bankBook.postEntry(databaseName, {
+        accountId: bank.id,
+        amount: 100,
+        companyId: scope.companyId,
+        counterpartAccountId: sales.id,
+        description: "Bank payment from quick entry",
+        entryDate,
+        entryNumber: "",
+        financialYearId: scope.financialYearId,
+        type: "payment"
+      });
+      assert.equal(payment.status, "posted");
+      const bankLedger = await service.ledgerForAccount(databaseName, bank.id);
+      assert.equal(
+        bankLedger?.closingBalance,
+        -100,
+        "Bank payment must reduce the bank account balance by 100."
+      );
+
+      await assert.rejects(
+        cashBook.postEntry(databaseName, {
+          accountId: cash.id,
+          amount: -5,
+          companyId: scope.companyId,
+          counterpartAccountId: sales.id,
+          description: "Invalid",
+          entryDate,
+          entryNumber: "",
+          financialYearId: scope.financialYearId,
+          type: "receipt"
+        }),
+        /greater than zero/i,
+        "A book entry amount must be positive."
+      );
     });
 
     return {

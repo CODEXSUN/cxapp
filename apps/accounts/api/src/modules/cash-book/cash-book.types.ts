@@ -1,6 +1,6 @@
-export type BookEntryType = "receipt" | "payment";
+export type CashBookEntryType = "receipt" | "payment";
 
-export type BookAccount = {
+export type CashBookAccount = {
   accountId: number;
   accountType: string;
   balance: number;
@@ -10,7 +10,7 @@ export type BookAccount = {
   openingBalance: number;
 };
 
-export type BookRegisterLine = {
+export type CashBookRegisterLine = {
   accountCode: string;
   accountId: number;
   accountName: string;
@@ -24,14 +24,14 @@ export type BookRegisterLine = {
   journalId: string;
 };
 
-export type BookRegister = {
-  accounts: BookAccount[];
+export type CashBookRegister = {
+  accounts: CashBookAccount[];
   closingBalance: number;
-  lines: BookRegisterLine[];
+  lines: CashBookRegisterLine[];
   openingBalance: number;
 };
 
-export type BookEntryPayload = {
+export type CashBookEntryPayload = {
   accountId: string;
   amount: number;
   companyId: number;
@@ -41,5 +41,5 @@ export type BookEntryPayload = {
   entryNumber?: string | undefined;
   financialYearId: number;
   reference?: string | undefined;
-  type: BookEntryType;
+  type: CashBookEntryType;
 };

@@ -69,7 +69,9 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
       id ? updatePayment(id, payload) : createPayment(payload),
     onSuccess: async (payment) => {
       await queryClient.invalidateQueries({ queryKey: paymentQueryKey });
-      toast.success("Payment saved", { description: payment.paymentNumber });
+      toast.success("Payment saved", {
+        description: payment.numberingWarning ?? payment.paymentNumber
+      });
       setView({ mode: "show", payment });
     }
   });

@@ -74,7 +74,8 @@ export const exportSalesSchema = z
     customerPhone: z.string(),
     einvoice: exportSaleEinvoiceSchema.optional(),
     eway: exportSaleEwaySchema.optional(),
-    invoiceNumber: z.string().trim().min(1, "Export invoice number is required."),
+    // Blank means "use the next configured number"; a value is a manual override.
+    invoiceNumber: z.string().trim().optional(),
     financialYearId: z.number().int().positive("Financial Year is required."),
     issuedOn: z.iso.date("Invoice date is required."),
     items: z.array(exportSaleLineItemSchema),

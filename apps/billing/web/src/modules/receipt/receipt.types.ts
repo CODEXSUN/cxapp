@@ -23,6 +23,7 @@ export type ReceiptAllocation = Omit<ReceiptAllocationInput, "allocatedAmount"> 
   previousBalance: number;
 };
 export type Receipt = {
+  numberingWarning?: string;
   allocatedAmount: number;
   allocations: ReceiptAllocation[];
   amount: number;

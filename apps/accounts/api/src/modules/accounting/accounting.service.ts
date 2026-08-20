@@ -246,13 +246,20 @@ export class AccountingService {
     excludeUuid?: string
   ) {
     const normalized = normalizeJournalInput(input);
+    if (!normalized.entryNumber?.trim()) {
+      normalized.entryNumber = await this.repository.nextJournalNumber(databaseName);
+    }
     await this.assertEntryNumberAvailable(databaseName, normalized.entryNumber ?? "", excludeUuid);
     const lines = this.buildLines(normalized.lines);
     const totals = assertDoubleEntryTotals(lines);
     await this.assertPostableAccounts(databaseName, lines);
     await this.assertPeriod(databaseName, normalized.entryDate, normalized.accountingPeriodId);
     if (normalized.accountingPeriodId) {
-      await this.assertPeriodMatchesDate(databaseName, normalized.accountingPeriodId, normalized.entryDate);
+      await this.assertPeriodMatchesDate(
+        databaseName,
+        normalized.accountingPeriodId,
+        normalized.entryDate
+      );
     }
     return { normalized, lines, totals };
   }
@@ -277,8 +284,16 @@ export class AccountingService {
       .filter((line) => line.debit !== 0 || line.credit !== 0);
   }
 
-  private async assertEntryNumberAvailable(databaseName: string, entryNumber: string, excludeUuid?: string) {
-    const duplicate = await this.repository.findJournalByNumber(databaseName, entryNumber, excludeUuid);
+  private async assertEntryNumberAvailable(
+    databaseName: string,
+    entryNumber: string,
+    excludeUuid?: string
+  ) {
+    const duplicate = await this.repository.findJournalByNumber(
+      databaseName,
+      entryNumber,
+      excludeUuid
+    );
     if (duplicate) throw AppError.conflict(`Journal entry ${entryNumber} is already used.`);
   }
 
@@ -294,7 +309,11 @@ export class AccountingService {
     if (!parent) throw AppError.validation("The parent ledger group is inactive or missing.");
   }
 
-  private async assertAccountCodeAvailable(databaseName: string, code: string, excludeUuid?: string) {
+  private async assertAccountCodeAvailable(
+    databaseName: string,
+    code: string,
+    excludeUuid?: string
+  ) {
     const duplicate = await this.repository.findByAccountCode(databaseName, code, excludeUuid);
     if (duplicate) throw AppError.conflict(`Account code ${code} is already used.`);
   }
@@ -328,7 +347,11 @@ export class AccountingService {
     const period = await this.repository.periodForDate(databaseName, entryDate);
     if (!period)
       throw AppError.validation("The entry date does not fall within an open accounting period.");
-    if (requestedPeriodId && Number(requestedPeriodId) !== 0 && Number(requestedPeriodId) !== Number(period.id))
+    if (
+      requestedPeriodId &&
+      Number(requestedPeriodId) !== 0 &&
+      Number(requestedPeriodId) !== Number(period.id)
+    )
       throw AppError.validation("The selected accounting period does not cover the entry date.");
   }
 
@@ -395,15 +418,13 @@ export class AccountingService {
   }
 }
 
-export function assertDoubleEntry(
-  totals: { debit: number; credit: number },
-  lines: JournalLine[]
-) {
+export function assertDoubleEntry(totals: { debit: number; credit: number }, lines: JournalLine[]) {
   const balance = roundMoney(totals.debit - totals.credit);
   if (Math.abs(balance) > 0.001)
-    throw AppError.validation("Journal entries must balance: total debits must equal total credits.");
-  if (lines.length < 2)
-    throw AppError.validation("A journal entry requires at least two lines.");
+    throw AppError.validation(
+      "Journal entries must balance: total debits must equal total credits."
+    );
+  if (lines.length < 2) throw AppError.validation("A journal entry requires at least two lines.");
 }
 
 function assertDoubleEntryTotals(lines: JournalLine[]) {
@@ -413,7 +434,9 @@ function assertDoubleEntryTotals(lines: JournalLine[]) {
     throw AppError.validation("A journal entry requires at least two lines.");
   }
   if (Math.abs(roundMoney(debit - credit)) > 0.001)
-    throw AppError.validation("Journal entries must balance: total debits must equal total credits.");
+    throw AppError.validation(
+      "Journal entries must balance: total debits must equal total credits."
+    );
   return { debit, credit };
 }
 
@@ -492,7 +515,10 @@ function normalizePeriodInput(input: AccountingPeriodSavePayload): AccountingPer
   if (!Number.isInteger(input.financialYearId) || input.financialYearId <= 0)
     throw AppError.validation("Financial Year is required.");
   if (!input.name.trim()) throw AppError.validation("Period name is required.");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate.trim()) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endDate.trim()))
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.startDate.trim()) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.endDate.trim())
+  )
     throw AppError.validation("Period dates are required.");
   return {
     companyId: input.companyId,

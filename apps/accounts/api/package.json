@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/accounts-api",
-  "version": "1.0.63",
+  "version": "1.0.64",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,7 +13,7 @@
     "test:e2e:accounting": "tsx src/modules/accounting/accounting.e2e.ts"
   },
   "dependencies": {
-    "@cxapp/framework": "^1.0.63",
+    "@cxapp/framework": "^1.0.64",
     "fastify": "^5.2.1",
     "kysely": "^0.29.0",
     "mysql2": "^3.22.3",

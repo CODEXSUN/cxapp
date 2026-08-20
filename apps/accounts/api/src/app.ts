@@ -2,7 +2,7 @@ import { requireTenantAccess } from "@cxapp/framework/api";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "@cxapp/framework/errors";
 import { authorizeAccountsRequest } from "./auth/tenant-permission.js";
-import { runWithAccountsScope } from "./auth/accounts-scope.js";
+import { runWithAccountsScope, withAccountsActor } from "./auth/accounts-scope.js";
 import { env } from "./env.js";
 import { overviewModule } from "./modules/overview/index.js";
 import { accountingModule } from "./modules/accounting/index.js";
@@ -32,6 +32,7 @@ export async function registerAccountsApi(app: FastifyInstance) {
         tenantDatabase,
         tenantId: request.headers["x-tenant-id"]
       });
+      withAccountsActor(claims.email ?? "");
       await authorizeAccountsRequest(request, tenantDatabase, claims.email ?? "");
     });
     await overviewModule.register(accountsApp);

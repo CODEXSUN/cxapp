@@ -23,6 +23,7 @@ export type PaymentAllocation = Omit<PaymentAllocationInput, "allocatedAmount"> 
   previousBalance: number;
 };
 export type Payment = {
+  numberingWarning?: string;
   allocatedAmount: number;
   allocations: PaymentAllocation[];
   amount: number;

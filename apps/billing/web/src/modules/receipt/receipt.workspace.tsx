@@ -69,7 +69,9 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
       id ? updateReceipt(id, payload) : createReceipt(payload),
     onSuccess: async (receipt) => {
       await queryClient.invalidateQueries({ queryKey: receiptQueryKey });
-      toast.success("Receipt saved", { description: receipt.receiptNumber });
+      toast.success("Receipt saved", {
+        description: receipt.numberingWarning ?? receipt.receiptNumber
+      });
       setView({ mode: "show", receipt });
     }
   });

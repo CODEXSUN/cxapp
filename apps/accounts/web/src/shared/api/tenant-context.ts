@@ -21,7 +21,7 @@ export function getTenantDbName(): string | null {
 
 export function getCompanyId(): number | null {
   try {
-    const value = Number(localStorage.getItem(COMPANY_ID_KEY));
+    const value = Number(sessionStorage.getItem(COMPANY_ID_KEY));
     return Number.isInteger(value) && value > 0 ? value : null;
   } catch {
     return null;
@@ -30,7 +30,7 @@ export function getCompanyId(): number | null {
 
 export function getFinancialYearId(): number | null {
   try {
-    const value = Number(localStorage.getItem(FINANCIAL_YEAR_ID_KEY));
+    const value = Number(sessionStorage.getItem(FINANCIAL_YEAR_ID_KEY));
     return Number.isInteger(value) && value > 0 ? value : null;
   } catch {
     return null;

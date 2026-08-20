@@ -40,7 +40,14 @@ export class ReceiptService {
   allocationCandidates(databaseName: string, customerId: number) {
     return this.repository.allocationCandidates(databaseName, customerId);
   }
-  async create(databaseName: string, payload: ReceiptSavePayload) {
+  async create(
+    databaseName: string,
+    payload: ReceiptSavePayload,
+    automaticRetry = false
+  ): Promise<Receipt> {
+    const settings = await this.settings.getBillingSettings(databaseName, payload.companyId);
+    const automatic =
+      settings.numbering.receipt.automatic && (automaticRetry || !payload.receiptNumber.trim());
     const input = await this.prepare(databaseName, payload);
     const duplicate = await this.repository.findByNumber(
       databaseName,
@@ -48,10 +55,33 @@ export class ReceiptService {
       input.financialYearId,
       input.receiptNumber
     );
-    if (duplicate)
+    if (duplicate) {
+      if (automatic)
+        return this.create(
+          databaseName,
+          {
+            ...payload,
+            receiptNumber: nextReceiptNumber(settings.numbering.receipt, input.receiptNumber)
+          },
+          true
+        );
       throw AppError.conflict("Receipt number already exists for this company and financial year.");
-    const record = await this.repository.create(databaseName, input);
-    const settings = await this.settings.getBillingSettings(databaseName, input.companyId);
+    }
+    let record;
+    try {
+      record = await this.repository.create(databaseName, input);
+    } catch (error) {
+      if (automatic && error instanceof AppError && error.message.includes("already reserved"))
+        return this.create(
+          databaseName,
+          {
+            ...payload,
+            receiptNumber: nextReceiptNumber(settings.numbering.receipt, input.receiptNumber)
+          },
+          true
+        );
+      throw error;
+    }
     const sequence = settings.numbering.receipt;
     const nextNumber = nextBillingDocumentNumber(sequence, input.receiptNumber);
     if (sequence.automatic && nextNumber > sequence.nextNumber) {
@@ -61,8 +91,14 @@ export class ReceiptService {
       });
     }
     if (!record) throw AppError.notFound("Created receipt could not be reloaded.");
-    await this.project(databaseName, "created", record);
-    return record;
+    const saved = automaticRetry
+      ? {
+          ...record,
+          numberingWarning: `Receipt number was already reserved. Saved as ${record.receiptNumber}.`
+        }
+      : record;
+    await this.project(databaseName, "created", saved);
+    return saved;
   }
   async update(databaseName: string, id: string, payload: ReceiptSavePayload) {
     const current = await this.repository.get(databaseName, id);
@@ -183,6 +219,15 @@ export class ReceiptService {
       source: "receipt"
     });
   }
+}
+function nextReceiptNumber(
+  sequence: Parameters<typeof formatBillingDocumentNumber>[0],
+  current: string
+) {
+  return formatBillingDocumentNumber({
+    ...sequence,
+    nextNumber: nextBillingDocumentNumber(sequence, current)
+  });
 }
 function money(value: number) {
   return Math.round(Number(value) * 100) / 100;

@@ -49,7 +49,14 @@ export class PaymentService {
   allocationCandidates(databaseName: string, supplierId: number) {
     return this.repository.allocationCandidates(databaseName, supplierId);
   }
-  async create(databaseName: string, payload: PaymentSavePayload) {
+  async create(
+    databaseName: string,
+    payload: PaymentSavePayload,
+    automaticRetry = false
+  ): Promise<Payment> {
+    const settings = await this.settings.getBillingSettings(databaseName, payload.companyId);
+    const automatic =
+      settings.numbering.payment.automatic && (automaticRetry || !payload.paymentNumber.trim());
     const input = await this.prepare(databaseName, payload);
     const duplicate = await this.repository.findByNumber(
       databaseName,
@@ -57,11 +64,34 @@ export class PaymentService {
       input.financialYearId,
       input.paymentNumber
     );
-    if (duplicate)
+    if (duplicate) {
+      if (automatic)
+        return this.create(
+          databaseName,
+          {
+            ...payload,
+            paymentNumber: nextPaymentNumber(settings.numbering.payment, input.paymentNumber)
+          },
+          true
+        );
       throw AppError.conflict("Payment number already exists for this company and financial year.");
-    const record = await this.repository.create(databaseName, input);
+    }
+    let record;
+    try {
+      record = await this.repository.create(databaseName, input);
+    } catch (error) {
+      if (automatic && error instanceof AppError && error.message.includes("already reserved"))
+        return this.create(
+          databaseName,
+          {
+            ...payload,
+            paymentNumber: nextPaymentNumber(settings.numbering.payment, input.paymentNumber)
+          },
+          true
+        );
+      throw error;
+    }
     if (!record) throw AppError.notFound("Created payment could not be reloaded.");
-    const settings = await this.settings.getBillingSettings(databaseName, input.companyId);
     const sequence = settings.numbering.payment;
     const nextNumber = nextBillingDocumentNumber(sequence, input.paymentNumber);
     if (sequence.automatic && nextNumber > sequence.nextNumber) {
@@ -70,8 +100,14 @@ export class PaymentService {
         numbering: { ...settings.numbering, payment: { ...sequence, nextNumber } }
       });
     }
-    await this.publish("created", record, databaseName);
-    return record;
+    const saved = automaticRetry
+      ? {
+          ...record,
+          numberingWarning: `Payment number was already reserved. Saved as ${record.paymentNumber}.`
+        }
+      : record;
+    await this.publish("created", saved, databaseName);
+    return saved;
   }
   async update(databaseName: string, id: string, payload: PaymentSavePayload) {
     const current = await this.repository.get(databaseName, id);
@@ -225,6 +261,15 @@ export class PaymentService {
       source: "payment"
     });
   }
+}
+function nextPaymentNumber(
+  sequence: Parameters<typeof formatBillingDocumentNumber>[0],
+  current: string
+) {
+  return formatBillingDocumentNumber({
+    ...sequence,
+    nextNumber: nextBillingDocumentNumber(sequence, current)
+  });
 }
 function money(value: number) {
   return Math.round(Number(value) * 100) / 100;

@@ -3,16 +3,14 @@ import type { FastifyRequest } from "fastify";
 import { AppError } from "@cxapp/framework/errors";
 
 export type AccountsScope = {
+  actorEmail?: string;
   companyId: number;
   financialYearId: number;
 };
 
 const storage = new AsyncLocalStorage<AccountsScope>();
 
-export function runWithAccountsScope(
-  request: FastifyRequest,
-  callback: (error?: Error) => void
-) {
+export function runWithAccountsScope(request: FastifyRequest, callback: (error?: Error) => void) {
   try {
     storage.run(readAccountsScope(request), callback);
   } catch (error) {
@@ -30,21 +28,23 @@ export function runWithAccountsScopeData<T>(
 export function currentAccountsScope(): AccountsScope {
   const scope = storage.getStore();
   if (!scope) {
-    throw AppError.validation(
-      "Select an active Company and Financial Year before using Accounts."
-    );
+    throw AppError.validation("Select an active Company and Financial Year before using Accounts.");
   }
   return scope;
 }
 
 export function readAccountsScope(request: FastifyRequest): AccountsScope {
   return {
+    actorEmail: "",
     companyId: positiveHeader(request.headers["x-company-id"], "x-company-id"),
-    financialYearId: positiveHeader(
-      request.headers["x-financial-year-id"],
-      "x-financial-year-id"
-    )
+    financialYearId: positiveHeader(request.headers["x-financial-year-id"], "x-financial-year-id")
   };
+}
+
+export function withAccountsActor(actorEmail: string) {
+  const scope = storage.getStore();
+  if (!scope) throw AppError.validation("Accounts scope is not available.");
+  storage.enterWith({ ...scope, actorEmail });
 }
 
 function positiveHeader(value: string | string[] | undefined, name: string) {

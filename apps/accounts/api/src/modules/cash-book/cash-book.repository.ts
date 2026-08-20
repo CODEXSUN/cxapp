@@ -3,29 +3,28 @@ import { getAccountsDatabase } from "../../database/accounts-database.js";
 import { currentAccountsScope } from "../../auth/accounts-scope.js";
 import { money, roundMoney } from "../accounting/accounting.repository.js";
 import type {
-  BookAccount,
-  BookRegister,
-  BookRegisterLine
-} from "./book.types.js";
+  CashBookAccount,
+  CashBookRegister,
+  CashBookRegisterLine
+} from "./cash-book.types.js";
 
-export class BookRepository {
-  async register(databaseName: string, kind: "cash" | "bank"): Promise<BookRegister | null> {
+export class CashBookRepository {
+  async register(databaseName: string): Promise<CashBookRegister | null> {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
-    const flagColumn = kind === "cash" ? "is_cash" : "is_bank";
 
-    const accountResult = await sql<BookAccountRow>`
+    const accountResult = await sql<CashBookAccountRow>`
       SELECT a.id, a.uuid, a.code, a.name, a.account_type, a.opening_balance
       FROM acc_accounts a
       WHERE a.company_id=${scope.companyId} AND a.financial_year_id=${scope.financialYearId}
-        AND a.deleted_at IS NULL AND a.is_group=0 AND a.${sql.ref(flagColumn)}=1
+        AND a.deleted_at IS NULL AND a.is_group=0 AND a.is_cash=1
       ORDER BY a.code
     `.execute(database);
-    const accounts = accountResult.rows.map(toBookAccount);
+    const accounts = accountResult.rows.map(toCashBookAccount);
     if (accounts.length === 0) return null;
 
     const accountIds = accounts.map((account) => account.accountId);
-    const linesResult = await sql<BookLedgerRow>`
+    const linesResult = await sql<CashBookLedgerRow>`
       SELECT l.id, l.uuid, l.account_id, l.entry_date, l.debit, l.credit,
              j.entry_number, j.uuid AS journal_uuid, a.code AS account_code, a.name AS account_name,
              j.description AS journal_description
@@ -40,7 +39,7 @@ export class BookRepository {
     const openingBalance = roundMoney(
       accounts.reduce((sum, account) => sum + account.openingBalance, 0)
     );
-    const lines: BookRegisterLine[] = [];
+    const lines: CashBookRegisterLine[] = [];
     let running = openingBalance;
     for (const row of linesResult.rows) {
       const debit = money(row.debit);
@@ -69,22 +68,21 @@ export class BookRepository {
     };
   }
 
-  async findBookAccount(databaseName: string, kind: "cash" | "bank", uuid: string) {
+  async findCashAccount(databaseName: string, uuid: string) {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
-    const flagColumn = kind === "cash" ? "is_cash" : "is_bank";
-    const result = await sql<BookAccountRow>`
+    const result = await sql<CashBookAccountRow>`
       SELECT a.id, a.uuid, a.code, a.name, a.account_type, a.opening_balance
       FROM acc_accounts a
       WHERE a.uuid=${uuid} AND a.company_id=${scope.companyId} AND a.financial_year_id=${scope.financialYearId}
-        AND a.deleted_at IS NULL AND a.is_group=0 AND a.${sql.ref(flagColumn)}=1
+        AND a.deleted_at IS NULL AND a.is_group=0 AND a.is_cash=1
       LIMIT 1
     `.execute(database);
     const row = result.rows[0];
-    return row ? toBookAccount(row) : null;
+    return row ? toCashBookAccount(row) : null;
   }
 
-  async nextEntryNumber(databaseName: string, prefix: string): Promise<string> {
+  async nextEntryNumber(databaseName: string): Promise<string> {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ line_number: string | number }>`
@@ -92,11 +90,11 @@ export class BookRepository {
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     `.execute(database);
     const next = Number(result.rows[0]?.line_number ?? 0) + 1;
-    return `${prefix}-${String(next).padStart(5, "0")}`;
+    return `CR-${String(next).padStart(5, "0")}`;
   }
 }
 
-type BookAccountRow = {
+type CashBookAccountRow = {
   account_type: string;
   code: string;
   id: number;
@@ -105,7 +103,7 @@ type BookAccountRow = {
   uuid: string;
 };
 
-type BookLedgerRow = {
+type CashBookLedgerRow = {
   account_code: string;
   account_id: number;
   account_name: string;
@@ -119,7 +117,7 @@ type BookLedgerRow = {
   uuid: string;
 };
 
-function toBookAccount(row: BookAccountRow): BookAccount {
+function toCashBookAccount(row: CashBookAccountRow): CashBookAccount {
   return {
     accountId: Number(row.id),
     accountType: row.account_type,

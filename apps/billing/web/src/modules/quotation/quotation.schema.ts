@@ -47,7 +47,8 @@ export const quotationSchema = z.object({
   items: z.array(quotationLineSchema),
   ledgerId: z.number().int().positive().nullable(),
   notes: z.string(),
-  quotationNumber: z.string().trim().min(1, "Quotation number is required."),
+  // Blank means "use the next configured number"; a value is a manual override.
+  quotationNumber: z.string().trim().optional(),
   roundOff: z.union([decimalInput, z.literal("")]).optional(),
   salesLedger: z.string(),
   shippingAddress: z.string(),

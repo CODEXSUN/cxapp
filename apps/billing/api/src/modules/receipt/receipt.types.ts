@@ -25,6 +25,7 @@ export type ReceiptAllocation = ReceiptAllocationInput & {
 };
 
 export type Receipt = {
+  numberingWarning?: string;
   allocatedAmount: number;
   allocations: ReceiptAllocation[];
   amount: number;

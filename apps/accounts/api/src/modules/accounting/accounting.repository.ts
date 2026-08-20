@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { sql, type Kysely } from "kysely";
+import { AppError } from "@cxapp/framework/errors";
 import { getAccountsDatabase, type AccountsDatabase } from "../../database/accounts-database.js";
 import { currentAccountsScope } from "../../auth/accounts-scope.js";
 import type {
@@ -113,7 +114,7 @@ export class AccountingRepository {
         (uuid, company_id, financial_year_id, parent_id, code, name, normal_balance, is_system, status, created_by)
       VALUES
         (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.parentId}, ${input.code},
-         ${input.name}, ${input.normalBalance}, FALSE, ${input.status}, 'system:migration')
+         ${input.name}, ${input.normalBalance}, FALSE, ${input.status}, ${currentAccountsScope().actorEmail || "system:accounts"})
     `.execute(database);
     return (await this.getGroup(databaseName, uuid))!;
   }
@@ -128,7 +129,7 @@ export class AccountingRepository {
     const result = await sql<{ id: number }>`
       UPDATE acc_account_groups SET
         parent_id=${input.parentId}, code=${input.code}, name=${input.name},
-        normal_balance=${input.normalBalance}, status=${input.status}, updated_by='system:migration'
+        normal_balance=${input.normalBalance}, status=${input.status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -236,7 +237,7 @@ export class AccountingRepository {
         (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.groupId}, ${input.code},
          ${input.name}, ${input.accountType}, ${input.normalBalance}, ${input.isGroup ?? false},
          FALSE, ${input.isPostable ?? true}, ${input.openingBalance ?? 0},
-         ${input.currencyCode ?? "INR"}, ${input.description ?? ""}, ${input.status}, 'system:migration',
+         ${input.currencyCode ?? "INR"}, ${input.description ?? ""}, ${input.status}, ${currentAccountsScope().actorEmail || "system:accounts"},
          ${input.isCash ?? false}, ${input.isBank ?? false})
     `.execute(database);
     return (await this.getAccount(databaseName, uuid))!;
@@ -256,7 +257,7 @@ export class AccountingRepository {
         is_group=${input.isGroup ?? false}, is_postable=${input.isPostable ?? true},
         is_cash=${input.isCash ?? false}, is_bank=${input.isBank ?? false},
         opening_balance=${input.openingBalance ?? 0}, currency_code=${input.currencyCode ?? "INR"},
-        description=${input.description ?? ""}, status=${input.status}, updated_by='system:migration'
+        description=${input.description ?? ""}, status=${input.status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -271,7 +272,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_accounts SET status=${status}, updated_by='system:migration'
+      UPDATE acc_accounts SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -383,6 +384,18 @@ export class AccountingRepository {
     return result.rows[0]?.uuid ?? null;
   }
 
+  async nextJournalNumber(databaseName: string): Promise<string> {
+    const database = await getAccountsDatabase(databaseName);
+    const scope = currentAccountsScope();
+    const result = await sql<{ next_number: number | string }>`
+      SELECT COALESCE(MAX(CAST(SUBSTRING(entry_number, 4) AS UNSIGNED)), 0) + 1 AS next_number
+      FROM acc_journal_entries
+      WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
+        AND entry_number LIKE 'JV-%' AND deleted_at IS NULL
+    `.execute(database);
+    return `JV-${String(Number(result.rows[0]?.next_number ?? 1)).padStart(6, "0")}`;
+  }
+
   async nextLineNumber(databaseName: string): Promise<number> {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
@@ -401,21 +414,35 @@ export class AccountingRepository {
   ): Promise<JournalEntry> {
     const database = await getAccountsDatabase(databaseName);
     const uuid = publicUuid();
-    const lineNumber = await this.nextLineNumber(databaseName);
-    await database.transaction().execute(async (transaction) => {
-      const inserted = await sql`
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await database.transaction().execute(async (transaction) => {
+          const lineResult = await sql<{ line_number: number | string }>`
+            SELECT COALESCE(MAX(line_number), 0) + 1 AS line_number
+            FROM acc_journal_entries
+            WHERE company_id=${input.companyId} AND financial_year_id=${input.financialYearId}
+            FOR UPDATE
+          `.execute(transaction);
+          const lineNumber = Number(lineResult.rows[0]?.line_number ?? 1);
+          const inserted = await sql`
         INSERT INTO acc_journal_entries
           (uuid, company_id, financial_year_id, accounting_period_id, line_number, entry_number,
            entry_date, reference, description, status, created_by)
         VALUES
           (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.accountingPeriodId},
            ${lineNumber}, ${input.entryNumber ?? ""}, ${input.entryDate}, ${input.reference ?? ""},
-           ${input.description ?? ""}, ${input.status}, 'system:migration')
-      `.execute(transaction);
-      const journalId = Number(inserted.insertId);
-      await insertJournalLines(transaction, journalId, lines);
-    });
-    return (await this.getJournal(databaseName, uuid))!;
+           ${input.description ?? ""}, ${input.status}, ${currentAccountsScope().actorEmail || "system:accounts"})
+          `.execute(transaction);
+          const journalId = Number(inserted.insertId);
+          await insertJournalLines(transaction, journalId, lines);
+        });
+        return (await this.getJournal(databaseName, uuid))!;
+      } catch (error) {
+        if (attempt < 4 && isDuplicateKey(error, "acc_journal_entries_line_unique")) continue;
+        throw error;
+      }
+    }
+    throw AppError.conflict("A journal entry number could not be reserved.");
   }
 
   async updateJournal(
@@ -439,7 +466,7 @@ export class AccountingRepository {
         UPDATE acc_journal_entries SET
           accounting_period_id=${input.accountingPeriodId}, entry_date=${input.entryDate},
           reference=${input.reference ?? ""}, description=${input.description ?? ""},
-          status=${input.status}, updated_by='system:migration', updated_at=CURRENT_TIMESTAMP(3)
+           status=${input.status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}, updated_at=CURRENT_TIMESTAMP(3)
         WHERE id=${entry.id}
       `.execute(transaction);
       await sql`DELETE FROM acc_journal_lines WHERE journal_entry_id=${entry.id}`.execute(
@@ -472,7 +499,7 @@ export class AccountingRepository {
         reversed_by=${patch.reversedBy ?? null},
         reversed_at=${patch.reversedAt ? sql`CURRENT_TIMESTAMP(3)` : null},
         cancellation_reason=${patch.cancellationReason ?? null},
-        updated_by='system:migration', updated_at=CURRENT_TIMESTAMP(3)
+        updated_by=${currentAccountsScope().actorEmail || "system:accounts"}, updated_at=CURRENT_TIMESTAMP(3)
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -498,25 +525,27 @@ export class AccountingRepository {
     return Number(result.rows[0]?.count ?? 0) > 0;
   }
 
-  async postJournal(databaseName: string, uuid: string, actor: string): Promise<JournalEntry | null> {
+  async postJournal(
+    databaseName: string,
+    uuid: string,
+    actor: string
+  ): Promise<JournalEntry | null> {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
-    const journalResult = await sql<{ id: number; uuid: string }>`
-      SELECT id, uuid FROM acc_journal_entries
-      WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
-        AND deleted_at IS NULL AND status='ready_to_post'
-      FOR UPDATE
-    `.execute(database);
-    const entry = journalResult.rows[0];
-    if (!entry) return null;
-
-    const linesResult = await sql<LineRow>`
-      SELECT id, account_id, debit, credit FROM acc_journal_lines
-      WHERE journal_entry_id=${entry.id} ORDER BY line_number
-    `.execute(database);
-    if (linesResult.rows.length === 0) return null;
-
-    await database.transaction().execute(async (transaction) => {
+    const posted = await database.transaction().execute(async (transaction) => {
+      const journalResult = await sql<{ id: number; uuid: string }>`
+        SELECT id, uuid FROM acc_journal_entries
+        WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
+          AND deleted_at IS NULL AND status='ready_to_post'
+        FOR UPDATE
+      `.execute(transaction);
+      const entry = journalResult.rows[0];
+      if (!entry) return false;
+      const linesResult = await sql<LineRow>`
+        SELECT id, account_id, debit, credit FROM acc_journal_lines
+        WHERE journal_entry_id=${entry.id} ORDER BY line_number
+      `.execute(transaction);
+      if (linesResult.rows.length === 0) return false;
       for (const line of linesResult.rows) {
         await sql`
           INSERT INTO acc_ledger
@@ -532,7 +561,9 @@ export class AccountingRepository {
           posted_at=CURRENT_TIMESTAMP(3), updated_by=${actor}, updated_at=CURRENT_TIMESTAMP(3)
         WHERE id=${entry.id}
       `.execute(transaction);
+      return true;
     });
+    if (!posted) return null;
     return this.getJournal(databaseName, uuid);
   }
 
@@ -633,7 +664,10 @@ export class AccountingRepository {
     return row ? toPeriod(row) : null;
   }
 
-  async createPeriod(databaseName: string, input: AccountingPeriodSavePayload): Promise<AccountingPeriod> {
+  async createPeriod(
+    databaseName: string,
+    input: AccountingPeriodSavePayload
+  ): Promise<AccountingPeriod> {
     const database = await getAccountsDatabase(databaseName);
     const uuid = publicUuid();
     await sql`
@@ -641,7 +675,7 @@ export class AccountingRepository {
         (uuid, company_id, financial_year_id, name, start_date, end_date, status, is_system, created_by)
       VALUES
         (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.name}, ${input.startDate},
-         ${input.endDate}, ${input.status}, FALSE, 'system:migration')
+         ${input.endDate}, ${input.status}, FALSE, ${currentAccountsScope().actorEmail || "system:accounts"})
     `.execute(database);
     return (await this.getPeriod(databaseName, uuid))!;
   }
@@ -654,7 +688,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_accounting_periods SET status=${status}, updated_by='system:migration'
+      UPDATE acc_accounting_periods SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     `.execute(database);
     return this.getPeriod(databaseName, uuid);
@@ -687,7 +721,10 @@ export class AccountingRepository {
     return new Set(result.rows.map((row) => Number(row.id)));
   }
 
-  async accountNames(databaseName: string, ids: number[]): Promise<Map<number, { code: string; name: string }>> {
+  async accountNames(
+    databaseName: string,
+    ids: number[]
+  ): Promise<Map<number, { code: string; name: string }>> {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     if (ids.length === 0) return new Map();
@@ -947,4 +984,12 @@ export function roundMoney(value: number) {
 
 function publicUuid() {
   return randomUUID().replaceAll("-", "").slice(0, 8);
+}
+
+function isDuplicateKey(error: unknown, constraint: string) {
+  const value = error as { code?: string; sqlMessage?: string; message?: string };
+  return (
+    value.code === "ER_DUP_ENTRY" &&
+    `${value.sqlMessage ?? ""} ${value.message ?? ""}`.includes(constraint)
+  );
 }

@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/accounts-web",
-  "version": "1.0.63",
+  "version": "1.0.64",
   "private": true,
   "type": "module",
   "exports": {
@@ -14,7 +14,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/ui": "^1.0.63",
+    "@cxapp/ui": "^1.0.64",
     "@tanstack/react-query": "^5.100.10",
     "lucide-react": "^1.22.0",
     "react": "^19.0.0",

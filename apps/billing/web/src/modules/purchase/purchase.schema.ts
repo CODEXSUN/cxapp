@@ -61,7 +61,8 @@ export const purchaseSchema = z.object({
   items: z.array(purchaseLineSchema),
   ledgerId: z.number().int().positive().nullable(),
   notes: z.string(),
-  invoiceNumber: z.string().trim().min(1, "Purchase number is required."),
+  // Blank means "use the next configured number"; a value is a manual override.
+  invoiceNumber: z.string().trim().optional(),
   roundOff: z.union([decimalInput, z.literal("")]).optional(),
   salesLedger: z.string(),
   shippingAddress: z.string(),

@@ -25,6 +25,7 @@ export type PaymentAllocation = PaymentAllocationInput & {
 };
 
 export type Payment = {
+  numberingWarning?: string;
   allocatedAmount: number;
   allocations: PaymentAllocation[];
   amount: number;
