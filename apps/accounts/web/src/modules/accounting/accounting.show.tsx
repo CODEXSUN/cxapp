@@ -28,7 +28,13 @@ export function AccountingJournalShow({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button aria-label="Back to journal list" onClick={onBack} size="icon" type="button" variant="outline">
+          <Button
+            aria-label="Back to journal list"
+            onClick={onBack}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
             <ArrowLeft className="size-4" />
           </Button>
           <div>
@@ -62,7 +68,13 @@ export function AccountingJournalShow({
               <Button onClick={onCancel} size="sm" type="button" variant="outline">
                 Cancel
               </Button>
-              <Button onClick={onDelete} size="sm" type="button" variant="outline" className="text-rose-600">
+              <Button
+                onClick={onDelete}
+                size="sm"
+                type="button"
+                variant="outline"
+                className="text-rose-600"
+              >
                 <Trash2 className="size-4" />
                 Delete
               </Button>
@@ -97,25 +109,39 @@ export function AccountingJournalShow({
             </thead>
             <tbody>
               {journal.lines.map((line) => (
-                <tr key={line.id || line.lineNumber} className="border-b border-border/70 last:border-b-0">
+                <tr
+                  key={line.id || line.lineNumber}
+                  className="border-b border-border/70 last:border-b-0"
+                >
                   <td className="px-4 py-2.5 text-muted-foreground">{line.lineNumber}</td>
                   <td className="px-4 py-2.5">
                     <span className="font-medium">{line.accountCode}</span>
                     <span className="ml-2 text-muted-foreground">{line.accountName}</span>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{line.description}</td>
-                  <td className="px-4 py-2.5 text-right">{line.debit ? formatMoney(line.debit) : "—"}</td>
-                  <td className="px-4 py-2.5 text-right">{line.credit ? formatMoney(line.credit) : "—"}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    {line.debit ? formatMoney(line.debit) : "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    {line.credit ? formatMoney(line.credit) : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-muted/40">
               <tr>
-                <td colSpan={3} className="px-4 py-2.5 text-xs font-semibold uppercase text-muted-foreground">
+                <td
+                  colSpan={3}
+                  className="px-4 py-2.5 text-xs font-semibold uppercase text-muted-foreground"
+                >
                   Total
                 </td>
-                <td className="px-4 py-2.5 text-right font-semibold">{formatMoney(journal.totalDebit)}</td>
-                <td className="px-4 py-2.5 text-right font-semibold">{formatMoney(journal.totalCredit)}</td>
+                <td className="px-4 py-2.5 text-right font-semibold">
+                  {formatMoney(journal.totalDebit)}
+                </td>
+                <td className="px-4 py-2.5 text-right font-semibold">
+                  {formatMoney(journal.totalCredit)}
+                </td>
               </tr>
             </tfoot>
           </table>

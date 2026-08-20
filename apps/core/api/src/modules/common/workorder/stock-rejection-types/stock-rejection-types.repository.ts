@@ -30,10 +30,11 @@ export class StockRejectionTypesRepository {
   }
 
   async create(input: StockRejectionTypesSavePayload) {
-    const result = await sql`INSERT INTO core_stock_rejection_types (name, status, sort_order) VALUES
+    const result =
+      await sql`INSERT INTO core_stock_rejection_types (name, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 
@@ -59,7 +60,9 @@ export class StockRejectionTypesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM core_stock_rejection_types WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_stock_rejection_types WHERE id=${Number(id)}`.execute(
+      getCoreDatabase()
+    );
     return existing;
   }
 }

@@ -34,6 +34,30 @@ export async function runAccountingE2e() {
       financialYearId: defaults.financialYearId
     };
     await bootstrapAccountsDatabase(databaseName);
+    await admin.query(
+      `INSERT IGNORE INTO \`${databaseName}\`.core_ledgers (ledger_group_id,name,status)
+       SELECT id,'Cash in Hand','active' FROM \`${databaseName}\`.core_ledger_groups
+       WHERE LOWER(name)='general' LIMIT 1`
+    );
+    await admin.query(
+      `INSERT IGNORE INTO \`${databaseName}\`.core_ledgers (ledger_group_id,name,status)
+       SELECT id,'Sales','active' FROM \`${databaseName}\`.core_ledger_groups
+       WHERE LOWER(name)='general' LIMIT 1`
+    );
+    await admin.query(
+      `INSERT IGNORE INTO \`${databaseName}\`.core_ledgers (ledger_group_id,name,status)
+       SELECT id,'Office Expenses','active' FROM \`${databaseName}\`.core_ledger_groups
+       WHERE LOWER(name)='general' LIMIT 1`
+    );
+    const [coreLedgerRows] = await admin.query(
+      `SELECT id,name FROM \`${databaseName}\`.core_ledgers WHERE name IN ('Cash in Hand','Sales','Office Expenses')`
+    );
+    const coreLedgers = new Map(
+      (coreLedgerRows as Array<{ id: number; name: string }>).map((row) => [row.name, row.id])
+    );
+    const cashLedgerId = coreLedgers.get("Cash in Hand")!;
+    const salesLedgerId = coreLedgers.get("Sales")!;
+    const expenseLedgerId = coreLedgers.get("Office Expenses")!;
 
     const service = new AccountingService();
     const cashBook = new CashBookService();
@@ -169,7 +193,7 @@ export async function runAccountingE2e() {
         "A journal entry requires at least two lines."
       );
 
-      // 8. Reversal keeps the original intact and restores the balance.
+      // 8. Reversal preserves the original values, marks it reversed, and restores the balance.
       const reversed = await service.reverseJournal(databaseName, draft.id, "user@example.com");
       assert.ok(reversed, "Reversal journal must be created and posted.");
       assert.equal(reversed.status, "posted");
@@ -178,7 +202,7 @@ export async function runAccountingE2e() {
         databaseName,
         draft.id
       );
-      assert.equal(originalAfterReverse?.status, "posted", "Original entry stays posted.");
+      assert.equal(originalAfterReverse?.status, "reversed", "Original entry is marked reversed.");
       assert.equal(originalAfterReverse?.totalDebit, 100);
 
       const ledgerAfterReverse = await service.ledgerForAccount(databaseName, cash.id);
@@ -220,7 +244,7 @@ export async function runAccountingE2e() {
         "Bank Account must be classified as a bank account."
       );
 
-      // 11. Cash book register reflects posted activity and quick entries post balanced journals.
+      // 11. Cash book register reflects centralized activity and quick entries own their source row.
       const cashRegister = await cashBook.register(databaseName);
       assert.ok(cashRegister, "Cash book register must resolve cash accounts.");
       assert.ok(
@@ -231,20 +255,26 @@ export async function runAccountingE2e() {
         cashRegister.lines.length > 0,
         "Cash book register must include previously posted cash activity."
       );
+      assert.deepEqual(await cashBook.context(databaseName), {
+        rowPosition: 1,
+        suggestedEntryNumber: "CR-000001"
+      });
 
       const receipt = await cashBook.postEntry(databaseName, {
-        accountId: cash.id,
-        amount: 250,
+        cashLedgerId,
         companyId: scope.companyId,
-        counterpartAccountId: sales.id,
         description: "Cash receipt from quick entry",
         entryDate,
         entryNumber: "",
         financialYearId: scope.financialYearId,
+        lines: [{ amount: 250, ledgerId: salesLedgerId }],
         type: "receipt"
       });
-      assert.ok(receipt, "Quick cash receipt must post a journal entry.");
+      assert.ok(receipt, "Quick cash receipt must create an independent cash entry.");
       assert.equal(receipt.status, "posted");
+      assert.equal(receipt.cashLedger?.id, cashLedgerId);
+      assert.equal(receipt.counterpartLedger?.id, salesLedgerId);
+      assert.equal((await cashBook.getEntry(databaseName, receipt.id))?.id, receipt.id);
 
       const registerAfterReceipt = await cashBook.register(databaseName);
       assert.equal(
@@ -252,6 +282,48 @@ export async function runAccountingE2e() {
         300,
         "Cash book closing balance must increase by the 250 receipt (50 + 250)."
       );
+
+      const cashPayment = await cashBook.postEntry(databaseName, {
+        cashLedgerId,
+        companyId: scope.companyId,
+        description: "Cash payment from quick entry",
+        entryDate,
+        entryNumber: "",
+        financialYearId: scope.financialYearId,
+        lines: [
+          { amount: 40, ledgerId: salesLedgerId },
+          { amount: 35, ledgerId: expenseLedgerId }
+        ],
+        type: "payment"
+      });
+      const [cashPaymentLines] = await admin.query(
+        `SELECT line.account_id,line.debit,line.credit
+         FROM \`${databaseName}\`.acc_entry_lines line
+         INNER JOIN \`${databaseName}\`.acc_cash_entries source
+           ON source.posted_entry_id=line.entry_id
+         WHERE source.uuid=? ORDER BY line.line_number`,
+        [cashPayment.id]
+      );
+      const cashPaymentPosting = cashPaymentLines as Array<{
+        account_id: number;
+        credit: string | number;
+        debit: string | number;
+      }>;
+      assert.equal(Number(cashPaymentPosting[0]?.account_id), cashPayment.account.accountId);
+      assert.equal(Number(cashPaymentPosting[0]?.credit), 75);
+      assert.equal(Number(cashPaymentPosting[1]?.account_id), cashPayment.counterpart.accountId);
+      assert.equal(Number(cashPaymentPosting[1]?.debit), 40);
+      assert.equal(Number(cashPaymentPosting[2]?.debit), 35);
+      assert.equal(cashPayment.lines.length, 2);
+      assert.equal(
+        (await cashBook.register(databaseName))?.closingBalance,
+        225,
+        "Cash Out must credit cash and reduce the cash book balance by 75."
+      );
+      assert.deepEqual(await cashBook.context(databaseName), {
+        rowPosition: 3,
+        suggestedEntryNumber: "CR-000003"
+      });
 
       // 12. A bank payment posts the bank side and is rejected when unbalanced period is missing.
       const bankBookRegister = await bankBook.register(databaseName);
@@ -270,6 +342,7 @@ export async function runAccountingE2e() {
         type: "payment"
       });
       assert.equal(payment.status, "posted");
+      assert.equal((await bankBook.getEntry(databaseName, payment.id))?.id, payment.id);
       const bankLedger = await service.ledgerForAccount(databaseName, bank.id);
       assert.equal(
         bankLedger?.closingBalance,
@@ -279,19 +352,46 @@ export async function runAccountingE2e() {
 
       await assert.rejects(
         cashBook.postEntry(databaseName, {
-          accountId: cash.id,
-          amount: -5,
+          cashLedgerId,
           companyId: scope.companyId,
-          counterpartAccountId: sales.id,
           description: "Invalid",
           entryDate,
           entryNumber: "",
           financialYearId: scope.financialYearId,
+          lines: [{ amount: -5, ledgerId: salesLedgerId }],
           type: "receipt"
         }),
         /greater than zero/i,
         "A book entry amount must be positive."
       );
+
+      const [postingRows] = await admin.query(
+        `SELECT
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_cash_entries) AS cash_entries,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_cash_entry_lines) AS cash_entry_lines,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_bank_entries) AS bank_entries,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entries WHERE source_type='cash-book') AS cash_postings,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entry_lines line
+             INNER JOIN \`${databaseName}\`.acc_entries entry ON entry.id=line.entry_id
+             WHERE entry.source_type='cash-book') AS cash_posting_lines,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entries WHERE source_type='bank-book') AS bank_postings`
+      );
+      const postingCounts = (
+        postingRows as Array<{
+          bank_entries: string | number;
+          bank_postings: string | number;
+          cash_entries: string | number;
+          cash_entry_lines: string | number;
+          cash_posting_lines: string | number;
+          cash_postings: string | number;
+        }>
+      )[0]!;
+      assert.equal(Number(postingCounts.cash_entries), 2);
+      assert.equal(Number(postingCounts.cash_entry_lines), 3);
+      assert.equal(Number(postingCounts.cash_postings), 2);
+      assert.equal(Number(postingCounts.cash_posting_lines), 5);
+      assert.equal(Number(postingCounts.bank_entries), 1);
+      assert.equal(Number(postingCounts.bank_postings), 1);
     });
 
     return {

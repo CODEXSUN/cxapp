@@ -93,7 +93,9 @@ function validateDates(from: string, to: string, yearStart: string, yearEnd: str
   }
   if (from > to) throw AppError.validation("Supplier Statement From date cannot be after To date.");
   if (from < yearStart || to > yearEnd)
-    throw AppError.validation("Supplier Statement dates must stay inside the selected Financial Year.");
+    throw AppError.validation(
+      "Supplier Statement dates must stay inside the selected Financial Year."
+    );
 }
 
 function money(value: number) {

@@ -14,7 +14,12 @@ import {
 } from "@cxapp/ui/components/select";
 import { cn } from "@cxapp/ui/lib/utils";
 import { formatMoney } from "./accounting.services";
-import type { Account, AccountingPeriod, JournalEntry, JournalSavePayload } from "./accounting.types";
+import type {
+  Account,
+  AccountingPeriod,
+  JournalEntry,
+  JournalSavePayload
+} from "./accounting.types";
 
 export type JournalFormDraft = {
   accountingPeriodId: number | null;
@@ -48,12 +53,20 @@ export function AccountingJournalForm({
   });
   const [lines, setLines] = useState(
     journal?.lines.length
-      ? journal.lines.map((line) => ({ accountId: line.accountId, credit: line.credit, debit: line.debit, description: line.description ?? "" }))
+      ? journal.lines.map((line) => ({
+          accountId: line.accountId,
+          credit: line.credit,
+          debit: line.debit,
+          description: line.description ?? ""
+        }))
       : [{ accountId: 0, credit: 0, debit: 0, description: "" }]
   );
 
   const postableAccounts = useMemo(
-    () => accounts.filter((account) => account.isPostable && !account.isGroup && account.status === "active"),
+    () =>
+      accounts.filter(
+        (account) => account.isPostable && !account.isGroup && account.status === "active"
+      ),
     [accounts]
   );
 
@@ -85,7 +98,10 @@ export function AccountingJournalForm({
       toast.error("Entry date is required");
       return;
     }
-    const cleaned = lines.filter((line) => line.accountId > 0 && (Number(line.debit) || 0) > 0 && (Number(line.credit) || 0) > 0);
+    const cleaned = lines.filter(
+      (line) =>
+        line.accountId > 0 && (Number(line.debit) || 0) > 0 && (Number(line.credit) || 0) > 0
+    );
     if (cleaned.length < 2) {
       toast.error("A journal entry requires at least two balanced lines");
       return;
@@ -103,7 +119,12 @@ export function AccountingJournalForm({
       entryDate: draft.entryDate,
       entryNumber,
       financialYearId: journal?.financialYearId ?? 0,
-      lines: cleaned.map((line) => ({ accountId: line.accountId, credit: line.credit, debit: line.debit, description: line.description })),
+      lines: cleaned.map((line) => ({
+        accountId: line.accountId,
+        credit: line.credit,
+        debit: line.debit,
+        description: line.description
+      })),
       reference: draft.reference,
       status
     });
@@ -113,7 +134,9 @@ export function AccountingJournalForm({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{journal ? `Edit ${journal.entryNumber}` : "New journal entry"}</h2>
+          <h2 className="text-xl font-semibold">
+            {journal ? `Edit ${journal.entryNumber}` : "New journal entry"}
+          </h2>
           <p className="text-sm text-muted-foreground">
             Create balanced double-entry journal entries for your accounting period.
           </p>
@@ -140,7 +163,9 @@ export function AccountingJournalForm({
             <Label htmlFor="entry-number">Entry number</Label>
             <Input
               id="entry-number"
-              onChange={(event) => setDraft((current) => ({ ...current, entryNumber: event.target.value }))}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, entryNumber: event.target.value }))
+              }
               placeholder="JE-0001"
               value={draft.entryNumber}
             />
@@ -149,7 +174,9 @@ export function AccountingJournalForm({
             <Label htmlFor="entry-date">Entry date</Label>
             <Input
               id="entry-date"
-              onChange={(event) => setDraft((current) => ({ ...current, entryDate: event.target.value }))}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, entryDate: event.target.value }))
+              }
               type="date"
               value={draft.entryDate}
             />
@@ -157,7 +184,12 @@ export function AccountingJournalForm({
           <div className="space-y-1.5">
             <Label htmlFor="period">Accounting period</Label>
             <Select
-              onValueChange={(value) => setDraft((current) => ({ ...current, accountingPeriodId: value ? Number(value) : null }))}
+              onValueChange={(value) =>
+                setDraft((current) => ({
+                  ...current,
+                  accountingPeriodId: value ? Number(value) : null
+                }))
+              }
               {...(draft.accountingPeriodId ? { value: String(draft.accountingPeriodId) } : {})}
             >
               <SelectTrigger id="period">
@@ -176,7 +208,9 @@ export function AccountingJournalForm({
             <Label htmlFor="reference">Reference</Label>
             <Input
               id="reference"
-              onChange={(event) => setDraft((current) => ({ ...current, reference: event.target.value }))}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, reference: event.target.value }))
+              }
               placeholder="Optional reference"
               value={draft.reference}
             />
@@ -185,7 +219,9 @@ export function AccountingJournalForm({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, description: event.target.value }))
+              }
               placeholder="What does this journal entry record?"
               value={draft.description}
             />
@@ -253,7 +289,9 @@ export function AccountingJournalForm({
                     <Input
                       inputMode="decimal"
                       min="0"
-                      onChange={(event) => updateLine(index, { credit: Number(event.target.value) })}
+                      onChange={(event) =>
+                        updateLine(index, { credit: Number(event.target.value) })
+                      }
                       placeholder="0.00"
                       step="0.01"
                       type="number"
@@ -284,9 +322,15 @@ export function AccountingJournalForm({
             </tbody>
             <tfoot className="bg-muted/40">
               <tr>
-                <td className="px-4 py-2.5 text-xs font-semibold uppercase text-muted-foreground">Total</td>
-                <td className="px-4 py-2.5 text-right font-semibold">{formatMoney(totals.debit)}</td>
-                <td className="px-4 py-2.5 text-right font-semibold">{formatMoney(totals.credit)}</td>
+                <td className="px-4 py-2.5 text-xs font-semibold uppercase text-muted-foreground">
+                  Total
+                </td>
+                <td className="px-4 py-2.5 text-right font-semibold">
+                  {formatMoney(totals.debit)}
+                </td>
+                <td className="px-4 py-2.5 text-right font-semibold">
+                  {formatMoney(totals.credit)}
+                </td>
                 <td colSpan={2} />
               </tr>
             </tfoot>
@@ -301,7 +345,9 @@ export function AccountingJournalForm({
           <span className="font-medium">Balance:</span>
           <span>{formatMoney(totals.balance)}</span>
           <span className="text-muted-foreground">
-            {Math.abs(totals.balance) > 0.001 ? "(unbalanced — debits must equal credits)" : "(balanced)"}
+            {Math.abs(totals.balance) > 0.001
+              ? "(unbalanced — debits must equal credits)"
+              : "(balanced)"}
           </span>
         </div>
       </div>

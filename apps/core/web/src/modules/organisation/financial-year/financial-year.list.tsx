@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import { WorkspaceRowActions, WorkspaceStatusBadge, WorkspaceTable } from "@cxapp/ui";
 import type { FinancialYearRecord } from "./financial-year.types";

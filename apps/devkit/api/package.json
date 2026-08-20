@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@cxapp/framework": "^1.0.64",
-    "fastify": "^5.2.1",
-    "kysely": "^0.29.0",
+    "fastify": "^5.12.1",
+    "kysely": "^0.29.5",
     "zod": "^4.4.3"
   }
 }

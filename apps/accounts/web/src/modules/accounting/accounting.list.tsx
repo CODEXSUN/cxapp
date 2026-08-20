@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Eye, Printer } from "lucide-react";
 import { Button } from "@cxapp/ui/components/button";
 import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
@@ -19,7 +19,9 @@ export function AccountingJournalsList({
   onReverse,
   onCancel,
   onDelete,
-  onView
+  onPrint,
+  onView,
+  visibleColumns
 }: {
   entries: JournalEntry[];
   loading: boolean;
@@ -28,7 +30,9 @@ export function AccountingJournalsList({
   onReverse: (journal: JournalEntry) => void;
   onCancel: (journal: JournalEntry) => void;
   onDelete: (journal: JournalEntry) => void;
+  onPrint: (journal: JournalEntry) => void;
   onView: (journal: JournalEntry) => void;
+  visibleColumns: Record<string, boolean>;
 }) {
   return (
     <WorkspaceTablePanel>
@@ -36,19 +40,31 @@ export function AccountingJournalsList({
         <table className="w-full min-w-[980px] border-collapse text-sm">
           <thead className="bg-muted/50">
             <tr>
-              {["Entry", "Date", "Reference", "Description", "Debit", "Credit", "Status", "Action"].map(
-                (heading) => (
-                  <th
-                    key={heading}
-                    className={cn(
-                      "border-b border-border/70 px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
-                      ["Debit", "Credit"].includes(heading) ? "text-right" : "text-left"
-                    )}
-                  >
-                    {heading}
-                  </th>
-                )
-              )}
+              {[
+                "Entry",
+                ...(visibleColumns.date ? ["Date"] : []),
+                ...(visibleColumns.reference ? ["Reference"] : []),
+                ...(visibleColumns.description ? ["Description"] : []),
+                ...(visibleColumns.debit ? ["Debit"] : []),
+                ...(visibleColumns.credit ? ["Credit"] : []),
+                ...(visibleColumns.status ? ["Status"] : []),
+                "Print",
+                ...(visibleColumns.action ? ["Action"] : [])
+              ].map((heading) => (
+                <th
+                  key={heading}
+                  className={cn(
+                    "border-b border-border/70 px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
+                    ["Debit", "Credit"].includes(heading)
+                      ? "text-right"
+                      : heading === "Print"
+                        ? "text-center"
+                        : "text-left"
+                  )}
+                >
+                  {heading}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -67,56 +83,103 @@ export function AccountingJournalsList({
                     {journal.entryNumber}
                   </button>
                 </td>
-                <td className="whitespace-nowrap px-4 py-2.5">{formatDate(journal.entryDate)}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{journal.reference}</td>
-                <td className="max-w-64 truncate px-4 py-2.5 text-muted-foreground">
-                  {journal.description}
+                {visibleColumns.date ? (
+                  <td className="whitespace-nowrap px-4 py-2.5">{formatDate(journal.entryDate)}</td>
+                ) : null}
+                {visibleColumns.reference ? (
+                  <td className="px-4 py-2.5 text-muted-foreground">{journal.reference}</td>
+                ) : null}
+                {visibleColumns.description ? (
+                  <td className="max-w-64 truncate px-4 py-2.5 text-muted-foreground">
+                    {journal.description}
+                  </td>
+                ) : null}
+                {visibleColumns.debit ? (
+                  <td className="px-4 py-2.5 text-right">{formatMoney(journal.totalDebit)}</td>
+                ) : null}
+                {visibleColumns.credit ? (
+                  <td className="px-4 py-2.5 text-right">{formatMoney(journal.totalCredit)}</td>
+                ) : null}
+                {visibleColumns.status ? (
+                  <td className="px-4 py-2.5">
+                    <JournalStatusPill status={journal.status} />
+                  </td>
+                ) : null}
+                <td className="px-4 py-2.5 text-center">
+                  <Button
+                    aria-label={`Print ${journal.entryNumber}`}
+                    className="size-8"
+                    onClick={() => onPrint(journal)}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Printer className="size-4" />
+                  </Button>
                 </td>
-                <td className="px-4 py-2.5 text-right">{formatMoney(journal.totalDebit)}</td>
-                <td className="px-4 py-2.5 text-right">{formatMoney(journal.totalCredit)}</td>
-                <td className="px-4 py-2.5">
-                  <JournalStatusPill status={journal.status} />
-                </td>
-                <td className="px-4 py-2.5">
-                  <WorkspaceRowActions
-                    actions={[
-                      ...(journal.status === "draft"
-                        ? [{ id: "submit", label: "Submit", icon: <Eye className="size-4" />, onSelect: () => onView(journal) }]
-                        : []),
-                      ...(journal.status === "ready_to_post"
-                        ? [{ id: "post", label: "Post", icon: <Eye className="size-4" />, onSelect: () => onPost(journal) }]
-                        : []),
-                      ...(journal.status === "posted"
-                        ? [{ id: "reverse", label: "Reverse", icon: <Eye className="size-4" />, onSelect: () => onReverse(journal) }]
-                        : []),
-                      ...(journal.status === "draft"
-                        ? [
-                            {
-                              id: "cancel",
-                              label: "Cancel",
-                              icon: <Eye className="size-4" />,
-                              tone: "destructive" as const,
-                              onSelect: () => onCancel(journal)
-                            }
-                          ]
-                        : []),
-                      ...(journal.status === "draft"
-                        ? [
-                            {
-                              id: "force-delete",
-                              label: "Force delete",
-                              icon: <Eye className="size-4" />,
-                              tone: "destructive" as const,
-                              onSelect: () => onDelete(journal)
-                            }
-                          ]
-                        : [])
-                    ]}
-                    {...(journal.status === "draft" ? { onEdit: () => onEdit(journal) } : {})}
-                    onView={() => onView(journal)}
-                    title={journal.entryNumber}
-                  />
-                </td>
+                {visibleColumns.action ? (
+                  <td className="px-4 py-2.5">
+                    <WorkspaceRowActions
+                      actions={[
+                        ...(journal.status === "draft"
+                          ? [
+                              {
+                                id: "submit",
+                                label: "Submit",
+                                icon: <Eye className="size-4" />,
+                                onSelect: () => onView(journal)
+                              }
+                            ]
+                          : []),
+                        ...(journal.status === "ready_to_post"
+                          ? [
+                              {
+                                id: "post",
+                                label: "Post",
+                                icon: <Eye className="size-4" />,
+                                onSelect: () => onPost(journal)
+                              }
+                            ]
+                          : []),
+                        ...(journal.status === "posted"
+                          ? [
+                              {
+                                id: "reverse",
+                                label: "Reverse",
+                                icon: <Eye className="size-4" />,
+                                onSelect: () => onReverse(journal)
+                              }
+                            ]
+                          : []),
+                        ...(journal.status === "draft"
+                          ? [
+                              {
+                                id: "cancel",
+                                label: "Cancel",
+                                icon: <Eye className="size-4" />,
+                                tone: "destructive" as const,
+                                onSelect: () => onCancel(journal)
+                              }
+                            ]
+                          : []),
+                        ...(journal.status === "draft"
+                          ? [
+                              {
+                                id: "force-delete",
+                                label: "Force delete",
+                                icon: <Eye className="size-4" />,
+                                tone: "destructive" as const,
+                                onSelect: () => onDelete(journal)
+                              }
+                            ]
+                          : [])
+                      ]}
+                      {...(journal.status === "draft" ? { onEdit: () => onEdit(journal) } : {})}
+                      onView={() => onView(journal)}
+                      title={journal.entryNumber}
+                    />
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -171,13 +234,7 @@ function SummaryItem({ label, strong, value }: { label: string; strong?: boolean
   );
 }
 
-export function EmptyActionButton({
-  label,
-  onClick
-}: {
-  label: string;
-  onClick: () => void;
-}) {
+export function EmptyActionButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <Button className="h-9 rounded-md" onClick={onClick} type="button">
       {label}

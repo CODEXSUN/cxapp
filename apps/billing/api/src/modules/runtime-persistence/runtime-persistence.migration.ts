@@ -12,7 +12,10 @@ export async function migrateBillingRuntimePersistence(db: Kysely<BillingDatabas
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) =>
-      column.notNull().unique().defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
+      column
+        .notNull()
+        .unique()
+        .defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
     )
     .addColumn("event_name", "varchar(160)", (column) => column.notNull())
     .addColumn("event_version", "integer", (column) => column.notNull().defaultTo(1))
@@ -47,7 +50,10 @@ export async function migrateBillingRuntimePersistence(db: Kysely<BillingDatabas
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) =>
-      column.notNull().unique().defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
+      column
+        .notNull()
+        .unique()
+        .defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
     )
     .addColumn("queue_name", "varchar(80)", (column) => column.notNull())
     .addColumn("job_name", "varchar(160)", (column) => column.notNull())

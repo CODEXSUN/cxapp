@@ -47,7 +47,9 @@ export class CityRepository {
   async districtExists(districtId: string | number) {
     const rows = await sql<{
       id: number;
-    }>`SELECT id FROM core_districts WHERE id=${Number(districtId)} LIMIT 1`.execute(getCoreDatabase());
+    }>`SELECT id FROM core_districts WHERE id=${Number(districtId)} LIMIT 1`.execute(
+      getCoreDatabase()
+    );
     return Boolean(rows.rows[0]);
   }
 
@@ -67,7 +69,9 @@ export class CityRepository {
   }
 
   async setStatus(id: string | number, status: CityStatus) {
-    await sql`UPDATE core_cities SET status=${status} WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`UPDATE core_cities SET status=${status} WHERE id=${Number(id)}`.execute(
+      getCoreDatabase()
+    );
     return this.find(id);
   }
 
@@ -81,7 +85,9 @@ export class CityRepository {
   async dependentCount(id: string | number) {
     const rows = await sql<{
       count: number | string;
-    }>`SELECT COUNT(*) count FROM core_pincodes WHERE city_id=${Number(id)}`.execute(getCoreDatabase());
+    }>`SELECT COUNT(*) count FROM core_pincodes WHERE city_id=${Number(id)}`.execute(
+      getCoreDatabase()
+    );
     return Number(rows.rows[0]?.count ?? 0);
   }
 }

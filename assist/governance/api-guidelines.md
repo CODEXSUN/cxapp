@@ -166,20 +166,20 @@ All protected routes use shared guard helpers from `apps/platform/api/src/auth/g
 
 ### Available Guards
 
-| Guard                                         | Purpose                                                                | Throws                                                        |
-| --------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Guard                                         | Purpose                                                             | Throws                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `requireSession(app, request)`                | Resolves active session from Bearer token or `cxapp_session` cookie | `AppError.unauthorized()` if missing or invalid               |
-| `requireUserType(session, allowedTypes)`      | Checks user type against allowed list                                  | `AppError.forbidden()` if type not allowed                    |
-| `requireSuperAdmin(app, request)`             | Wrapper for super-admin-only routes                                    | `AppError.unauthorized()` or `AppError.forbidden()`           |
-| `requireTenantMatch(request, session)`        | Verifies `x-tenant-id` header matches authenticated session tenant     | `AppError.validation()` or `AppError.forbidden()` on mismatch |
-| `requirePermission(session, permission)`      | Placeholder: super-admin allowed, others denied                        | `AppError.forbidden()` with permission name                   |
-| `requireActiveTenant(session)`                | Placeholder: always passes                                             | None yet                                                      |
-| `requireFeatureEnabled(tenantId, featureKey)` | Placeholder: always passes                                             | None yet                                                      |
+| `requireUserType(session, allowedTypes)`      | Checks user type against allowed list                               | `AppError.forbidden()` if type not allowed                    |
+| `requireSuperAdmin(app, request)`             | Wrapper for super-admin-only routes                                 | `AppError.unauthorized()` or `AppError.forbidden()`           |
+| `requireTenantMatch(request, session)`        | Verifies `x-tenant-id` header matches authenticated session tenant  | `AppError.validation()` or `AppError.forbidden()` on mismatch |
+| `requirePermission(session, permission)`      | Placeholder: super-admin allowed, others denied                     | `AppError.forbidden()` with permission name                   |
+| `requireActiveTenant(session)`                | Placeholder: always passes                                          | None yet                                                      |
+| `requireFeatureEnabled(tenantId, featureKey)` | Placeholder: always passes                                          | None yet                                                      |
 
 ### Route Ownership
 
-| Route module                  | File                                     | Owner                    |
-| ----------------------------- | ---------------------------------------- | ------------------------ |
+| Route module                  | File                                     | Owner                 |
+| ----------------------------- | ---------------------------------------- | --------------------- |
 | Auth (login, session, logout) | `apps/platform/api/src/auth/routes.ts`   | `@cxapp/platform-api` |
 | Tenant management CRUD        | `apps/platform/api/src/tenant/routes.ts` | `@cxapp/platform-api` |
 

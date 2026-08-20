@@ -13,8 +13,12 @@ import type {
   AccountSavePayload,
   AccountContext,
   BookEntryPayload,
-  BookJournal,
+  BookEntry,
   BookRegister,
+  CashBookContext,
+  CashBookLedger,
+  CashBookLedgerGroup,
+  CashBookLedgerSavePayload,
   JournalEntry,
   JournalPageResult,
   JournalSavePayload,
@@ -129,18 +133,45 @@ export function getBookRegister(kind: "cash" | "bank") {
 }
 
 export function postBookEntry(kind: "cash" | "bank", payload: BookEntryPayload) {
-  return accountsApiPost<BookJournal>(`/${kind}-book/entries`, {
-    accountId: payload.accountId,
-    amount: payload.amount,
+  return accountsApiPost<BookEntry>(`/${kind}-book/entries`, {
     companyId: payload.companyId,
-    counterpartAccountId: payload.counterpartAccountId,
     description: payload.description,
     entryDate: payload.entryDate,
     entryNumber: payload.entryNumber ?? "",
     financialYearId: payload.financialYearId,
     reference: payload.reference ?? "",
-    type: payload.type
+    type: payload.type,
+    ...(kind === "cash"
+      ? {
+          cashLedgerId: payload.cashLedgerId,
+          lines: payload.cashLines
+        }
+      : {
+          accountId: payload.accountId,
+          amount: payload.amount,
+          counterpartAccountId: payload.counterpartAccountId
+        })
   });
+}
+
+export function listCashBookLedgers() {
+  return accountsApiGet<CashBookLedger[]>("/cash-book/ledgers");
+}
+
+export function getCashBookContext() {
+  return accountsApiGet<CashBookContext>("/cash-book/context");
+}
+
+export function listCashBookLedgerGroups() {
+  return accountsApiGet<CashBookLedgerGroup[]>("/cash-book/ledger-groups");
+}
+
+export function createCashBookLedger(payload: CashBookLedgerSavePayload) {
+  return accountsApiPost<CashBookLedger>("/cash-book/ledgers", payload);
+}
+
+export function getBookEntry(kind: "cash" | "bank", id: string) {
+  return accountsApiGet<BookEntry>(`/${kind}-book/entries/${id}`);
 }
 
 export function formatMoney(value: number) {

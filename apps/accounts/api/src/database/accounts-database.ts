@@ -10,10 +10,16 @@ import { createConnection } from "mysql2/promise";
 import { AppError } from "@cxapp/framework/errors";
 import { env } from "../env.js";
 import {
+  accountingCashBookLinesMigration,
   accountingMigration,
   accountingBooksMigration,
+  accountingCentralEntriesMigration,
+  accountingCoreLedgerLinksMigration,
   migrateAccountingModule,
-  migrateAccountingBooksModule
+  migrateAccountingBooksModule,
+  migrateAccountingCentralEntriesModule,
+  migrateAccountingCashBookLinesModule,
+  migrateAccountingCoreLedgerLinksModule
 } from "../modules/accounting/accounting.migration.js";
 import { seedAccountingModule } from "../modules/accounting/accounting.seed.js";
 
@@ -60,6 +66,21 @@ const accountingMigrationSteps = [
     description: accountingBooksMigration.description,
     key: accountingBooksMigration.key,
     migrate: migrateAccountingBooksModule
+  },
+  {
+    description: accountingCentralEntriesMigration.description,
+    key: accountingCentralEntriesMigration.key,
+    migrate: migrateAccountingCentralEntriesModule
+  },
+  {
+    description: accountingCoreLedgerLinksMigration.description,
+    key: accountingCoreLedgerLinksMigration.key,
+    migrate: migrateAccountingCoreLedgerLinksModule
+  },
+  {
+    description: accountingCashBookLinesMigration.description,
+    key: accountingCashBookLinesMigration.key,
+    migrate: migrateAccountingCashBookLinesModule
   }
 ] as const;
 
@@ -73,11 +94,18 @@ const accountsTableNames = [
   "acc_ledger"
 ] as const;
 
+const centralAccountsTableNames = [
+  "acc_entries",
+  "acc_entry_lines",
+  "acc_cash_entries",
+  "acc_bank_entries"
+] as const;
+
 export const accountsMigrationBatch: MigrationBatch<AccountsDatabase> = {
   batch: 1,
-  description: "Accounts module-owned schema baseline through release 1.0.63.",
+  description: "Accounts module-owned schema baseline through release 1.0.64.",
   scope: "accounts",
-  version: "1.0.63",
+  version: "1.0.64",
   steps: [
     ...accountingMigrationSteps.map(({ description, key, migrate }) => ({
       checksum: `${key}:v1`,
@@ -92,6 +120,13 @@ export const accountsMigrationBatch: MigrationBatch<AccountsDatabase> = {
       name: "accounts.standard-columns-v1",
       up: (database) => ensureStandardTableColumns(database, accountsTableNames),
       version: 1
+    },
+    {
+      checksum: `central-standard-columns:${centralAccountsTableNames.join(",")}`,
+      description: "Validate standard identity and audit columns on centralized entry tables.",
+      name: "accounts.central-standard-columns-v1",
+      up: (database) => ensureStandardTableColumns(database, centralAccountsTableNames),
+      version: 1
     }
   ]
 };
@@ -101,12 +136,17 @@ export const accountsTenantMigrations = [
   {
     description: "Backfill and validate standard Accounts table identity and audit columns.",
     name: "accounts.standard-columns-v1"
+  },
+  {
+    description: "Validate standard identity and audit columns on centralized entry tables.",
+    name: "accounts.central-standard-columns-v1"
   }
 ] as const;
 
 export function resolveAccountsDatabaseName(value: unknown) {
   const requested = typeof value === "string" ? value.trim() : "";
-  if (!requested) throw AppError.validation("x-tenant-db is required for Accounts database access.");
+  if (!requested)
+    throw AppError.validation("x-tenant-db is required for Accounts database access.");
   if (!/^[a-zA-Z0-9_]+$/.test(requested))
     throw AppError.validation("Invalid tenant database name.");
   const name = requested;

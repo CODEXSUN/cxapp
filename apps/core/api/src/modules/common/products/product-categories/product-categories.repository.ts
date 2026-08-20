@@ -59,7 +59,9 @@ export class ProductCategoriesRepository {
   async forceDelete(id: string | number) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`DELETE FROM core_product_categories WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`DELETE FROM core_product_categories WHERE id=${Number(id)}`.execute(
+      getCoreDatabase()
+    );
     return existing;
   }
 }

@@ -2,12 +2,7 @@ import { sql, type Kysely } from "kysely";
 import type { PlatformDatabase } from "../../database/schema.js";
 
 export async function migrateStorageManagerModule(database: Kysely<PlatformDatabase>) {
-  await addColumnIfMissing(
-    database,
-    "tenants",
-    "storage_root",
-    "VARCHAR(255) NOT NULL DEFAULT ''"
-  );
+  await addColumnIfMissing(database, "tenants", "storage_root", "VARCHAR(255) NOT NULL DEFAULT ''");
   await addColumnIfMissing(
     database,
     "tenants",

@@ -34,7 +34,9 @@ export class LedgersRepository {
       id: number | string;
       name: string;
       status: LedgerStatus;
-    }>`SELECT id,name,status FROM core_ledger_groups WHERE id=${id} LIMIT 1`.execute(getCoreDatabase());
+    }>`SELECT id,name,status FROM core_ledger_groups WHERE id=${id} LIMIT 1`.execute(
+      getCoreDatabase()
+    );
     return rows.rows[0]
       ? { id: Number(rows.rows[0].id), name: rows.rows[0].name, status: rows.rows[0].status }
       : null;

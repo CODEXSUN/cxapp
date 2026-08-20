@@ -169,14 +169,19 @@ export function appMenuFor(
           onSelect: () => onSelect("accounts.overview")
         },
         {
-          title: "Journal",
-          isActive: activePage === "accounts.journal",
-          onSelect: () => onSelect("accounts.journal")
+          title: "Cash Book",
+          isActive: activePage === "accounts.cash-book",
+          onSelect: () => onSelect("accounts.cash-book")
         },
         {
-          title: "Accounting Periods",
-          isActive: activePage === "accounts.periods",
-          onSelect: () => onSelect("accounts.periods")
+          title: "Bank Book",
+          isActive: activePage === "accounts.bank-book",
+          onSelect: () => onSelect("accounts.bank-book")
+        },
+        {
+          title: "Journals",
+          isActive: activePage === "accounts.journal",
+          onSelect: () => onSelect("accounts.journal")
         }
       ]
     };
@@ -479,33 +484,11 @@ export function appMenuItemsFor(
       {
         icon: LandmarkIcon,
         isActive:
-          activePage.startsWith("accounts.ledgers") ||
           activePage === "accounts.journal" ||
-          activePage === "accounts.ledger" ||
           activePage === "accounts.cash-book" ||
           activePage === "accounts.bank-book",
         title: "Accounting",
         items: [
-          {
-            title: "Journal",
-            isActive: activePage === "accounts.journal",
-            onSelect: () => onSelect("accounts.journal")
-          },
-          {
-            title: "Ledger",
-            isActive: activePage === "accounts.ledger",
-            onSelect: () => onSelect("accounts.ledger")
-          },
-          {
-            title: "Ledger Groups",
-            isActive: activePage === "accounts.ledger-groups",
-            onSelect: () => onSelect("accounts.ledger-groups")
-          },
-          {
-            title: "Ledgers",
-            isActive: activePage === "accounts.ledgers",
-            onSelect: () => onSelect("accounts.ledgers")
-          },
           {
             title: "Cash Book",
             isActive: activePage === "accounts.cash-book",
@@ -517,9 +500,9 @@ export function appMenuItemsFor(
             onSelect: () => onSelect("accounts.bank-book")
           },
           {
-            title: "Accounting Periods",
-            isActive: activePage === "accounts.periods",
-            onSelect: () => onSelect("accounts.periods")
+            title: "Journals",
+            isActive: activePage === "accounts.journal",
+            onSelect: () => onSelect("accounts.journal")
           }
         ]
       }

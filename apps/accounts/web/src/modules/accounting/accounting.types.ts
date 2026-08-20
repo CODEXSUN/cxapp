@@ -203,7 +203,9 @@ export type BookRegisterLine = {
   entryDate: string;
   entryNumber: string;
   id: string;
-  journalId: string;
+  postedEntryId: string;
+  sourceId: string;
+  sourceType: "journal" | "cash-book" | "bank-book";
 };
 
 export type BookRegister = {
@@ -213,11 +215,36 @@ export type BookRegister = {
   openingBalance: number;
 };
 
+export type CashBookLedger = {
+  groupName: string;
+  id: number;
+  name: string;
+};
+
+export type CashBookContext = {
+  rowPosition: number;
+  suggestedEntryNumber: string;
+};
+
+export type CashBookLedgerGroup = {
+  id: number;
+  name: string;
+  status: RecordStatus;
+};
+
+export type CashBookLedgerSavePayload = {
+  ledgerGroupId: number;
+  name: string;
+  status: RecordStatus;
+};
+
 export type BookEntryPayload = {
-  accountId: string;
+  accountId?: string;
   amount: number;
+  cashLedgerId?: number;
+  cashLines?: Array<{ amount: number | ""; ledgerId: number }>;
   companyId: number;
-  counterpartAccountId: string;
+  counterpartAccountId?: string;
   description: string;
   entryDate: string;
   entryNumber?: string;
@@ -226,8 +253,24 @@ export type BookEntryPayload = {
   type: BookEntryType;
 };
 
-export type BookJournal = {
+export type BookEntry = {
+  account: BookAccount;
+  amount: number;
+  cashLedger?: CashBookLedger | null;
+  counterpart: { accountId: number; code: string; id: string; name: string };
+  counterpartLedger?: CashBookLedger | null;
+  description: string;
+  entryDate: string;
   entryNumber: string;
   id: string;
-  status: JournalStatus;
+  lines?: Array<{
+    account: { accountId: number; code: string; id: string; name: string };
+    amount: number;
+    ledger: CashBookLedger | null;
+    lineNumber: number;
+  }>;
+  postedEntryId: string;
+  reference: string;
+  status: "posted" | "reversed";
+  type: BookEntryType;
 };

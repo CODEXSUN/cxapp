@@ -2,12 +2,15 @@
 
 import {
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
+  type RowData,
   type SortingState
 } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  getSortedRowModel,
+  useLegacyTable,
+  type LegacyColumnDef
+} from "@tanstack/react-table/legacy";
 import { ArrowUpDown } from "lucide-react";
 import { useRef, useState, type ReactNode, type ThHTMLAttributes } from "react";
 import { cn } from "../lib/utils";
@@ -24,7 +27,7 @@ export const workspaceTableRowClass =
 
 export const workspaceTableCellClass = "px-4 py-2.5 text-foreground";
 
-export function WorkspaceTable<T>({
+export function WorkspaceTable<T extends RowData>({
   columns,
   data,
   emptyState,
@@ -32,7 +35,7 @@ export function WorkspaceTable<T>({
   minWidth = "640px",
   onRowClick
 }: {
-  columns: ColumnDef<T>[];
+  columns: LegacyColumnDef<T>[];
   data: T[];
   emptyState?: ReactNode;
   isLoading?: boolean;
@@ -45,7 +48,7 @@ export function WorkspaceTable<T>({
   if (!isLoading) settledData.current = data;
   const visibleData = isLoading && data.length === 0 ? settledData.current : data;
 
-  const table = useReactTable({
+  const table = useLegacyTable({
     columns,
     data: visibleData,
     getCoreRowModel: getCoreRowModel(),

@@ -85,10 +85,11 @@ export class PincodeRepository {
   }
 
   async create(input: PincodeSavePayload) {
-    const result = await sql`INSERT INTO core_pincodes (city_id, name, area, sort_order, status) VALUES
+    const result =
+      await sql`INSERT INTO core_pincodes (city_id, name, area, sort_order, status) VALUES
       (${Number(input.cityId)}, ${input.name}, ${input.area}, ${input.sortOrder}, ${input.status})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 

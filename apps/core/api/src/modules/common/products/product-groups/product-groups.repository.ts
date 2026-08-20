@@ -15,14 +15,16 @@ type ProductGroupsRow = {
 
 export class ProductGroupsRepository {
   async list(filters: ProductGroupsListFilters = {}) {
-    const rows = await sql<ProductGroupsRow>`SELECT id, name, status, sort_order FROM core_product_groups
+    const rows =
+      await sql<ProductGroupsRow>`SELECT id, name, status, sort_order FROM core_product_groups
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toProductGroups);
   }
 
   async find(id: string | number) {
-    const rows = await sql<ProductGroupsRow>`SELECT id, name, status, sort_order FROM core_product_groups
+    const rows =
+      await sql<ProductGroupsRow>`SELECT id, name, status, sort_order FROM core_product_groups
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toProductGroups(rows.rows[0]) : null;
   }

@@ -24,7 +24,11 @@ export async function processAccountingJob(
 ) {
   const repository = new AccountingRepository();
   if (jobName === "accounts.journal.post") {
-    const journal = await repository.postJournal(databaseName, payload.journalId, payload.actorEmail);
+    const journal = await repository.postJournal(
+      databaseName,
+      payload.journalId,
+      payload.actorEmail
+    );
     if (!journal) throw AppError.notFound("The journal entry to post was not found.");
     return journal;
   }

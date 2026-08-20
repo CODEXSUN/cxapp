@@ -1,10 +1,5 @@
 import { requiredClientEnv } from "../env/client-env";
-import {
-  getCompanyId,
-  getFinancialYearId,
-  getTenantDbName,
-  getTenantId
-} from "./tenant-context";
+import { getCompanyId, getFinancialYearId, getTenantDbName, getTenantId } from "./tenant-context";
 
 const API_BASE_URL = requiredClientEnv("VITE_PLATFORM_API_URL");
 

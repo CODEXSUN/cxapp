@@ -21,7 +21,9 @@ export type CashBookRegisterLine = {
   entryDate: string;
   entryNumber: string;
   id: string;
-  journalId: string;
+  postedEntryId: string;
+  sourceId: string;
+  sourceType: "journal" | "cash-book" | "bank-book";
 };
 
 export type CashBookRegister = {
@@ -31,15 +33,49 @@ export type CashBookRegister = {
   openingBalance: number;
 };
 
+export type CashBookLedger = {
+  groupName: string;
+  id: number;
+  name: string;
+};
+
+export type CashBookContext = {
+  rowPosition: number;
+  suggestedEntryNumber: string;
+};
+
 export type CashBookEntryPayload = {
-  accountId: string;
-  amount: number;
+  cashLedgerId: number;
   companyId: number;
-  counterpartAccountId: string;
   description: string;
   entryDate: string;
   entryNumber?: string | undefined;
   financialYearId: number;
+  lines: Array<{ amount: number | ""; ledgerId: number }>;
   reference?: string | undefined;
+  type: CashBookEntryType;
+};
+
+export type CashBookEntryLine = {
+  account: { accountId: number; code: string; id: string; name: string };
+  amount: number;
+  ledger: CashBookLedger | null;
+  lineNumber: number;
+};
+
+export type CashBookEntry = {
+  account: CashBookAccount;
+  amount: number;
+  cashLedger: CashBookLedger | null;
+  counterpart: { accountId: number; code: string; id: string; name: string };
+  counterpartLedger: CashBookLedger | null;
+  description: string;
+  entryDate: string;
+  entryNumber: string;
+  id: string;
+  lines: CashBookEntryLine[];
+  postedEntryId: string;
+  reference: string;
+  status: "posted" | "reversed";
   type: CashBookEntryType;
 };

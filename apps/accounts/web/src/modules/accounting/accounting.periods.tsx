@@ -14,7 +14,11 @@ import { useAccountingPeriods } from "./accounting.hooks";
 import { formatDate, setPeriodStatus } from "./accounting.services";
 import type { AccountingPeriod } from "./accounting.types";
 
-export function AccountingPeriodsWorkspace({ initialRecordId }: { initialRecordId?: string | undefined }) {
+export function AccountingPeriodsWorkspace({
+  initialRecordId
+}: {
+  initialRecordId?: string | undefined;
+}) {
   void initialRecordId;
   const queryClient = useQueryClient();
   const query = useAccountingPeriods();
@@ -72,7 +76,10 @@ export function AccountingPeriodsWorkspace({ initialRecordId }: { initialRecordI
             </thead>
             <tbody>
               {periods.map((period) => (
-                <tr key={period.id} className="border-b border-border/70 last:border-b-0 hover:bg-muted/20">
+                <tr
+                  key={period.id}
+                  className="border-b border-border/70 last:border-b-0 hover:bg-muted/20"
+                >
                   <td className="px-4 py-2.5 font-medium">{period.name}</td>
                   <td className="whitespace-nowrap px-4 py-2.5">{formatDate(period.startDate)}</td>
                   <td className="whitespace-nowrap px-4 py-2.5">{formatDate(period.endDate)}</td>

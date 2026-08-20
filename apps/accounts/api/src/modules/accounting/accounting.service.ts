@@ -180,6 +180,11 @@ export class AccountingService {
       throw AppError.conflict("Only posted journal entries can be reversed.");
     await this.assertPeriod(databaseName, current.entryDate);
     const reversal = await this.createReversal(databaseName, current, actor);
+    await this.repository.setJournalStatus(databaseName, current.id, "reversed", {
+      reversedAt: true,
+      reversedBy: actor
+    });
+    await this.repository.linkJournalReversal(databaseName, reversal.id, current.id);
     await this.project(databaseName, "reversed", reversal);
     return reversal;
   }

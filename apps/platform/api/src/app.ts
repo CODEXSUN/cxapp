@@ -1,10 +1,7 @@
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxapp/framework/api";
 import { registerModules } from "@cxapp/framework/modules";
 import { createMailModule } from "@cxapp/mail-api";
-import {
-  accountsApiModuleKeys,
-  registerAccountsApi
-} from "@cxapp/accounts-api";
+import { accountsApiModuleKeys, registerAccountsApi } from "@cxapp/accounts-api";
 import {
   billingApiModuleKeys,
   closeAllBillingDatabases,

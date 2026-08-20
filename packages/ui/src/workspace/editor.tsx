@@ -15,7 +15,7 @@ import Superscript from "@tiptap/extension-superscript";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import TextAlign from "@tiptap/extension-text-align";
-import TextStyle from "@tiptap/extension-text-style";
+import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import type { SuggestionKeyDownProps, SuggestionProps } from "@tiptap/suggestion";
 import {
@@ -282,7 +282,7 @@ export function WorkspaceEditor({
 
   React.useEffect(() => {
     if (!editor || content === undefined || content === editor.getHTML()) return;
-    editor.commands.setContent(content, false);
+    editor.commands.setContent(content, { emitUpdate: false });
   }, [content, editor]);
 
   if (!editor) return null;

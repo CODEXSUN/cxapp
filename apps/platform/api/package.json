@@ -15,10 +15,10 @@
     "@cxapp/devkit-api": "^1.0.64",
     "@cxapp/framework": "^1.0.64",
     "@cxapp/mail-api": "^1.0.64",
-    "bullmq": "^5.79.3",
-    "fastify": "^5.2.1",
-    "kysely": "^0.29.0",
-    "mysql2": "^3.22.3",
+    "bullmq": "^6.1.2",
+    "fastify": "^5.12.1",
+    "kysely": "^0.29.5",
+    "mysql2": "^3.23.4",
     "zod": "^4.4.3"
   }
 }

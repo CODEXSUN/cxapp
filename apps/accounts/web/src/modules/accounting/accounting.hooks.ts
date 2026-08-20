@@ -4,8 +4,11 @@ import { getCompanyId, getFinancialYearId } from "../../shared/api/tenant-contex
 import {
   getAccountingContext,
   getBookRegister,
+  getCashBookContext,
   getJournal,
   getLedger,
+  listCashBookLedgers,
+  listCashBookLedgerGroups,
   listAccountGroups,
   listAccounts,
   listJournalsPage,
@@ -57,15 +60,7 @@ export function useJournalsPage(query: {
     enabled: Boolean(companyId && financialYearId),
     placeholderData: (previous) => previous,
     queryFn: () => listJournalsPage(request),
-    queryKey: [
-      "accounts",
-      "accounting",
-      "journals",
-      "page",
-      companyId,
-      financialYearId,
-      request
-    ]
+    queryKey: ["accounts", "accounting", "journals", "page", companyId, financialYearId, request]
   });
 }
 
@@ -106,5 +101,42 @@ export function useBookRegister(kind: "cash" | "bank") {
     enabled: Boolean(companyId && financialYearId),
     queryFn: () => getBookRegister(kind),
     queryKey: ["accounts", "accounting", "book", kind, companyId, financialYearId]
+  });
+}
+
+export function useCashBookLedgers(enabled = true) {
+  const companyId = getCompanyId();
+  const financialYearId = getFinancialYearId();
+  return useQuery({
+    enabled: enabled && Boolean(companyId && financialYearId),
+    queryFn: listCashBookLedgers,
+    queryKey: ["accounts", "accounting", "cash-book", "core-ledgers", companyId, financialYearId]
+  });
+}
+
+export function useCashBookContext(enabled = true) {
+  const companyId = getCompanyId();
+  const financialYearId = getFinancialYearId();
+  return useQuery({
+    enabled: enabled && Boolean(companyId && financialYearId),
+    queryFn: getCashBookContext,
+    queryKey: ["accounts", "accounting", "cash-book", "context", companyId, financialYearId]
+  });
+}
+
+export function useCashBookLedgerGroups(enabled = true) {
+  const companyId = getCompanyId();
+  const financialYearId = getFinancialYearId();
+  return useQuery({
+    enabled: enabled && Boolean(companyId && financialYearId),
+    queryFn: listCashBookLedgerGroups,
+    queryKey: [
+      "accounts",
+      "accounting",
+      "cash-book",
+      "core-ledger-groups",
+      companyId,
+      financialYearId
+    ]
   });
 }

@@ -1389,7 +1389,7 @@ function titleForPage(page: AppPage) {
     "accounts.overview": "Overview",
     "accounts.ledger-groups": "Ledger Groups",
     "accounts.ledgers": "Ledgers",
-    "accounts.journal": "Journal",
+    "accounts.journal": "Journals",
     "accounts.ledger": "Ledger",
     "accounts.periods": "Accounting Periods",
     "accounts.cash-book": "Cash Book",

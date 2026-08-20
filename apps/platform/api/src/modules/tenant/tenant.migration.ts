@@ -277,12 +277,7 @@ async function ensureTenantColumns(database: Kysely<PlatformDatabase>) {
   await addColumnIfMissing(database, "tenants", "corporate_id", "VARCHAR(120) NULL");
   await addColumnIfMissing(database, "tenants", "mobile", "VARCHAR(40) NULL");
   await addColumnIfMissing(database, "tenants", "slug", "VARCHAR(120) NULL");
-  await addColumnIfMissing(
-    database,
-    "tenants",
-    "status",
-    "VARCHAR(32) NOT NULL DEFAULT 'active'"
-  );
+  await addColumnIfMissing(database, "tenants", "status", "VARCHAR(32) NOT NULL DEFAULT 'active'");
   await addColumnIfMissing(
     database,
     "tenants",
@@ -297,12 +292,7 @@ async function ensureTenantColumns(database: Kysely<PlatformDatabase>) {
   );
   await addColumnIfMissing(database, "tenants", "db_port", "INT NOT NULL DEFAULT 3306");
   await addColumnIfMissing(database, "tenants", "db_name", "VARCHAR(120) NULL");
-  await addColumnIfMissing(
-    database,
-    "tenants",
-    "db_user",
-    "VARCHAR(120) NOT NULL DEFAULT 'root'"
-  );
+  await addColumnIfMissing(database, "tenants", "db_user", "VARCHAR(120) NOT NULL DEFAULT 'root'");
   await addColumnIfMissing(
     database,
     "tenants",
@@ -317,12 +307,7 @@ async function ensureTenantColumns(database: Kysely<PlatformDatabase>) {
     "VARCHAR(64) NOT NULL DEFAULT 'application'"
   );
   await addColumnIfMissing(database, "tenants", "payload_settings", "LONGTEXT NULL");
-  await addColumnIfMissing(
-    database,
-    "tenants",
-    "storage_root",
-    "VARCHAR(255) NOT NULL DEFAULT ''"
-  );
+  await addColumnIfMissing(database, "tenants", "storage_root", "VARCHAR(255) NOT NULL DEFAULT ''");
   await addColumnIfMissing(
     database,
     "tenants",

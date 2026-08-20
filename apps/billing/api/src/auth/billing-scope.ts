@@ -9,10 +9,7 @@ export type BillingScope = {
 
 const storage = new AsyncLocalStorage<BillingScope>();
 
-export function runWithBillingScope(
-  request: FastifyRequest,
-  callback: (error?: Error) => void
-) {
+export function runWithBillingScope(request: FastifyRequest, callback: (error?: Error) => void) {
   try {
     storage.run(readBillingScope(request), callback);
   } catch (error) {
@@ -27,9 +24,7 @@ export function withBillingScope<T>(scope: BillingScope, callback: () => T): T {
 export function currentBillingScope(): BillingScope {
   const scope = storage.getStore();
   if (!scope) {
-    throw AppError.validation(
-      "Select an active Company and Financial Year before using Billing."
-    );
+    throw AppError.validation("Select an active Company and Financial Year before using Billing.");
   }
   return scope;
 }
@@ -47,10 +42,7 @@ export function assertBillingScope(companyId: number, financialYearId: number) {
 export function readBillingScope(request: FastifyRequest): BillingScope {
   return {
     companyId: positiveHeader(request.headers["x-company-id"], "x-company-id"),
-    financialYearId: positiveHeader(
-      request.headers["x-financial-year-id"],
-      "x-financial-year-id"
-    )
+    financialYearId: positiveHeader(request.headers["x-financial-year-id"], "x-financial-year-id")
   };
 }
 

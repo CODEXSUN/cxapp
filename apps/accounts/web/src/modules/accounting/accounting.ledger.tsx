@@ -14,7 +14,11 @@ import { cn } from "@cxapp/ui/lib/utils";
 import { useAccounts, useLedger } from "./accounting.hooks";
 import { formatDate, formatMoney } from "./accounting.services";
 
-export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId?: string | undefined }) {
+export function AccountingLedgerWorkspace({
+  initialRecordId
+}: {
+  initialRecordId?: string | undefined;
+}) {
   const accountsQuery = useAccounts();
   const postable = useMemo(
     () => (accountsQuery.data ?? []).filter((account) => !account.isGroup && account.isPostable),
@@ -67,11 +71,15 @@ export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId
         <div className="mt-4 flex flex-wrap items-center gap-6 rounded-md border border-border/70 bg-card px-4 py-3 text-sm">
           <div>
             <span className="text-muted-foreground">Opening balance</span>
-            <div className="font-medium text-foreground">{formatMoney(ledger?.account.openingBalance ?? 0)}</div>
+            <div className="font-medium text-foreground">
+              {formatMoney(ledger?.account.openingBalance ?? 0)}
+            </div>
           </div>
           <div>
             <span className="text-muted-foreground">Closing balance</span>
-            <div className="font-semibold text-foreground">{formatMoney(ledger?.closingBalance ?? 0)}</div>
+            <div className="font-semibold text-foreground">
+              {formatMoney(ledger?.closingBalance ?? 0)}
+            </div>
           </div>
           <div>
             <span className="text-muted-foreground">Transactions</span>
@@ -83,14 +91,18 @@ export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId
       {ledgerQuery.isError ? (
         <WorkspaceTablePanel>
           <WorkspaceTableEmptyState>
-            {ledgerQuery.error instanceof Error ? ledgerQuery.error.message : "Ledger could not be loaded."}
+            {ledgerQuery.error instanceof Error
+              ? ledgerQuery.error.message
+              : "Ledger could not be loaded."}
           </WorkspaceTableEmptyState>
         </WorkspaceTablePanel>
       ) : null}
 
       {selectedId && ledger && ledger.lines.length === 0 && !ledgerQuery.isFetching ? (
         <WorkspaceTablePanel>
-          <WorkspaceTableEmptyState>No posted transactions for this account.</WorkspaceTableEmptyState>
+          <WorkspaceTableEmptyState>
+            No posted transactions for this account.
+          </WorkspaceTableEmptyState>
         </WorkspaceTablePanel>
       ) : null}
 
@@ -105,7 +117,9 @@ export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId
                       key={heading}
                       className={cn(
                         "border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
-                        ["Debit", "Credit", "Balance"].includes(heading) ? "text-right" : "text-left"
+                        ["Debit", "Credit", "Balance"].includes(heading)
+                          ? "text-right"
+                          : "text-left"
                       )}
                     >
                       {heading}
@@ -115,15 +129,24 @@ export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId
               </thead>
               <tbody>
                 {ledger.lines.map((line) => (
-                  <tr key={line.id} className="border-b border-border/70 last:border-b-0 hover:bg-muted/20">
+                  <tr
+                    key={line.id}
+                    className="border-b border-border/70 last:border-b-0 hover:bg-muted/20"
+                  >
                     <td className="whitespace-nowrap px-4 py-2.5">{formatDate(line.entryDate)}</td>
                     <td className="px-4 py-2.5 font-medium">{line.entryNumber}</td>
                     <td className="max-w-72 truncate px-4 py-2.5 text-muted-foreground">
                       {line.accountName}
                     </td>
-                    <td className="px-4 py-2.5 text-right">{line.debit ? formatMoney(line.debit) : "—"}</td>
-                    <td className="px-4 py-2.5 text-right">{line.credit ? formatMoney(line.credit) : "—"}</td>
-                    <td className="px-4 py-2.5 text-right font-medium">{formatMoney(line.balance)}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      {line.debit ? formatMoney(line.debit) : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      {line.credit ? formatMoney(line.credit) : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-medium">
+                      {formatMoney(line.balance)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -134,7 +157,9 @@ export function AccountingLedgerWorkspace({ initialRecordId }: { initialRecordId
 
       {!selectedId ? (
         <WorkspaceTablePanel>
-          <WorkspaceTableEmptyState>Select a ledger account to view its register.</WorkspaceTableEmptyState>
+          <WorkspaceTableEmptyState>
+            Select a ledger account to view its register.
+          </WorkspaceTableEmptyState>
         </WorkspaceTablePanel>
       ) : null}
     </WorkspacePage>

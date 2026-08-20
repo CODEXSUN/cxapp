@@ -15,14 +15,16 @@ type DestinationsRow = {
 
 export class DestinationsRepository {
   async list(filters: DestinationsListFilters = {}) {
-    const rows = await sql<DestinationsRow>`SELECT id, name, status, sort_order FROM core_destinations
+    const rows =
+      await sql<DestinationsRow>`SELECT id, name, status, sort_order FROM core_destinations
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toDestinations);
   }
 
   async find(id: string | number) {
-    const rows = await sql<DestinationsRow>`SELECT id, name, status, sort_order FROM core_destinations
+    const rows =
+      await sql<DestinationsRow>`SELECT id, name, status, sort_order FROM core_destinations
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toDestinations(rows.rows[0]) : null;
   }

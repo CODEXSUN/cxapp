@@ -15,14 +15,16 @@ type ContactGroupsRow = {
 
 export class ContactGroupsRepository {
   async list(filters: ContactGroupsListFilters = {}) {
-    const rows = await sql<ContactGroupsRow>`SELECT id, name, status, sort_order FROM core_contact_groups
+    const rows =
+      await sql<ContactGroupsRow>`SELECT id, name, status, sort_order FROM core_contact_groups
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toContactGroups);
   }
 
   async find(id: string | number) {
-    const rows = await sql<ContactGroupsRow>`SELECT id, name, status, sort_order FROM core_contact_groups
+    const rows =
+      await sql<ContactGroupsRow>`SELECT id, name, status, sort_order FROM core_contact_groups
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toContactGroups(rows.rows[0]) : null;
   }

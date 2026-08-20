@@ -31,10 +31,11 @@ export class SalesTypesRepository {
   }
 
   async create(input: SalesTypesSavePayload) {
-    const result = await sql`INSERT INTO core_sales_types (name, description, status, sort_order) VALUES
+    const result =
+      await sql`INSERT INTO core_sales_types (name, description, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.description)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 

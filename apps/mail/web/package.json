@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@cxapp/ui": "^1.0.64",
-    "@tanstack/react-query": "^5.100.10",
-    "html2canvas-pro": "^2.3.3",
+    "@tanstack/react-query": "^5.101.4",
+    "html2canvas-pro": "^2.3.9",
     "jspdf": "^4.2.1",
-    "lucide-react": "^1.22.0",
-    "react": "^19.0.0",
-    "sonner": "^2.0.7",
+    "lucide-react": "^1.33.0",
+    "react": "^19.2.8",
+    "sonner": "^2.0.8",
     "zod": "^4.4.3"
   }
 }

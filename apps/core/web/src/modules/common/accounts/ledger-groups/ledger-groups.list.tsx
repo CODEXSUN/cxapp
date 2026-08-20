@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { WorkspaceProtectedIndicator } from "@cxapp/ui/workspace/protected-indicator";
 import { WorkspaceRowActions } from "@cxapp/ui/workspace/row-actions";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";

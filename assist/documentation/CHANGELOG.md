@@ -37,6 +37,16 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Added automatic `JV-######` journal numbering when the entry number is blank.
 - Kept company and financial-year browser context session-scoped to prevent stale tenant context after login changes.
 - Verified Accounts API/web typechecks, module boundaries, and accounting E2E flows.
+- Repaired the root npm workspace installation so `@cxapp/accounts-api` and `@cxapp/accounts-web` resolve through the
+  single root `node_modules` tree during Platform startup.
+- Updated every external npm dependency to the latest registry release, including React 19.2, TanStack Table 9,
+  Tiptap 3, BullMQ 6, Framer Motion 13, Fastify 5.12, Tauri 2.11, Vite 8.2, and the current tooling packages.
+- Migrated the shared editor to the Tiptap 3 named `TextStyle` export and `setContent` options contract, and moved
+  existing table consumers to TanStack Table 9's official legacy-compatibility entry point.
+- Overrode the vulnerable transitive `deepmerge-ts` release with compatible version 8.0.1; `npm audit` now reports
+  zero known vulnerabilities and the Mail HTML-to-text parser smoke test passes.
+- Verified all workspace typechecks, lint, module boundaries, production builds, dependency layout, version
+  alignment, and live Platform API startup with Accounts routes and a healthy `/health` response.
 
 ## v-1.0.63
 

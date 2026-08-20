@@ -15,14 +15,16 @@ type AddressTypesRow = {
 
 export class AddressTypesRepository {
   async list(filters: AddressTypesListFilters = {}) {
-    const rows = await sql<AddressTypesRow>`SELECT id, name, status, sort_order FROM core_address_types
+    const rows =
+      await sql<AddressTypesRow>`SELECT id, name, status, sort_order FROM core_address_types
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toAddressTypes);
   }
 
   async find(id: string | number) {
-    const rows = await sql<AddressTypesRow>`SELECT id, name, status, sort_order FROM core_address_types
+    const rows =
+      await sql<AddressTypesRow>`SELECT id, name, status, sort_order FROM core_address_types
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toAddressTypes(rows.rows[0]) : null;
   }

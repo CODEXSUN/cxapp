@@ -12,16 +12,17 @@ export async function migrateAuthLoginAttempt(db: Kysely<PlatformDatabase>) {
     .ifNotExists()
     .addColumn("id", "integer", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(8)", (column) =>
-      column.notNull().unique().defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
+      column
+        .notNull()
+        .unique()
+        .defaultTo(sql`LOWER(SUBSTRING(MD5(UUID()),1,8))`)
     )
     .addColumn("attempt_key_hash", "char(64)", (column) => column.notNull().unique())
     .addColumn("failure_count", "integer", (column) => column.notNull().defaultTo(0))
     .addColumn("blocked_until", "datetime", (column) => column.notNull())
     .addColumn("last_failed_at", "datetime", (column) => column.notNull())
     .addColumn("status", "varchar(24)", (column) => column.notNull().defaultTo("active"))
-    .addColumn("created_by", "varchar(191)", (column) =>
-      column.notNull().defaultTo("system:auth")
-    )
+    .addColumn("created_by", "varchar(191)", (column) => column.notNull().defaultTo("system:auth"))
     .addColumn("created_at", "datetime", (column) =>
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
     )

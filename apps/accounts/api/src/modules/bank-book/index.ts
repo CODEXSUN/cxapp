@@ -2,6 +2,7 @@ export { bankBookModule } from "./bank-book.module.js";
 export { BankBookService } from "./bank-book.service.js";
 export type {
   BankBookAccount,
+  BankBookEntry,
   BankBookEntryPayload,
   BankBookRegister,
   BankBookRegisterLine

@@ -1,10 +1,7 @@
 export { accountingModule } from "./accounting.module.js";
 export { AccountingService, assertDoubleEntry } from "./accounting.service.js";
 export { accountingEventNames, buildAccountingEvent } from "./accounting.events.js";
-export type {
-  AccountingEventEnvelope,
-  AccountingEventName
-} from "./accounting.events.js";
+export type { AccountingEventEnvelope, AccountingEventName } from "./accounting.events.js";
 export type {
   Account,
   AccountGroup,

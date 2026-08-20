@@ -1,349 +1,309 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxapp/ui/components/button";
-import { Input } from "@cxapp/ui/components/input";
-import { Label } from "@cxapp/ui/components/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@cxapp/ui/components/select";
+import { WorkspaceFilters } from "@cxapp/ui/workspace/filters";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
-import {
-  WorkspaceTableEmptyState,
-  WorkspaceTableLoadingState,
-  WorkspaceTablePanel
-} from "@cxapp/ui/workspace/table";
+import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
+import { WorkspaceTableEmptyState, WorkspaceTablePanel } from "@cxapp/ui/workspace/table";
+import { buildShowingLabel } from "@cxapp/ui/workspace/utils";
 import { cn } from "@cxapp/ui/lib/utils";
-import { useAccountingContext, useAccounts, useBookRegister } from "./accounting.hooks";
-import { formatDate, formatMoney, postBookEntry } from "./accounting.services";
-import type { AccountContext, BookEntryPayload, BookEntryType } from "./accounting.types";
+import {
+  useAccountingContext,
+  useAccounts,
+  useBookRegister,
+  useCashBookContext,
+  useCashBookLedgerGroups,
+  useCashBookLedgers
+} from "./accounting.hooks";
+import { BookEntryForm } from "./accounting.book-form";
+import { BookEntryList } from "./accounting.book-list";
+import { BookEntryShow } from "./accounting.book-show";
+import {
+  createCashBookLedger,
+  formatMoney,
+  getBookEntry,
+  getJournal,
+  postBookEntry
+} from "./accounting.services";
+import type {
+  BookEntry,
+  BookEntryPayload,
+  BookRegisterLine,
+  JournalEntry
+} from "./accounting.types";
+
+type BookView =
+  | { mode: "list" }
+  | { mode: "upsert" }
+  | { entry: BookRegisterLine; source: BookEntry | JournalEntry; mode: "show" };
+
+const bookColumnCatalog = [
+  { id: "date", label: "Date" },
+  { id: "account", label: "Account" },
+  { id: "description", label: "Description" },
+  { id: "receipt", label: "Receipt" },
+  { id: "payment", label: "Payment" },
+  { id: "balance", label: "Balance" },
+  { id: "action", label: "Action" }
+] as const;
 
 export function BookWorkspace({
-  kind,
-  title,
   description,
-  technicalName
+  kind,
+  technicalName,
+  title
 }: {
-  kind: "cash" | "bank";
-  title: string;
   description: string;
+  kind: "cash" | "bank";
   technicalName: string;
+  title: string;
 }) {
   const queryClient = useQueryClient();
   const contextQuery = useAccountingContext();
-  const registerQuery = useBookRegister(kind);
   const accountsQuery = useAccounts();
-  const register = registerQuery.data;
-
-  const [draft, setDraft] = useState<{
-    accountId: string;
-    amount: string;
-    counterpartAccountId: string;
-    description: string;
-    entryDate: string;
-    entryNumber: string;
-    reference: string;
-    type: BookEntryType;
-  }>({
-    accountId: "",
-    amount: "",
-    counterpartAccountId: "",
-    description: "",
-    entryDate: new Date().toISOString().slice(0, 10),
-    entryNumber: "",
-    reference: "",
-    type: "receipt"
-  });
-
-  const bookAccounts = useMemo(() => register?.accounts ?? [], [register]);
-  const counterpartAccounts = useMemo(
+  const registerQuery = useBookRegister(kind);
+  const cashLedgersQuery = useCashBookLedgers(kind === "cash");
+  const cashBookContextQuery = useCashBookContext(kind === "cash");
+  const cashLedgerGroupsQuery = useCashBookLedgerGroups(kind === "cash");
+  const createLedger = useMutation({ mutationFn: createCashBookLedger });
+  const entryFilters = useMemo(
+    () => [
+      { id: "all", label: "All entries" },
+      { id: "receipt", label: kind === "cash" ? "Cash In" : "Receipts" },
+      { id: "payment", label: kind === "cash" ? "Cash Out" : "Payments" }
+    ],
+    [kind]
+  );
+  const columnCatalog = useMemo(
     () =>
-      (accountsQuery.data ?? []).filter(
-        (account) => !account.isGroup && account.isPostable && account.status === "active"
+      bookColumnCatalog.map((column) =>
+        column.id === "receipt"
+          ? { ...column, label: kind === "cash" ? "Cash In" : "Receipt" }
+          : column.id === "payment"
+            ? { ...column, label: kind === "cash" ? "Cash Out" : "Payment" }
+            : column
       ),
-    [accountsQuery.data]
+    [kind]
+  );
+  const [view, setView] = useState<BookView>({ mode: "list" });
+  const [search, setSearch] = useState("");
+  const [entryFilter, setEntryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(bookColumnCatalog.map((column) => [column.id, true]))
+  );
+  const register = registerQuery.data;
+  const entries = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return (register?.lines ?? []).filter((entry) => {
+      const matchesType =
+        entryFilter === "all" || (entryFilter === "receipt" ? entry.debit > 0 : entry.credit > 0);
+      const matchesSearch =
+        !query ||
+        [
+          entry.entryNumber,
+          entry.accountCode,
+          entry.accountName,
+          entry.description,
+          entry.entryDate
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(query);
+      return matchesType && matchesSearch;
+    });
+  }, [entryFilter, register?.lines, search]);
+  const totalPages = Math.max(1, Math.ceil(entries.length / rowsPerPage));
+  const pageEntries = entries.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const pageTotals = pageEntries.reduce(
+    (totals, entry) => ({
+      receipt: totals.receipt + entry.debit,
+      payment: totals.payment + entry.credit
+    }),
+    { payment: 0, receipt: 0 }
   );
 
-  const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "book", kind] });
-    await queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "accounts"] });
-    await queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "journals"] });
-  };
-
-  const entryMutation = useMutation({
+  const save = useMutation({
     mutationFn: (payload: BookEntryPayload) => postBookEntry(kind, payload),
-    onSuccess: async (journal) => {
-      await invalidate();
-      toast.success("Entry posted", { description: `${journal.entryNumber} was recorded.` });
-      setDraft((current) => ({
-        ...current,
-        accountId: "",
-        amount: "",
-        counterpartAccountId: "",
-        description: "",
-        entryNumber: "",
-        reference: ""
-      }));
-    },
-    onError: (error) => {
-      toast.error("Entry could not be posted", {
-        description: error instanceof Error ? error.message : "Please try again."
+    onSuccess: async (posted) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "book", kind] }),
+        queryClient.invalidateQueries({
+          queryKey: ["accounts", "accounting", "cash-book", "context"]
+        }),
+        queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "accounts"] }),
+        queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "journals"] }),
+        queryClient.invalidateQueries({ queryKey: ["accounts", "accounting", "ledger"] })
+      ]);
+      const refreshed = await registerQuery.refetch();
+      const entry = refreshed.data?.lines.find((line) => line.sourceId === posted.id);
+      toast.success(`${kind === "cash" ? "Cash" : "Bank"} entry posted`, {
+        description: posted.entryNumber
       });
-    }
+      setView(entry ? { entry, source: posted, mode: "show" } : { mode: "list" });
+    },
+    onError: (error) => toast.error("Entry could not be posted", { description: message(error) })
   });
 
-  function submit() {
-    const context: AccountContext | undefined = contextQuery.data;
-    if (!context) {
-      toast.error("Accounting context is not available");
-      return;
+  async function openEntry(entry: BookRegisterLine, print = false) {
+    try {
+      const source =
+        entry.sourceType === "journal"
+          ? await getJournal(entry.sourceId)
+          : await getBookEntry(kind, entry.sourceId);
+      setView({ entry, source, mode: "show" });
+      if (print)
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+    } catch (error) {
+      toast.error("Entry could not be opened", { description: message(error) });
     }
-    const amount = Number(draft.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Enter a valid amount greater than zero");
-      return;
-    }
-    if (!draft.accountId) {
-      toast.error("Select a cash or bank account");
-      return;
-    }
-    if (!draft.counterpartAccountId) {
-      toast.error("Select a counterpart account");
-      return;
-    }
-    if (!draft.entryDate) {
-      toast.error("Entry date is required");
-      return;
-    }
-    if (!draft.description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
-    const payload: BookEntryPayload = {
-      accountId: draft.accountId,
-      amount,
-      companyId: context.companyId,
-      counterpartAccountId: draft.counterpartAccountId,
-      description: draft.description.trim(),
-      entryDate: draft.entryDate,
-      financialYearId: context.financialYearId,
-      type: draft.type
-    };
-    if (draft.entryNumber.trim()) payload.entryNumber = draft.entryNumber.trim();
-    if (draft.reference.trim()) payload.reference = draft.reference.trim();
-    entryMutation.mutate(payload);
   }
+
+  if (view.mode === "upsert")
+    return (
+      <BookEntryForm
+        accounts={accountsQuery.data ?? []}
+        bookAccounts={register?.accounts ?? []}
+        context={contextQuery.data ?? null}
+        cashBookContext={cashBookContextQuery.data ?? null}
+        cashLedgers={cashLedgersQuery.data ?? []}
+        cashLedgersLoading={cashLedgersQuery.isLoading}
+        creatingLedger={createLedger.isPending}
+        {...(save.error ? { error: message(save.error) } : {})}
+        kind={kind}
+        ledgerGroups={cashLedgerGroupsQuery.data ?? []}
+        onBack={() => setView({ mode: "list" })}
+        onSave={(payload) => save.mutate(payload)}
+        onCreateLedger={async (payload) => {
+          const created = await createLedger.mutateAsync(payload);
+          await cashLedgersQuery.refetch();
+          toast.success("Ledger created", { description: created.name });
+          return created;
+        }}
+        saving={save.isPending}
+      />
+    );
+
+  if (view.mode === "show")
+    return (
+      <BookEntryShow
+        entry={view.entry}
+        source={view.source}
+        kind={kind}
+        onBack={() => setView({ mode: "list" })}
+      />
+    );
 
   return (
     <WorkspacePage
-      title={title}
+      action={
+        <div className="flex gap-2">
+          <Button
+            disabled={registerQuery.isFetching}
+            onClick={() => void registerQuery.refetch()}
+            type="button"
+            variant="outline"
+          >
+            <RefreshCw className={cn("size-4", registerQuery.isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+          <Button onClick={() => setView({ mode: "upsert" })} type="button">
+            <Plus className="size-4" />
+            New {kind} entry
+          </Button>
+        </div>
+      }
       description={description}
       technicalName={technicalName}
-      actions={
-        <Button
-          className="h-9 rounded-md"
-          disabled={registerQuery.isFetching}
-          onClick={() => void registerQuery.refetch()}
-          type="button"
-          variant="outline"
-        >
-          <RefreshCw className={cn("size-4", registerQuery.isFetching && "animate-spin")} />
-          Refresh
-        </Button>
-      }
+      title={title}
     >
-      <WorkspaceTablePanel>
-        <div className="flex flex-wrap items-center gap-6 px-4 py-3 text-sm">
-          <div>
-            <span className="text-muted-foreground">Opening balance</span>
-            <div className="font-medium text-foreground">{formatMoney(register?.openingBalance ?? 0)}</div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Closing balance</span>
-            <div className="font-semibold text-foreground">{formatMoney(register?.closingBalance ?? 0)}</div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Accounts</span>
-            <div className="font-medium text-foreground">{bookAccounts.length}</div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Transactions</span>
-            <div className="font-medium text-foreground">{register?.lines.length ?? 0}</div>
-          </div>
-        </div>
-      </WorkspaceTablePanel>
-
-      <div className="mb-3 px-1">
-        <h2 className="text-lg font-semibold">Record {kind === "cash" ? "cash" : "bank"} entry</h2>
-        <p className="text-sm text-muted-foreground">
-          Post a balanced receipt or payment to the {kind === "cash" ? "cash" : "bank"} book.
-        </p>
-      </div>
-      <WorkspaceTablePanel>
-        <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="book-type">Type</Label>
-            <Select
-              onValueChange={(value) => setDraft((current) => ({ ...current, type: value as BookEntryType }))}
-              value={draft.type}
-            >
-              <SelectTrigger id="book-type">
-                <SelectValue placeholder="Receipt or payment" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="receipt">Receipt (money in)</SelectItem>
-                <SelectItem value="payment">Payment (money out)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-account">{kind === "cash" ? "Cash" : "Bank"} account</Label>
-            <Select
-              onValueChange={(value) => setDraft((current) => ({ ...current, accountId: value }))}
-              {...(draft.accountId ? { value: draft.accountId } : {})}
-            >
-              <SelectTrigger id="book-account">
-                <SelectValue placeholder="Select an account" />
-              </SelectTrigger>
-              <SelectContent>
-                {bookAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.code} · {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-counterpart">Counterpart account</Label>
-            <Select
-              onValueChange={(value) => setDraft((current) => ({ ...current, counterpartAccountId: value }))}
-              {...(draft.counterpartAccountId ? { value: draft.counterpartAccountId } : {})}
-            >
-              <SelectTrigger id="book-counterpart">
-                <SelectValue placeholder="Select an account" />
-              </SelectTrigger>
-              <SelectContent>
-                {counterpartAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.code} · {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-amount">Amount</Label>
-            <Input
-              id="book-amount"
-              inputMode="decimal"
-              onChange={(event) => setDraft((current) => ({ ...current, amount: event.target.value }))}
-              placeholder="0.00"
-              type="number"
-              value={draft.amount}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-date">Date</Label>
-            <Input
-              id="book-date"
-              onChange={(event) => setDraft((current) => ({ ...current, entryDate: event.target.value }))}
-              type="date"
-              value={draft.entryDate}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-description">Description</Label>
-            <Input
-              id="book-description"
-              onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-              placeholder="What is this for?"
-              value={draft.description}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="book-reference">Reference</Label>
-            <Input
-              id="book-reference"
-              onChange={(event) => setDraft((current) => ({ ...current, reference: event.target.value }))}
-              placeholder="Optional ref no."
-              value={draft.reference}
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <Button
-              className="h-9 flex-1"
-              disabled={entryMutation.isPending}
-              onClick={submit}
-              type="button"
-            >
-              {entryMutation.isPending ? "Posting…" : "Post entry"}
-            </Button>
-          </div>
-        </div>
-      </WorkspaceTablePanel>
-
-      {registerQuery.isLoading ? (
-        <WorkspaceTablePanel>
-          <WorkspaceTableLoadingState />
-        </WorkspaceTablePanel>
-      ) : null}
-
+      <WorkspaceFilters
+        columnOptions={columnCatalog.map((column) => ({
+          ...column,
+          checked: Boolean(visibleColumns[column.id]),
+          onCheckedChange: (checked: boolean) =>
+            setVisibleColumns((current) => ({ ...current, [column.id]: checked }))
+        }))}
+        filterOptions={entryFilters}
+        filterValue={entryFilter}
+        onFilterValueChange={(value) => {
+          setEntryFilter(value);
+          setCurrentPage(1);
+        }}
+        onSearchValueChange={(value) => {
+          setSearch(value);
+          setCurrentPage(1);
+        }}
+        onShowAllColumns={() =>
+          setVisibleColumns(Object.fromEntries(columnCatalog.map((column) => [column.id, true])))
+        }
+        searchPlaceholder={`Search ${kind} entry, account, description, or date`}
+        searchValue={search}
+      />
       {registerQuery.isError ? (
         <WorkspaceTablePanel>
-          <WorkspaceTableEmptyState>
-            {registerQuery.error instanceof Error ? registerQuery.error.message : "The register could not be loaded."}
-          </WorkspaceTableEmptyState>
+          <WorkspaceTableEmptyState>{message(registerQuery.error)}</WorkspaceTableEmptyState>
         </WorkspaceTablePanel>
       ) : null}
-
-      {register && register.lines.length === 0 ? (
-        <WorkspaceTablePanel>
-          <WorkspaceTableEmptyState>No transactions recorded in this book yet.</WorkspaceTableEmptyState>
-        </WorkspaceTablePanel>
+      {!registerQuery.isError ? (
+        <BookEntryList
+          entries={pageEntries}
+          kind={kind}
+          loading={registerQuery.isLoading}
+          onPrint={(entry) => void openEntry(entry, true)}
+          onView={(entry) => void openEntry(entry)}
+          visibleColumns={visibleColumns}
+        />
       ) : null}
-
-      {register && register.lines.length > 0 ? (
-        <WorkspaceTablePanel>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  {["Date", "Entry", "Account", "Description", "Debit", "Credit", "Balance"].map((heading) => (
-                    <th
-                      key={heading}
-                      className={cn(
-                        "border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
-                        ["Debit", "Credit", "Balance"].includes(heading) ? "text-right" : "text-left"
-                      )}
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {register.lines.map((line) => (
-                  <tr key={line.id} className="border-b border-border/70 last:border-b-0 hover:bg-muted/20">
-                    <td className="whitespace-nowrap px-4 py-2.5">{formatDate(line.entryDate)}</td>
-                    <td className="px-4 py-2.5 font-medium">{line.entryNumber}</td>
-                    <td className="px-4 py-2.5">{line.accountCode} · {line.accountName}</td>
-                    <td className="max-w-72 truncate px-4 py-2.5 text-muted-foreground">{line.description}</td>
-                    <td className="px-4 py-2.5 text-right">{line.debit ? formatMoney(line.debit) : "—"}</td>
-                    <td className="px-4 py-2.5 text-right">{line.credit ? formatMoney(line.credit) : "—"}</td>
-                    <td className="px-4 py-2.5 text-right font-medium">{formatMoney(line.balance)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </WorkspaceTablePanel>
-      ) : null}
+      <WorkspaceTablePanel>
+        <div className="flex flex-wrap items-center justify-between gap-6 px-4 py-2.5 text-sm">
+          <Balance label="Opening balance" value={formatMoney(register?.openingBalance ?? 0)} />
+          <Balance
+            label={kind === "cash" ? "Total Cash In" : "Total receipts"}
+            value={formatMoney(pageTotals.receipt)}
+          />
+          <Balance
+            label={kind === "cash" ? "Total Cash Out" : "Total payments"}
+            value={formatMoney(pageTotals.payment)}
+          />
+          <Balance
+            label="Closing balance"
+            strong
+            value={formatMoney(register?.closingBalance ?? 0)}
+          />
+        </div>
+      </WorkspaceTablePanel>
+      <WorkspacePagination
+        onNextPage={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+        onPageChange={setCurrentPage}
+        onPreviousPage={() => setCurrentPage((page) => Math.max(1, page - 1))}
+        onRowsPerPageChange={(value) => {
+          setRowsPerPage(value);
+          setCurrentPage(1);
+        }}
+        page={currentPage}
+        rowsPerPage={rowsPerPage}
+        showingLabel={buildShowingLabel(currentPage, rowsPerPage, entries.length)}
+        singularLabel={`${kind} entries`}
+        totalCount={entries.length}
+        totalPages={totalPages}
+      />
     </WorkspacePage>
   );
+}
+
+function Balance({ label, strong, value }: { label: string; strong?: boolean; value: string }) {
+  return (
+    <div>
+      <span className="text-muted-foreground">{label}</span>
+      <div className={cn("font-medium text-foreground", strong && "font-semibold")}>{value}</div>
+    </div>
+  );
+}
+
+function message(error: unknown) {
+  return error instanceof Error ? error.message : "An unexpected Accounts error occurred.";
 }

@@ -369,9 +369,7 @@ async function ensureMigrationLedger<Database>(database: Kysely<Database>, ledge
     if (ledgerTable === migrationSchemaTableName) {
       const adoption = planMigrationSchemaAdoption(await listDatabaseTables(database));
       if (adoption) {
-        await sql
-          .raw(`RENAME TABLE \`${adoption.from}\` TO \`${adoption.to}\``)
-          .execute(database);
+        await sql.raw(`RENAME TABLE \`${adoption.from}\` TO \`${adoption.to}\``).execute(database);
       }
     }
 

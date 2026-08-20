@@ -28,7 +28,9 @@ const bankBookRegisterLineSchema = z.object({
   entryDate: z.string(),
   entryNumber: z.string(),
   id: z.string(),
-  journalId: z.string()
+  postedEntryId: z.string(),
+  sourceId: z.string(),
+  sourceType: z.enum(["journal", "cash-book", "bank-book"])
 });
 
 const bankBookRegisterSchema = z.object({
@@ -51,10 +53,23 @@ const bankBookEntrySchema = z.object({
   type: z.enum(["receipt", "payment"])
 });
 
-const bankBookJournalSchema = z.object({
+const bankBookEntryResponseSchema = z.object({
+  account: bankBookAccountSchema,
+  amount: z.number(),
+  counterpart: z.object({
+    accountId: z.number().int().positive(),
+    code: z.string(),
+    id: z.string(),
+    name: z.string()
+  }),
+  description: z.string(),
+  entryDate: z.string(),
   id: z.string(),
   entryNumber: z.string(),
-  status: z.string()
+  postedEntryId: z.string(),
+  reference: z.string(),
+  status: z.enum(["posted", "reversed"]),
+  type: z.enum(["receipt", "payment"])
 });
 
 export async function registerBankBookRoutes(app: FastifyInstance) {
@@ -62,16 +77,31 @@ export async function registerBankBookRoutes(app: FastifyInstance) {
     method: "GET",
     url: "/bank-book",
     schemas: { response: bankBookRegisterSchema },
-    handler: async ({ request }) =>
-      required(await service.register(databaseName(request)))
+    handler: async ({ request }) => required(await service.register(databaseName(request)))
+  });
+
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/bank-book/entries/:id",
+    schemas: {
+      params: z.object({ id: z.string().regex(/^[0-9a-f]{8}$/) }),
+      response: bankBookEntryResponseSchema
+    },
+    handler: async ({ params, request }) =>
+      requiredEntry(await service.getEntry(databaseName(request), params.id))
   });
 
   registerContractRoute(app, {
     method: "POST",
     url: "/bank-book/entries",
-    schemas: { body: bankBookEntrySchema, response: bankBookJournalSchema },
+    schemas: { body: bankBookEntrySchema, response: bankBookEntryResponseSchema },
     handler: ({ body, request }) => service.postEntry(databaseName(request), body)
   });
+}
+
+function requiredEntry<T>(value: T | null): T {
+  if (!value) throw AppError.notFound("Bank entry was not found.");
+  return value;
 }
 
 function databaseName(request: FastifyRequest) {

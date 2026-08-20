@@ -21,7 +21,9 @@ export type BankBookRegisterLine = {
   entryDate: string;
   entryNumber: string;
   id: string;
-  journalId: string;
+  postedEntryId: string;
+  sourceId: string;
+  sourceType: "journal" | "cash-book" | "bank-book";
 };
 
 export type BankBookRegister = {
@@ -41,5 +43,19 @@ export type BankBookEntryPayload = {
   entryNumber?: string | undefined;
   financialYearId: number;
   reference?: string | undefined;
+  type: BankBookEntryType;
+};
+
+export type BankBookEntry = {
+  account: BankBookAccount;
+  amount: number;
+  counterpart: { accountId: number; code: string; id: string; name: string };
+  description: string;
+  entryDate: string;
+  entryNumber: string;
+  id: string;
+  postedEntryId: string;
+  reference: string;
+  status: "posted" | "reversed";
   type: BankBookEntryType;
 };

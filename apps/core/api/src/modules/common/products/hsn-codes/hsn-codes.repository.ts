@@ -31,10 +31,11 @@ export class HsnCodesRepository {
   }
 
   async create(input: HsnCodesSavePayload) {
-    const result = await sql`INSERT INTO core_hsn_codes (code, description, status, sort_order) VALUES
+    const result =
+      await sql`INSERT INTO core_hsn_codes (code, description, status, sort_order) VALUES
       (${normalizeString(input.code)}, ${normalizeString(input.description)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 

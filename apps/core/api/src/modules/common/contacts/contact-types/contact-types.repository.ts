@@ -15,14 +15,16 @@ type ContactTypesRow = {
 
 export class ContactTypesRepository {
   async list(filters: ContactTypesListFilters = {}) {
-    const rows = await sql<ContactTypesRow>`SELECT id, name, status, sort_order FROM core_contact_types
+    const rows =
+      await sql<ContactTypesRow>`SELECT id, name, status, sort_order FROM core_contact_types
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toContactTypes);
   }
 
   async find(id: string | number) {
-    const rows = await sql<ContactTypesRow>`SELECT id, name, status, sort_order FROM core_contact_types
+    const rows =
+      await sql<ContactTypesRow>`SELECT id, name, status, sort_order FROM core_contact_types
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toContactTypes(rows.rows[0]) : null;
   }

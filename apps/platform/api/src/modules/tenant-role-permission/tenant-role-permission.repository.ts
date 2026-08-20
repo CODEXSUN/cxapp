@@ -61,7 +61,9 @@ export class TenantRolePermissionRepository {
     return this.find(id);
   }
   async setStatus(id: number, status: TenantRolePermissionStatus) {
-    await sql`UPDATE app_role_permissions SET status=${status} WHERE id=${id}`.execute(this.database);
+    await sql`UPDATE app_role_permissions SET status=${status} WHERE id=${id}`.execute(
+      this.database
+    );
     return this.find(id);
   }
   async forceDelete(id: number) {

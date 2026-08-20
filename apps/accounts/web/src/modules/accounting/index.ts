@@ -19,6 +19,7 @@ export type {
   AccountGroup,
   AccountingPeriod,
   BookEntryPayload,
+  BookEntry,
   BookRegister,
   JournalEntry,
   JournalPageResult,

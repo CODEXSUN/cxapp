@@ -32,10 +32,11 @@ export class PrioritiesRepository {
   }
 
   async create(input: PrioritiesSavePayload) {
-    const result = await sql`INSERT INTO core_priorities (name, colour, tag, status, sort_order) VALUES
+    const result =
+      await sql`INSERT INTO core_priorities (name, colour, tag, status, sort_order) VALUES
       (${normalizeString(input.name)}, ${normalizeString(input.colour)}, ${normalizeString(input.tag)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 

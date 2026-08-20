@@ -22,12 +22,8 @@ export async function migrateSubscriptionModule(db: Kysely<PlatformDatabase>) {
       ["id"],
       (constraint) => constraint.onDelete("cascade")
     )
-    .addForeignKeyConstraint(
-      "subscriptions_plan_fk",
-      ["plan_id"],
-      "plans",
-      ["id"],
-      (constraint) => constraint.onDelete("restrict")
+    .addForeignKeyConstraint("subscriptions_plan_fk", ["plan_id"], "plans", ["id"], (constraint) =>
+      constraint.onDelete("restrict")
     )
     .execute();
 }

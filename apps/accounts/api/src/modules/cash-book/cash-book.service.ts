@@ -1,65 +1,42 @@
 import { AppError } from "@cxapp/framework/errors";
 import { currentAccountsScope } from "../../auth/accounts-scope.js";
-import { AccountingService } from "../accounting/accounting.service.js";
-import { money } from "../accounting/accounting.repository.js";
 import { CashBookRepository } from "./cash-book.repository.js";
 import type { CashBookEntryPayload, CashBookRegister } from "./cash-book.types.js";
 
 export class CashBookService {
-  constructor(
-    private readonly repository = new CashBookRepository(),
-    private readonly accounting = new AccountingService()
-  ) {}
+  constructor(private readonly repository = new CashBookRepository()) {}
 
   async register(databaseName: string): Promise<CashBookRegister | null> {
     return this.repository.register(databaseName);
   }
 
+  context(databaseName: string) {
+    return this.repository.context(databaseName);
+  }
+
+  ledgers(databaseName: string) {
+    return this.repository.ledgers(databaseName);
+  }
+
+  getEntry(databaseName: string, id: string) {
+    return this.repository.getEntry(databaseName, id);
+  }
+
   async postEntry(databaseName: string, input: CashBookEntryPayload) {
     const scope = currentAccountsScope();
-    const amount = money(input.amount);
-    if (amount <= 0) throw AppError.validation("The entry amount must be greater than zero.");
-    const cashAccount = await this.repository.findCashAccount(databaseName, input.accountId);
-    if (!cashAccount)
-      throw AppError.validation("The selected cash account is invalid or inactive.");
-    const counterpart = await this.accounting.getAccount(databaseName, input.counterpartAccountId);
-    if (!counterpart)
-      throw AppError.validation("The selected counterpart account is invalid or inactive.");
-
-    const isReceipt = input.type === "receipt";
-    const entryNumber =
-      input.entryNumber?.trim().toUpperCase() ||
-      (await this.repository.nextEntryNumber(databaseName));
-
-    const journal = await this.accounting.createJournal(databaseName, {
-      accountingPeriodId: null,
-      companyId: scope.companyId,
-      description: input.description.trim(),
-      entryDate: input.entryDate,
-      entryNumber,
-      financialYearId: scope.financialYearId,
-      lines: [
-        {
-          accountId: cashAccount.accountId,
-          credit: isReceipt ? 0 : amount,
-          debit: isReceipt ? amount : 0,
-          description: input.description.trim()
-        },
-        {
-          accountId: counterpart.accountId,
-          credit: isReceipt ? amount : 0,
-          debit: isReceipt ? 0 : amount,
-          description: input.description.trim()
-        }
-      ],
-      reference: input.reference?.trim() ?? "",
-      status: "ready_to_post"
-    });
-
-    const submitted = await this.accounting.submitJournal(databaseName, journal.id);
-    if (!submitted) throw AppError.conflict("The entry could not be submitted.");
-    const posted = await this.accounting.postJournal(databaseName, submitted.id, "system:cash-book");
-    if (!posted) throw AppError.conflict("The entry could not be posted.");
-    return posted;
+    if (input.companyId !== scope.companyId || input.financialYearId !== scope.financialYearId)
+      throw AppError.validation("Cash entry context does not match the active accounting scope.");
+    const lines = input.lines.map((line) => ({
+      amount: Math.round(Number(line.amount || 0) * 100) / 100,
+      ledgerId: line.ledgerId
+    }));
+    if (lines.some((line) => line.amount <= 0))
+      throw AppError.validation("Every cash entry row must have an amount greater than zero.");
+    if (lines.some((line) => line.ledgerId === input.cashLedgerId))
+      throw AppError.validation("Cash and counterpart ledgers must be different.");
+    if (new Set(lines.map((line) => line.ledgerId)).size !== lines.length)
+      throw AppError.validation("Each counterpart ledger can be selected only once.");
+    const amount = Math.round(lines.reduce((total, line) => total + line.amount, 0) * 100) / 100;
+    return this.repository.postEntry(databaseName, { ...input, amount, lines });
   }
 }

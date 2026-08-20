@@ -30,12 +30,8 @@ export async function migrateEntitlementModule(db: Kysely<PlatformDatabase>) {
       ["id"],
       (constraint) => constraint.onDelete("cascade")
     )
-    .addForeignKeyConstraint(
-      "entitlements_plan_fk",
-      ["plan_id"],
-      "plans",
-      ["id"],
-      (constraint) => constraint.onDelete("cascade")
+    .addForeignKeyConstraint("entitlements_plan_fk", ["plan_id"], "plans", ["id"], (constraint) =>
+      constraint.onDelete("cascade")
     )
     .addForeignKeyConstraint(
       "entitlements_app_fk",

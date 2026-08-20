@@ -37,15 +37,18 @@ export class StateRepository {
   async countryExists(countryId: string | number) {
     const rows = await sql<{
       id: number;
-    }>`SELECT id FROM core_countries WHERE id=${Number(countryId)} LIMIT 1`.execute(getCoreDatabase());
+    }>`SELECT id FROM core_countries WHERE id=${Number(countryId)} LIMIT 1`.execute(
+      getCoreDatabase()
+    );
     return Boolean(rows.rows[0]);
   }
 
   async create(input: StateSavePayload) {
-    const result = await sql`INSERT INTO core_states (country_id, code, name, sort_order, status) VALUES
+    const result =
+      await sql`INSERT INTO core_states (country_id, code, name, sort_order, status) VALUES
       (${Number(input.countryId)}, ${input.code}, ${input.name}, ${input.sortOrder}, ${input.status})`.execute(
-      getCoreDatabase()
-    );
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 
@@ -57,7 +60,9 @@ export class StateRepository {
   }
 
   async setStatus(id: string | number, status: StateStatus) {
-    await sql`UPDATE core_states SET status=${status} WHERE id=${Number(id)}`.execute(getCoreDatabase());
+    await sql`UPDATE core_states SET status=${status} WHERE id=${Number(id)}`.execute(
+      getCoreDatabase()
+    );
     return this.find(id);
   }
 

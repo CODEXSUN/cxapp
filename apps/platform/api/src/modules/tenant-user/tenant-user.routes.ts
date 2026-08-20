@@ -198,10 +198,11 @@ async function requireTenantUserDatabase(tenant: Tenant) {
       throw setupRequiredError(tenant, "The tenant database has not been installed.");
     }
     const message = error instanceof Error ? error.message : String(error);
-    throw AppError.conflict(
-      `Could not connect to tenant database "${tenant.dbName}": ${message}`,
-      { databaseName: tenant.dbName, setupRequired: false, tenantId: tenant.id }
-    );
+    throw AppError.conflict(`Could not connect to tenant database "${tenant.dbName}": ${message}`, {
+      databaseName: tenant.dbName,
+      setupRequired: false,
+      tenantId: tenant.id
+    });
   } finally {
     await connection?.end();
   }

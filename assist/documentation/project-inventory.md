@@ -129,6 +129,17 @@ Current Billing module:
 
 - `sales`
 
+### Accounts
+
+Accounts owns tenant-scoped operational accounting and is composed by Platform through its public API and web contracts.
+
+- `apps/accounts/api`: chart of accounts, periods, manual journals, Cash Book, Bank Book, centralized posting, ledger reads, tenant migrations, and deterministic seeds.
+- `apps/accounts/web`: Accounts overview, Journal, Ledger, Accounting Periods, Cash Book, and Bank Book workspaces bundled by Platform Web.
+- Manual journals remain independent in `acc_journal_entries` and `acc_journal_lines`.
+- Cash and Bank source documents are independently persisted in `acc_cash_entries` and `acc_bank_entries`.
+- Finalized postings are immutable centralized records in `acc_entries` and `acc_entry_lines`; source records link to their posted entry, and reversal creates an opposing centralized entry.
+- The legacy `acc_ledger` table remains migration-compatible, but current posting and ledger reads use the centralized entry tables.
+
 ### Mail
 
 Mail owns tenant-scoped outbound delivery, inbound synchronization, message history, attachments, and provider configuration.

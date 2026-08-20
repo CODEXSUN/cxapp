@@ -27,6 +27,8 @@ function accountsPermission(request: FastifyRequest) {
   const route = request.routeOptions.url ?? request.url;
   if (method === "GET" || method === "HEAD") return "accounts.accounting.view";
   if (/\/(submit|post|reverse|cancel)$/.test(route)) return "accounts.accounting.post";
+  if (method === "POST" && /^\/(cash|bank)-book\/entries$/.test(route))
+    return "accounts.accounting.post";
   if (method === "POST") return "accounts.accounting.create";
   if (method === "PUT" || method === "PATCH") return "accounts.accounting.update";
   return "accounts.accounting.delete";

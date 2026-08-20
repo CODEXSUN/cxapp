@@ -12,9 +12,10 @@ export class CompanyRepository {
     return rows.rows.map(map);
   }
   async find(id: string | number) {
-    const rows = await sql<Row>`SELECT * FROM core_companies WHERE id=${Number(id)} LIMIT 1`.execute(
-      getCoreDatabase()
-    );
+    const rows =
+      await sql<Row>`SELECT * FROM core_companies WHERE id=${Number(id)} LIMIT 1`.execute(
+        getCoreDatabase()
+      );
     return rows.rows[0] ? map(rows.rows[0]) : null;
   }
   async create(input: CompanySaveInput) {

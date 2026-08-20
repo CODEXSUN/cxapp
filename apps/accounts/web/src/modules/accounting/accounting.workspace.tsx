@@ -39,6 +39,16 @@ const statusFilters = [
   { id: "reversed", label: "Reversed" }
 ];
 
+const journalColumnCatalog = [
+  { id: "date", label: "Date" },
+  { id: "reference", label: "Reference" },
+  { id: "description", label: "Description" },
+  { id: "debit", label: "Debit" },
+  { id: "credit", label: "Credit" },
+  { id: "status", label: "Status" },
+  { id: "action", label: "Action" }
+] as const;
+
 type JournalView =
   | { mode: "list" }
   | { mode: "show"; journal: JournalEntry }
@@ -54,6 +64,9 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(journalColumnCatalog.map((column) => [column.id, true]))
+  );
   const journalsQuery = useJournalsPage({
     page: currentPage,
     pageSize: rowsPerPage,
@@ -94,9 +107,12 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
       id ? updateJournal(id, payload) : createJournal(payload),
     onSuccess: async (journal) => {
       await invalidateJournals();
-      toast.success(view.mode === "upsert" && view.journal ? "Journal updated" : "Journal created", {
-        description: `${journal.entryNumber} is ready.`
-      });
+      toast.success(
+        view.mode === "upsert" && view.journal ? "Journal updated" : "Journal created",
+        {
+          description: `${journal.entryNumber} is ready.`
+        }
+      );
       setView({ mode: "show", journal });
     },
     onError: (error) => {
@@ -115,7 +131,8 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
     },
     onError: (error) => {
       toast.error("Post failed", {
-        description: error instanceof Error ? error.message : "Only ready-to-post entries can be posted."
+        description:
+          error instanceof Error ? error.message : "Only ready-to-post entries can be posted."
       });
     }
   });
@@ -194,7 +211,11 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
         onEdit={() => setView({ mode: "upsert", journal: view.journal, returnTo: "show" })}
         onPost={() => postMutation.mutate(view.journal.id)}
         onReverse={() => {
-          if (window.confirm(`Reverse ${view.journal.entryNumber}? A balanced reversal will be posted.`))
+          if (
+            window.confirm(
+              `Reverse ${view.journal.entryNumber}? A balanced reversal will be posted.`
+            )
+          )
             reverseMutation.mutate(view.journal.id);
         }}
       />
@@ -215,7 +236,9 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
             companyId: view.journal?.companyId ?? companyId ?? 0,
             financialYearId: view.journal?.financialYearId ?? financialYearId ?? 0
           };
-          saveMutation.mutate(view.journal ? { id: view.journal.id, payload: body } : { payload: body });
+          saveMutation.mutate(
+            view.journal ? { id: view.journal.id, payload: body } : { payload: body }
+          );
         }}
       />
     );
@@ -223,7 +246,7 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
 
   return (
     <WorkspacePage
-      title="Journal"
+      title="Journals"
       description="Create balanced double-entry journal entries, submit, post, and reverse with full audit."
       technicalName="page.accounts.journal"
       actions={
@@ -246,6 +269,12 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
       }
     >
       <WorkspaceFilters
+        columnOptions={journalColumnCatalog.map((column) => ({
+          ...column,
+          checked: Boolean(visibleColumns[column.id]),
+          onCheckedChange: (checked: boolean) =>
+            setVisibleColumns((current) => ({ ...current, [column.id]: checked }))
+        }))}
         filterOptions={statusFilters}
         filterValue={statusFilter}
         onFilterValueChange={(value) => {
@@ -256,6 +285,11 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
           setSearchValue(value);
           setCurrentPage(1);
         }}
+        onShowAllColumns={() =>
+          setVisibleColumns(
+            Object.fromEntries(journalColumnCatalog.map((column) => [column.id, true]))
+          )
+        }
         searchPlaceholder="Search entry, reference, description, date, or status"
         searchValue={searchValue}
       />
@@ -279,7 +313,11 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
         loading={journalsQuery.isLoading}
         onEdit={(journal) => setView({ mode: "upsert", journal, returnTo: "list" })}
         onPost={(journal) => {
-          if (window.confirm(`Post ${journal.entryNumber}? This will write to the ledger and cannot be edited.`))
+          if (
+            window.confirm(
+              `Post ${journal.entryNumber}? This will write to the ledger and cannot be edited.`
+            )
+          )
             postMutation.mutate(journal.id);
         }}
         onReverse={(journal) => {
@@ -291,7 +329,12 @@ export function AccountingWorkspace({ initialRecordId }: { initialRecordId?: str
           if (window.confirm(`Delete ${journal.entryNumber}? This cannot be undone.`))
             deleteMutation.mutate(journal.id);
         }}
+        onPrint={(journal) => {
+          setView({ mode: "show", journal });
+          window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+        }}
         onView={(journal) => setView({ mode: "show", journal })}
+        visibleColumns={visibleColumns}
       />
       <BalanceSummary
         credit={pageTotals.credit}

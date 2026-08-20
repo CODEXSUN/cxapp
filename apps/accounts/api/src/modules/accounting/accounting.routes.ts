@@ -7,17 +7,13 @@ import { AccountingService } from "./accounting.service.js";
 
 const service = new AccountingService();
 
-const idSchema = z.object({ id: z.string().regex(/^[0-9a-f]{8}$/, "ID must be 8 hex characters.") });
+const idSchema = z.object({
+  id: z.string().regex(/^[0-9a-f]{8}$/, "ID must be 8 hex characters.")
+});
 const accountTypeSchema = z.enum(["asset", "liability", "equity", "income", "expense"]);
 const normalBalanceSchema = z.enum(["debit", "credit"]);
 const recordStatusSchema = z.enum(["active", "inactive"]);
-const journalStatusSchema = z.enum([
-  "draft",
-  "ready_to_post",
-  "posted",
-  "cancelled",
-  "reversed"
-]);
+const journalStatusSchema = z.enum(["draft", "ready_to_post", "posted", "cancelled", "reversed"]);
 const periodStatusSchema = z.enum(["open", "closed", "locked"]);
 
 const contextSchema = z.object({
@@ -146,7 +142,9 @@ const pageQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(10).max(200).default(100),
   search: z.string().default(""),
-  status: z.enum(["all", "draft", "ready_to_post", "posted", "cancelled", "reversed"]).default("all")
+  status: z
+    .enum(["all", "draft", "ready_to_post", "posted", "cancelled", "reversed"])
+    .default("all")
 });
 
 const ledgerSchema = z.object({
@@ -209,7 +207,11 @@ export async function registerAccountingRoutes(app: FastifyInstance) {
       schemas: { response: schema },
       handler: ({ request }) => load(databaseName(request))
     });
-  const getById = <T>(url: string, schema: z.ZodType<T>, load: (db: string, id: string) => Promise<T | null>) =>
+  const getById = <T>(
+    url: string,
+    schema: z.ZodType<T>,
+    load: (db: string, id: string) => Promise<T | null>
+  ) =>
     registerContractRoute(app, {
       method: "GET",
       url,

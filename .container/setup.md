@@ -24,12 +24,12 @@ runtime.
 
 ## Containers and host ports
 
-| Service      | Container          | Host binding      |
-| ------------ | ------------------ | ----------------- |
+| Service      | Container       | Host binding      |
+| ------------ | --------------- | ----------------- |
 | MariaDB      | `cxapp-mariadb` | `127.0.0.1:3307`  |
 | Redis        | `cxapp-redis`   | `127.0.0.1:6379`  |
-| Platform API | `cxapp-api`        | `127.0.0.1:17010` |
-| Platform Web | `cxapp-web`        | `127.0.0.1:17020` |
+| Platform API | `cxapp-api`     | `127.0.0.1:17010` |
+| Platform Web | `cxapp-web`     | `127.0.0.1:17020` |
 | FileBrowser  | `cxapp-media`   | `127.0.0.1:7090`  |
 
 Traefik runs separately from `/docker/traefik`, listens on public ports 80 and
@@ -51,8 +51,8 @@ of this single-tenant deployment.
 The MariaDB application user is `root`; its password is stored only in the
 protected environment files. The master database is `cxapp_master_db`.
 
-| Tenant code | Primary domain     | Database      | Status |
-| ----------- | ------------------ | ------------- | ------ |
+| Tenant code | Primary domain     | Database   | Status |
+| ----------- | ------------------ | ---------- | ------ |
 | `CODEXSUN`  | `app.codexsun.com` | `cxapp_db` | Active |
 
 The tenant database is provisioned with the repository-supported tenant

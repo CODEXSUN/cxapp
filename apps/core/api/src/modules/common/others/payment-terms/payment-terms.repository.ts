@@ -15,14 +15,16 @@ type PaymentTermsRow = {
 
 export class PaymentTermsRepository {
   async list(filters: PaymentTermsListFilters = {}) {
-    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
+    const rows =
+      await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toPaymentTerms);
   }
 
   async find(id: string | number) {
-    const rows = await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
+    const rows =
+      await sql<PaymentTermsRow>`SELECT id, name, status, sort_order FROM core_payment_terms
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toPaymentTerms(rows.rows[0]) : null;
   }
