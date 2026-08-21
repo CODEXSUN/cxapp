@@ -122,11 +122,29 @@ export async function ensureTenantStorage(tenantKey: string) {
   await mkdir(join(tenantPublicStorageRoot(tenantKey), "logo"), { recursive: true });
   await mkdir(join(tenantPublicStorageRoot(tenantKey), "images"), { recursive: true });
   await mkdir(join(tenantPrivateStorageRoot(tenantKey), "database"), { recursive: true });
+  await ensureTenantPublicStorageLink(tenantKey);
   return {
     privateRoot: tenantPrivateStorageRoot(tenantKey),
     publicRoot: tenantPublicStorageRoot(tenantKey),
     root: tenantStorageRoot(tenantKey)
   };
+}
+
+async function ensureTenantPublicStorageLink(tenantKey: string) {
+  const safeTenantKey = sanitizeStorageSegment(tenantKey);
+  const source = tenantStorageRoot(safeTenantKey);
+  const link = resolve(workspaceRoot(), "apps", "platform", "web", "public", "storage", safeTenantKey);
+  await mkdir(dirname(link), { recursive: true });
+  try {
+    await lstat(link);
+  } catch {
+    try {
+      await symlink(source, link, process.platform === "win32" ? "junction" : "dir");
+    } catch {
+      // A restricted deployment can still serve files through its storage adapter.
+    }
+  }
+  return link;
 }
 
 export async function ensurePublicStorageLink() {

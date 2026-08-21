@@ -57,6 +57,9 @@ const retiredKeys = new Set([
 const interactiveKeys = [
   ["DB_USER", "MariaDB application user", false],
   ["DB_PASSWORD", "MariaDB application password", true],
+  ["FILE_MANAGER_DB_USER", "File Manager MariaDB user", false],
+  ["FILE_MANAGER_DB_PASSWORD", "File Manager MariaDB password", true],
+  ["FILE_MANAGER_ENCRYPTION_KEY", "File Manager credential encryption key", true],
   ["CXAPP_VERIFIED_BACKUP_ID", "Verified pre-migration backup ID", false],
   ["MARIADB_ADMIN_USER", "MariaDB administrative user", false],
   ["MARIADB_ROOT_PASSWORD", "MariaDB administrative password", true],
@@ -78,6 +81,8 @@ const interactiveKeys = [
 ];
 const generatedInfrastructureSecrets = new Set([
   "DB_PASSWORD",
+  "FILE_MANAGER_DB_PASSWORD",
+  "FILE_MANAGER_ENCRYPTION_KEY",
   "MARIADB_ROOT_PASSWORD",
   "REDIS_PASSWORD",
   "MEDIA_ADMIN_PASSWORD",
@@ -111,6 +116,8 @@ if (!checkOnly) {
     current.set("NODE_ENV", "production");
     current.set("DB_HOST", "cxapp-mariadb");
     current.set("DB_PORT", "3306");
+    current.set("FILE_MANAGER_DB_HOST", "cxapp-mariadb");
+    current.set("FILE_MANAGER_DB_PORT", "3306");
     current.set("CXAPP_QUEUE_BACKEND", "bullmq-redis");
     if (current.get("CXAPP_SINGLE_TENANT") === "1") {
       current.set("ENABLE_DEFAULT_TENANT_SEED", "1");

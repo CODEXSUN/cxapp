@@ -9,7 +9,7 @@ export type Tenant = {
   dbType: string;
   dbUser: string;
   enabledModuleKeys: string[];
-  defaultLandingApp: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
+  defaultLandingApp: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager" | "blog" | "file-manager";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -70,5 +70,6 @@ export type TenantPublicPortal = {
   slides: TenantPortalContent[];
   summary: string;
   tenantCode: string | null;
+  blogMediaPath: string | null;
   theme: TenantPortalTheme;
 };

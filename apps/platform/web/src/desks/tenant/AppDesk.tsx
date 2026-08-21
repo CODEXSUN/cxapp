@@ -31,8 +31,11 @@ import { toast } from "sonner";
 import { AuthGate } from "../../shared/auth/AuthGate";
 import {
   appMenuItemsFor,
+  appRootPage,
+  appRootUrl,
   appWorkspaceItems,
   enabledAppIds,
+  platformAppRegistry,
   type BillingNavigationFeatures,
   type PlatformAppId
 } from "../../app/app-registry";
@@ -68,6 +71,8 @@ const loadReceiptModule = () => import("@cxapp/billing-web/modules/receipt");
 const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/reports");
 const loadAccountsOverviewModule = () => import("@cxapp/accounts-web/modules/overview");
 const loadAccountingModule = () => import("@cxapp/accounts-web/modules/accounting");
+const loadBlogModule = () => import("@codexsun/blog/web");
+const loadFileManagerModule = () => import("@codexsun/file-manager/web");
 
 const billingWorkspacePreloaders = [
   loadBillingDashboardModule,
@@ -317,6 +322,15 @@ const CashBookWorkspace = lazyWorkspace(() =>
 const BankBookWorkspace = lazyWorkspace(() =>
   loadAccountingModule().then((module) => module.BankBookWorkspace)
 );
+const BlogsEditorWorkspace = lazyWorkspace(() =>
+  loadBlogModule().then((module) => module.BlogsEditorWorkspace)
+);
+const FileBrowserWorkspace = lazyWorkspace(() =>
+  loadFileManagerModule().then((module) => module.FileBrowserWorkspace)
+);
+const StorageConnectionsWorkspace = lazyWorkspace(() =>
+  loadFileManagerModule().then((module) => module.StorageConnectionsWorkspace)
+);
 
 const TenantUserWorkspace = lazy(() =>
   import("../../modules/tenant-user").then((module) => ({ default: module.TenantUserWorkspace }))
@@ -341,6 +355,10 @@ const TenantRolePermissionWorkspace = lazy(() =>
 );
 
 type AppPage =
+  | "blog.overview"
+  | "blog.articles"
+  | "file-manager.files"
+  | "file-manager.connections"
   | "application.overview"
   | "application.landing"
   | "application.profile"
@@ -463,13 +481,17 @@ export function AppDesk() {
   });
   const appSafePage = page.startsWith("devkit")
     ? pageForApp(landingApp)
-    : page.startsWith("accounts") && !switchableApps.includes("accounts")
+    : page.startsWith("blog") && !switchableApps.includes("blog")
       ? pageForApp(landingApp)
-      : (page.startsWith("billing") ||
-            (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
-          !switchableApps.includes("billing")
+      : page.startsWith("file-manager") && !switchableApps.includes("file-manager")
         ? pageForApp(landingApp)
-        : page;
+        : page.startsWith("accounts") && !switchableApps.includes("accounts")
+          ? pageForApp(landingApp)
+          : (page.startsWith("billing") ||
+                (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
+              !switchableApps.includes("billing")
+            ? pageForApp(landingApp)
+            : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle = titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
@@ -609,15 +631,7 @@ export function AppDesk() {
   }
 
   const activeWorkspaceTitle =
-    activeApp === "billing"
-      ? "Billing"
-      : activeApp === "accounts"
-        ? "Accounts"
-        : activeApp === "mail"
-          ? "Mail"
-          : activeApp === "task-manager"
-            ? "Task Manager"
-            : "Application";
+    platformAppRegistry.find((app) => app.id === activeApp)?.label ?? "Application";
   const menuItems = appMenuItemsFor(
     activeApp,
     safePage,
@@ -626,28 +640,7 @@ export function AppDesk() {
   );
   const workspaceItems = appWorkspaceItems(switchableApps, activeApp).map((item) => ({
     ...item,
-    onSelect: () =>
-      selectPage(
-        item.title === "Application"
-          ? "application.overview"
-          : item.title === "Billing"
-            ? "billing.overview"
-            : item.title === "Accounts"
-              ? "accounts.overview"
-              : item.title === "Mail"
-                ? "mail.inbox"
-                : "task-manager.overview"
-      ),
-    url:
-      item.title === "Application"
-        ? "/app/application/overview"
-        : item.title === "Billing"
-          ? "/app/billing/overview"
-          : item.title === "Accounts"
-            ? "/app/accounts/overview"
-            : item.title === "Mail"
-              ? "/app/mail/inbox"
-              : "/app/task-manager/overview"
+    onSelect: () => selectPage(pageForApp(item.appId))
   }));
 
   const contextError =
@@ -695,16 +688,7 @@ export function AppDesk() {
     <AuthGate desk="tenant">
       <ApplicationLayout
         brand={{
-          href:
-            activeApp === "billing"
-              ? "/app/billing/overview"
-              : activeApp === "accounts"
-                ? "/app/accounts/overview"
-                : activeApp === "mail"
-                  ? "/app/mail/inbox"
-                  : activeApp === "task-manager"
-                    ? "/app/task-manager/overview"
-                    : "/app/application/overview",
+          href: appRootUrl(activeApp),
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
           ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
           logoAlt: `${companyBranding.brandName ?? "Company"} logo`,
@@ -748,6 +732,11 @@ export function AppDesk() {
       >
         <main className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5">
           <Suspense fallback={<GlobalLoader className="min-h-[32rem]" fullScreen={false} />}>
+            {safePage === "blog.overview" || safePage === "blog.articles" ? (
+              <BlogsEditorWorkspace />
+            ) : null}
+            {safePage === "file-manager.files" ? <FileBrowserWorkspace /> : null}
+            {safePage === "file-manager.connections" ? <StorageConnectionsWorkspace /> : null}
             {safePage === "application.overview" ? (
               <ApplicationOverview signedInUser={signedInUser} />
             ) : null}
@@ -877,6 +866,8 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
 
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
   if (
+    key === "blog.overview" ||
+    key === "blog.articles" ||
     key === "application.overview" ||
     key === "application.landing" ||
     key === "application.profile" ||
@@ -1364,6 +1355,10 @@ function renderOwnedCommonMasterPage(page: AppPage) {
 
 function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
+    "blog.overview": "Dashboard",
+    "blog.articles": "Articles",
+    "file-manager.files": "Files",
+    "file-manager.connections": "Storage Connections",
     "application.overview": "Overview",
     "application.landing": "Landing Desk",
     "application.profile": "Application Profile",
@@ -1482,6 +1477,10 @@ function appFromPage(
   landingApp: PlatformAppId,
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
+  if (page.startsWith("blog")) return enabledApps.includes("blog") ? "blog" : landingApp;
+  if (page.startsWith("file-manager")) {
+    return enabledApps.includes("file-manager") ? "file-manager" : landingApp;
+  }
   if (page.startsWith("core.organisation")) return "application";
   if (page.startsWith("billing") || page.startsWith("core"))
     return enabledApps.includes("billing") ? "billing" : landingApp;
@@ -1507,11 +1506,7 @@ function mailboxForPage(page: AppPage) {
 }
 
 function pageForApp(app: PlatformAppId): AppPage {
-  if (app === "devkit") return "application.overview";
-  if (app === "task-manager") return "task-manager.overview";
-  if (app === "mail") return "mail.inbox";
-  if (app === "accounts") return "accounts.overview";
-  return app === "billing" ? "billing.overview" : "application.overview";
+  return appRootPage(app);
 }
 
 function isAppRootPath() {

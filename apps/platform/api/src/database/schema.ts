@@ -66,7 +66,7 @@ export type PlatformAppsTable = {
   id: Generated<number>;
   label: string;
   module_key: string;
-  stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager";
+  stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager" | "blog" | "file-manager";
   updated_at: TimestampColumn;
   uuid: string;
 };

@@ -61,6 +61,7 @@ export function BookEntryForm({
   ledgerGroups,
   onBack,
   onCreateLedger,
+  onCreateLedgerGroup,
   onSave,
   saving
 }: {
@@ -76,6 +77,10 @@ export function BookEntryForm({
   ledgerGroups: CashBookLedgerGroup[];
   onBack: () => void;
   onCreateLedger: (payload: CashBookLedgerSavePayload) => Promise<CashBookLedger>;
+  onCreateLedgerGroup: (payload: {
+    name: string;
+    status: "active" | "inactive";
+  }) => Promise<{ id: number; name: string }>;
   onSave: (payload: BookEntryPayload) => void;
   saving: boolean;
 }) {
@@ -184,6 +189,7 @@ export function BookEntryForm({
         onBack={onBack}
         onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
         onCreateLedger={onCreateLedger}
+        onCreateLedgerGroup={onCreateLedgerGroup}
         onSubmit={submit}
         rowPosition={cashBookContext?.rowPosition ?? null}
         saving={saving}
@@ -214,6 +220,7 @@ function CashEntryForm({
   onBack,
   onChange,
   onCreateLedger,
+  onCreateLedgerGroup,
   onSubmit,
   rowPosition,
   saving,
@@ -227,6 +234,10 @@ function CashEntryForm({
   onBack: () => void;
   onChange: (patch: Partial<Draft>) => void;
   onCreateLedger: (payload: CashBookLedgerSavePayload) => Promise<CashBookLedger>;
+  onCreateLedgerGroup: (payload: {
+    name: string;
+    status: "active" | "inactive";
+  }) => Promise<{ id: number; name: string }>;
   onSubmit: () => void;
   rowPosition: number | null;
   saving: boolean;
@@ -376,6 +387,7 @@ function CashEntryForm({
                               renderCreateForm={({ initialName, onCancel, onCreated }) => (
                                 <CashLedgerCreateForm
                                   groups={ledgerGroups}
+                                  onCreateGroup={onCreateLedgerGroup}
                                   initialName={initialName}
                                   saving={creatingLedger}
                                   onCancel={onCancel}
@@ -480,11 +492,16 @@ function CashEntryForm({
 function CashLedgerCreateForm({
   groups,
   initialName,
+  onCreateGroup,
   onCancel,
   onSave,
   saving
 }: {
   groups: CashBookLedgerGroup[];
+  onCreateGroup: (payload: {
+    name: string;
+    status: "active" | "inactive";
+  }) => Promise<{ id: number; name: string }>;
   initialName: string;
   onCancel: () => void;
   onSave: (payload: CashBookLedgerSavePayload) => Promise<void>;
@@ -520,6 +537,9 @@ function CashLedgerCreateForm({
           <WorkspaceFormField label="Ledger group" required>
             <WorkspaceLookup
               allowTextValue={false}
+              createLabel="Create ledger group"
+              createMode="popup"
+              createTitle="New ledger group"
               options={activeGroups.map((group) => ({
                 label: group.name,
                 value: String(group.id)
@@ -527,6 +547,14 @@ function CashLedgerCreateForm({
               placeholder="Search ledger group"
               showAllOptionsOnFocus
               value={ledgerGroupId ? String(ledgerGroupId) : ""}
+              renderCreateForm={({ initialName: groupName, onCancel, onCreated }) => (
+                <LedgerGroupCreateForm
+                  initialName={groupName}
+                  onCancel={onCancel}
+                  onCreate={onCreateGroup}
+                  onCreated={onCreated}
+                />
+              )}
               onValueChange={(value) => setLedgerGroupId(Number(value) || 0)}
             />
           </WorkspaceFormField>
@@ -546,6 +574,69 @@ function CashLedgerCreateForm({
         </Button>
         <Button disabled={saving || !name.trim() || !ledgerGroupId} type="submit">
           <Save className="size-4" /> {saving ? "Saving..." : "Save ledger"}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function LedgerGroupCreateForm({
+  initialName,
+  onCancel,
+  onCreate,
+  onCreated
+}: {
+  initialName: string;
+  onCancel: () => void;
+  onCreate: (payload: {
+    name: string;
+    status: "active" | "inactive";
+  }) => Promise<{ id: number; name: string }>;
+  onCreated: (option: { label: string; value: string }) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [error, setError] = useState("");
+  return (
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!name.trim()) return setError("Group name is required.");
+        void onCreate({ name: name.trim(), status: "active" })
+          .then((created) => onCreated({ label: created.name, value: String(created.id) }))
+          .then(onCancel)
+          .catch((reason: unknown) =>
+            setError(
+              reason instanceof Error ? reason.message : "Ledger group could not be created."
+            )
+          );
+      }}
+    >
+      <DialogHeader className="border-b px-5 py-4 pr-12">
+        <DialogTitle>New ledger group</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 p-5">
+        {error ? (
+          <WorkspaceFormBanner title="Ledger group could not be created">
+            {error}
+          </WorkspaceFormBanner>
+        ) : null}
+        <WorkspaceFormGrid columns={1}>
+          <WorkspaceFormField label="Group name" required>
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Assets"
+            />
+          </WorkspaceFormField>
+        </WorkspaceFormGrid>
+      </div>
+      <DialogFooter className="border-t px-5 py-4">
+        <Button onClick={onCancel} type="button" variant="outline">
+          <X className="size-4" /> Cancel
+        </Button>
+        <Button type="submit">
+          <Save className="size-4" /> Save group
         </Button>
       </DialogFooter>
     </form>

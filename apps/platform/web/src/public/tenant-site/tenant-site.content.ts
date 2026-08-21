@@ -19,6 +19,114 @@ export const billingSlides = [
   }
 ] as const;
 
+export const homeHeroSlides = [
+  {
+    captionPrimary: "Daily operations",
+    captionSecondary: "Connected automation",
+    description:
+      "Connect daily operations, money, records, and people without adding more disconnected tools.",
+    eyebrow: "CODEXSUN business operating platform",
+    image: "/marketing/codexsun-product-desk.jpg",
+    imageAlt: "A connected business desk for billing, reporting, dispatch, and product work",
+    title: "One clear system for every moving part.",
+    tone: "cobalt"
+  },
+  {
+    captionPrimary: "Billing clarity",
+    captionSecondary: "Accounts connected",
+    description:
+      "Move from quotation to collection with checked information, clear totals, and visible next steps.",
+    eyebrow: "Billing and accounts",
+    image: "/marketing/codexsun-automation-flow.jpg",
+    imageAlt: "A connected automation flow moving business information between daily tasks",
+    title: "Billing and accounts in one dependable flow.",
+    tone: "emerald"
+  },
+  {
+    captionPrimary: "Useful automation",
+    captionSecondary: "Human oversight",
+    description:
+      "Remove repeated checks and hand-offs while important decisions remain visible and reviewable.",
+    eyebrow: "Practical automation",
+    image: "/marketing/codexsun-business-team.jpg",
+    imageAlt: "A business team using connected software to coordinate work",
+    title: "Automation that keeps people in control.",
+    tone: "violet"
+  },
+  {
+    captionPrimary: "Digital records",
+    captionSecondary: "Easy retrieval",
+    description:
+      "Keep documents, communication, and activity beside the transaction they belong to.",
+    eyebrow: "Connected business records",
+    image: "/marketing/codexsun-product-desk.jpg",
+    imageAlt: "A digital business workspace with reports, documents, and connected records",
+    title: "Records that stay connected to the work.",
+    tone: "sunset"
+  },
+  {
+    captionPrimary: "Clear ownership",
+    captionSecondary: "Complete history",
+    description:
+      "Move responsibility between staff without losing pending work, customer context, or history.",
+    eyebrow: "Dependable staff handovers",
+    image: "/marketing/codexsun-business-team.jpg",
+    imageAlt: "Colleagues reviewing business work together during a responsibility handover",
+    title: "Clear handovers without losing context.",
+    tone: "teal"
+  },
+  {
+    captionPrimary: "Start focused",
+    captionSecondary: "Grow confidently",
+    description:
+      "Begin with the capability you need today, then add richer control as the business grows.",
+    eyebrow: "Capability that grows with you",
+    image: "/marketing/codexsun-automation-flow.jpg",
+    imageAlt: "Business capabilities joining through a clear connected automation flow",
+    title: "Start simple. Add capability as you grow.",
+    tone: "indigo"
+  }
+] as const;
+
+export const billingWorkspaceSlides = [
+  {
+    eyebrow: "CODEXSUN billing experience",
+    summary:
+      "Create invoices, continue into compliance, follow collections, and review daily work in one clear system.",
+    title: "Billing work that new staff can understand from the first day."
+  },
+  {
+    eyebrow: "Fast, accurate invoicing",
+    summary:
+      "Keep customer, item, quantity, rate, tax, discount, and payment details in one guided flow.",
+    title: "Create complete invoices without slowing down."
+  },
+  {
+    eyebrow: "Connected sales flow",
+    summary:
+      "Carry checked customer, item, tax, and pricing details forward instead of typing them again.",
+    title: "Move from quotation to invoice with less repeated work."
+  },
+  {
+    eyebrow: "Compliance ready",
+    summary:
+      "Prepare e-way bill and e-invoice details while keeping every reference connected to the sale.",
+    title: "Keep compliance documents connected to every sale."
+  },
+  {
+    eyebrow: "Collections visibility",
+    summary:
+      "Review outstanding amounts, promised payments, overdue invoices, and the next follow-up.",
+    title: "Know what is due and what your team should do next."
+  },
+  {
+    eyebrow: "Dependable handovers",
+    summary:
+      "Move responsibility without losing pending documents, customer context, activity, or history.",
+    title: "Change staff responsibility without losing the billing history."
+  }
+] as const;
+
 export const billingFeatures = [
   {
     description:
@@ -100,5 +208,100 @@ export const billingPosts = [
     href: "/updates",
     label: "Digital records",
     title: "Build a document trail that is easy to find later"
+  }
+] as const;
+
+export const codexsunStories = [
+  {
+    description:
+      "A clear operating view connects documents, people, money, and the next action without making daily work feel heavy.",
+    href: "/workspace",
+    image: "/marketing/codexsun-product-desk.jpg",
+    label: "Product story",
+    publishedAt: "2026-08-20",
+    title: "Why a business operating platform should begin with the work people already know"
+  },
+  {
+    description:
+      "Rules and background work can remove repeated checks while people stay responsible for important financial decisions.",
+    href: "/features",
+    image: "/marketing/codexsun-automation-flow.jpg",
+    label: "Automation",
+    publishedAt: "2026-08-19",
+    title: "Automation that clears routine work instead of hiding responsibility"
+  },
+  {
+    description:
+      "Billing, accounts, communication, records, and staff context become more useful when they share one dependable flow.",
+    href: "/features",
+    image: "/marketing/codexsun-business-team.jpg",
+    label: "Technology",
+    publishedAt: "2026-08-18",
+    title: "Connected features help a growing team work like one business"
+  },
+  {
+    description:
+      "Quotations, invoices, compliance documents, receipts, and collections can carry checked information forward.",
+    href: "/workspace",
+    image: "/marketing/codexsun-product-desk.jpg",
+    label: "Billing",
+    publishedAt: "2026-08-17",
+    title: "Enter the transaction once, then keep every next document connected"
+  },
+  {
+    description:
+      "Clear access, visible status, and activity history make staff changes easier without losing the business trail.",
+    href: "/security",
+    image: "/marketing/codexsun-business-team.jpg",
+    label: "Operations",
+    publishedAt: "2026-08-16",
+    title: "A better handover protects momentum when responsibilities change"
+  },
+  {
+    description:
+      "Progressive capability lets a business start with simple billing and add deeper control only when it becomes useful.",
+    href: "/updates",
+    image: "/marketing/codexsun-automation-flow.jpg",
+    label: "Product direction",
+    publishedAt: "2026-08-15",
+    title: "Rich features should grow around the working day, not compete with it"
+  }
+] as const;
+
+export const codexsunClientSegments = [
+  {
+    industry: "Textile production",
+    mark: "TX",
+    name: "Textile teams"
+  },
+  {
+    industry: "Apparel manufacturing",
+    mark: "GM",
+    name: "Garment businesses"
+  },
+  {
+    industry: "Retail and point of sale",
+    mark: "RT",
+    name: "Growing retailers"
+  },
+  {
+    industry: "Wholesale and trading",
+    mark: "TR",
+    name: "Trading companies"
+  },
+  {
+    industry: "Professional services",
+    mark: "SV",
+    name: "Service firms"
+  },
+  {
+    industry: "Distribution and logistics",
+    mark: "DS",
+    name: "Distributors"
+  },
+  {
+    industry: "Industrial manufacturing",
+    mark: "MF",
+    name: "Manufacturers"
   }
 ] as const;

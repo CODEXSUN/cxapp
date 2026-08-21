@@ -32,7 +32,18 @@ export type PlatformAppId =
   | "accounts"
   | "devkit"
   | "mail"
-  | "task-manager";
+  | "task-manager"
+  | "blog"
+  | "file-manager";
+
+export type PlatformAppRootPage =
+  | "application.overview"
+  | "billing.overview"
+  | "accounts.overview"
+  | "mail.inbox"
+  | "task-manager.overview"
+  | "blog.overview"
+  | "file-manager.files";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -48,7 +59,15 @@ export type PlatformAppDefinition = {
   icon: LucideIcon;
   label: string;
   moduleKey: string;
-  stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager";
+  stack:
+    | "platform"
+    | "billing"
+    | "accounts"
+    | "devkit"
+    | "mail"
+    | "platform-task-manager"
+    | "blog"
+    | "file-manager";
 };
 
 export const defaultTenantModuleKeys = [
@@ -98,8 +117,7 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     accentClass: "bg-cyan-600",
     alwaysEnabled: false,
     defaultLanding: false,
-    description:
-      "Chart of accounts, ledger groups, ledgers, journal, and accounting overview.",
+    description: "Chart of accounts, ledger groups, ledgers, journal, and accounting overview.",
     icon: LayersIcon,
     id: "accounts",
     label: "Accounts",
@@ -116,6 +134,28 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Task Manager",
     moduleKey: "platform.task-manager",
     stack: "platform-task-manager"
+  },
+  {
+    accentClass: "bg-amber-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant-owned articles, authors, media, SEO, discussions, and publishing.",
+    icon: FileTextIcon,
+    id: "blog",
+    label: "Blog",
+    moduleKey: "blog",
+    stack: "blog"
+  },
+  {
+    accentClass: "bg-blue-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Images, documents, folders, external links, and cloud storage connections.",
+    icon: ArchiveIcon,
+    id: "file-manager",
+    label: "File Manager",
+    moduleKey: "file-manager.file-object",
+    stack: "file-manager"
   }
 ];
 
@@ -143,12 +183,64 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
     : "application";
 }
 
+export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "blog") return "blog.overview";
+  if (appId === "file-manager") return "file-manager.files";
+  if (appId === "task-manager") return "task-manager.overview";
+  if (appId === "mail") return "mail.inbox";
+  if (appId === "accounts") return "accounts.overview";
+  if (appId === "billing") return "billing.overview";
+  return "application.overview";
+}
+
+export function appRootUrl(appId: PlatformAppId) {
+  return `/app/${appRootPage(appId).replaceAll(".", "/")}`;
+}
+
 export function appMenuFor(
   appId: PlatformAppId,
   activePage: string,
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures
 ): SidemenuItem {
+  if (appId === "file-manager") {
+    return {
+      icon: ArchiveIcon,
+      isActive: activePage.startsWith("file-manager"),
+      title: "File Manager",
+      items: [
+        {
+          title: "Files",
+          isActive: activePage === "file-manager.files",
+          onSelect: () => onSelect("file-manager.files")
+        },
+        {
+          title: "Storage Connections",
+          isActive: activePage === "file-manager.connections",
+          onSelect: () => onSelect("file-manager.connections")
+        }
+      ]
+    };
+  }
+  if (appId === "blog") {
+    return {
+      icon: FileTextIcon,
+      isActive: activePage.startsWith("blog"),
+      title: "Blog",
+      items: [
+        {
+          title: "Dashboard",
+          isActive: activePage === "blog.overview",
+          onSelect: () => onSelect("blog.overview")
+        },
+        {
+          title: "Articles",
+          isActive: activePage === "blog.articles",
+          onSelect: () => onSelect("blog.articles")
+        }
+      ]
+    };
+  }
   if (appId === "mail") {
     return {
       icon: MailIcon,
@@ -773,10 +865,11 @@ export function appWorkspaceItems(enabledApps: PlatformAppId[], activeApp: Platf
     .filter((app) => enabledApps.includes(app.id))
     .map((app) => ({
       active: app.id === activeApp,
+      appId: app.id,
       description: app.description,
       icon: app.icon,
       title: app.label,
-      url: `/app/${app.id}/overview`
+      url: appRootUrl(app.id)
     }));
 }
 

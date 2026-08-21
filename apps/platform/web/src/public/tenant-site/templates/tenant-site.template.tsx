@@ -4,6 +4,7 @@ import { TenantSiteHeader } from "../blocks/tenant-site-header";
 import { TenantSiteProvider, useTenantSite } from "../tenant-site.context";
 import type { TenantPublicPageKey } from "../tenant-site.types";
 import "../tenant-site.css";
+import "../tenant-site.marketing.css";
 
 export function TenantSiteTemplate({
   activePage,

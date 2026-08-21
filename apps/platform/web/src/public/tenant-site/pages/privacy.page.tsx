@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, Database, Link2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { TenantPageIntro } from "../blocks/tenant-page-intro";
+import { TenantSectionHeading } from "../blocks/tenant-section-heading";
 import { useTenantSite } from "../tenant-site.context";
 import { TenantSiteTemplate } from "../templates/tenant-site.template";
 
@@ -19,82 +20,50 @@ function PrivacyPageContent() {
     <>
       <TenantPageIntro
         eyebrow="Business data privacy"
-        title="Invoices, accounts, staff activity, and digital documents belong behind controlled access."
-        summary={`This page describes the public product-information boundary for ${portal.brandName}. Exact company policies, retention periods, and deployment controls should be confirmed through the responsible service contact.`}
+        summary={`This page explains the public product-information boundary for ${portal.brandName}. Exact retention, backup, region, and support-access terms depend on the service arrangement.`}
+        title="Public information outside. Business records behind controlled access."
+        visual="privacy"
       />
-      <section className="tenant-page-section tenant-prose">
-        <article>
-          <span>01</span>
-          <div>
-            <h2>Public product information</h2>
-            <p>
-              These pages explain billing features, product experience, security approach, guides,
-              and updates. Reading this material does not require access to business records.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>02</span>
-          <div>
-            <h2>Account sign-in</h2>
-            <p>
-              Customer, item, invoice, e-way bill, e-invoice, receipt, payment, ledger, report, and
-              staff activity data begins only after authorised sign-in.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>03</span>
-          <div>
-            <h2>Staff responsibility</h2>
-            <p>
-              Visibility and actions should follow each employee&apos;s business responsibility.
-              Access can be changed when staff join, leave, or move without removing the
-              company&apos;s document history.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>04</span>
-          <div>
-            <h2>Connected communication and providers</h2>
-            <p>
-              Mail, messaging, payment, storage, compliance, and other connected providers may
-              process information under their own policies. Connections should be approved and
-              configured by authorised administrators.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>05</span>
-          <div>
-            <h2>Light AI assistance</h2>
-            <p>
-              AI-assisted preparation should respect staff access, label estimates or generated
-              suggestions, and require human confirmation before important financial actions.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>06</span>
-          <div>
-            <h2>Retention, backup, and support access</h2>
-            <p>
-              Exact retention periods, backup schedules, restore objectives, infrastructure regions,
-              and support-access rules depend on the deployed service arrangement and should be
-              confirmed before production use.
-            </p>
-          </div>
-        </article>
+      <section className="tenant-page-section tenant-simple-section">
+        <TenantSectionHeading
+          eyebrow="The practical boundary"
+          title="Keep access understandable and data use accountable."
+        />
+        <div className="tenant-simple-grid is-four">
+          <article>
+            <ShieldCheck />
+            <span>Public and private</span>
+            <h3>Marketing pages do not expose business records.</h3>
+            <p>Customer, billing, accounts, mail, and staff data begin after authorised sign-in.</p>
+          </article>
+          <article>
+            <LockKeyhole />
+            <span>Responsibility</span>
+            <h3>Access follows the work a person is trusted to do.</h3>
+            <p>Administrators should update access when staff join, leave, or change roles.</p>
+          </article>
+          <article>
+            <Link2 />
+            <span>Connected providers</span>
+            <h3>External services keep their own policies.</h3>
+            <p>Mail, payment, storage, compliance, and messaging connections need approval.</p>
+          </article>
+          <article>
+            <Database />
+            <span>Retention and support</span>
+            <h3>Deployment details should be confirmed before production use.</h3>
+            <p>Review retention, backup, restore, region, and authorised support access.</p>
+          </article>
+        </div>
       </section>
-      <section className="tenant-page-section tenant-legal-note">
+      <section className="tenant-page-note is-teal">
         <ShieldCheck />
         <div>
-          <span>Need a clearer control view?</span>
-          <h2>See how staff access, document checks, and activity support safer billing.</h2>
+          <span>Need the control view?</span>
+          <h2>See how tenant isolation, staff access, and activity support safer work.</h2>
         </div>
         <Link to="/security">
-          Billing controls <ArrowRight />
+          Security <ArrowRight />
         </Link>
       </section>
     </>

@@ -8,4 +8,5 @@ export type TenantPublicPageKey =
   | "about"
   | "contact"
   | "privacy"
-  | "terms";
+  | "terms"
+  | "status";

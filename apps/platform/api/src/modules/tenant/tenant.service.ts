@@ -248,6 +248,9 @@ export function publicPortalForTenant(
 
   return {
     brandName,
+    blogMediaPath: typeof settings.blogMediaPath === "string" && settings.blogMediaPath.trim()
+      ? settings.blogMediaPath.trim().replace(/\/$/u, "")
+      : null,
     configured: Boolean(tenant),
     domain,
     eyebrow: portalText(settings.eyebrow, "Business workspace", 80),

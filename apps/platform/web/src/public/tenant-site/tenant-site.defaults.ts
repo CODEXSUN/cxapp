@@ -2,9 +2,10 @@ import type { TenantPublicPortal } from "../../modules/tenant-portal";
 
 export const fallbackTenantPortal: TenantPublicPortal = {
   brandName: "CODEXSUN",
+  blogMediaPath: null,
   configured: false,
   domain: "",
-  eyebrow: "Billing that keeps work moving",
+  eyebrow: "The business operating platform",
   features: [
     {
       description: "Create clear sales documents with guided tax, totals, and payment details.",
@@ -23,8 +24,8 @@ export const fallbackTenantPortal: TenantPublicPortal = {
     }
   ],
   footerText:
-    "Billing, accounts, compliance documents, staff controls, and daily follow-up in one clear business flow.",
-  headline: "Invoice faster. Stay accurate. Know what happens next.",
+    "Features, automation, billing, accounts, communication, and daily operations in one connected product.",
+  headline: "Run the work behind your business from one clear system.",
   loginPath: "/login",
   logoDarkUrl: null,
   logoUrl: null,
@@ -69,7 +70,7 @@ export const fallbackTenantPortal: TenantPublicPortal = {
     }
   ],
   summary:
-    "Create invoices, prepare e-way bills and e-invoices, follow accounts, and keep staff work visible from one clean business system.",
+    "Connect billing, accounts, records, communication, staff work, and practical automation in one business operating platform powered by AARAN SOFTWARE.",
   tenantCode: null,
   theme: "blue"
 };

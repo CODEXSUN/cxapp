@@ -1,40 +1,9 @@
-import { ArrowRight, CheckCircle2, CircleDot, FileClock, Gauge, ShieldCheck } from "lucide-react";
+import { ArrowRight, Gauge, ShieldCheck, Sparkles } from "lucide-react";
 import { TenantPageIntro } from "../blocks/tenant-page-intro";
 import { TenantPortalCta } from "../blocks/tenant-portal-cta";
 import { TenantSectionHeading } from "../blocks/tenant-section-heading";
 import { useTenantSite } from "../tenant-site.context";
 import { TenantSiteTemplate } from "../templates/tenant-site.template";
-
-const productDirections = [
-  {
-    description:
-      "Reduce unnecessary movement between customer, item, tax, totals, payment, print, and sharing steps while preserving a final review point.",
-    href: "/features",
-    label: "Invoice experience",
-    title: "Faster entry with clearer checks"
-  },
-  {
-    description:
-      "Make e-way bill and e-invoice preparation easier to follow with reusable billing details, visible exceptions, and readable document status.",
-    href: "/features",
-    label: "Compliance documents",
-    title: "Less re-entry, better visibility"
-  },
-  {
-    description:
-      "Keep pending work, responsibility, recent activity, and document context understandable when employees join, leave, or change roles.",
-    href: "/security",
-    label: "Staff experience",
-    title: "Smoother onboarding and handover"
-  },
-  {
-    description:
-      "Bring receivables, promised payments, overdue documents, reminders, and next actions closer to the everyday billing view.",
-    href: "/workspace",
-    label: "Accounts visibility",
-    title: "Follow up while the information is current"
-  }
-] as const;
 
 export function TenantUpdatesPage() {
   return (
@@ -50,87 +19,48 @@ function UpdatesPageContent() {
   return (
     <>
       <TenantPageIntro
-        eyebrow="Product direction"
-        title="Every improvement should make billing faster to learn, easier to check, and clearer to monitor."
-        summary={`${portal.brandName} continues to refine the complete billing experience—from invoice entry and compliance documents to staff handovers, accounts follow-up, and dependable background work.`}
         actions={
           <a className="tenant-portal-primary" href={portal.loginPath}>
             Open application <ArrowRight />
           </a>
         }
+        eyebrow="Product direction"
+        summary="We improve the common path first: faster entry, clearer checks, dependable handovers, and background work that reports its progress."
+        title="Useful change, without unnecessary complexity."
+        visual="updates"
       />
-      <section className="tenant-page-section tenant-update-layout">
-        <div className="tenant-update-feed">
-          {productDirections.map((item, index) => (
-            <a href={item.href} key={item.title}>
-              <span className="tenant-update-marker">
-                {index === 0 ? <CircleDot /> : <CheckCircle2 />}
-              </span>
-              <div>
-                <small>{item.label}</small>
-                <h2>{item.title}</h2>
-                <p>{item.description}</p>
-                <strong>
-                  Explore this area <ArrowRight />
-                </strong>
-              </div>
-            </a>
-          ))}
-        </div>
-        <aside className="tenant-update-summary">
-          <span>Product focus</span>
-          <h2>{portal.brandName}</h2>
-          <dl>
-            <div>
-              <dt>Speed</dt>
-              <dd>Fewer repeated steps</dd>
-            </div>
-            <div>
-              <dt>Accuracy</dt>
-              <dd>Checks before action</dd>
-            </div>
-            <div>
-              <dt>Adoption</dt>
-              <dd>Clear for new staff</dd>
-            </div>
-          </dl>
-        </aside>
-      </section>
-      <section className="tenant-page-section tenant-release-principles">
+      <section className="tenant-page-section tenant-simple-section">
         <TenantSectionHeading
-          eyebrow="How improvement should feel"
-          title="More capability without making familiar billing work feel unfamiliar."
-          summary="New checks, automation, and monitoring should appear where they help the work—not as extra complexity people must navigate every day."
+          eyebrow="What guides each improvement"
+          title="Make the product faster to learn and easier to trust."
         />
-        <div>
+        <div className="tenant-simple-grid is-three">
           <article>
             <Gauge />
-            <span>Focused refinement</span>
-            <h3>Make the common path faster first</h3>
-            <p>
-              Improve high-frequency invoice and accounts actions before adding depth around rare
-              exceptions.
-            </p>
+            <span>Speed</span>
+            <h3>Remove repeated entry from common work.</h3>
+            <p>Customer, product, tax, and document information should move forward naturally.</p>
           </article>
           <article>
             <ShieldCheck />
-            <span>Safe change</span>
-            <h3>Keep totals, status, and responsibility visible</h3>
-            <p>
-              Workflow changes should preserve the financial checks and activity context teams
-              depend on.
-            </p>
+            <span>Accuracy</span>
+            <h3>Keep checks close to the action.</h3>
+            <p>Totals, status, responsibility, and exceptions should be easy to see.</p>
           </article>
           <article>
-            <FileClock />
-            <span>Dependable operations</span>
-            <h3>Let background work stay in the background</h3>
-            <p>
-              Exports, integrations, document processing, and maintenance should report progress
-              clearly without interrupting routine billing.
-            </p>
+            <Sparkles />
+            <span>Automation</span>
+            <h3>Keep routine processing in the background.</h3>
+            <p>Jobs and integrations should show progress without interrupting daily work.</p>
           </article>
         </div>
+      </section>
+      <section className="tenant-page-band is-amber">
+        <div>
+          <span>Current focus</span>
+          <h2>Billing, collections, staff handovers, and reliable automation</h2>
+        </div>
+        <p>New capability must make the working day clearer.</p>
       </section>
       <TenantPortalCta />
     </>

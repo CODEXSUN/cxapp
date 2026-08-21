@@ -37,6 +37,13 @@ export function createAccountGroup(payload: AccountGroupSavePayload) {
   return accountsApiPost<AccountGroup>("/accounts/groups", toGroupPayload(payload));
 }
 
+export function createCoreLedgerGroup(payload: { name: string; status: "active" | "inactive" }) {
+  return accountsApiPost<{ id: number; name: string; status: "active" | "inactive" }>(
+    "/core/common/accounts/ledger-groups",
+    payload
+  );
+}
+
 export function updateAccountGroup(id: string, payload: AccountGroupSavePayload) {
   return accountsApiPut<AccountGroup>(`/accounts/groups/${id}`, toGroupPayload(payload));
 }

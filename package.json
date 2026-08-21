@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -34,6 +34,7 @@
     "verify:platform": "npm run check:module-boundaries && npm run typecheck && npm run build",
     "check": "npm run check:module-boundaries && npm run typecheck && npm run lint",
     "check:module-boundaries": "node tools/check-module-boundaries.mjs",
+    "blog:check": "node tools/check-blog-package.mjs 1.0.9",
     "check:core-boundaries": "node tools/check-module-boundaries.mjs core",
     "db:migrate": "tsx apps/platform/api/src/database/db-cli.ts migrate",
     "db:migrations:list": "tsx apps/platform/api/src/database/db-cli.ts migrations:list",
@@ -42,6 +43,7 @@
     "db:migrations:rollback": "tsx apps/platform/api/src/database/db-cli.ts migrations:rollback",
     "db:migrations:test-local": "tsx apps/platform/api/src/database/db-cli.ts migrations:test-local",
     "db:seed": "tsx apps/platform/api/src/database/db-cli.ts seed",
+    "db:file-manager:provision": "node tools/provision-file-manager-db.mjs",
     "db:drop": "tsx apps/platform/api/src/database/db-cli.ts drop",
     "dbmigrate:fresh": "tsx apps/platform/api/src/database/db-cli.ts fresh",
     "db:dump:create": "tsx apps/platform/api/src/database/db-cli.ts dump:create",

@@ -8,7 +8,7 @@ export function TenantSiteHeader({ activePage }: { activePage: TenantPublicPageK
   const { authenticated, portal, signOut } = useTenantSite();
 
   return (
-    <nav className="tenant-portal-nav" aria-label="Billing product navigation">
+    <nav className="tenant-portal-nav" aria-label="CODEXSUN product navigation">
       <Link className="tenant-portal-brand" to="/" aria-label={`${portal.brandName} home`}>
         <TenantSiteLogo
           brandName={portal.brandName}
@@ -18,12 +18,12 @@ export function TenantSiteHeader({ activePage }: { activePage: TenantPublicPageK
         />
         <span>
           <strong>{portal.brandName}</strong>
-          <small>Billing &amp; Accounts</small>
+          <small>Business Operating Platform</small>
         </span>
       </Link>
       <div className="tenant-portal-menu">
         <Link to="/workspace" aria-current={activePage === "workspace" ? "page" : undefined}>
-          Billing
+          Product
         </Link>
         <Link to="/features" aria-current={activePage === "features" ? "page" : undefined}>
           Features

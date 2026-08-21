@@ -660,6 +660,88 @@
   margin-top: 38px;
 }
 
+.tenant-page-slider {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 820px;
+  min-height: 0;
+  overflow: hidden;
+}
+.tenant-page-slider-content {
+  min-height: 0;
+  position: relative;
+}
+.tenant-page-slider-slide {
+  inset: 0;
+  position: absolute;
+}
+.tenant-page-slider-slide h1 {
+  max-width: 1120px;
+}
+.tenant-page-slider-slide > p {
+  color: var(--portal-muted);
+  font-size: clamp(17px, 1.5vw, 21px);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 760px;
+}
+.tenant-page-slider-footer {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+}
+.tenant-page-slider-footer .tenant-portal-actions {
+  margin-top: 0;
+}
+.tenant-page-slider-controls {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+.tenant-page-slider-dots {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  padding: 0 4px;
+}
+.tenant-page-slider-dots button {
+  background: #cfd7e3;
+  border: 0;
+  border-radius: 99px;
+  cursor: pointer;
+  height: 6px;
+  padding: 0;
+  transition:
+    background 180ms ease,
+    width 180ms ease;
+  width: 6px;
+}
+.tenant-page-slider-dots button[aria-current="true"] {
+  background: var(--portal-accent);
+  width: 36px;
+}
+.tenant-page-slider-arrow {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--portal-line);
+  border-radius: 50%;
+  color: var(--portal-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  padding: 0;
+  width: 42px;
+}
+.tenant-page-slider-arrow:hover {
+  border-color: var(--portal-accent);
+  color: var(--portal-accent);
+}
+.tenant-page-slider-arrow svg {
+  height: 16px;
+  width: 16px;
+}
+
 .tenant-page-section {
   margin: 0 auto;
   max-width: 1480px;
@@ -1100,6 +1182,25 @@
   }
   .tenant-page-intro h1 {
     font-size: 50px;
+  }
+  .tenant-page-slider {
+    height: 650px;
+    padding-bottom: 52px;
+    padding-top: 70px;
+  }
+  .tenant-page-slider-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 26px;
+  }
+  .tenant-page-slider-controls {
+    justify-content: space-between;
+  }
+  .tenant-page-slider-dots {
+    padding: 0;
+  }
+  .tenant-page-slider-dots button[aria-current="true"] {
+    width: 30px;
   }
   .tenant-page-section {
     padding: 70px 18px;

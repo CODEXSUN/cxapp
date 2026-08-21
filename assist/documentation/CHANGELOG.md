@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.64
+Current version: 1.0.65
 
-Release tag: v-1.0.64
+Release tag: v-1.0.65
 
-Changelog label: v 1.0.64
+Changelog label: v 1.0.65
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,28 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.65
+
+### [v 1.0.65] 2026-08-20 11:50 pm - Blog, storage, and deployment integration
+
+#### Database Changes
+
+- Database update: Yes (manual).
+- Added a separate File Manager database, application user, and grants for its owner-managed `fm_*` tables.
+- Added repeatable File Manager database provisioning for local development and container deployment.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.65.
+- Registered Blog and File Manager as tenant applications with owned routes, navigation, landing support, and workspaces.
+- Pinned the composed Blog package contract to version 1.0.9.
+- Made the public home-page story desk use the Blog API as its content source, with static content only for connection failures.
+- Added storage-aware Blog media paths and expanded the public tenant site with reusable editorial and marketing sections.
+- Resolved linked Blog and File Manager dependencies and styles through CXApp's single root dependency tree.
+- Added mandatory File Manager environment values, deployment validation, credential generation, and startup connectivity checks.
+- Added development contract tests for linked owner-package resolution and File Manager provisioning.
+- Added inline ledger-group creation to the Cash Book ledger workflow.
 
 ## v-1.0.64
 

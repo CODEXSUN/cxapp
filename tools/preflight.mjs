@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { createServer } from "node:net";
+import { pathToFileURL } from "node:url";
 
 const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
@@ -17,12 +18,13 @@ const apps = {
     host: "127.0.0.1",
     command: process.execPath,
     args: [
-      nodePackageBin("tsx", "dist/cli.mjs"),
-      "watch",
-      "--include",
-      "../../../.env",
-      "--exclude",
-      "../../../dist/**/*",
+      "--watch",
+      "--watch-path=src",
+      "--watch-path=../../../.env",
+      "--import",
+      pathToFileURL(resolve(root, "tools/register-root-package-resolution.mjs")).href,
+      "--import",
+      "tsx",
       "src/server.ts"
     ]
   },
@@ -54,6 +56,7 @@ await freePort(port, host);
 
 if (app === "platform-api") {
   ensurePlatformApiDependencies();
+  provisionFileManagerDatabase();
 }
 
 const child = spawn(
@@ -142,6 +145,14 @@ function parseRequiredPort(value, envKey) {
 function ensurePlatformApiDependencies() {
   console.log("  - Checking API package builds");
   ensureWorkspacePackageBuild("@cxapp/framework", "packages/framework");
+}
+
+function provisionFileManagerDatabase() {
+  console.log("  - Checking File Manager database access");
+  execFileSync(process.execPath, [resolve(root, "tools/provision-file-manager-db.mjs")], {
+    cwd: root,
+    stdio: "inherit"
+  });
 }
 
 function ensureWorkspacePackageBuild(workspaceName, packagePath) {

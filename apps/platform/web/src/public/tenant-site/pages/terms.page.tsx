@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, FileCheck2 } from "lucide-react";
+import { ArrowRight, Bot, FileCheck2, KeyRound, UserRoundCheck } from "lucide-react";
 import { TenantPageIntro } from "../blocks/tenant-page-intro";
+import { TenantSectionHeading } from "../blocks/tenant-section-heading";
 import { useTenantSite } from "../tenant-site.context";
 import { TenantSiteTemplate } from "../templates/tenant-site.template";
 
@@ -19,83 +20,50 @@ function TermsPageContent() {
     <>
       <TenantPageIntro
         eyebrow="Application terms"
-        title="Clear responsibility for billing data, staff access, and final financial decisions."
-        summary={`These baseline terms describe the ${portal.brandName} product-information pages and authenticated application use. Commercial, support, and deployment terms may be published separately.`}
+        summary={`These baseline terms cover ${portal.brandName} public pages and authenticated application use. Commercial, deployment, and support terms may be provided separately.`}
+        title="Clear responsibility for access, data, and final financial decisions."
+        visual="terms"
       />
-      <section className="tenant-page-section tenant-prose">
-        <article>
-          <span>01</span>
-          <div>
-            <h2>Public pages</h2>
-            <p>
-              Product pages provide general information about billing, accounts, document flows,
-              staff controls, security, and product direction. They do not grant access to business
-              data.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>02</span>
-          <div>
-            <h2>Authorised application access</h2>
-            <p>
-              Accounts may be used only by authorised people. Available areas and actions depend on
-              the responsibilities and permissions assigned to the signed-in user.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>03</span>
-          <div>
-            <h2>Document and financial accuracy</h2>
-            <p>
-              Users remain responsible for checking customer, item, tax, total, transport,
-              compliance, payment, and approval information before completing business actions.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>04</span>
-          <div>
-            <h2>Staff changes</h2>
-            <p>
-              Administrators are responsible for updating access when employees join, leave, or
-              change roles. Shared passwords and transferred personal credentials should not be used
-              as a handover method.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>05</span>
-          <div>
-            <h2>External services and automation</h2>
-            <p>
-              Connected mail, messaging, payment, compliance, storage, and AI providers may apply
-              their own availability, limits, and data-processing rules. Important automated or
-              assisted financial actions require appropriate review.
-            </p>
-          </div>
-        </article>
-        <article>
-          <span>06</span>
-          <div>
-            <h2>Service change and maintenance</h2>
-            <p>
-              Features and guidance may evolve as the product improves. Maintenance, migration, and
-              background processing should preserve business records, document history, and access
-              expectations.
-            </p>
-          </div>
-        </article>
+      <section className="tenant-page-section tenant-simple-section">
+        <TenantSectionHeading
+          eyebrow="Plain working terms"
+          title="People remain responsible for important business actions."
+        />
+        <div className="tenant-simple-grid is-four">
+          <article>
+            <KeyRound />
+            <span>Authorised access</span>
+            <h3>Accounts are for approved users and assigned responsibilities.</h3>
+            <p>Do not share passwords or use transferred personal credentials for handover.</p>
+          </article>
+          <article>
+            <FileCheck2 />
+            <span>Financial accuracy</span>
+            <h3>Review the document before completing the action.</h3>
+            <p>Users check customer, item, tax, total, payment, and compliance information.</p>
+          </article>
+          <article>
+            <UserRoundCheck />
+            <span>Staff changes</span>
+            <h3>Administrators keep access current.</h3>
+            <p>Change or remove permissions when people join, leave, or move roles.</p>
+          </article>
+          <article>
+            <Bot />
+            <span>Services and automation</span>
+            <h3>Connected tools have limits and need review.</h3>
+            <p>Important automated or assisted financial actions remain subject to approval.</p>
+          </article>
+        </div>
       </section>
-      <section className="tenant-page-section tenant-legal-note">
+      <section className="tenant-page-note is-gold">
         <FileCheck2 />
         <div>
-          <span>Need help with a specific workflow?</span>
-          <h2>Use the product contact route for billing setup, support, and service questions.</h2>
+          <span>Need a specific answer?</span>
+          <h2>Use the contact route for product, deployment, support, or commercial questions.</h2>
         </div>
         <Link to="/contact">
-          Contact options <ArrowRight />
+          Contact <ArrowRight />
         </Link>
       </section>
     </>

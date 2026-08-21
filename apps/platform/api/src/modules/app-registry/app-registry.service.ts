@@ -80,6 +80,28 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     moduleKey: "platform.task-manager",
     stack: "platform-task-manager",
     uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant-owned articles, authors, media, SEO, discussions, and publishing.",
+    appId: "blog",
+    id: 0,
+    label: "Blog",
+    moduleKey: "blog",
+    stack: "blog",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Images, documents, folders, external links, and cloud storage connections.",
+    appId: "file-manager",
+    id: 0,
+    label: "File Manager",
+    moduleKey: "file-manager.file-object",
+    stack: "file-manager",
+    uuid: ""
   }
 ];
 

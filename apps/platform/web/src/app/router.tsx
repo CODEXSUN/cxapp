@@ -39,9 +39,10 @@ const TenantSecurityPage = lazy(() =>
   }))
 );
 const TenantBlogPage = lazy(() =>
-  import("../public/tenant-site/pages/blog.page").then((module) => ({
-    default: module.TenantBlogPage
-  }))
+  import("../public/tenant-blog-package").then((module) => ({ default: module.TenantBlogPackagePage }))
+);
+const TenantBlogArticlePage = lazy(() =>
+  import("../public/tenant-blog-package").then((module) => ({ default: module.TenantBlogArticlePackagePage }))
 );
 const TenantUpdatesPage = lazy(() =>
   import("../public/tenant-site/pages/updates.page").then((module) => ({
@@ -114,6 +115,12 @@ const blogRoute = createRoute({
   component: TenantBlogPage,
   getParentRoute: () => rootRoute,
   path: "/blog"
+});
+
+const blogArticleRoute = createRoute({
+  component: TenantBlogArticlePage,
+  getParentRoute: () => rootRoute,
+  path: "/blog/$slug"
 });
 
 const updatesRoute = createRoute({
@@ -236,6 +243,7 @@ const routeTree = rootRoute.addChildren([
   featuresRoute,
   securityRoute,
   blogRoute,
+  blogArticleRoute,
   updatesRoute,
   aboutRoute,
   contactRoute,

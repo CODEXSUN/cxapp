@@ -31,9 +31,19 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(rootPackage.version)
     },
     optimizeDeps: {
-      include: ["react-is"]
+      exclude: ["@codexsun/blog/web", "@codexsun/file-manager/web"],
+      include: [
+        "react-is",
+        "use-sync-external-store/shim",
+        "use-sync-external-store/shim/index.js",
+        "use-sync-external-store/shim/with-selector",
+        "use-sync-external-store/shim/with-selector.js"
+      ]
     },
     plugins: [tailwindcss(), react()],
+    resolve: {
+      preserveSymlinks: true
+    },
     ...(command === "serve" ? { server: platformDevelopmentServer(runtimeEnv) } : {})
   };
 });

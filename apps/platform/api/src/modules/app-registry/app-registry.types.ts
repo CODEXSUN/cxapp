@@ -1,5 +1,12 @@
 export type PlatformAppId =
-  "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager";
+  | "application"
+  | "billing"
+  | "accounts"
+  | "devkit"
+  | "mail"
+  | "task-manager"
+  | "blog"
+  | "file-manager";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -9,7 +16,15 @@ export type PlatformAppDefinition = {
   appId: PlatformAppId;
   label: string;
   moduleKey: string;
-  stack: "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager";
+  stack:
+    | "platform"
+    | "billing"
+    | "accounts"
+    | "devkit"
+    | "mail"
+    | "platform-task-manager"
+    | "blog"
+    | "file-manager";
   uuid: string;
 };
 

@@ -22,6 +22,7 @@ import { BookEntryList } from "./accounting.book-list";
 import { BookEntryShow } from "./accounting.book-show";
 import {
   createCashBookLedger,
+  createCoreLedgerGroup,
   formatMoney,
   getBookEntry,
   getJournal,
@@ -68,6 +69,7 @@ export function BookWorkspace({
   const cashBookContextQuery = useCashBookContext(kind === "cash");
   const cashLedgerGroupsQuery = useCashBookLedgerGroups(kind === "cash");
   const createLedger = useMutation({ mutationFn: createCashBookLedger });
+  const createLedgerGroup = useMutation({ mutationFn: createCoreLedgerGroup });
   const entryFilters = useMemo(
     () => [
       { id: "all", label: "All entries" },
@@ -181,6 +183,12 @@ export function BookWorkspace({
           const created = await createLedger.mutateAsync(payload);
           await cashLedgersQuery.refetch();
           toast.success("Ledger created", { description: created.name });
+          return created;
+        }}
+        onCreateLedgerGroup={async (payload) => {
+          const created = await createLedgerGroup.mutateAsync(payload);
+          await cashLedgerGroupsQuery.refetch();
+          toast.success("Ledger group created", { description: created.name });
           return created;
         }}
         saving={save.isPending}
