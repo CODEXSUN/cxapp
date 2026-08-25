@@ -67,6 +67,26 @@ export function requireTenantAccess(input: {
   return claims;
 }
 
+/**
+ * Compatibility bridge for packages published before the host-adapter contract.
+ * New add-ons must receive authorization and tenant context from their host.
+ */
+export function requireApplicationAccess(input: {
+  applicationDatabase: string;
+  authorization: string | string[] | undefined;
+  secret: string;
+}) {
+  const claims = requirePlatformAccess({
+    allowedUserTypes: ["tenant"],
+    authorization: input.authorization,
+    secret: input.secret
+  });
+  if (!claims.tenantId || claims.tenantDbName !== input.applicationDatabase) {
+    throw AppError.forbidden("Application session does not match this database runtime.");
+  }
+  return claims;
+}
+
 function sessionExpired(message: string) {
   return new AppError({ code: "AUTH_SESSION_EXPIRED", message, statusCode: 401 });
 }

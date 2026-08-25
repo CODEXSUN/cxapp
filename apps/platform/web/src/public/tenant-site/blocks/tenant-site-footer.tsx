@@ -1,7 +1,47 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink, GitFork } from "lucide-react";
+import type { SVGProps } from "react";
 import { useTenantSite } from "../tenant-site.context";
 import { TenantSiteLogo } from "./tenant-site-logo";
+
+const socialLinks = [
+  {
+    href: "https://www.facebook.com/codexsun",
+    icon: FacebookIcon,
+    label: "CODEXSUN on Facebook",
+    tone: "facebook"
+  },
+  {
+    href: "https://x.com/codexsun",
+    icon: XIcon,
+    label: "CODEXSUN on X",
+    tone: "x"
+  },
+  {
+    href: "https://www.instagram.com/codexsun",
+    icon: InstagramIcon,
+    label: "CODEXSUN on Instagram",
+    tone: "instagram"
+  },
+  {
+    href: "https://github.com/CODEXSUN",
+    icon: GitFork,
+    label: "CODEXSUN on GitHub",
+    tone: "github"
+  },
+  {
+    href: "https://www.linkedin.com/company/codexsun",
+    icon: LinkedInIcon,
+    label: "CODEXSUN on LinkedIn",
+    tone: "linkedin"
+  },
+  {
+    href: "https://www.youtube.com/@codexsun",
+    icon: YouTubeIcon,
+    label: "CODEXSUN on YouTube",
+    tone: "youtube"
+  }
+] as const;
 
 export function TenantSiteFooter() {
   const { authenticated, portal } = useTenantSite();
@@ -35,10 +75,21 @@ export function TenantSiteFooter() {
             Features, automation, billing, accounts, communication, records, and daily operations in
             one connected business product.
           </p>
-          <span className="tenant-footer-powered">
-            Powered by <strong>AARAN SOFTWARE</strong>
-          </span>
-          {portal.domain ? <small>{portal.domain}</small> : null}
+          <nav className="tenant-footer-socials" aria-label="Connect with CODEXSUN">
+            {socialLinks.map(({ href, icon: Icon, label, tone }) => (
+              <a
+                aria-label={label}
+                className={`is-${tone}`}
+                href={href}
+                key={label}
+                rel={href.startsWith("http") ? "noreferrer" : undefined}
+                target={href.startsWith("http") ? "_blank" : undefined}
+                title={label}
+              >
+                <Icon aria-hidden="true" />
+              </a>
+            ))}
+          </nav>
         </div>
         <div className="tenant-portal-footer-links">
           <section>
@@ -74,11 +125,57 @@ export function TenantSiteFooter() {
         </div>
       </div>
       <div className="tenant-portal-footer-bottom">
-        <span>Business operating platform</span>
+        <span>Clear work, trusted records, and practical automation in one platform.</span>
+        <span className="tenant-footer-bottom-powered">
+          Powered by <strong>AARAN SOFTWARE — Sundar</strong>
+        </span>
         <span>
-          © {new Date().getFullYear()} {portal.brandName} · AARAN SOFTWARE
+          © {new Date().getFullYear()} {portal.brandName}
         </span>
       </div>
     </footer>
+  );
+}
+
+function FacebookIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M14 8h3V4.5h-3c-3 0-5 2-5 5V12H6v4h3v6h4v-6h3.2l.8-4H13V9.5c0-1 .5-1.5 1-1.5Z" />
+    </svg>
+  );
+}
+
+function XIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M5 4l14 16M19 4L5 20" />
+    </svg>
+  );
+}
+
+function InstagramIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function LinkedInIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M6 9v10M6 5.5v.5M10.5 19v-6c0-2.2 1.4-3.8 3.6-3.8 2.4 0 3.9 1.6 3.9 4.3V19M10.5 9.5V19" />
+    </svg>
+  );
+}
+
+function YouTubeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <rect x="2.5" y="6" width="19" height="12" rx="4" />
+      <path d="m10 9 5 3-5 3V9Z" />
+    </svg>
   );
 }

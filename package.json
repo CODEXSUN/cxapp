@@ -17,6 +17,7 @@
     "test:dev-stack": "node --test tools/dev-stack-contract.test.mjs",
     "test:product-stacks": "node --test tools/product-stack-contract.test.mjs",
     "test:platform-runtime": "npm run build -w @cxapp/framework && node --test tools/platform-runtime-contract.test.mjs",
+    "test:addon-contract": "npm run build -w @cxapp/framework && node --test tools/addon-contract.test.mjs",
     "test:platform-persistence": "node --test tools/platform-persistence-contract.test.mjs",
     "test:deployment-env": "node --test tools/deployment-env-contract.test.mjs",
     "test:migration-contract": "npm run build -w @cxapp/framework && node --test tools/migration-contract.test.mjs",

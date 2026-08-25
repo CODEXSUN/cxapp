@@ -47,5 +47,15 @@ export class AppError<TDetails = unknown> extends Error {
 }
 
 export function isAppError(error: unknown): error is AppError {
-  return error instanceof AppError;
+  if (error instanceof AppError) return true;
+  if (!error || typeof error !== "object") return false;
+  const value = error as Record<string, unknown>;
+  return (
+    typeof value.code === "string" &&
+    typeof value.message === "string" &&
+    typeof value.statusCode === "number" &&
+    Number.isInteger(value.statusCode) &&
+    value.statusCode >= 400 &&
+    value.statusCode <= 599
+  );
 }

@@ -20,6 +20,19 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## Unreleased
+
+#### Database Changes
+
+- Database update: No host-owned schema change.
+- Prepared host-database Blog provisioning through CXApp's tenant migration ledger when the next host-neutral Blog tag is installed.
+
+#### App Codebase Changes
+
+- Added the versioned add-on host contract and lifecycle registry with compatibility and capability validation.
+- Centralised Blog and File Manager activation, health diagnostics, tenant adapters, and reverse-order shutdown.
+- Added contract tests for valid activation and incompatible add-on rejection.
+
 ## v-1.0.65
 
 ### [v 1.0.65] 2026-08-20 11:50 pm - Blog, storage, and deployment integration

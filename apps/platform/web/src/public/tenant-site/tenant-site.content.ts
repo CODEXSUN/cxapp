@@ -211,63 +211,6 @@ export const billingPosts = [
   }
 ] as const;
 
-export const codexsunStories = [
-  {
-    description:
-      "A clear operating view connects documents, people, money, and the next action without making daily work feel heavy.",
-    href: "/workspace",
-    image: "/marketing/codexsun-product-desk.jpg",
-    label: "Product story",
-    publishedAt: "2026-08-20",
-    title: "Why a business operating platform should begin with the work people already know"
-  },
-  {
-    description:
-      "Rules and background work can remove repeated checks while people stay responsible for important financial decisions.",
-    href: "/features",
-    image: "/marketing/codexsun-automation-flow.jpg",
-    label: "Automation",
-    publishedAt: "2026-08-19",
-    title: "Automation that clears routine work instead of hiding responsibility"
-  },
-  {
-    description:
-      "Billing, accounts, communication, records, and staff context become more useful when they share one dependable flow.",
-    href: "/features",
-    image: "/marketing/codexsun-business-team.jpg",
-    label: "Technology",
-    publishedAt: "2026-08-18",
-    title: "Connected features help a growing team work like one business"
-  },
-  {
-    description:
-      "Quotations, invoices, compliance documents, receipts, and collections can carry checked information forward.",
-    href: "/workspace",
-    image: "/marketing/codexsun-product-desk.jpg",
-    label: "Billing",
-    publishedAt: "2026-08-17",
-    title: "Enter the transaction once, then keep every next document connected"
-  },
-  {
-    description:
-      "Clear access, visible status, and activity history make staff changes easier without losing the business trail.",
-    href: "/security",
-    image: "/marketing/codexsun-business-team.jpg",
-    label: "Operations",
-    publishedAt: "2026-08-16",
-    title: "A better handover protects momentum when responsibilities change"
-  },
-  {
-    description:
-      "Progressive capability lets a business start with simple billing and add deeper control only when it becomes useful.",
-    href: "/updates",
-    image: "/marketing/codexsun-automation-flow.jpg",
-    label: "Product direction",
-    publishedAt: "2026-08-15",
-    title: "Rich features should grow around the working day, not compete with it"
-  }
-] as const;
-
 export const codexsunClientSegments = [
   {
     industry: "Textile production",

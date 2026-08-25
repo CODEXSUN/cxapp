@@ -56,6 +56,7 @@ import { getSessionIdentity, logout } from "../../shared/api/platform-api";
 import { setPlatformDocumentTitle } from "../../shared/document/PageTitle";
 import { publishDesktopWorkspace } from "../../shared/desktop/desktop-bridge";
 import { publishAccountingYear, publishCompanyContext } from "../../shared/tenant/runtime-context";
+import { blogEditorHost } from "../../modules/blog/blog-host";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
@@ -72,7 +73,11 @@ const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/report
 const loadAccountsOverviewModule = () => import("@cxapp/accounts-web/modules/overview");
 const loadAccountingModule = () => import("@cxapp/accounts-web/modules/accounting");
 const loadBlogModule = () => import("@codexsun/blog/web");
-const loadFileManagerModule = () => import("@codexsun/file-manager/web");
+const loadFileManagerModule = () =>
+  import("@codexsun/file-manager/web").then((module) => {
+    module.configureFileManagerClient({ baseUrl: "/api/platform/file-manager" });
+    return module;
+  });
 
 const billingWorkspacePreloaders = [
   loadBillingDashboardModule,
@@ -733,7 +738,7 @@ export function AppDesk() {
         <main className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5">
           <Suspense fallback={<GlobalLoader className="min-h-[32rem]" fullScreen={false} />}>
             {safePage === "blog.overview" || safePage === "blog.articles" ? (
-              <BlogsEditorWorkspace />
+              <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
             {safePage === "file-manager.files" ? <FileBrowserWorkspace /> : null}
             {safePage === "file-manager.connections" ? <StorageConnectionsWorkspace /> : null}

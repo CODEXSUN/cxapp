@@ -43,12 +43,12 @@ import { registerAuthRequestContext } from "./auth/auth-request-context.js";
 import { TenantDomainRepository } from "./modules/tenant-domain/tenant-domain.repository.js";
 import { registerDevkitHost } from "./devkit-host.js";
 import { devkitApiModuleKeys } from "@cxapp/devkit-api";
-import { blogsApiModuleKeys, closeBlogsDatabase, registerBlogsApi } from "@codexsun/blog/api";
 import {
-  closeFileManagerDatabase,
-  fileManagerApiModuleKeys,
-  registerFileManagerApi
-} from "@codexsun/file-manager/api";
+  addonApiModuleKeys,
+  activePlatformAddons,
+  closePlatformAddons,
+  registerPlatformAddons
+} from "./addon-host.js";
 
 export async function createApp() {
   console.info("[platform.boot] bootstrap started");
@@ -78,12 +78,8 @@ export async function createApp() {
         await closePlatformDatabase();
       },
       async () => {
-        console.info("[shutdown] closing Blog MariaDB pool");
-        await closeBlogsDatabase();
-      },
-      async () => {
-        console.info("[shutdown] closing File Manager MariaDB pool");
-        await closeFileManagerDatabase();
+        console.info("[shutdown] closing add-on runtimes");
+        await closePlatformAddons();
       }
     ]
   });
@@ -107,8 +103,7 @@ export async function createApp() {
             ...billingApiModuleKeys,
             ...accountsApiModuleKeys,
             ...devkitApiModuleKeys,
-            ...blogsApiModuleKeys,
-            ...fileManagerApiModuleKeys,
+            ...addonApiModuleKeys,
             appRegistryModule.key,
             tenantModule.key,
             tenantUserModule.key,
@@ -131,6 +126,7 @@ export async function createApp() {
             appOrchestrationModule.key,
             mailModule.key
           ],
+          addons: activePlatformAddons(),
           runtime: "platform-foundation"
         },
         status: "ok"
@@ -160,10 +156,8 @@ export async function createApp() {
   console.info("[platform.routes] Billing package ready");
   await registerAccountsApi(app);
   console.info("[platform.routes] Accounts package ready");
-  await registerBlogsApi(app);
-  console.info("[platform.routes] Blog package ready");
-  await registerFileManagerApi(app, { resolveContext: fileManagerContext });
-  console.info("[platform.routes] File Manager package ready");
+  await registerPlatformAddons(app);
+  console.info("[platform.routes] add-on packages ready");
   await registerModules(
     [
       appRegistryModule,
@@ -246,14 +240,4 @@ async function mailContext(request: FastifyRequest) {
     throw AppError.validation("x-company-id is required for Mail access.");
   }
   return { ...context, companyId, database: context.database as never };
-}
-
-function fileManagerContext(request: FastifyRequest) {
-  const payload = request.authContext?.payload;
-  if (!payload?.userId) throw AppError.unauthorized("File Manager authentication is required.");
-  return {
-    actorId: payload.userId,
-    host: "cxapp" as const,
-    tenantId: payload.tenantId ?? "platform"
-  };
 }

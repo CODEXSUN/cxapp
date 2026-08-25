@@ -469,6 +469,8 @@ Current registered modules in `platformModuleCatalog`:
 9. **Business apps use strict backend/frontend module folders** - Runnable business backends use `api/src/index.ts` plus `api/src/modules/`; frontend modules remain under the app's `web` workspace. The API composition root registers modules but does not own business behavior.
 10. **Platform web composes app web packages** - `apps/platform/web` remains the shell and route/menu composer. Business screens must live in the owning app web package and be imported or registered through app manifests.
 
+11. **External add-ons use the host-adapter contract** - `packages/framework/src/addons` validates manifest version, host API compatibility, runtime mode, database mode, and required capabilities before activation. `apps/platform/api/src/addon-host.ts` is the only API composition point for add-on registration and shutdown. Add-ons own their routes, tables, migrations, and web exports; CXApp supplies verified tenant identity, authorization, database access, migration-ledger execution, and optional infrastructure through public adapters.
+
 Current runtime composition supersedes the earlier gateway wording in decision 3: Platform, Core,
 and Billing run as app-owned API packages. Product stacks start selected APIs
 in dependency order and integrate through public contracts, injected dependencies, or approved

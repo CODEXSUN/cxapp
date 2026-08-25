@@ -32,6 +32,6 @@
     "sonner": "^2.0.8",
     "zod": "^4.4.3",
     "@codexsun/blog": "github:CODEXSUN/blog#v-1.0.9",
-    "@codexsun/file-manager": "github:CODEXSUN/file-manager#v-1.0.0"
+    "@codexsun/file-manager": "github:CODEXSUN/file-manager#v-1.1.1"
   }
 }

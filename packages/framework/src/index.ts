@@ -1,4 +1,5 @@
 export * from "./api/index.js";
+export * from "./addons/index.js";
 export * from "./config/index.js";
 export * from "./db/index.js";
 export * from "./env/index.js";

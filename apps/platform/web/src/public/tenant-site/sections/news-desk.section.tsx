@@ -1,38 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { blogMediaUrl, blogPlaceholder, searchPublicArticles } from "@codexsun/blog/web";
 import { ArrowRight } from "lucide-react";
-import { listTenantPublicStories, tenantStoryImage } from "../tenant-news.services";
-import { codexsunStories } from "../tenant-site.content";
 import { useTenantSite } from "../tenant-site.context";
-
-type HomeStory = {
-  description: string;
-  href: string;
-  image: string;
-  label: string;
-  publishedAt: string;
-  title: string;
-};
 
 export function TenantNewsDeskSection() {
   const { portal } = useTenantSite();
   const query = useQuery({
-    queryFn: listTenantPublicStories,
-    queryKey: ["tenant-public-stories", "home"]
+    queryFn: () => searchPublicArticles(),
+    queryKey: ["public-blog"]
   });
-  const tenantKey = portal.tenantCode?.trim().toLowerCase() || "public";
+  const tenantKey = portal.tenantCode?.trim().toLowerCase() || "codexsun";
   const mediaBasePath = portal.blogMediaPath || `/storage/${tenantKey}/public/blogs/images`;
-  const stories = query.isError
-    ? [...codexsunStories]
-    : (query.data ?? []).slice(0, 6).map((story, index): HomeStory => ({
-        description: story.excerpt,
-        href: `/blog/${story.slug}`,
-        image:
-          tenantStoryImage(story.featuredImage, mediaBasePath) ||
-          codexsunStories[index % codexsunStories.length]!.image,
-        label: story.kind === "page" ? "Product note" : "Daily story",
-        publishedAt: story.publishedAt ?? new Date().toISOString(),
-        title: story.title
-      }));
+  const stories = (query.data ?? []).slice(0, 6);
 
   return (
     <section className="tenant-news-desk">
@@ -51,36 +30,43 @@ export function TenantNewsDeskSection() {
         {query.isLoading ? (
           <p className="tenant-news-source-note">Loading latest stories…</p>
         ) : null}
-        {stories.map((story, index) => (
-          <article className={index === 0 ? "is-lead" : undefined} key={story.title}>
-            <a href={story.href}>
-              <figure>
-                <img
-                  src={story.image}
-                  alt=""
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src =
-                      codexsunStories[index % codexsunStories.length]!.image;
-                  }}
-                />
-              </figure>
-              <div>
-                <span>
-                  {story.label} · {formatStoryDate(story.publishedAt)}
-                </span>
-                <h3>{story.title}</h3>
-                <p>{story.description}</p>
-              </div>
-            </a>
-          </article>
-        ))}
+        {query.isError ? (
+          <p className="tenant-news-source-note">Stories are temporarily unavailable.</p>
+        ) : null}
+        {!query.isLoading && !query.isError && !stories.length ? (
+          <p className="tenant-news-source-note">Published stories will appear here.</p>
+        ) : null}
+        {stories.map((story, index) => {
+          const fallbackImage = blogPlaceholder("");
+          const image = story.featuredImage
+            ? blogMediaUrl(story.featuredImage, mediaBasePath)
+            : fallbackImage;
+          return (
+            <article className={index === 0 ? "is-lead" : undefined} key={story.id}>
+              <a href={`/blog/${story.slug}`}>
+                <figure>
+                  <img
+                    src={image}
+                    alt={story.imageAlt}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = fallbackImage;
+                    }}
+                  />
+                </figure>
+                <div>
+                  <span>
+                    {story.kind === "page" ? "Product note" : "Daily story"} ·{" "}
+                    {formatStoryDate(story.publishedAt ?? story.createdAt)}
+                  </span>
+                  <h3>{story.title}</h3>
+                  <p>{story.excerpt}</p>
+                </div>
+              </a>
+            </article>
+          );
+        })}
       </div>
-      {query.isError ? (
-        <p className="tenant-news-source-note">
-          Showing the CODEXSUN editorial selection while live stories reconnect.
-        </p>
-      ) : null}
     </section>
   );
 }

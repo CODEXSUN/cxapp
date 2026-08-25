@@ -1135,7 +1135,7 @@
 
 .tenant-footer-brief {
   align-items: center;
-  border-bottom: 1px solid var(--portal-line);
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
   display: grid;
   gap: 32px;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1168,15 +1168,92 @@
   padding-block: clamp(44px, 6vw, 76px);
 }
 
-.tenant-footer-powered {
-  color: var(--portal-muted);
-  display: block;
-  font-size: 12px;
-  padding-top: 16px;
+.tenant-editorial-footer .tenant-portal-footer-bottom {
+  align-items: center;
+  display: grid;
+  font-size: 11px;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-.tenant-footer-powered strong {
-  color: var(--portal-ink);
+.tenant-footer-socials {
+  display: flex;
+  gap: 10px;
+  padding-top: 20px;
+}
+
+.tenant-footer-socials a {
+  align-items: center;
+  border: 1px solid rgb(255 255 255 / 18%);
+  color: #aeb9c9;
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  position: relative;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+  width: 42px;
+}
+
+.tenant-footer-socials a:hover,
+.tenant-footer-socials a:focus-visible {
+  color: #fff;
+  outline: none;
+  transform: translateY(-3px);
+}
+
+.tenant-footer-socials a.is-facebook:hover,
+.tenant-footer-socials a.is-facebook:focus-visible {
+  background: #1877f2;
+  border-color: #6ca8f7;
+}
+
+.tenant-footer-socials a.is-x:hover,
+.tenant-footer-socials a.is-x:focus-visible {
+  background: #050505;
+  border-color: #fff;
+}
+
+.tenant-footer-socials a.is-instagram:hover,
+.tenant-footer-socials a.is-instagram:focus-visible {
+  background: #c13584;
+  border-color: #ea72b4;
+}
+
+.tenant-footer-socials a.is-github:hover,
+.tenant-footer-socials a.is-github:focus-visible {
+  background: #24292f;
+  border-color: #fff;
+}
+
+.tenant-footer-socials a.is-linkedin:hover,
+.tenant-footer-socials a.is-linkedin:focus-visible {
+  background: #0a66c2;
+  border-color: #62a3e4;
+}
+
+.tenant-footer-socials a.is-youtube:hover,
+.tenant-footer-socials a.is-youtube:focus-visible {
+  background: #f03;
+  border-color: #ff708d;
+}
+
+.tenant-footer-socials svg {
+  height: 19px;
+  stroke-width: 1.8;
+  width: 19px;
+}
+
+.tenant-footer-bottom-powered {
+  color: #aeb9c9;
+  text-transform: none;
+}
+
+.tenant-footer-bottom-powered strong {
+  color: #fff;
 }
 
 @media (max-width: 1050px) {
@@ -1363,6 +1440,11 @@
 
   .tenant-footer-main {
     gap: 44px;
+  }
+
+  .tenant-editorial-footer .tenant-portal-footer-bottom {
+    align-items: start;
+    grid-template-columns: 1fr;
   }
 }
 

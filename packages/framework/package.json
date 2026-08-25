@@ -12,6 +12,10 @@
       "types": "./src/api/index.ts",
       "default": "./api.js"
     },
+    "./addons": {
+      "types": "./src/addons/index.ts",
+      "default": "./addons.js"
+    },
     "./config": {
       "types": "./src/config/index.ts",
       "default": "./config.js"
