@@ -73,11 +73,6 @@ const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/report
 const loadAccountsOverviewModule = () => import("@cxapp/accounts-web/modules/overview");
 const loadAccountingModule = () => import("@cxapp/accounts-web/modules/accounting");
 const loadBlogModule = () => import("@codexsun/blog/web");
-const loadFileManagerModule = () =>
-  import("@codexsun/file-manager/web").then((module) => {
-    module.configureFileManagerClient({ baseUrl: "/api/platform/file-manager" });
-    return module;
-  });
 
 const billingWorkspacePreloaders = [
   loadBillingDashboardModule,
@@ -330,12 +325,6 @@ const BankBookWorkspace = lazyWorkspace(() =>
 const BlogsEditorWorkspace = lazyWorkspace(() =>
   loadBlogModule().then((module) => module.BlogsEditorWorkspace)
 );
-const FileBrowserWorkspace = lazyWorkspace(() =>
-  loadFileManagerModule().then((module) => module.FileBrowserWorkspace)
-);
-const StorageConnectionsWorkspace = lazyWorkspace(() =>
-  loadFileManagerModule().then((module) => module.StorageConnectionsWorkspace)
-);
 
 const TenantUserWorkspace = lazy(() =>
   import("../../modules/tenant-user").then((module) => ({ default: module.TenantUserWorkspace }))
@@ -362,8 +351,6 @@ const TenantRolePermissionWorkspace = lazy(() =>
 type AppPage =
   | "blog.overview"
   | "blog.articles"
-  | "file-manager.files"
-  | "file-manager.connections"
   | "application.overview"
   | "application.landing"
   | "application.profile"
@@ -488,9 +475,7 @@ export function AppDesk() {
     ? pageForApp(landingApp)
     : page.startsWith("blog") && !switchableApps.includes("blog")
       ? pageForApp(landingApp)
-      : page.startsWith("file-manager") && !switchableApps.includes("file-manager")
-        ? pageForApp(landingApp)
-        : page.startsWith("accounts") && !switchableApps.includes("accounts")
+      : page.startsWith("accounts") && !switchableApps.includes("accounts")
           ? pageForApp(landingApp)
           : (page.startsWith("billing") ||
                 (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
@@ -740,8 +725,6 @@ export function AppDesk() {
             {safePage === "blog.overview" || safePage === "blog.articles" ? (
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
-            {safePage === "file-manager.files" ? <FileBrowserWorkspace /> : null}
-            {safePage === "file-manager.connections" ? <StorageConnectionsWorkspace /> : null}
             {safePage === "application.overview" ? (
               <ApplicationOverview signedInUser={signedInUser} />
             ) : null}
@@ -1362,8 +1345,6 @@ function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
     "blog.overview": "Dashboard",
     "blog.articles": "Articles",
-    "file-manager.files": "Files",
-    "file-manager.connections": "Storage Connections",
     "application.overview": "Overview",
     "application.landing": "Landing Desk",
     "application.profile": "Application Profile",
@@ -1483,9 +1464,6 @@ function appFromPage(
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
   if (page.startsWith("blog")) return enabledApps.includes("blog") ? "blog" : landingApp;
-  if (page.startsWith("file-manager")) {
-    return enabledApps.includes("file-manager") ? "file-manager" : landingApp;
-  }
   if (page.startsWith("core.organisation")) return "application";
   if (page.startsWith("billing") || page.startsWith("core"))
     return enabledApps.includes("billing") ? "billing" : landingApp;

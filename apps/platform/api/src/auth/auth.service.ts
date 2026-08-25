@@ -38,14 +38,14 @@ export class AuthService {
   ) {
     const shared = isSharedApplicationHost(input.loginHost);
     const corporateId = input.corporateId?.trim().toUpperCase() ?? "";
-    if (!corporateId) return null;
+    if (shared && !corporateId) return null;
     const tenant = shared
       ? await tenantRepository.findByCorporateId(corporateId)
       : await tenantRepository.findByDomain(input.loginHost);
     if (
       !tenant ||
       tenant.status !== "active" ||
-      tenant.corporateId?.trim().toUpperCase() !== corporateId
+      (corporateId && tenant.corporateId?.trim().toUpperCase() !== corporateId)
     ) {
       return null;
     }

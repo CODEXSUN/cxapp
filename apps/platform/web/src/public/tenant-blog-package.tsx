@@ -5,8 +5,6 @@ import { useTenantSite } from "./tenant-site/tenant-site.context";
 
 function TenantBlogContent({ slug }: { slug?: string }) {
   const { portal } = useTenantSite();
-  // Local/public CXApp uses the seeded CODEXSUN workspace until a tenant
-  // context is resolved; authenticated/custom-domain requests use their key.
   const tenantKey = portal.tenantCode?.trim().toLowerCase() || "codexsun";
   const mediaBasePath = portal.blogMediaPath || `/storage/${tenantKey}/public/blogs/images`;
   if (slug) return <PublicArticlePage slug={slug} mediaBasePath={mediaBasePath} />;

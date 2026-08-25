@@ -48,6 +48,7 @@ export class AddonHostRegistry {
         throw new AggregateError(
           [activationError, closeError],
           `Add-on activation and cleanup failed: ${registration.manifest.key}`,
+          { cause: closeError },
         );
       }
       throw activationError;

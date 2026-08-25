@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/billing-api",
-  "version": "1.0.65",
+  "version": "1.0.67",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,7 +12,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@cxapp/framework": "^1.0.65",
+    "@cxapp/framework": "^1.0.67",
     "fastify": "^5.12.1",
     "kysely": "^0.29.5",
     "mysql2": "^3.23.4",

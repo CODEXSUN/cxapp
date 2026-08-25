@@ -56,7 +56,6 @@ await freePort(port, host);
 
 if (app === "platform-api") {
   ensurePlatformApiDependencies();
-  provisionFileManagerDatabase();
 }
 
 const child = spawn(
@@ -145,14 +144,6 @@ function parseRequiredPort(value, envKey) {
 function ensurePlatformApiDependencies() {
   console.log("  - Checking API package builds");
   ensureWorkspacePackageBuild("@cxapp/framework", "packages/framework");
-}
-
-function provisionFileManagerDatabase() {
-  console.log("  - Checking File Manager database access");
-  execFileSync(process.execPath, [resolve(root, "tools/provision-file-manager-db.mjs")], {
-    cwd: root,
-    stdio: "inherit"
-  });
 }
 
 function ensureWorkspacePackageBuild(workspaceName, packagePath) {

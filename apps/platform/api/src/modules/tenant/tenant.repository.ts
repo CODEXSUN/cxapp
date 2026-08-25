@@ -50,7 +50,8 @@ export class TenantRepository {
   }
 
   async create(input: TenantSavePayload) {
-    const resolvedTenantKey = input.slug || input.tenantCode;
+    const uuid = normalizeUuid(input.uuid) || createPublicUuid();
+    const resolvedTenantKey = uuid;
     const tenantInput = {
       ...input,
       primaryDomain: normalizeTenantDomain(
@@ -59,7 +60,7 @@ export class TenantRepository {
       storagePrivateRoot: input.storagePrivateRoot || tenantPrivateStorageRoot(resolvedTenantKey),
       storagePublicRoot: input.storagePublicRoot || tenantPublicStorageRoot(resolvedTenantKey),
       storageRoot: input.storageRoot || tenantStorageRoot(resolvedTenantKey),
-      uuid: normalizeUuid(input.uuid) || createPublicUuid()
+      uuid
     };
     const result = await getPlatformDatabase()
       .insertInto("tenants")

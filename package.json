@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.65",
+  "version": "1.0.67",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -44,7 +44,6 @@
     "db:migrations:rollback": "tsx apps/platform/api/src/database/db-cli.ts migrations:rollback",
     "db:migrations:test-local": "tsx apps/platform/api/src/database/db-cli.ts migrations:test-local",
     "db:seed": "tsx apps/platform/api/src/database/db-cli.ts seed",
-    "db:file-manager:provision": "node tools/provision-file-manager-db.mjs",
     "db:drop": "tsx apps/platform/api/src/database/db-cli.ts drop",
     "dbmigrate:fresh": "tsx apps/platform/api/src/database/db-cli.ts fresh",
     "db:dump:create": "tsx apps/platform/api/src/database/db-cli.ts dump:create",

@@ -7,6 +7,7 @@ import { assertDatabaseName, quoteIdentifier } from "./database-utils.js";
 import type { TenantDatabase } from "./schema.js";
 
 const tenantConnections = new Map<string, Kysely<TenantDatabase>>();
+const tenantDatabaseOwners = new Map<string, string>();
 
 export async function createTenantDatabase(target: string | Tenant) {
   const tenant = typeof target === "string" ? null : target;
@@ -36,7 +37,13 @@ export async function createTenantDatabase(target: string | Tenant) {
 }
 
 export function getTenantDatabase(tenant: Tenant) {
-  const key = assertDatabaseName(tenant.dbName, "tenant database name");
+  const databaseName = assertDatabaseName(tenant.dbName, "tenant database name");
+  const key = tenant.uuid.trim().toLowerCase();
+  if (!key) throw new Error("Tenant UUID is required to resolve its database pool.");
+  const databaseOwner = tenantDatabaseOwners.get(databaseName);
+  if (databaseOwner && databaseOwner !== key) {
+    throw new Error(`Tenant database "${databaseName}" is already owned by another tenant.`);
+  }
   const existing = tenantConnections.get(key);
   if (existing) {
     return existing;
@@ -45,7 +52,7 @@ export function getTenantDatabase(tenant: Tenant) {
   const database = new Kysely<TenantDatabase>({
     dialect: new MysqlDialect({
       pool: createPool({
-        database: assertDatabaseName(tenant.dbName, "tenant database name"),
+        database: databaseName,
         connectionLimit: 10,
         host: tenant.dbHost || env.DB_HOST,
         password: resolveTenantDatabasePassword(tenant),
@@ -57,6 +64,7 @@ export function getTenantDatabase(tenant: Tenant) {
   });
 
   tenantConnections.set(key, database);
+  tenantDatabaseOwners.set(databaseName, key);
   return database;
 }
 
@@ -70,25 +78,29 @@ export function resolveTenantDatabasePassword(tenant: Tenant) {
 
 export function getTenantDatabaseByName(databaseName: string) {
   const name = assertDatabaseName(databaseName, "tenant database name");
-  const existing = tenantConnections.get(name);
+  const owner = tenantDatabaseOwners.get(name);
+  const existing = owner ? tenantConnections.get(owner) : undefined;
   if (existing) return existing;
   throw new Error(`Tenant database "${name}" was not resolved through the tenant registry.`);
 }
 
 export async function closeTenantDatabase(tenant: Tenant) {
-  const key = assertDatabaseName(tenant.dbName, "tenant database name");
+  const databaseName = assertDatabaseName(tenant.dbName, "tenant database name");
+  const key = tenant.uuid.trim().toLowerCase();
   const existing = tenantConnections.get(key);
   if (!existing) {
     return;
   }
 
   tenantConnections.delete(key);
+  tenantDatabaseOwners.delete(databaseName);
   await existing.destroy();
 }
 
 export async function closeAllTenantDatabases() {
   const openConnections = Array.from(tenantConnections.values());
   tenantConnections.clear();
+  tenantDatabaseOwners.clear();
   await Promise.all(openConnections.map(async (database) => database.destroy()));
 }
 

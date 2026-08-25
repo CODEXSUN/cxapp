@@ -57,9 +57,6 @@ const retiredKeys = new Set([
 const interactiveKeys = [
   ["DB_USER", "MariaDB application user", false],
   ["DB_PASSWORD", "MariaDB application password", true],
-  ["FILE_MANAGER_DB_USER", "File Manager MariaDB user", false],
-  ["FILE_MANAGER_DB_PASSWORD", "File Manager MariaDB password", true],
-  ["FILE_MANAGER_ENCRYPTION_KEY", "File Manager credential encryption key", true],
   ["CXAPP_VERIFIED_BACKUP_ID", "Verified pre-migration backup ID", false],
   ["MARIADB_ADMIN_USER", "MariaDB administrative user", false],
   ["MARIADB_ROOT_PASSWORD", "MariaDB administrative password", true],
@@ -81,8 +78,6 @@ const interactiveKeys = [
 ];
 const generatedInfrastructureSecrets = new Set([
   "DB_PASSWORD",
-  "FILE_MANAGER_DB_PASSWORD",
-  "FILE_MANAGER_ENCRYPTION_KEY",
   "MARIADB_ROOT_PASSWORD",
   "REDIS_PASSWORD",
   "MEDIA_ADMIN_PASSWORD",

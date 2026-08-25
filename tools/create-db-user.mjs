@@ -21,9 +21,6 @@ const appUser = requiredEnv("DB_USER");
 const appPassword = requiredEnv("DB_PASSWORD");
 const masterDb = requiredEnv("DB_MASTER_NAME");
 const tenantDb = requiredEnv("DEFAULT_TENANT_DB_NAME");
-const fileManagerUser = requiredEnv("FILE_MANAGER_DB_USER");
-const fileManagerPassword = requiredEnv("FILE_MANAGER_DB_PASSWORD");
-const fileManagerDb = safeIdentifier(requiredEnv("FILE_MANAGER_DB_NAME"));
 
 if ((client.includes("/") || client.includes("\\")) && !existsSync(client)) {
   throw new Error(
@@ -42,16 +39,6 @@ GRANT ALL PRIVILEGES ON \`${masterDb}\`.* TO '${appUser}'@'localhost';
 GRANT ALL PRIVILEGES ON \`${masterDb}\`.* TO '${appUser}'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON \`${tenantDb}\`.* TO '${appUser}'@'localhost';
 GRANT ALL PRIVILEGES ON \`${tenantDb}\`.* TO '${appUser}'@'127.0.0.1';
-CREATE DATABASE IF NOT EXISTS \`${fileManagerDb}\`
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${fileManagerUser}'@'localhost' IDENTIFIED BY '${fileManagerPassword}';
-CREATE USER IF NOT EXISTS '${fileManagerUser}'@'127.0.0.1' IDENTIFIED BY '${fileManagerPassword}';
-ALTER USER '${fileManagerUser}'@'localhost' IDENTIFIED BY '${fileManagerPassword}';
-ALTER USER '${fileManagerUser}'@'127.0.0.1' IDENTIFIED BY '${fileManagerPassword}';
-GRANT CREATE, SHOW DATABASES ON *.* TO '${fileManagerUser}'@'localhost';
-GRANT CREATE, SHOW DATABASES ON *.* TO '${fileManagerUser}'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON \`${fileManagerDb}\`.* TO '${fileManagerUser}'@'localhost';
-GRANT ALL PRIVILEGES ON \`${fileManagerDb}\`.* TO '${fileManagerUser}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 `;
 
@@ -88,12 +75,5 @@ function requiredEnv(name) {
     );
   }
 
-  return value;
-}
-
-function safeIdentifier(value) {
-  if (!/^[A-Za-z0-9_]+$/u.test(value)) {
-    throw new Error("FILE_MANAGER_DB_NAME may contain only letters, numbers, and underscores.");
-  }
   return value;
 }

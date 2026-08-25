@@ -7,8 +7,7 @@ const appId = z.enum([
   "devkit",
   "mail",
   "task-manager",
-  "blog",
-  "file-manager"
+  "blog"
 ]);
 const stack = z.enum([
   "platform",
@@ -17,8 +16,7 @@ const stack = z.enum([
   "devkit",
   "mail",
   "platform-task-manager",
-  "blog",
-  "file-manager"
+  "blog"
 ]);
 
 export const platformAppSaveSchema = z

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.65
+Current version: 1.0.67
 
-Release tag: v-1.0.65
+Release tag: v-1.0.67
 
-Changelog label: v 1.0.65
+Changelog label: v 1.0.67
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -24,14 +24,46 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 
 #### Database Changes
 
-- Database update: No host-owned schema change.
-- Prepared host-database Blog provisioning through CXApp's tenant migration ledger when the next host-neutral Blog tag is installed.
+- No unreleased database changes.
 
 #### App Codebase Changes
 
-- Added the versioned add-on host contract and lifecycle registry with compatibility and capability validation.
-- Centralised Blog and File Manager activation, health diagnostics, tenant adapters, and reverse-order shutdown.
-- Added contract tests for valid activation and incompatible add-on rejection.
+- No unreleased application changes.
+
+## v-1.0.67
+
+### [v 1.0.67] 2026-08-25 2:05 pm - update latest npm packages and tenant domain resolver
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.67.
+
+## v-1.0.66
+
+### [v 1.0.66] 2026-08-25 1:56 pm - Multi-domain tenant isolation and dependency hardening
+
+#### Database Changes
+
+- Database update: No (manual).
+- No schema migration is required; existing tenant, domain, and session records remain compatible.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.66.
+- Updated all npm workspaces to their latest permitted dependency releases, regenerated the lockfile, and verified zero known audit vulnerabilities.
+- Removed the `@codexsun/file-manager` dependency and its API host, tenant navigation, domain types, database provisioning, environment variables, and deployment configuration.
+- Kept Blog operational after File Manager removal by aligning the host adapter and public media behavior with the current Blog package contract.
+- Added the missing `@cxapp/framework/addons` runtime export wrapper and verified the add-on lifecycle contract.
+- Preserved `app.codexsun.com` as the shared Corporate-ID domain while allowing individually verified tenant domains to authenticate without a redundant Corporate ID prompt.
+- Added versioned tenant-specific JWT signing-key derivation so platform, ALTEX, COTTON, and other tenant tokens use cryptographically isolated keys.
+- Continued binding authenticated sessions to the exact login hostname and retained host-only production cookies for parallel tenant sessions in one browser.
+- Keyed tenant database pools and new tenant storage roots by immutable tenant UUID, with protection against cross-tenant database ownership collisions.
+- Hardened add-on activation cleanup errors by preserving their underlying causes.
+- Added focused tenant-key isolation tests and verified all workspace typechecks, lint tasks, production builds, dependency checks, and add-on contract tests.
 
 ## v-1.0.65
 

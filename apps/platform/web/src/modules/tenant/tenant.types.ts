@@ -14,8 +14,7 @@ export type Tenant = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog"
-    | "file-manager";
+    | "blog";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -46,8 +45,7 @@ export type TenantSavePayload = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog"
-    | "file-manager";
+    | "blog";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -83,7 +81,6 @@ export type TenantRuntime = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog"
-    | "file-manager";
+    | "blog";
   tenant: Tenant | null;
 };

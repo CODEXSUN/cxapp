@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/mail-web",
-  "version": "1.0.65",
+  "version": "1.0.67",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,7 +13,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/ui": "^1.0.65",
+    "@cxapp/ui": "^1.0.67",
     "@tanstack/react-query": "^5.101.4",
     "html2canvas-pro": "^2.3.9",
     "jspdf": "^4.2.1",

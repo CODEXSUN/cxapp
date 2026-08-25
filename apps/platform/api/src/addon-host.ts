@@ -7,11 +7,6 @@ import { tenantAccessContext } from "./auth/tenant-access-context.js";
 import { env } from "./env.js";
 import { TenantService } from "./modules/tenant/tenant.service.js";
 import { getTenantDatabase } from "./database/tenant-database.js";
-import {
-  closeFileManagerDatabase,
-  fileManagerApiModuleKeys,
-  registerFileManagerApi,
-} from "./file-manager-host.js";
 
 type BlogPackage = {
   blogsApiModuleKeys: readonly string[];
@@ -55,7 +50,6 @@ const registry = new AddonHostRegistry({
 
 export const addonApiModuleKeys = [
   ...blog.blogsApiModuleKeys,
-  ...fileManagerApiModuleKeys,
 ] as const;
 
 export async function registerPlatformAddons(app: FastifyInstance) {
@@ -66,13 +60,6 @@ export async function registerPlatformAddons(app: FastifyInstance) {
       databaseMode: supportsHostDatabase(blog) ? "host-database" : "dedicated",
       manifest: blogManifest(supportsHostDatabase(blog)),
       moduleKeys: blog.blogsApiModuleKeys,
-    });
-    await registry.register({
-      activate: () => registerFileManagerApi(app, { resolveContext: fileManagerContext }),
-      close: closeFileManagerDatabase,
-      databaseMode: "dedicated",
-      manifest: fileManagerManifest,
-      moduleKeys: fileManagerApiModuleKeys,
     });
   } catch (error) {
     await closeAfterActivationFailure(error);
@@ -86,6 +73,7 @@ async function closeAfterActivationFailure(activationError: unknown): Promise<ne
     throw new AggregateError(
       [activationError, closeError],
       "Add-on activation failed and cleanup was incomplete.",
+      { cause: closeError },
     );
   }
   throw activationError;
@@ -165,12 +153,6 @@ async function ensureBlogProvisioned(databaseName: string, context: BlogContext)
   }
 }
 
-function fileManagerContext(request: FastifyRequest) {
-  const payload = request.authContext?.payload;
-  if (!payload?.userId) throw AppError.unauthorized("File Manager authentication is required.");
-  return { actorId: payload.userId, host: "cxapp" as const, tenantId: payload.tenantId ?? "platform" };
-}
-
 function requestHost(request: FastifyRequest) {
   const forwarded = request.headers["x-forwarded-host"];
   return (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? request.hostname;
@@ -210,25 +192,3 @@ function blogManifest(hostDatabase: boolean): AddonManifest {
     version: "1.0.9",
   };
 }
-
-const fileManagerManifest: AddonManifest = {
-  capabilities: {
-    optional: ["audit", "queue"],
-    provided: ["files", "images", "folders", "external-links", "storage-connections", "media.public"],
-    required: ["identity", "authorization", "database", "migration-ledger"],
-  },
-  compatibleHosts: "host-adapter",
-  databaseModes: ["dedicated", "shared-host"],
-  displayName: "File Manager",
-  hostApi: "^1.0.0",
-  key: "codexsun.file-manager",
-  kind: "composable-addon-application",
-  packages: {
-    api: "@codexsun/file-manager/api",
-    contracts: "@codexsun/file-manager/contracts",
-    web: "@codexsun/file-manager/web",
-  },
-  runtimeModes: ["multi-tenant", "single-client"],
-  schemaVersion: 1,
-  version: "1.1.1",
-};

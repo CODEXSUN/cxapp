@@ -91,17 +91,6 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     moduleKey: "blog",
     stack: "blog",
     uuid: ""
-  },
-  {
-    alwaysEnabled: false,
-    defaultLanding: false,
-    description: "Images, documents, folders, external links, and cloud storage connections.",
-    appId: "file-manager",
-    id: 0,
-    label: "File Manager",
-    moduleKey: "file-manager.file-object",
-    stack: "file-manager",
-    uuid: ""
   }
 ];
 

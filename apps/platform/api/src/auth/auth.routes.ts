@@ -27,7 +27,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     const tenant = await tenants.findByDomain(host);
     return ok(
       tenant
-        ? { corporateIdRequired: true, host, mode: "custom_domain", tenantName: tenant.tenantName }
+        ? { corporateIdRequired: false, host, mode: "custom_domain", tenantName: tenant.tenantName }
         : { corporateIdRequired: true, host, mode: "unknown", tenantName: null },
       { requestId: request.id }
     );
@@ -97,7 +97,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       password: body.password
     };
     const corporateId = body.corporateId ?? body.tenantCode;
-    if (body.desk === "tenant" && !corporateId) {
+    if (body.desk === "tenant" && isSharedApplicationHost(requestHost(request)) && !corporateId) {
       return reply.code(400).send(
         fail(
           {

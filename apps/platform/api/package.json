@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/platform-api",
-  "version": "1.0.65",
+  "version": "1.0.67",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,18 +9,17 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@cxapp/accounts-api": "^1.0.65",
-    "@cxapp/billing-api": "^1.0.65",
-    "@cxapp/core-api": "^1.0.65",
-    "@cxapp/devkit-api": "^1.0.65",
-    "@cxapp/framework": "^1.0.65",
-    "@cxapp/mail-api": "^1.0.65",
+    "@cxapp/accounts-api": "^1.0.67",
+    "@cxapp/billing-api": "^1.0.67",
+    "@cxapp/core-api": "^1.0.67",
+    "@cxapp/devkit-api": "^1.0.67",
+    "@cxapp/framework": "^1.0.67",
+    "@cxapp/mail-api": "^1.0.67",
     "bullmq": "^6.1.2",
     "fastify": "^5.12.1",
     "kysely": "^0.29.5",
     "mysql2": "^3.23.4",
     "zod": "^4.4.3",
-    "@codexsun/blog": "github:CODEXSUN/blog#v-1.0.9",
-    "@codexsun/file-manager": "github:CODEXSUN/file-manager#v-1.1.1"
+    "@codexsun/blog": "github:CODEXSUN/blog#v-1.0.9"
   }
 }

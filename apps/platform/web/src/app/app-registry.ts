@@ -33,8 +33,7 @@ export type PlatformAppId =
   | "devkit"
   | "mail"
   | "task-manager"
-  | "blog"
-  | "file-manager";
+  | "blog";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -42,8 +41,7 @@ export type PlatformAppRootPage =
   | "accounts.overview"
   | "mail.inbox"
   | "task-manager.overview"
-  | "blog.overview"
-  | "file-manager.files";
+  | "blog.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -66,8 +64,7 @@ export type PlatformAppDefinition = {
     | "devkit"
     | "mail"
     | "platform-task-manager"
-    | "blog"
-    | "file-manager";
+    | "blog";
 };
 
 export const defaultTenantModuleKeys = [
@@ -145,17 +142,6 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Blog",
     moduleKey: "blog",
     stack: "blog"
-  },
-  {
-    accentClass: "bg-blue-600",
-    alwaysEnabled: false,
-    defaultLanding: false,
-    description: "Images, documents, folders, external links, and cloud storage connections.",
-    icon: ArchiveIcon,
-    id: "file-manager",
-    label: "File Manager",
-    moduleKey: "file-manager.file-object",
-    stack: "file-manager"
   }
 ];
 
@@ -185,7 +171,6 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
   if (appId === "blog") return "blog.overview";
-  if (appId === "file-manager") return "file-manager.files";
   if (appId === "task-manager") return "task-manager.overview";
   if (appId === "mail") return "mail.inbox";
   if (appId === "accounts") return "accounts.overview";
@@ -203,25 +188,6 @@ export function appMenuFor(
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures
 ): SidemenuItem {
-  if (appId === "file-manager") {
-    return {
-      icon: ArchiveIcon,
-      isActive: activePage.startsWith("file-manager"),
-      title: "File Manager",
-      items: [
-        {
-          title: "Files",
-          isActive: activePage === "file-manager.files",
-          onSelect: () => onSelect("file-manager.files")
-        },
-        {
-          title: "Storage Connections",
-          isActive: activePage === "file-manager.connections",
-          onSelect: () => onSelect("file-manager.connections")
-        }
-      ]
-    };
-  }
   if (appId === "blog") {
     return {
       icon: FileTextIcon,
