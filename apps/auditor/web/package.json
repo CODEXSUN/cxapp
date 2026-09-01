@@ -1,0 +1,20 @@
+{
+  "name": "@cxapp/auditor-web",
+  "version": "1.0.67",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./modules/overview": "./src/modules/overview/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@cxapp/ui": "^1.0.67",
+    "lucide-react": "^1.33.0",
+    "react": "^19.2.8"
+  }
+}

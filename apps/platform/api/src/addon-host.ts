@@ -3,10 +3,13 @@ import type { Kysely } from "kysely";
 import { AddonHostRegistry, type AddonManifest } from "@cxapp/framework/addons";
 import { runMigrationBatch } from "@cxapp/framework/db";
 import { AppError } from "@cxapp/framework/errors";
+import { blogPluginManifest } from "@codexsun/blog/contracts";
+import { fileManagerPluginManifest } from "@codexsun/file-manager/contracts";
 import { tenantAccessContext } from "./auth/tenant-access-context.js";
 import { env } from "./env.js";
 import { TenantService } from "./modules/tenant/tenant.service.js";
 import { getTenantDatabase } from "./database/tenant-database.js";
+import { withInstalledAddonVersion } from "./addon-package.js";
 
 type BlogPackage = {
   blogsApiModuleKeys: readonly string[];
@@ -20,7 +23,7 @@ type BlogPackage = {
     options?: {
       authorize: (input: { request: FastifyRequest }) => Promise<void>;
       resolveContext: (request: FastifyRequest) => Promise<BlogContext>;
-    },
+    }
   ) => Promise<void>;
 };
 
@@ -32,7 +35,25 @@ type BlogContext = {
   scopeId: string;
 };
 
+type FileManagerPackage = {
+  closeFileManagerDatabase: () => Promise<void>;
+  fileManagerApiModuleKeys: readonly string[];
+  registerFileManagerApi: (
+    app: FastifyInstance,
+    options: {
+      resolveContext: (request: FastifyRequest) => Promise<FileManagerContext>;
+    }
+  ) => Promise<void>;
+};
+
+type FileManagerContext = {
+  actorId: string;
+  host: "cxapp";
+  tenantId: string;
+};
+
 const blog = (await import("@codexsun/blog/api")) as unknown as BlogPackage;
+const fileManager = (await import("@codexsun/file-manager/api")) as unknown as FileManagerPackage;
 const tenantService = new TenantService();
 const provisioning = new Map<string, Promise<void>>();
 const registry = new AddonHostRegistry({
@@ -43,13 +64,14 @@ const registry = new AddonHostRegistry({
     "migration-ledger",
     "audit",
     "queue",
-    "media.public",
+    "media.public"
   ],
-  runtimeMode: "multi-tenant",
+  runtimeMode: "multi-tenant"
 });
 
 export const addonApiModuleKeys = [
   ...blog.blogsApiModuleKeys,
+  ...fileManager.fileManagerApiModuleKeys
 ] as const;
 
 export async function registerPlatformAddons(app: FastifyInstance) {
@@ -58,8 +80,15 @@ export async function registerPlatformAddons(app: FastifyInstance) {
       activate: () => registerBlog(app),
       ...(blog.closeBlogsDatabase ? { close: blog.closeBlogsDatabase } : {}),
       databaseMode: supportsHostDatabase(blog) ? "host-database" : "dedicated",
-      manifest: blogManifest(supportsHostDatabase(blog)),
-      moduleKeys: blog.blogsApiModuleKeys,
+      manifest: installedBlogManifest(),
+      moduleKeys: blog.blogsApiModuleKeys
+    });
+    await registry.register({
+      activate: () => registerFileManager(app),
+      close: fileManager.closeFileManagerDatabase,
+      databaseMode: "dedicated",
+      manifest: installedFileManagerManifest(),
+      moduleKeys: fileManager.fileManagerApiModuleKeys
     });
   } catch (error) {
     await closeAfterActivationFailure(error);
@@ -73,7 +102,7 @@ async function closeAfterActivationFailure(activationError: unknown): Promise<ne
     throw new AggregateError(
       [activationError, closeError],
       "Add-on activation failed and cleanup was incomplete.",
-      { cause: closeError },
+      { cause: closeError }
     );
   }
   throw activationError;
@@ -85,7 +114,7 @@ export function activePlatformAddons() {
     displayName: manifest.displayName,
     key: manifest.key,
     moduleKeys,
-    version: manifest.version,
+    version: manifest.version
   }));
 }
 
@@ -100,12 +129,26 @@ async function registerBlog(app: FastifyInstance) {
     authorize: async ({ request }) => {
       await tenantAccessContext(request).authorize("blog.manage");
     },
-    resolveContext: resolveBlogContext,
+    resolveContext: resolveBlogContext
+  });
+}
+
+async function registerFileManager(app: FastifyInstance) {
+  await fileManager.registerFileManagerApi(app, {
+    resolveContext: async (request) => {
+      const access = tenantAccessContext(request);
+      return {
+        actorId: access.actorEmail,
+        host: "cxapp",
+        tenantId: access.tenantId
+      };
+    }
   });
 }
 
 async function resolveBlogContext(request: FastifyRequest): Promise<BlogContext> {
-  const publicRoute = request.url.startsWith("/public/blog") || request.url.startsWith("/sitemap.xml");
+  const publicRoute =
+    request.url.startsWith("/public/blog") || request.url.startsWith("/sitemap.xml");
   const payload = request.authContext?.payload;
   if (!publicRoute) {
     const access = tenantAccessContext(request);
@@ -127,14 +170,14 @@ async function resolveBlogContext(request: FastifyRequest): Promise<BlogContext>
 function blogContext(
   tenant: NonNullable<Awaited<ReturnType<TenantService["getTenant"]>>>,
   actorId: string | null,
-  request: FastifyRequest,
+  request: FastifyRequest
 ): BlogContext {
   return {
     actorId,
     database: getTenantDatabase(tenant) as unknown as Kysely<Record<string, unknown>>,
     host: "cxapp",
     origin: requestOrigin(request),
-    scopeId: tenant.uuid,
+    scopeId: tenant.uuid
   };
 }
 
@@ -161,7 +204,8 @@ function requestHost(request: FastifyRequest) {
 function requestOrigin(request: FastifyRequest) {
   const host = requestHost(request);
   const forwarded = request.headers["x-forwarded-proto"];
-  const protocol = (Array.isArray(forwarded) ? forwarded[0] : forwarded) ??
+  const protocol =
+    (Array.isArray(forwarded) ? forwarded[0] : forwarded) ??
     (env.NODE_ENV === "production" ? "https" : "http");
   return `${protocol}://${host}`;
 }
@@ -170,25 +214,18 @@ function supportsHostDatabase(value: BlogPackage): value is Required<BlogPackage
   return typeof value.provisionBlogsDatabase === "function";
 }
 
-function blogManifest(hostDatabase: boolean): AddonManifest {
-  return {
-    capabilities: {
-      optional: ["media.public", "queue"],
-      required: ["identity", "authorization", "database", "migration-ledger"],
-    },
-    compatibleHosts: "host-adapter",
-    databaseModes: [hostDatabase ? "host-database" : "dedicated"],
-    displayName: "Blog",
-    hostApi: "^1.0.0",
-    key: "codexsun.blog",
-    kind: "composable-addon-application",
-    packages: {
-      api: "@codexsun/blog/api",
-      contracts: "@codexsun/blog/contracts",
-      web: "@codexsun/blog/web",
-    },
-    runtimeModes: ["multi-tenant", "single-client"],
-    schemaVersion: 1,
-    version: "1.0.9",
-  };
+function installedBlogManifest(): AddonManifest {
+  return withInstalledAddonVersion(
+    "@codexsun/blog",
+    "@codexsun/blog/contracts",
+    blogPluginManifest
+  );
+}
+
+function installedFileManagerManifest(): AddonManifest {
+  return withInstalledAddonVersion(
+    "@codexsun/file-manager",
+    "@codexsun/file-manager/contracts",
+    fileManagerPluginManifest
+  );
 }

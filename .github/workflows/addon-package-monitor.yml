@@ -1,0 +1,42 @@
+name: Add-on package monitor
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/platform/api/package.json"
+      - "apps/platform/web/package.json"
+      - "package-lock.json"
+      - "tools/check-addon-packages.mjs"
+      - "tools/check-addon-updates.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out CXApp
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify registry sources and integrity locks
+        run: npm run addons:check
+
+      - name: Check current npm releases
+        run: npm run addons:latest
+
+      - name: Audit installed packages
+        run: npm audit --audit-level=high

@@ -24,11 +24,19 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 
 #### Database Changes
 
-- No unreleased database changes.
+- Restored File Manager's dedicated owner database startup and repeatable migration flow. Existing
+  `fm_*` data remains compatible and migrations are checksum-validated on restart.
 
 #### App Codebase Changes
 
-- No unreleased application changes.
+- Replaced the stale GitHub Blog dependency with exact npm registry releases for Blog 1.0.16 and
+  File Manager 1.1.5, including lockfile integrity metadata for clean installs on other systems.
+- Restored File Manager API composition and shutdown cleanup beside Blog in the shared add-on host.
+- Resolved active add-on versions from installed package metadata instead of a hardcoded host-side
+  JavaScript version, preventing package updates from reporting or loading stale runtime contracts.
+- Added repeatable add-on package, registry-release, and production-artifact startup checks.
+- Added a production-only internal package resolver and start command so compiled APIs load their
+  compiled owner packages instead of trying to execute workspace TypeScript source after deployment.
 
 ## v-1.0.67
 
