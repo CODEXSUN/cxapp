@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.67
+Current version: 1.0.68
 
-Release tag: v-1.0.67
+Release tag: v-1.0.68
 
-Changelog label: v 1.0.67
+Changelog label: v 1.0.68
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,23 +20,33 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
-## Unreleased
+## v-1.0.68
+
+### [v 1.0.68] 2026-09-02 8:56 pm - Billing address reactivity and Core form input handling
 
 #### Database Changes
 
-- Restored File Manager's dedicated owner database startup and repeatable migration flow. Existing
-  `fm_*` data remains compatible and migrations are checksum-validated on restart.
+- Database update: Yes (manual).
+- Restored File Manager's owner database startup and repeatable migration flow.
+- Kept existing `fm_*` data compatible and added migration checksum validation on restart.
+- Core Company, Core Contact, and Billing Sales need no schema migration.
 
 #### App Codebase Changes
 
-- Replaced the stale GitHub Blog dependency with exact npm registry releases for Blog 1.0.16 and
-  File Manager 1.1.5, including lockfile integrity metadata for clean installs on other systems.
-- Restored File Manager API composition and shutdown cleanup beside Blog in the shared add-on host.
-- Resolved active add-on versions from installed package metadata instead of a hardcoded host-side
-  JavaScript version, preventing package updates from reporting or loading stale runtime contracts.
-- Added repeatable add-on package, registry-release, and production-artifact startup checks.
-- Added a production-only internal package resolver and start command so compiled APIs load their
-  compiled owner packages instead of trying to execute workspace TypeScript source after deployment.
+- Bumped workspace version to 1.0.68.
+- Replaced the stale GitHub Blog dependency with the exact Blog 1.0.16 npm release.
+- Updated File Manager to the exact 1.1.5 npm release with lockfile integrity metadata.
+- Restored File Manager API startup and shutdown beside Blog in the shared add-on host.
+- Read active add-on versions from installed package metadata instead of hardcoded host values.
+- Added add-on package, registry-release, and production-artifact startup checks.
+- Added production package resolution so compiled APIs load compiled `@cxapp/*` packages.
+- Refreshed Sales contacts on mount and window focus so saved Contact changes appear without stale lookup data.
+- Preserved existing Contact addresses and address IDs when Sales updates the selected Contact.
+- Re-resolved Sales billing and shipping addresses after Contact edits, including current state and location names.
+- Kept Company and Contact text unchanged while users type across all form tabs.
+- Trimmed Company and Contact text only during save, including nested addresses, bank accounts, communication details, and social links.
+- Allowed spaces in Contact codes during typing and converted them to uppercase hyphenated codes during save.
+- Added regression tests for Sales Contact reactivity and Company and Contact save-time text normalization.
 
 ## v-1.0.67
 

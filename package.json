@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.67",
+  "version": "1.0.68",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -21,6 +21,8 @@
     "test:addon-contract": "npm run build -w @cxapp/framework && node --test tools/addon-contract.test.mjs",
     "test:production-artifact": "node tools/production-artifact-smoke.mjs",
     "test:platform-persistence": "node --test tools/platform-persistence-contract.test.mjs",
+    "test:billing-sales-contact-reactivity": "tsx --test tools/billing-sales-contact-reactivity.test.ts",
+    "test:core-form-whitespace": "tsx --test apps/core/web/src/modules/master/contact/contact.spec.ts apps/core/web/src/modules/organisation/company/company.spec.ts",
     "test:deployment-env": "node --test tools/deployment-env-contract.test.mjs",
     "test:migration-contract": "npm run build -w @cxapp/framework && node --test tools/migration-contract.test.mjs",
     "stack:impact": "node tools/stack-impact.mjs",

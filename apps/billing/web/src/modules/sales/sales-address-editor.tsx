@@ -102,6 +102,21 @@ export function findPreferredSaleAddress(
   return match ?? choices[0];
 }
 
+export function resolveSaleAddressChoices(
+  choices: SaleAddressChoice[],
+  billingAddressId: number,
+  shippingAddressId: number
+) {
+  return {
+    billing:
+      choices.find((choice) => choice.addressId === billingAddressId) ??
+      findPreferredSaleAddress(choices, "Billing"),
+    shipping:
+      choices.find((choice) => choice.addressId === shippingAddressId) ??
+      findPreferredSaleAddress(choices, "Shipping")
+  };
+}
+
 export function SaleAddressField({
   choices,
   description,

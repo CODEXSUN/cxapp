@@ -12,6 +12,7 @@ import {
   buildSaleAddressChoices,
   findPreferredSaleAddress,
   formatSaleAddress,
+  resolveSaleAddressChoices,
   saleAddressDraftFromText,
   type SaleAddressDraft
 } from "./sales-address-editor";
@@ -151,7 +152,9 @@ export function useSalesFormController({
   }, [contextQuery.data, sale]);
   const contactsQuery = useQuery({
     queryFn: listSaleContacts,
-    ...billingLookupQuery("contacts")
+    ...billingLookupQuery("contacts"),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always"
   });
   const workOrdersQuery = useQuery({
     queryFn: listSaleWorkOrders,
@@ -174,8 +177,20 @@ export function useSalesFormController({
     ...billingLookupQuery("transports")
   });
   const contactSaveMutation = useMutation({
-    mutationFn: ({ id, payload }: { id?: string; payload: SaleContactSavePayload }) =>
-      id ? updateSaleContact(id, payload) : createSaleContact(payload)
+    mutationFn: ({
+      current,
+      id,
+      payload
+    }: {
+      current?: SaleLookupRecord;
+      id?: string;
+      payload: SaleContactSavePayload;
+    }) => {
+      if (!id) return createSaleContact(payload);
+      if (!current)
+        throw new Error("The selected contact must be loaded before it can be updated.");
+      return updateSaleContact(id, payload, current);
+    }
   });
   const contactAddressSaveMutation = useMutation({
     mutationFn: ({
@@ -230,11 +245,17 @@ export function useSalesFormController({
     mutationFn: ({ id, kind }: { id: string; kind: "einvoice" | "eway" }) =>
       kind === "einvoice" ? clearSaleEinvoice(id) : clearSaleEway(id)
   });
-  const selectedContact = (contactsQuery.data ?? []).find(
-    (option) =>
-      Number(option.record?.id ?? 0) === form.customerId ||
-      option.value === form.customerName ||
-      option.label === form.customerName
+  const selectedContact = useMemo(
+    () =>
+      (form.customerId
+        ? (contactsQuery.data ?? []).find(
+            (option) => Number(option.record?.id ?? 0) === form.customerId
+          )
+        : undefined) ??
+      (contactsQuery.data ?? []).find(
+        (option) => option.value === form.customerName || option.label === form.customerName
+      ),
+    [contactsQuery.data, form.customerId, form.customerName]
   );
   const selectedWorkOrder = (workOrdersQuery.data ?? []).find(
     (option) =>
@@ -265,11 +286,10 @@ export function useSalesFormController({
 
   useEffect(() => {
     if (!contactAddressChoices.length) return;
-    const billing = contactAddressChoices.find(
-      (choice) => choice.addressId === form.billingAddressId
-    );
-    const shipping = contactAddressChoices.find(
-      (choice) => choice.addressId === form.shippingAddressId
+    const { billing, shipping } = resolveSaleAddressChoices(
+      contactAddressChoices,
+      form.billingAddressId,
+      form.shippingAddressId
     );
     if (billing) {
       setBillingAddressChoice(billing.value);
@@ -279,6 +299,27 @@ export function useSalesFormController({
       setShippingAddressChoice(shipping.value);
       setShippingAddressDraft(shipping.draft);
     }
+    setForm((current) => {
+      const nextBillingAddress = billing?.description ?? current.billingAddress;
+      const nextBillingAddressId = billing?.addressId || current.billingAddressId;
+      const nextShippingAddress = shipping?.description ?? current.shippingAddress;
+      const nextShippingAddressId = shipping?.addressId || current.shippingAddressId;
+      if (
+        current.billingAddress === nextBillingAddress &&
+        current.billingAddressId === nextBillingAddressId &&
+        current.shippingAddress === nextShippingAddress &&
+        current.shippingAddressId === nextShippingAddressId
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        billingAddress: nextBillingAddress,
+        billingAddressId: nextBillingAddressId,
+        shippingAddress: nextShippingAddress,
+        shippingAddressId: nextShippingAddressId
+      };
+    });
   }, [contactAddressChoices, form.billingAddressId, form.shippingAddressId]);
 
   function patch(next: Partial<SaleSavePayload>) {
@@ -311,12 +352,20 @@ export function useSalesFormController({
     if (kind === "billing") {
       setBillingAddressDraft(draft);
       setBillingAddressChoice(choiceValue);
-      patch({ billingAddress: formatted, billingAddressId: addressId || form.billingAddressId });
+      setForm((current) => ({
+        ...current,
+        billingAddress: formatted,
+        billingAddressId: addressId || current.billingAddressId
+      }));
       return;
     }
     setShippingAddressDraft(draft);
     setShippingAddressChoice(choiceValue);
-    patch({ shippingAddress: formatted, shippingAddressId: addressId || form.shippingAddressId });
+    setForm((current) => ({
+      ...current,
+      shippingAddress: formatted,
+      shippingAddressId: addressId || current.shippingAddressId
+    }));
   }
 
   function applyContactAddresses(record?: SaleLookupRecord | null) {

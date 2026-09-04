@@ -8,6 +8,7 @@ import { ContactQuickField } from "./sales.form-section-1";
 import { numericId } from "./sales.form-section-5";
 import {
   type SaleContactSavePayload,
+  type SaleContactAddressRecord,
   type SaleLocationKind,
   type SaleLocationRecord,
   type SaleLookupOption,
@@ -112,7 +113,7 @@ export function contactDraftFromRecord(
   record?: SaleLookupRecord,
   initialName = ""
 ): SaleContactSavePayload {
-  const address = record?.addresses?.[0] ?? {};
+  const address: Partial<SaleContactAddressRecord> = record?.addresses?.[0] ?? {};
   return {
     addressTypeId: String(address.addressTypeId ?? ""),
     addressTypeName: String(address.addressTypeName ?? "Billing"),

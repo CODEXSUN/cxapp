@@ -17,7 +17,11 @@ import {
   WorkspaceFormSurface,
   WorkspaceFormTabbedBody
 } from "@cxapp/ui/workspace/upsert";
-import { companySchema } from "./company.schema";
+import {
+  companySchema,
+  prepareCompanyPayloadForSave,
+  preserveOptionalTextInput
+} from "./company.schema";
 import companyLogo from "./logo.svg";
 import companyLogoDark from "./logo-dark.svg";
 import { readCompanyLogo, uploadCompanyLogo } from "./company.services";
@@ -65,7 +69,7 @@ export function CompanyForm({
   const invalid = (path: string) => invalidPaths.includes(path);
 
   function submit() {
-    const payload = preparePayload(form);
+    const payload = prepareCompanyPayloadForSave(form);
     const parsed = companySchema.safeParse(payload);
     if (!parsed.success) {
       const paths = parsed.error.issues.map((issue) => issue.path.join("."));
@@ -220,7 +224,7 @@ function DetailsTab({
       <WorkspaceFormField label="Legal name">
         <Input
           value={form.legalName ?? ""}
-          onChange={(event) => set("legalName", nullableInput(event.target.value))}
+          onChange={(event) => set("legalName", preserveOptionalTextInput(event.target.value))}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="Industry">
@@ -431,29 +435,29 @@ function TaxTab({
       <TextField
         label="GSTIN"
         value={form.gstin}
-        onChange={(value) => set("gstin", nullable(value.toUpperCase()))}
+        onChange={(value) => set("gstin", preserveOptionalTextInput(value.toUpperCase()))}
       />
       <TextField
         label="PAN"
         value={form.pan}
-        onChange={(value) => set("pan", nullable(value.toUpperCase()))}
+        onChange={(value) => set("pan", preserveOptionalTextInput(value.toUpperCase()))}
       />
       <TextField
         label="MSME number"
         value={form.msmeNo}
-        onChange={(value) => set("msmeNo", nullable(value.toUpperCase()))}
+        onChange={(value) => set("msmeNo", preserveOptionalTextInput(value.toUpperCase()))}
       />
       <WorkspaceFormField label="MSME category">
         <WorkspaceSelect
           options={msmeCategoryOptions}
           value={form.msmeCategory ?? ""}
-          onValueChange={(value) => set("msmeCategory", nullable(value))}
+          onValueChange={(value) => set("msmeCategory", preserveOptionalTextInput(value))}
         />
       </WorkspaceFormField>
       <TextField
         label="TAN"
         value={form.tanNo}
-        onChange={(value) => set("tanNo", nullable(value.toUpperCase()))}
+        onChange={(value) => set("tanNo", preserveOptionalTextInput(value.toUpperCase()))}
       />
       <div />
       <WorkspaceFormField label="TDS">
@@ -649,7 +653,9 @@ function AddressesTab({
                 <TextField
                   label="Address line 2"
                   value={address.addressLine2}
-                  onChange={(value) => update({ ...address, addressLine2: nullableInput(value) })}
+                  onChange={(value) =>
+                    update({ ...address, addressLine2: preserveOptionalTextInput(value) })
+                  }
                 />
                 <LookupField
                   label="Country"
@@ -834,7 +840,9 @@ function FinanceTab({
                   <TextField
                     label="Holder name"
                     value={account.holderName}
-                    onChange={(value) => update({ ...account, holderName: nullableInput(value) })}
+                    onChange={(value) =>
+                      update({ ...account, holderName: preserveOptionalTextInput(value) })
+                    }
                   />
                   <WorkspaceFormField label="Account type">
                     <WorkspaceSelect
@@ -847,13 +855,15 @@ function FinanceTab({
                     label="IFSC"
                     value={account.ifsc}
                     onChange={(value) =>
-                      update({ ...account, ifsc: nullable(value.toUpperCase()) })
+                      update({ ...account, ifsc: preserveOptionalTextInput(value.toUpperCase()) })
                     }
                   />
                   <TextField
                     label="Branch"
                     value={account.branch}
-                    onChange={(value) => update({ ...account, branch: nullable(value) })}
+                    onChange={(value) =>
+                      update({ ...account, branch: preserveOptionalTextInput(value) })
+                    }
                   />
                   <WorkspaceFormField label="Primary bank">
                     <ToggleRow
@@ -888,12 +898,12 @@ function MoreTab({
           label="Website"
           type="url"
           value={form.website}
-          onChange={(value) => set("website", nullable(value))}
+          onChange={(value) => set("website", preserveOptionalTextInput(value))}
         />
         <WorkspaceFormField className="md:col-span-2" label="Description">
           <Textarea
             value={form.description ?? ""}
-            onChange={(event) => set("description", nullable(event.target.value))}
+            onChange={(event) => set("description", preserveOptionalTextInput(event.target.value))}
           />
         </WorkspaceFormField>
       </WorkspaceFormGrid>
@@ -1133,46 +1143,6 @@ function initialPayload(
     socialLinks: [blankSocialLink()]
   };
 }
-function preparePayload(form: CompanySavePayload): CompanySavePayload {
-  return {
-    ...form,
-    code: form.code.trim().toUpperCase(),
-    name: form.name.trim(),
-    legalName: nullable(form.legalName),
-    emails: form.emails
-      .filter((item) => item.email.trim())
-      .map((item, index) => ({ ...item, sortOrder: index + 1 })),
-    phones: form.phones
-      .filter((item) => item.phone.trim())
-      .map((item, index) => ({ ...item, sortOrder: index + 1 })),
-    addresses: form.addresses.filter(hasAddressValue).map((item, index) => ({
-      ...item,
-      addressLine1: item.addressLine1.trim(),
-      addressLine2: nullable(item.addressLine2),
-      sortOrder: index + 1
-    })),
-    bankAccounts: form.bankAccounts
-      .filter((item) => item.accountNumber.trim())
-      .map((item, index) => ({
-        ...item,
-        accountNumber: item.accountNumber.trim(),
-        holderName: nullable(item.holderName),
-        sortOrder: index + 1
-      })),
-    socialLinks: form.socialLinks
-      .filter((item) => item.url.trim())
-      .map((item, index) => ({ ...item, sortOrder: index + 1 }))
-  };
-}
-function hasAddressValue(item: CompanyAddress) {
-  return Boolean(
-    item.addressLine1.trim() ||
-    item.addressLine2?.trim() ||
-    item.addressTypeId ||
-    item.countryId ||
-    item.pincodeId
-  );
-}
 function blankEmail(): CompanyEmail {
   return { id: 0, email: "", emailType: "Primary", isPrimary: true, sortOrder: 1 };
 }
@@ -1286,14 +1256,6 @@ function toOption(item: { id: number; name: string }): WorkspaceLookupOption {
 }
 function numberOrNull(value: string) {
   return value ? Number(value) : null;
-}
-function nullable(value: unknown) {
-  const text = String(value ?? "").trim();
-  return text || null;
-}
-function nullableInput(value: unknown) {
-  const text = String(value ?? "");
-  return text === "" ? null : text;
 }
 function filePreview(file: File) {
   return new Promise<string>((resolve, reject) => {

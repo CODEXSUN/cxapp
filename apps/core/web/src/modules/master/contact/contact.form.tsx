@@ -20,7 +20,11 @@ import {
   WorkspaceFormTabbedBody,
   WorkspaceUpsertPage
 } from "@cxapp/ui/workspace/upsert";
-import { contactSchema } from "./contact.schema";
+import {
+  contactSchema,
+  prepareContactPayloadForSave,
+  preserveOptionalTextInput
+} from "./contact.schema";
 import type {
   ContactAddress,
   ContactBankAccount,
@@ -66,7 +70,7 @@ export function ContactForm({
   const invalid = (path: string) => invalidPaths.includes(path);
 
   function submit() {
-    const payload = preparePayload(form);
+    const payload = prepareContactPayloadForSave(form);
     const parsed = contactSchema.safeParse(payload);
     if (!parsed.success) {
       const paths = parsed.error.issues.map((issue) => issue.path.join("."));
@@ -210,7 +214,9 @@ function DetailsTab({
           value={form.name}
           onChange={(event) => set("name", event.target.value)}
           onBlur={() => {
-            if (!legalNameManual) set("legalName", nullable(form.name.trim().toUpperCase()));
+            if (!legalNameManual) {
+              set("legalName", preserveOptionalTextInput(form.name.toUpperCase()));
+            }
           }}
         />
         {invalid("name") ? <FieldError>Contact name is required.</FieldError> : null}
@@ -219,8 +225,9 @@ function DetailsTab({
         <Input
           aria-invalid={invalid("code")}
           className={invalid("code") ? "border-destructive" : undefined}
+          maxLength={80}
           value={form.code}
-          onChange={(event) => set("code", formatContactCodeInput(event.target.value))}
+          onChange={(event) => set("code", event.target.value.toUpperCase())}
         />
         {invalid("code") ? <FieldError>Use letters, numbers, and hyphens only.</FieldError> : null}
       </WorkspaceFormField>
@@ -238,7 +245,7 @@ function DetailsTab({
                 event.preventDefault();
                 event.stopPropagation();
                 setLegalNameManual(false);
-                set("legalName", nullable(form.name.trim().toUpperCase()));
+                set("legalName", preserveOptionalTextInput(form.name.toUpperCase()));
               }}
             >
               <Sparkles className="size-3.5" />
@@ -252,7 +259,7 @@ function DetailsTab({
           value={form.legalName ?? ""}
           onChange={(event) => {
             setLegalNameManual(true);
-            set("legalName", nullableInput(event.target.value.toUpperCase()));
+            set("legalName", preserveOptionalTextInput(event.target.value.toUpperCase()));
           }}
         />
       </WorkspaceFormField>
@@ -310,19 +317,23 @@ function TaxDetailsTab({
       <WorkspaceFormField label="GSTIN">
         <Input
           value={form.gstin ?? ""}
-          onChange={(event) => set("gstin", nullable(event.target.value.toUpperCase()))}
+          onChange={(event) =>
+            set("gstin", preserveOptionalTextInput(event.target.value.toUpperCase()))
+          }
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="PAN">
         <Input
           value={form.pan ?? ""}
-          onChange={(event) => set("pan", nullable(event.target.value.toUpperCase()))}
+          onChange={(event) =>
+            set("pan", preserveOptionalTextInput(event.target.value.toUpperCase()))
+          }
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="MSME No">
         <Input
           value={form.msmeNo ?? ""}
-          onChange={(event) => set("msmeNo", nullable(event.target.value))}
+          onChange={(event) => set("msmeNo", preserveOptionalTextInput(event.target.value))}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="MSME category">
@@ -341,7 +352,9 @@ function TaxDetailsTab({
       <WorkspaceFormField label="TAN No">
         <Input
           value={form.tanNo ?? ""}
-          onChange={(event) => set("tanNo", nullable(event.target.value.toUpperCase()))}
+          onChange={(event) =>
+            set("tanNo", preserveOptionalTextInput(event.target.value.toUpperCase()))
+          }
         />
       </WorkspaceFormField>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -532,7 +545,7 @@ function AddressesTab({
                       onChange={(event) =>
                         updateAddress(setForm, index, {
                           ...address,
-                          addressLine2: nullableInput(event.target.value)
+                          addressLine2: preserveOptionalTextInput(event.target.value)
                         })
                       }
                     />
@@ -804,7 +817,7 @@ function FinanceTab({
                       onChange={(event) =>
                         updateBankAccount(setForm, index, {
                           ...account,
-                          holderName: nullableInput(event.target.value)
+                          holderName: preserveOptionalTextInput(event.target.value)
                         })
                       }
                     />
@@ -825,7 +838,7 @@ function FinanceTab({
                       onChange={(event) =>
                         updateBankAccount(setForm, index, {
                           ...account,
-                          ifsc: nullable(event.target.value.toUpperCase())
+                          ifsc: preserveOptionalTextInput(event.target.value.toUpperCase())
                         })
                       }
                     />
@@ -836,7 +849,7 @@ function FinanceTab({
                       onChange={(event) =>
                         updateBankAccount(setForm, index, {
                           ...account,
-                          branch: nullable(event.target.value)
+                          branch: preserveOptionalTextInput(event.target.value)
                         })
                       }
                     />
@@ -875,14 +888,14 @@ function MoreTab({
             placeholder="https://example.com"
             type="url"
             value={form.website ?? ""}
-            onChange={(event) => set("website", nullable(event.target.value))}
+            onChange={(event) => set("website", preserveOptionalTextInput(event.target.value))}
           />
         </WorkspaceFormField>
         <WorkspaceFormField className="md:col-span-2" label="Description">
           <Textarea
             className="min-h-28"
             value={form.description ?? ""}
-            onChange={(event) => set("description", nullable(event.target.value))}
+            onChange={(event) => set("description", preserveOptionalTextInput(event.target.value))}
           />
         </WorkspaceFormField>
       </WorkspaceFormGrid>
@@ -1137,64 +1150,6 @@ function initialPayload(record: ContactRecord | null, nextCode: string): Contact
   };
 }
 
-function preparePayload(form: ContactSavePayload): ContactSavePayload {
-  return {
-    ...form,
-    code: canonicalContactCode(form.code),
-    name: form.name.trim(),
-    legalName: nullable(form.legalName),
-    emails: form.emails
-      .filter((item) => item.email.trim())
-      .map((item, index) => ({ ...item, email: item.email.trim(), sortOrder: index + 1 })),
-    phones: form.phones
-      .filter((item) => item.phone.trim())
-      .map((item, index) => ({ ...item, phone: item.phone.trim(), sortOrder: index + 1 })),
-    addresses: form.addresses.filter(hasAddressValue).map((item, index) => ({
-      ...item,
-      addressLine1: item.addressLine1.trim(),
-      addressLine2: nullable(item.addressLine2),
-      sortOrder: index + 1
-    })),
-    bankAccounts: form.bankAccounts
-      .filter((item) => item.accountNumber.trim())
-      .map((item, index) => ({
-        ...item,
-        accountNumber: item.accountNumber.trim(),
-        holderName: nullable(item.holderName),
-        sortOrder: index + 1
-      })),
-    socialLinks: form.socialLinks
-      .filter((item) => item.url.trim())
-      .map((item, index) => ({ ...item, url: item.url.trim(), sortOrder: index + 1 }))
-  };
-}
-
-function canonicalContactCode(value: string) {
-  return formatContactCodeInput(value).replace(/-+$/g, "");
-}
-
-function formatContactCodeInput(value: string) {
-  return value
-    .trimStart()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "-")
-    .replace(/^-+/g, "")
-    .slice(0, 80);
-}
-
-function hasAddressValue(item: ContactAddress) {
-  return Boolean(
-    item.addressTypeId ||
-    item.addressLine1.trim() ||
-    item.addressLine2?.trim() ||
-    item.countryId ||
-    item.stateId ||
-    item.districtId ||
-    item.cityId ||
-    item.pincodeId
-  );
-}
-
 function blankEmail(): ContactEmail {
   return { id: 0, email: "", emailType: "Primary", isPrimary: true, sortOrder: 1 };
 }
@@ -1391,14 +1346,6 @@ function lookupOptions(items: Array<{ id: number; name: string }>) {
 }
 function toOption(item: { id: number; name: string }, description?: string): WorkspaceLookupOption {
   return { value: String(item.id), label: item.name, ...(description ? { description } : {}) };
-}
-function nullable(value: unknown) {
-  const text = String(value ?? "").trim();
-  return text || null;
-}
-function nullableInput(value: unknown) {
-  const text = String(value ?? "");
-  return text === "" ? null : text;
 }
 function tabForPath(path: string): ContactTab {
   if (path.startsWith("emails") || path.startsWith("phones")) return "communication";

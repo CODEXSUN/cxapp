@@ -25,7 +25,7 @@ export type SaleLookupOption = {
 };
 
 export type SaleLookupRecord = {
-  addresses?: Array<Record<string, unknown>>;
+  addresses?: SaleContactAddressRecord[];
   code?: string | null;
   description?: string | null;
   gst?: string | null;
@@ -52,6 +52,25 @@ export type SaleLookupRecord = {
   unitName?: string | null;
   vehicleNo?: string | null;
   workOrderNo?: string | null;
+};
+
+export type SaleContactAddressRecord = {
+  addressLine1: string;
+  addressLine2?: string | null;
+  addressTypeId?: string | number | null;
+  addressTypeName?: string | null;
+  cityId?: string | number | null;
+  cityName?: string | null;
+  countryId?: string | number | null;
+  countryName?: string | null;
+  districtId?: string | number | null;
+  districtName?: string | null;
+  id?: string | number;
+  isDefault?: boolean;
+  pincodeId?: string | number | null;
+  pincodeName?: string | null;
+  stateId?: string | number | null;
+  stateName?: string | null;
 };
 
 export type SaleContactSavePayload = {
@@ -209,10 +228,14 @@ export function createSaleContact(payload: SaleContactSavePayload) {
   ).then(normalizeLookupRecord);
 }
 
-export function updateSaleContact(id: string, payload: SaleContactSavePayload) {
+export function updateSaleContact(
+  id: string,
+  payload: SaleContactSavePayload,
+  current: SaleLookupRecord
+) {
   return billingApiPut<SaleLookupRecord>(
     `/billing/sales/lookups/contacts/${id}`,
-    contactPayload(payload)
+    contactPayload(payload, current)
   ).then(normalizeLookupRecord);
 }
 
@@ -550,35 +573,13 @@ function fromApiSale(record: Sale): Sale {
   };
 }
 
-function contactPayload(payload: SaleContactSavePayload) {
+function contactPayload(payload: SaleContactSavePayload, current?: SaleLookupRecord) {
+  const editedAddress = contactAddressPayload(payload);
+  const addresses = hasContactAddress(payload)
+    ? mergeEditedContactAddress(editedAddress, current?.addresses ?? [])
+    : (current?.addresses ?? []);
   return {
-    addresses:
-      payload.addressLine1.trim() ||
-      payload.addressLine2.trim() ||
-      payload.stateId ||
-      payload.districtId ||
-      payload.cityId ||
-      payload.pincodeId
-        ? [
-            {
-              addressLine1: payload.addressLine1.trim(),
-              addressLine2: payload.addressLine2.trim(),
-              addressTypeId: nullableNumericId(payload.addressTypeId),
-              addressTypeName: payload.addressTypeName.trim() || "Billing",
-              cityId: nullableNumericId(payload.cityId),
-              cityName: payload.cityName || null,
-              countryId: nullableNumericId(payload.countryId),
-              countryName: payload.countryName || "India",
-              districtId: nullableNumericId(payload.districtId),
-              districtName: payload.districtName || null,
-              isDefault: true,
-              pincodeId: nullableNumericId(payload.pincodeId),
-              pincodeName: payload.pincodeName || null,
-              stateId: nullableNumericId(payload.stateId),
-              stateName: payload.stateName || null
-            }
-          ]
-        : [],
+    addresses,
     gstin: payload.gstin.trim().toUpperCase(),
     isActive: true,
     legalName: payload.legalName.trim(),
@@ -591,6 +592,32 @@ function contactPayload(payload: SaleContactSavePayload) {
       : [],
     typeId: Number(payload.typeId)
   };
+}
+
+function hasContactAddress(payload: SaleContactAddressSavePayload) {
+  return Boolean(
+    payload.addressLine1.trim() ||
+    payload.addressLine2.trim() ||
+    payload.stateId ||
+    payload.districtId ||
+    payload.cityId ||
+    payload.pincodeId
+  );
+}
+
+function mergeEditedContactAddress(
+  edited: ReturnType<typeof contactAddressPayload>,
+  current: SaleContactAddressRecord[]
+) {
+  const [first, ...remaining] = current;
+  return [
+    {
+      ...edited,
+      ...(first?.id !== undefined ? { id: first.id } : {}),
+      isDefault: first?.isDefault ?? true
+    },
+    ...remaining
+  ];
 }
 
 function contactAddressPayload(payload: SaleContactAddressSavePayload) {

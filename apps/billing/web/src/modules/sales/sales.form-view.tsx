@@ -575,6 +575,7 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
                 onCancel={() => setEditingContact(null)}
                 onSave={async (payload) => {
                   const saved = await contactSaveMutation.mutateAsync({
+                    current: editingContact,
                     id: editingContact.id,
                     payload
                   });
