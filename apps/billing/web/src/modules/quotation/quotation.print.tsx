@@ -17,7 +17,8 @@ import {
   BillingCompanyName,
   BillingDocumentHeader,
   useBillingDocumentTitle,
-  useBillingSettings
+  useBillingSettings,
+  resolveBillingPrintTerms
 } from "../settings";
 import { useQuotationRecord } from "./quotation.hooks";
 import { formatDate, formatMoney } from "./quotation.services";
@@ -114,6 +115,7 @@ export function QuotationPrintDocument({
   const showSize = layout?.useSize ?? false;
   const showWorkOrder = layout?.useWorkOrder ?? true;
   const pages = paginateBillingPrintItems(quotation.items);
+  const terms = resolveBillingPrintTerms(billingSettings, "quotation", quotation.terms);
 
   return (
     <WorkspacePrintSheet className="billing-print-document">
@@ -134,6 +136,7 @@ export function QuotationPrintDocument({
           showPo={showPo}
           showSize={showSize}
           showWorkOrder={showWorkOrder}
+          terms={terms}
           quotation={quotation}
         />
       ))}
@@ -156,6 +159,7 @@ function QuotationPrintPage({
   showPo,
   showSize,
   showWorkOrder,
+  terms,
   quotation
 }: {
   copy: QuotationPrintCopy;
@@ -172,6 +176,7 @@ function QuotationPrintPage({
   showPo: boolean;
   showSize: boolean;
   showWorkOrder: boolean;
+  terms: string;
   quotation: Quotation;
 }) {
   const splitTax = quotation.taxType === "cgst-sgst";
@@ -326,14 +331,7 @@ function QuotationPrintPage({
               <div className="grid grid-cols-[1fr_12rem]">
                 <div className="border-r border-slate-300 px-1.5 py-0.5 text-[9px] leading-3">
                   <div className="font-medium">E&amp;OE</div>
-                  <div className="mt-0.5">
-                    We hereby certify that our registration under the GST Act 2017 is in force on
-                    the date on which sale of goods specified in this quotation is made by us and
-                    the sale is effected in the regular course of business.
-                  </div>
-                  <div className="mt-0.5 font-semibold">
-                    * Goods once sold will not be taken back unless agreed in writing.
-                  </div>
+                  <div className="mt-0.5 whitespace-pre-wrap">{terms}</div>
                   {bankAccount ? <QuotationPrintBankDetails bankAccount={bankAccount} /> : null}
                 </div>
                 <div className="text-[9px]">

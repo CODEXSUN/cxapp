@@ -16,7 +16,7 @@ export class BankBookRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const accountResult = await sql<BookAccountRow>`
-      SELECT id, uuid, code, name, account_type, opening_balance FROM acc_accounts
+      SELECT id, uuid, code, name, account_type, opening_balance FROM accounts_accounts
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL AND status='active' AND is_group=0 AND is_bank=1 ORDER BY code
     `.execute(database);
@@ -26,9 +26,9 @@ export class BankBookRepository {
       SELECT l.uuid, l.account_id, l.debit, l.credit, e.uuid AS posted_entry_uuid,
              e.source_type, e.source_uuid, e.entry_date, e.entry_number, e.description,
              a.code AS account_code, a.name AS account_name
-      FROM acc_entry_lines l
-      INNER JOIN acc_entries e ON e.id=l.entry_id
-      INNER JOIN acc_accounts a ON a.id=l.account_id
+      FROM accounts_entry_lines l
+      INNER JOIN accounts_entries e ON e.id=l.entry_id
+      INNER JOIN accounts_accounts a ON a.id=l.account_id
       WHERE e.company_id=${scope.companyId} AND e.financial_year_id=${scope.financialYearId}
         AND l.account_id IN (${sql.join(accounts.map((account) => account.accountId))})
       ORDER BY e.entry_date, l.id
@@ -70,10 +70,10 @@ export class BankBookRepository {
              account.name AS account_name, account.account_type,
              counterpart.id AS counterpart_account_id, counterpart.uuid AS counterpart_uuid,
              counterpart.code AS counterpart_code, counterpart.name AS counterpart_name
-      FROM acc_bank_entries source
-      INNER JOIN acc_entries entry ON entry.id=source.posted_entry_id
-      INNER JOIN acc_accounts account ON account.id=source.account_id
-      INNER JOIN acc_accounts counterpart ON counterpart.id=source.counterpart_account_id
+      FROM accounts_bank_entries source
+      INNER JOIN accounts_entries entry ON entry.id=source.posted_entry_id
+      INNER JOIN accounts_accounts account ON account.id=source.account_id
+      INNER JOIN accounts_accounts counterpart ON counterpart.id=source.counterpart_account_id
       WHERE source.uuid=${uuid} AND source.company_id=${scope.companyId}
         AND source.financial_year_id=${scope.financialYearId} LIMIT 1
     `.execute(database);
@@ -91,7 +91,7 @@ export class BankBookRepository {
     if (account.accountId === counterpart.accountId)
       throw AppError.validation("Bank and counterpart accounts must be different.");
     const period = await sql<{ id: number }>`
-      SELECT id FROM acc_accounting_periods
+      SELECT id FROM accounts_accounting_periods
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND ${input.entryDate} BETWEEN start_date AND end_date AND status='open'
       ORDER BY start_date DESC LIMIT 1
@@ -103,14 +103,14 @@ export class BankBookRepository {
     const actor = scope.actorEmail || "system:bank-book";
     await database.transaction().execute(async (transaction) => {
       const sequence = await sql<{ line_number: number | string }>`
-        SELECT COALESCE(MAX(line_number),0)+1 AS line_number FROM acc_bank_entries
+        SELECT COALESCE(MAX(line_number),0)+1 AS line_number FROM accounts_bank_entries
         WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId} FOR UPDATE
       `.execute(transaction);
       const lineNumber = Number(sequence.rows[0]?.line_number ?? 1);
       const entryNumber =
         input.entryNumber?.trim().toUpperCase() || `BR-${String(lineNumber).padStart(6, "0")}`;
       const central = await sql`
-        INSERT INTO acc_entries
+        INSERT INTO accounts_entries
           (uuid, company_id, financial_year_id, accounting_period_id, source_type, source_uuid,
            entry_number, entry_date, reference, description, status, posted_by, posted_at, created_by)
         VALUES (${publicUuid()}, ${scope.companyId}, ${scope.financialYearId}, ${period.rows[0]!.id},
@@ -140,7 +140,7 @@ export class BankBookRepository {
         actor
       );
       await sql`
-        INSERT INTO acc_bank_entries
+        INSERT INTO accounts_bank_entries
           (uuid, company_id, financial_year_id, line_number, entry_number, entry_date, entry_type,
            account_id, counterpart_account_id, amount, reference, description, status,
            posted_entry_id, created_by)
@@ -156,7 +156,7 @@ export class BankBookRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<BookAccountRow>`
-      SELECT id, uuid, code, name, account_type, opening_balance FROM acc_accounts
+      SELECT id, uuid, code, name, account_type, opening_balance FROM accounts_accounts
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL AND status='active' AND is_group=0 AND is_postable=1
         ${cashOnly ? sql`AND is_bank=1` : sql``} LIMIT 1
@@ -176,7 +176,7 @@ async function insertCentralLine(
   actor: string
 ) {
   await sql`
-    INSERT INTO acc_entry_lines
+    INSERT INTO accounts_entry_lines
       (uuid, entry_id, line_number, account_id, debit, credit, base_debit, base_credit,
        currency_code, description, created_by)
     VALUES (${publicUuid()}, ${entryId}, ${lineNumber}, ${accountId}, ${debit}, ${credit}, ${debit},

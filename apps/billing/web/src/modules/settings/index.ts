@@ -18,6 +18,11 @@ export type {
   BillingDocumentLayoutSettings,
   BillingDocumentNumberSettings,
   BillingSalesSettings,
-  BillingSettings
+  BillingSettings,
+  BillingTermsDocumentKind
 } from "./settings.types";
-export { defaultBillingSettings, formatDocumentNumber } from "./settings.types";
+export {
+  defaultBillingSettings,
+  formatDocumentNumber,
+  resolveBillingPrintTerms
+} from "./settings.types";

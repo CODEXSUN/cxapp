@@ -108,7 +108,7 @@ const activitySchema = z.object({
 });
 const pageQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(10).max(200).default(20),
+  pageSize: z.coerce.number().int().min(10).max(500).default(20),
   search: z.string().default(""),
   status: z.enum(["all", "draft", "posted", "cancelled"]).default("all")
 });

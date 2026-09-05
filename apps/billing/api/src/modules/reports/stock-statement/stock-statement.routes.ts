@@ -7,7 +7,7 @@ import { StockStatementService } from "./stock-statement.service.js";
 const querySchema = z.object({
   from: z.iso.date().optional(),
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(10).max(200).default(50),
+  pageSize: z.coerce.number().int().min(10).max(500).default(50),
   search: z.string().default(""),
   to: z.iso.date().optional()
 });

@@ -143,7 +143,7 @@ export function StockStatementWorkspace() {
           }}
           page={page}
           rowsPerPage={pageSize}
-          rowsPerPageOptions={[10, 20, 50, 100, 200]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200, 500]}
           showingLabel={`${statement?.items.length ?? 0} products on this page`}
           singularLabel="products"
           totalCount={statement?.total ?? 0}

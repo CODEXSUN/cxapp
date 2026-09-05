@@ -87,7 +87,7 @@ export async function seedChartOfAccounts<Database>(database: Kysely<Database>) 
 
   const { companyId, financialYearId } = scope;
   const existing = await sql<{ count: string | number }>`
-    SELECT COUNT(*) AS count FROM acc_accounts
+    SELECT COUNT(*) AS count FROM accounts_accounts
     WHERE company_id=${companyId} AND financial_year_id=${financialYearId}
   `.execute(database);
   if (Number(existing.rows[0]?.count ?? 0) > 0) return;
@@ -95,7 +95,7 @@ export async function seedChartOfAccounts<Database>(database: Kysely<Database>) 
   const groupIds = new Map<string, number>();
   for (const group of defaultGroups) {
     const inserted = await sql`
-      INSERT INTO acc_account_groups
+      INSERT INTO accounts_account_groups
         (uuid, company_id, financial_year_id, code, name, normal_balance, is_system, status, created_by)
       VALUES
         (${stable(`${companyId}:${financialYearId}:group:${group.code}`)}, ${companyId}, ${financialYearId},
@@ -110,7 +110,7 @@ export async function seedChartOfAccounts<Database>(database: Kysely<Database>) 
     const isCash = account.code === "1001" ? 1 : 0;
     const isBank = account.code === "1002" ? 1 : 0;
     await sql`
-      INSERT INTO acc_accounts
+      INSERT INTO accounts_accounts
         (uuid, company_id, financial_year_id, group_id, code, name, account_type, normal_balance,
          is_group, is_system, is_postable, opening_balance, currency_code, description, status, created_by,
          is_cash, is_bank)
@@ -124,10 +124,10 @@ export async function seedChartOfAccounts<Database>(database: Kysely<Database>) 
   }
 
   await sql`
-    UPDATE acc_accounts SET is_cash=1 WHERE code='1001' AND company_id=${companyId} AND financial_year_id=${financialYearId}
+    UPDATE accounts_accounts SET is_cash=1 WHERE code='1001' AND company_id=${companyId} AND financial_year_id=${financialYearId}
   `.execute(database);
   await sql`
-    UPDATE acc_accounts SET is_bank=1 WHERE code='1002' AND company_id=${companyId} AND financial_year_id=${financialYearId}
+    UPDATE accounts_accounts SET is_bank=1 WHERE code='1002' AND company_id=${companyId} AND financial_year_id=${financialYearId}
   `.execute(database);
 }
 
@@ -146,13 +146,13 @@ export async function seedAccountingPeriods<Database>(database: Kysely<Database>
   if (!period) return;
 
   const existing = await sql<{ count: string | number }>`
-    SELECT COUNT(*) AS count FROM acc_accounting_periods
+    SELECT COUNT(*) AS count FROM accounts_accounting_periods
     WHERE company_id=${companyId} AND financial_year_id=${financialYearId}
   `.execute(database);
   if (Number(existing.rows[0]?.count ?? 0) > 0) return;
 
   await sql`
-    INSERT INTO acc_accounting_periods
+    INSERT INTO accounts_accounting_periods
       (uuid, company_id, financial_year_id, name, start_date, end_date, status, is_system, created_by)
     VALUES
       (${stable(`${companyId}:${financialYearId}:period:annual`)}, ${companyId}, ${financialYearId},
@@ -168,7 +168,7 @@ export async function seedAccountingRules<Database>(database: Kysely<Database>) 
   const { companyId } = scope;
   for (const rule of defaultRules) {
     await sql`
-      INSERT INTO acc_accounting_rules
+      INSERT INTO accounts_accounting_rules
         (uuid, company_id, rule_type, name, description, config_json, is_active, status, created_by)
       VALUES
         (${stable(`${companyId}:rule:${rule.ruleType}`)}, ${companyId}, ${rule.ruleType}, ${rule.name},

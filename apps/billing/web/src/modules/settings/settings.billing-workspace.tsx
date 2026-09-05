@@ -18,7 +18,8 @@ import {
   defaultBillingSettings,
   type BillingDocumentKind,
   type BillingDocumentLayoutSettings,
-  type BillingSettings
+  type BillingSettings,
+  type BillingTermsDocumentKind
 } from "./settings.types";
 
 const documents: Array<{ key: BillingDocumentKind; label: string; note: string }> = [
@@ -47,6 +48,13 @@ const switches: Array<{ key: keyof BillingDocumentLayoutSettings; label: string 
   { key: "useEinvoice", label: "E-invoice" },
   { key: "useEway", label: "E-way" },
   { key: "useWorkOrder", label: "Work order" }
+];
+
+const termsDocuments: Array<{ key: BillingTermsDocumentKind; label: string }> = [
+  { key: "quotation", label: "Quotation terms" },
+  { key: "sales", label: "Sales invoice terms" },
+  { key: "purchase", label: "Purchase invoice terms" },
+  { key: "exportSales", label: "Export sale terms" }
 ];
 
 function switchNote(key: keyof BillingDocumentLayoutSettings, label: string) {
@@ -250,13 +258,60 @@ export function BillingSettingsWorkspace() {
               </div>
             </label>
             <label className="block rounded-md border border-border/70 bg-background p-4">
-              <span className="text-sm font-semibold">Custom terms</span>
+              <span className="text-sm font-semibold">Default terms</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                Used on every billing document until custom terms are enabled.
+              </span>
               <Textarea
                 className="mt-3 min-h-24 resize-y rounded-md"
-                value={form.printing.customTerms}
-                onChange={(event) => patchPrinting({ customTerms: event.target.value })}
+                value={form.printing.defaultTerms}
+                onChange={(event) => patchPrinting({ defaultTerms: event.target.value })}
               />
             </label>
+            <ToggleRow
+              checked={form.printing.useCustomTerms}
+              label="Custom terms"
+              note="Use shared or invoice-specific terms instead of the default terms on billing prints."
+              onChange={(useCustomTerms) => patchPrinting({ useCustomTerms })}
+              badge="Client"
+            />
+            {form.printing.useCustomTerms ? (
+              <>
+                <label className="block rounded-md border border-border/70 bg-background p-4">
+                  <span className="text-sm font-semibold">Shared custom terms</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">
+                    Shared fallback when a document has no invoice-specific terms.
+                  </span>
+                  <Textarea
+                    className="mt-3 min-h-24 resize-y rounded-md"
+                    value={form.printing.customTerms}
+                    onChange={(event) => patchPrinting({ customTerms: event.target.value })}
+                  />
+                </label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {termsDocuments.map((document) => (
+                    <label
+                      key={document.key}
+                      className="block rounded-md border border-border/70 bg-background p-4"
+                    >
+                      <span className="text-sm font-semibold">{document.label}</span>
+                      <Textarea
+                        className="mt-3 min-h-24 resize-y rounded-md"
+                        value={form.printing.documentTerms[document.key]}
+                        onChange={(event) =>
+                          patchPrinting({
+                            documentTerms: {
+                              ...form.printing.documentTerms,
+                              [document.key]: event.target.value
+                            }
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : null}
             <LetterheadDesigner billingSettings={form} onChange={patchLetterhead} />
           </SettingsPanel>
         )

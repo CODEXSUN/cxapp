@@ -5,7 +5,7 @@ export const customerStatementFiltersSchema = z
     contactId: z.number().int().positive().optional(),
     from: z.string(),
     page: z.number().int().positive(),
-    pageSize: z.number().int().min(10).max(200),
+    pageSize: z.number().int().min(10).max(500),
     to: z.string()
   })
   .refine((value) => !value.from || !value.to || value.from <= value.to, {

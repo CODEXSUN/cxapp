@@ -15,16 +15,18 @@ import {
   accountingBooksMigration,
   accountingCentralEntriesMigration,
   accountingCoreLedgerLinksMigration,
+  accountingTablePrefixMigration,
   migrateAccountingModule,
   migrateAccountingBooksModule,
   migrateAccountingCentralEntriesModule,
   migrateAccountingCashBookLinesModule,
-  migrateAccountingCoreLedgerLinksModule
+  migrateAccountingCoreLedgerLinksModule,
+  migrateAccountingTablePrefixModule
 } from "../modules/accounting/accounting.migration.js";
 import { seedAccountingModule } from "../modules/accounting/accounting.seed.js";
 
 export type AccountsDatabase = {
-  acc_accounts: {
+  accounts_accounts: {
     account_type: "asset" | "liability" | "equity" | "income" | "expense";
     code: string;
     company_id: number;
@@ -35,7 +37,7 @@ export type AccountsDatabase = {
     status: string;
     uuid: string;
   };
-  acc_journal_entries: {
+  accounts_journal_entries: {
     company_id: number;
     entry_number: string;
     financial_year_id: number;
@@ -81,10 +83,39 @@ const accountingMigrationSteps = [
     description: accountingCashBookLinesMigration.description,
     key: accountingCashBookLinesMigration.key,
     migrate: migrateAccountingCashBookLinesModule
+  },
+  {
+    description: accountingTablePrefixMigration.description,
+    key: accountingTablePrefixMigration.key,
+    migrate: migrateAccountingTablePrefixModule
   }
 ] as const;
 
 const accountsTableNames = [
+  "accounts_accounts",
+  "accounts_account_groups",
+  "accounts_accounting_periods",
+  "accounts_accounting_rules",
+  "accounts_journal_entries",
+  "accounts_journal_lines",
+  "accounts_ledger"
+] as const;
+
+const centralAccountsTableNames = [
+  "accounts_entries",
+  "accounts_entry_lines",
+  "accounts_cash_entries",
+  "accounts_bank_entries"
+] as const;
+
+const allAccountsTableNames = [
+  ...accountsTableNames,
+  ...centralAccountsTableNames,
+  "accounts_core_ledger_links",
+  "accounts_cash_entry_lines"
+] as const;
+
+const legacyAccountsTableNames = [
   "acc_accounts",
   "acc_account_groups",
   "acc_accounting_periods",
@@ -94,7 +125,7 @@ const accountsTableNames = [
   "acc_ledger"
 ] as const;
 
-const centralAccountsTableNames = [
+const legacyCentralAccountsTableNames = [
   "acc_entries",
   "acc_entry_lines",
   "acc_cash_entries",
@@ -103,9 +134,9 @@ const centralAccountsTableNames = [
 
 export const accountsMigrationBatch: MigrationBatch<AccountsDatabase> = {
   batch: 1,
-  description: "Accounts module-owned schema baseline through release 1.0.64.",
+  description: "Accounts module-owned schema baseline through release 1.0.68.",
   scope: "accounts",
-  version: "1.0.64",
+  version: "1.0.68",
   steps: [
     ...accountingMigrationSteps.map(({ description, key, migrate }) => ({
       checksum: `${key}:v1`,
@@ -115,18 +146,26 @@ export const accountsMigrationBatch: MigrationBatch<AccountsDatabase> = {
       version: 1
     })),
     {
-      checksum: `standard-columns:${accountsTableNames.join(",")}`,
+      checksum: `standard-columns:${legacyAccountsTableNames.join(",")}`,
       description: "Backfill and validate standard Accounts table identity and audit columns.",
       name: "accounts.standard-columns-v1",
       up: (database) => ensureStandardTableColumns(database, accountsTableNames),
       version: 1
     },
     {
-      checksum: `central-standard-columns:${centralAccountsTableNames.join(",")}`,
+      checksum: `central-standard-columns:${legacyCentralAccountsTableNames.join(",")}`,
       description: "Validate standard identity and audit columns on centralized entry tables.",
       name: "accounts.central-standard-columns-v1",
       up: (database) => ensureStandardTableColumns(database, centralAccountsTableNames),
       version: 1
+    },
+    {
+      checksum: `standard-columns-v2:${allAccountsTableNames.join(",")}`,
+      description:
+        "Validate standard identity and audit columns after the Accounts table-prefix migration.",
+      name: "accounts.standard-columns-v2",
+      up: (database) => ensureStandardTableColumns(database, allAccountsTableNames),
+      version: 2
     }
   ]
 };
@@ -140,6 +179,11 @@ export const accountsTenantMigrations = [
   {
     description: "Validate standard identity and audit columns on centralized entry tables.",
     name: "accounts.central-standard-columns-v1"
+  },
+  {
+    description:
+      "Validate standard identity and audit columns after the Accounts table-prefix migration.",
+    name: "accounts.standard-columns-v2"
   }
 ] as const;
 

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.68
+Current version: 1.0.70
 
-Release tag: v-1.0.68
+Release tag: v-1.0.70
 
-Changelog label: v 1.0.68
+Changelog label: v 1.0.70
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,38 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.70
+
+### [v 1.0.70] 2026-09-05 5:41 pm - version update
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.70.
+
+## v-1.0.69
+
+### [v 1.0.69] 2026-09-05 5:35 pm - Accounts table-prefix migration compatibility
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+- Added Accounts migration v6 to rename every supported legacy `acc_*` table to its module-owned `accounts_*` name.
+- Kept already-applied v1 migration checksums stable and added a v2 standard-column pass after the rename, so existing migration ledgers remain valid.
+- Normalized migrated Accounts status columns to `VARCHAR(24)` and backfilled required standard identity and audit columns through the existing safe helper.
+- The upgrade refuses to run when a legacy and current table pair coexist, preventing an implicit merge or data loss.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.69.
+- Updated Accounts repositories, seeders, and end-to-end assertions to use the `accounts_*` ownership prefix for all new and upgraded schemas.
+- Extended the migration contract gate to recognize `accounts_` as a tenant-database module owner prefix.
+- Preserved duplicate-key retry compatibility for legacy named database constraints during the transition.
+- Verified fresh Accounts migration, a disposable legacy-prefix upgrade, Accounts typecheck and lint, migration contracts, and module boundaries.
 
 ## v-1.0.68
 

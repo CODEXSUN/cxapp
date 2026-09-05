@@ -31,7 +31,7 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(rootPackage.version)
     },
     optimizeDeps: {
-      exclude: ["@codexsun/blog/web"],
+      exclude: ["@codexsun/blog/web", "@cxapp/billing-web"],
       include: [
         "react-is",
         "use-sync-external-store/shim",

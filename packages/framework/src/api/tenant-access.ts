@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { AppError } from "../errors/app-error.js";
+import { authTokenKeyId, deriveAuthTokenKey } from "./auth-token-key.js";
 
 export type PlatformAccessClaims = {
   aud?: string;
@@ -95,12 +96,25 @@ function verify(token: string, secret: string): PlatformAccessClaims | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [head, body, signature] = parts as [string, string, string];
-  const expected = createHmac("sha256", secret).update(`${head}.${body}`).digest("base64url");
-  if (!safeEqual(signature, expected)) return null;
   try {
+    const header = JSON.parse(Buffer.from(head, "base64url").toString("utf8")) as {
+      alg?: unknown;
+      kid?: unknown;
+      typ?: unknown;
+    };
     const claims = JSON.parse(
       Buffer.from(body, "base64url").toString("utf8")
     ) as PlatformAccessClaims;
+    if (!isUserType(claims.userType)) return null;
+    const keyId = authTokenKeyId({
+      ...(claims.tenantId ? { tenantId: claims.tenantId } : {}),
+      userType: claims.userType
+    });
+    if (header.alg !== "HS256" || header.kid !== keyId || header.typ !== "at+jwt") return null;
+    const expected = createHmac("sha256", deriveAuthTokenKey(secret, keyId))
+      .update(`${head}.${body}`)
+      .digest("base64url");
+    if (!safeEqual(signature, expected)) return null;
     if (
       claims.iss !== "cxapp-platform-api" ||
       claims.aud !== "cxapp-platform" ||
@@ -113,6 +127,10 @@ function verify(token: string, secret: string): PlatformAccessClaims | null {
   } catch {
     return null;
   }
+}
+
+function isUserType(value: unknown): value is PlatformUserType {
+  return value === "tenant" || value === "staff" || value === "super_admin";
 }
 
 function headerValue(value: string | string[] | undefined) {

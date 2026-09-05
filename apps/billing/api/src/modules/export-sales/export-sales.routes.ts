@@ -148,7 +148,7 @@ const contextSchema = z.object({
 const pageQuerySchema = z.object({
   customer: z.string().default("all"),
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(10).max(200).default(100),
+  pageSize: z.coerce.number().int().min(10).max(500).default(100),
   search: z.string().default(""),
   status: z.enum(["all", "draft", "confirmed", "cancelled"]).default("all")
 });

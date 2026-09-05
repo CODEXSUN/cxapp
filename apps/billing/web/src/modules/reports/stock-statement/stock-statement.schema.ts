@@ -4,7 +4,7 @@ export const stockStatementFiltersSchema = z
   .object({
     from: z.string(),
     page: z.number().int().positive(),
-    pageSize: z.number().int().min(10).max(200),
+    pageSize: z.number().int().min(10).max(500),
     search: z.string().max(191),
     to: z.string()
   })

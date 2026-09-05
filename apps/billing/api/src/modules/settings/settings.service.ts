@@ -63,6 +63,10 @@ function normalizeBillingSettings(input: BillingSettings): BillingSettings {
     printing: {
       ...defaultBillingSettings.printing,
       ...(input.printing ?? {}),
+      documentTerms: {
+        ...defaultBillingSettings.printing.documentTerms,
+        ...(input.printing?.documentTerms ?? {})
+      },
       letterhead: {
         ...defaultBillingSettings.printing.letterhead,
         ...(input.printing?.letterhead ?? {})

@@ -2,6 +2,7 @@ export type BillingGstApiMode = "none" | "einvoice_eway" | "einvoice_only" | "ew
 
 export type BillingDocumentKind = "quotation" | "sales" | "purchase" | "payment" | "receipt";
 export type BillingNumberDocumentKind = BillingDocumentKind | "exportSales";
+export type BillingTermsDocumentKind = "quotation" | "sales" | "purchase" | "exportSales";
 export type BillingDocumentNumberSettings = {
   automatic: boolean;
   nextNumber: number;
@@ -40,6 +41,8 @@ export type BillingSettings = {
   printing: {
     addressMode: "billing_only" | "billing_and_shipping";
     customTerms: string;
+    defaultTerms: string;
+    documentTerms: Record<BillingTermsDocumentKind, string>;
     letterhead: {
       addressColor: string;
       addressFont: string;
@@ -59,6 +62,7 @@ export type BillingSettings = {
     printAccountNumber: boolean;
     printQrAccountDetails: boolean;
     printWithLogo: boolean;
+    useCustomTerms: boolean;
   };
 };
 
@@ -163,6 +167,14 @@ export const defaultBillingSettings: BillingSettings = {
   printing: {
     addressMode: "billing_and_shipping",
     customTerms: "",
+    defaultTerms:
+      "We hereby certify that our registration under the GST Act 2017 is in force on the date on which sale of goods specified in this invoice is made by us and the sale is effected in the regular course of business.\n* Goods once sold will not be taken back unless agreed in writing.",
+    documentTerms: {
+      exportSales: "",
+      purchase: "",
+      quotation: "",
+      sales: ""
+    },
     letterhead: {
       addressColor: "#111827",
       addressFont: "Times New Roman",
@@ -181,7 +193,8 @@ export const defaultBillingSettings: BillingSettings = {
     },
     printAccountNumber: true,
     printQrAccountDetails: true,
-    printWithLogo: true
+    printWithLogo: true,
+    useCustomTerms: false
   }
 };
 
@@ -191,4 +204,22 @@ export function formatDocumentNumber(settings: BillingDocumentNumberSettings) {
     "0"
   );
   return `${settings.usePrefix ? settings.prefix : ""}${settings.useSeparator ? settings.separator : ""}${number}${settings.useSuffix ? settings.suffix : ""}`;
+}
+
+export function resolveBillingPrintTerms(
+  settings: BillingSettings | undefined,
+  kind: BillingTermsDocumentKind,
+  invoiceTerms: string | null | undefined
+) {
+  const printing = settings?.printing ?? defaultBillingSettings.printing;
+  const terms = invoiceTerms?.trim();
+
+  if (!printing.useCustomTerms) return printing.defaultTerms;
+
+  return (
+    terms ||
+    printing.documentTerms[kind].trim() ||
+    printing.customTerms.trim() ||
+    printing.defaultTerms
+  );
 }

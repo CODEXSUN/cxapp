@@ -19,7 +19,7 @@ export class CashBookRepository {
     const scope = currentAccountsScope();
     const result = await sql<{ row_position: number | string }>`
       SELECT COALESCE(MAX(line_number),0)+1 AS row_position
-      FROM acc_cash_entries
+      FROM accounts_cash_entries
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     `.execute(database);
     const rowPosition = Number(result.rows[0]?.row_position ?? 1);
@@ -45,7 +45,7 @@ export class CashBookRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const accountResult = await sql<BookAccountRow>`
-      SELECT id, uuid, code, name, account_type, opening_balance FROM acc_accounts
+      SELECT id, uuid, code, name, account_type, opening_balance FROM accounts_accounts
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL AND status='active' AND is_group=0 AND is_cash=1 ORDER BY code
     `.execute(database);
@@ -55,9 +55,9 @@ export class CashBookRepository {
       SELECT l.uuid, l.account_id, l.debit, l.credit, e.uuid AS posted_entry_uuid,
              e.source_type, e.source_uuid, e.entry_date, e.entry_number, e.description,
              a.code AS account_code, a.name AS account_name
-      FROM acc_entry_lines l
-      INNER JOIN acc_entries e ON e.id=l.entry_id
-      INNER JOIN acc_accounts a ON a.id=l.account_id
+      FROM accounts_entry_lines l
+      INNER JOIN accounts_entries e ON e.id=l.entry_id
+      INNER JOIN accounts_accounts a ON a.id=l.account_id
       WHERE e.company_id=${scope.companyId} AND e.financial_year_id=${scope.financialYearId}
         AND l.account_id IN (${sql.join(accounts.map((account) => account.accountId))})
       ORDER BY e.entry_date, l.id
@@ -104,16 +104,16 @@ export class CashBookRepository {
              counterpart_ledger.id AS counterpart_ledger_id,
              counterpart_ledger.name AS counterpart_ledger_name,
              counterpart_group.name AS counterpart_ledger_group_name
-      FROM acc_cash_entries source
-      INNER JOIN acc_entries entry ON entry.id=source.posted_entry_id
-      INNER JOIN acc_accounts account ON account.id=source.account_id
-      INNER JOIN acc_accounts counterpart ON counterpart.id=source.counterpart_account_id
-      LEFT JOIN acc_core_ledger_links cash_link ON cash_link.account_id=account.id
+      FROM accounts_cash_entries source
+      INNER JOIN accounts_entries entry ON entry.id=source.posted_entry_id
+      INNER JOIN accounts_accounts account ON account.id=source.account_id
+      INNER JOIN accounts_accounts counterpart ON counterpart.id=source.counterpart_account_id
+      LEFT JOIN accounts_core_ledger_links cash_link ON cash_link.account_id=account.id
         AND cash_link.company_id=source.company_id
         AND cash_link.financial_year_id=source.financial_year_id
       LEFT JOIN core_ledgers cash_ledger ON cash_ledger.id=cash_link.core_ledger_id
       LEFT JOIN core_ledger_groups cash_group ON cash_group.id=cash_ledger.ledger_group_id
-      LEFT JOIN acc_core_ledger_links counterpart_link ON counterpart_link.account_id=counterpart.id
+      LEFT JOIN accounts_core_ledger_links counterpart_link ON counterpart_link.account_id=counterpart.id
         AND counterpart_link.company_id=source.company_id
         AND counterpart_link.financial_year_id=source.financial_year_id
       LEFT JOIN core_ledgers counterpart_ledger
@@ -132,8 +132,8 @@ export class CashBookRepository {
              account.code AS account_code, account.name AS account_name,
              ledger.id AS ledger_id, ledger.name AS ledger_name,
              ledger_group.name AS ledger_group_name
-      FROM acc_cash_entry_lines source_line
-      INNER JOIN acc_accounts account ON account.id=source_line.account_id
+      FROM accounts_cash_entry_lines source_line
+      INNER JOIN accounts_accounts account ON account.id=source_line.account_id
       LEFT JOIN core_ledgers ledger ON ledger.id=source_line.core_ledger_id
       LEFT JOIN core_ledger_groups ledger_group ON ledger_group.id=ledger.ledger_group_id
       WHERE source_line.cash_entry_id=${row.source_id}
@@ -152,7 +152,7 @@ export class CashBookRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const period = await sql<{ id: number }>`
-      SELECT id FROM acc_accounting_periods
+      SELECT id FROM accounts_accounting_periods
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND ${input.entryDate} BETWEEN start_date AND end_date AND status='open'
       ORDER BY start_date DESC LIMIT 1
@@ -178,14 +178,14 @@ export class CashBookRepository {
       }
       const counterpart = counterpartLines[0]!.account;
       const sequence = await sql<{ line_number: number | string }>`
-        SELECT COALESCE(MAX(line_number),0)+1 AS line_number FROM acc_cash_entries
+        SELECT COALESCE(MAX(line_number),0)+1 AS line_number FROM accounts_cash_entries
         WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId} FOR UPDATE
       `.execute(transaction);
       const lineNumber = Number(sequence.rows[0]?.line_number ?? 1);
       const entryNumber =
         input.entryNumber?.trim().toUpperCase() || `CR-${String(lineNumber).padStart(6, "0")}`;
       const central = await sql`
-        INSERT INTO acc_entries
+        INSERT INTO accounts_entries
           (uuid, company_id, financial_year_id, accounting_period_id, source_type, source_uuid,
            entry_number, entry_date, reference, description, status, posted_by, posted_at, created_by)
         VALUES (${publicUuid()}, ${scope.companyId}, ${scope.financialYearId}, ${period.rows[0]!.id},
@@ -217,7 +217,7 @@ export class CashBookRepository {
         );
       }
       const source = await sql`
-        INSERT INTO acc_cash_entries
+        INSERT INTO accounts_cash_entries
           (uuid, company_id, financial_year_id, line_number, entry_number, entry_date, entry_type,
            account_id, counterpart_account_id, amount, reference, description, status,
            posted_entry_id, created_by)
@@ -228,7 +228,7 @@ export class CashBookRepository {
       const cashEntryId = Number(source.insertId);
       for (const [index, line] of counterpartLines.entries()) {
         await sql`
-          INSERT INTO acc_cash_entry_lines
+          INSERT INTO accounts_cash_entry_lines
             (uuid, cash_entry_id, line_number, core_ledger_id, account_id, amount, created_by)
           VALUES (${publicUuid()}, ${cashEntryId}, ${index + 1}, ${line.ledgerId},
             ${line.account.accountId}, ${line.amount}, ${actor})
@@ -259,8 +259,8 @@ async function resolveLedgerAccount(
   const linked = await sql<BookAccountRow>`
     SELECT account.id, account.uuid, account.code, account.name, account.account_type,
            account.opening_balance
-    FROM acc_core_ledger_links link
-    INNER JOIN acc_accounts account ON account.id=link.account_id
+    FROM accounts_core_ledger_links link
+    INNER JOIN accounts_accounts account ON account.id=link.account_id
     WHERE link.company_id=${scope.companyId} AND link.financial_year_id=${scope.financialYearId}
       AND link.core_ledger_id=${ledgerId} AND account.deleted_at IS NULL
       AND account.status='active' AND account.is_group=0 AND account.is_postable=1
@@ -268,14 +268,14 @@ async function resolveLedgerAccount(
   `.execute(database);
   if (linked.rows[0]) {
     if (cashAccount)
-      await sql`UPDATE acc_accounts SET is_cash=1, updated_by=${actor}
+      await sql`UPDATE accounts_accounts SET is_cash=1, updated_by=${actor}
         WHERE id=${linked.rows[0].id}`.execute(database);
     return toAccount(linked.rows[0]);
   }
 
   const matching = await sql<BookAccountRow>`
     SELECT id, uuid, code, name, account_type, opening_balance
-    FROM acc_accounts
+    FROM accounts_accounts
     WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
       AND LOWER(TRIM(name))=LOWER(TRIM(${ledger.name})) AND deleted_at IS NULL
       AND status='active' AND is_group=0 AND is_postable=1
@@ -286,7 +286,7 @@ async function resolveLedgerAccount(
   if (!account) {
     const classification = classifyLedger(ledger.group_name, cashAccount);
     const inserted = await sql`
-      INSERT INTO acc_accounts
+      INSERT INTO accounts_accounts
         (uuid, company_id, financial_year_id, group_id, code, name, account_type,
          normal_balance, is_group, is_system, is_postable, opening_balance, currency_code,
          description, status, is_cash, is_bank, created_by)
@@ -297,12 +297,12 @@ async function resolveLedgerAccount(
     `.execute(database);
     const created = await sql<BookAccountRow>`
       SELECT id, uuid, code, name, account_type, opening_balance
-      FROM acc_accounts WHERE id=${Number(inserted.insertId)} LIMIT 1
+      FROM accounts_accounts WHERE id=${Number(inserted.insertId)} LIMIT 1
     `.execute(database);
     account = toAccount(created.rows[0]!);
   }
   await sql`
-    INSERT INTO acc_core_ledger_links
+    INSERT INTO accounts_core_ledger_links
       (uuid, company_id, financial_year_id, core_ledger_id, account_id, created_by)
     VALUES (${publicUuid()}, ${scope.companyId}, ${scope.financialYearId}, ${ledgerId},
       ${account.accountId}, ${actor})
@@ -314,7 +314,7 @@ async function availableCoreAccountCode(database: Transaction<AccountsDatabase>,
   const scope = currentAccountsScope();
   const base = `CORE-${ledgerId}`;
   const result = await sql<{ code: string }>`
-    SELECT code FROM acc_accounts
+    SELECT code FROM accounts_accounts
     WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
       AND code LIKE ${`${base}%`}
   `.execute(database);
@@ -350,7 +350,7 @@ async function insertCentralLine(
   actor: string
 ) {
   await sql`
-    INSERT INTO acc_entry_lines
+    INSERT INTO accounts_entry_lines
       (uuid, entry_id, line_number, account_id, debit, credit, base_debit, base_credit,
        currency_code, description, created_by)
     VALUES (${publicUuid()}, ${entryId}, ${lineNumber}, ${accountId}, ${debit}, ${credit}, ${debit},

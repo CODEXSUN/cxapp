@@ -43,6 +43,13 @@ export const salesSettingsSchema = z.object({
   printing: z.object({
     addressMode: z.enum(["billing_only", "billing_and_shipping"]),
     customTerms: z.string(),
+    defaultTerms: z.string(),
+    documentTerms: z.object({
+      exportSales: z.string(),
+      purchase: z.string(),
+      quotation: z.string(),
+      sales: z.string()
+    }),
     letterhead: z.object({
       addressColor: z.string(),
       addressFont: z.string(),
@@ -61,6 +68,7 @@ export const salesSettingsSchema = z.object({
     }),
     printAccountNumber: z.boolean(),
     printQrAccountDetails: z.boolean(),
-    printWithLogo: z.boolean()
+    printWithLogo: z.boolean(),
+    useCustomTerms: z.boolean()
   })
 });

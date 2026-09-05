@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { createServer } from "node:net";
@@ -143,30 +143,7 @@ function parseRequiredPort(value, envKey) {
 
 function ensurePlatformApiDependencies() {
   console.log("  - Checking API package builds");
-  ensureWorkspacePackageBuild("@cxapp/framework", "packages/framework");
-}
-
-function ensureWorkspacePackageBuild(workspaceName, packagePath) {
-  const absolutePackagePath = resolve(root, packagePath);
-  const srcPath = join(absolutePackagePath, "src");
-  const distPath = resolve(root, "dist", packagePath);
-  const packageJsonPath = join(absolutePackagePath, "package.json");
-  const tsconfigPath = join(absolutePackagePath, "tsconfig.json");
-
-  if (!existsSync(distPath)) {
-    buildWorkspacePackage(workspaceName, "dist missing");
-    return;
-  }
-
-  const sourceTime = newestMtime([srcPath, packageJsonPath, tsconfigPath]);
-  const distTime = newestMtime([distPath]);
-
-  if (sourceTime > distTime) {
-    buildWorkspacePackage(workspaceName, "source changed");
-    return;
-  }
-
-  console.log(`  ok ${workspaceName} build is current`);
+  buildWorkspacePackage("@cxapp/framework", "startup contract");
 }
 
 function buildWorkspacePackage(workspaceName, reason) {
@@ -174,26 +151,6 @@ function buildWorkspacePackage(workspaceName, reason) {
   console.log(`  build ${workspaceName} (${reason})`);
   runNpm(["run", "build", "-w", workspaceName]);
   console.log(`  ok ${workspaceName} built in ${Date.now() - startedAt}ms`);
-}
-
-function newestMtime(paths) {
-  let newest = 0;
-  for (const path of paths) {
-    if (!existsSync(path)) {
-      continue;
-    }
-    const stat = statSync(path);
-    newest = Math.max(newest, stat.mtimeMs);
-    if (stat.isDirectory()) {
-      for (const entry of readdirSync(path, { withFileTypes: true })) {
-        if (entry.name === "node_modules" || entry.name === ".turbo" || entry.name === "dist") {
-          continue;
-        }
-        newest = Math.max(newest, newestMtime([join(path, entry.name)]));
-      }
-    }
-  }
-  return newest;
 }
 
 function runNpm(args) {

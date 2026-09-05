@@ -157,7 +157,7 @@ export function selectExportSaleHeaders(
           OR s.status LIKE ${page.search} OR CAST(s.amount AS CHAR) LIKE ${page.search})`
           : sql``
       }
-    ORDER BY s.issued_on DESC, s.line_number DESC
+    ORDER BY s.line_number DESC, s.issued_on DESC, s.id DESC
     ${page ? sql`LIMIT ${page.limit} OFFSET ${page.offset}` : sql``}
   `;
 }

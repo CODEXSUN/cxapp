@@ -19,7 +19,8 @@ import {
   BillingCompanyName,
   BillingDocumentHeader,
   useBillingDocumentTitle,
-  useBillingSettings
+  useBillingSettings,
+  resolveBillingPrintTerms
 } from "../settings";
 import { useSaleRecord } from "./sales.hooks";
 import { saleCompliancePrintFields } from "./sales.print-compliance";
@@ -183,6 +184,7 @@ export function SalePrintDocument({ copy, sale }: { copy: SalePrintCopy; sale: S
     statesQuery.data ?? []
   );
   const pages = paginateBillingPrintItems(sale.items);
+  const terms = resolveBillingPrintTerms(billingSettings, "sales", sale.terms);
 
   return (
     <WorkspacePrintSheet className="billing-print-document">
@@ -207,6 +209,7 @@ export function SalePrintDocument({ copy, sale }: { copy: SalePrintCopy; sale: S
           showPo={showPo}
           showSize={showSize}
           showWorkOrder={showWorkOrder}
+          terms={terms}
           sale={sale}
         />
       ))}
@@ -233,6 +236,7 @@ function SalePrintPage({
   showPo,
   showSize,
   showWorkOrder,
+  terms,
   sale
 }: {
   copy: SalePrintCopy;
@@ -253,6 +257,7 @@ function SalePrintPage({
   showPo: boolean;
   showSize: boolean;
   showWorkOrder: boolean;
+  terms: string;
   sale: Sale;
 }) {
   const splitTax = sale.taxType === "cgst-sgst";
@@ -436,14 +441,7 @@ function SalePrintPage({
             <section className="border-t border-slate-300">
               <div className="grid grid-cols-[1fr_12rem]">
                 <div className="border-r border-slate-300 px-1.5 py-0.5 text-[9px] leading-3">
-                  <div>
-                    We hereby certify that our registration under the GST Act 2017 is in force on
-                    the date on which sale of goods specified in this invoice is made by us and the
-                    sale is effected in the regular course of business.
-                  </div>
-                  <div className="mt-0.5 font-semibold">
-                    * Goods once sold will not be taken back unless agreed in writing.
-                  </div>
+                  <div className="whitespace-pre-wrap">{terms}</div>
                   {bankAccount ? <SalePrintBankDetails bankAccount={bankAccount} /> : null}
                 </div>
                 <div className="text-[9px]">

@@ -58,7 +58,7 @@ export class AccountingRepository {
     const result = await sql<GroupRow>`
       SELECT id, uuid, company_id, financial_year_id, parent_id, code, name, normal_balance,
              is_system, status, created_at, updated_at, deleted_at
-      FROM acc_account_groups
+      FROM accounts_account_groups
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
       ORDER BY code
@@ -72,7 +72,7 @@ export class AccountingRepository {
     const result = await sql<GroupRow>`
       SELECT id, uuid, company_id, financial_year_id, parent_id, code, name, normal_balance,
              is_system, status, created_at, updated_at, deleted_at
-      FROM acc_account_groups
+      FROM accounts_account_groups
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
       LIMIT 1
@@ -89,7 +89,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ uuid: string }>`
-      SELECT uuid FROM acc_account_groups
+      SELECT uuid FROM accounts_account_groups
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND code=${code} AND deleted_at IS NULL
         ${excludeUuid ? sql`AND uuid <> ${excludeUuid}` : sql``}
@@ -101,7 +101,7 @@ export class AccountingRepository {
   async hasAccountsUnderGroup(databaseName: string, groupId: number): Promise<boolean> {
     const database = await getAccountsDatabase(databaseName);
     const result = await sql<{ count: string | number }>`
-      SELECT COUNT(*) AS count FROM acc_accounts WHERE group_id=${groupId} AND deleted_at IS NULL
+      SELECT COUNT(*) AS count FROM accounts_accounts WHERE group_id=${groupId} AND deleted_at IS NULL
     `.execute(database);
     return Number(result.rows[0]?.count ?? 0) > 0;
   }
@@ -110,7 +110,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const uuid = publicUuid();
     await sql`
-      INSERT INTO acc_account_groups
+      INSERT INTO accounts_account_groups
         (uuid, company_id, financial_year_id, parent_id, code, name, normal_balance, is_system, status, created_by)
       VALUES
         (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.parentId}, ${input.code},
@@ -127,7 +127,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ id: number }>`
-      UPDATE acc_account_groups SET
+      UPDATE accounts_account_groups SET
         parent_id=${input.parentId}, code=${input.code}, name=${input.name},
         normal_balance=${input.normalBalance}, status=${input.status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
@@ -141,7 +141,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql`
-      UPDATE acc_account_groups SET deleted_at=CURRENT_TIMESTAMP(3)
+      UPDATE accounts_account_groups SET deleted_at=CURRENT_TIMESTAMP(3)
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -159,8 +159,8 @@ export class AccountingRepository {
              a.is_cash, a.is_bank,
              a.opening_balance, a.currency_code, a.description, a.status, a.created_at, a.updated_at,
              a.deleted_at, COALESCE(g.name,'') AS group_name
-      FROM acc_accounts a
-      LEFT JOIN acc_account_groups g ON g.id=a.group_id
+      FROM accounts_accounts a
+      LEFT JOIN accounts_account_groups g ON g.id=a.group_id
       WHERE a.company_id=${scope.companyId} AND a.financial_year_id=${scope.financialYearId}
         AND a.deleted_at IS NULL
       ORDER BY a.code
@@ -177,8 +177,8 @@ export class AccountingRepository {
              a.is_cash, a.is_bank,
              a.opening_balance, a.currency_code, a.description, a.status, a.created_at, a.updated_at,
              a.deleted_at, COALESCE(g.name,'') AS group_name
-      FROM acc_accounts a
-      LEFT JOIN acc_account_groups g ON g.id=a.group_id
+      FROM accounts_accounts a
+      LEFT JOIN accounts_account_groups g ON g.id=a.group_id
       WHERE a.uuid=${uuid} AND a.company_id=${scope.companyId} AND a.financial_year_id=${scope.financialYearId}
         AND a.deleted_at IS NULL
       LIMIT 1
@@ -195,7 +195,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ uuid: string }>`
-      SELECT uuid FROM acc_accounts
+      SELECT uuid FROM accounts_accounts
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND code=${code} AND deleted_at IS NULL
         ${excludeUuid ? sql`AND uuid <> ${excludeUuid}` : sql``}
@@ -208,7 +208,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ id: number }>`
-      SELECT id FROM acc_accounts
+      SELECT id FROM accounts_accounts
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
       LIMIT 1
@@ -220,7 +220,7 @@ export class AccountingRepository {
   async accountHasActivity(databaseName: string, accountId: number): Promise<boolean> {
     const database = await getAccountsDatabase(databaseName);
     const result = await sql<{ count: string | number }>`
-      SELECT COUNT(*) AS count FROM acc_entry_lines WHERE account_id=${accountId}
+      SELECT COUNT(*) AS count FROM accounts_entry_lines WHERE account_id=${accountId}
     `.execute(database);
     return Number(result.rows[0]?.count ?? 0) > 0;
   }
@@ -229,7 +229,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const uuid = publicUuid();
     await sql`
-      INSERT INTO acc_accounts
+      INSERT INTO accounts_accounts
         (uuid, company_id, financial_year_id, group_id, code, name, account_type, normal_balance,
          is_group, is_system, is_postable, opening_balance, currency_code, description, status, created_by,
          is_cash, is_bank)
@@ -251,7 +251,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_accounts SET
+      UPDATE accounts_accounts SET
         group_id=${input.groupId}, code=${input.code}, name=${input.name},
         account_type=${input.accountType}, normal_balance=${input.normalBalance},
         is_group=${input.isGroup ?? false}, is_postable=${input.isPostable ?? true},
@@ -272,7 +272,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_accounts SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
+      UPDATE accounts_accounts SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL
     `.execute(database);
@@ -289,8 +289,8 @@ export class AccountingRepository {
              j.entry_number, j.entry_date, j.reference, j.description, j.status, j.posted_by,
              j.posted_at, j.reversed_by, j.reversed_at, j.reversal_of_id, j.cancellation_reason,
              j.created_at, j.updated_at, j.deleted_at, COALESCE(p.name,'') AS accounting_period_name
-      FROM acc_journal_entries j
-      LEFT JOIN acc_accounting_periods p ON p.id=j.accounting_period_id
+      FROM accounts_journal_entries j
+      LEFT JOIN accounts_accounting_periods p ON p.id=j.accounting_period_id
       WHERE j.company_id=${scope.companyId} AND j.financial_year_id=${scope.financialYearId}
         AND j.deleted_at IS NULL AND j.source_type='journal'
       ORDER BY j.entry_date DESC, j.line_number DESC
@@ -313,8 +313,8 @@ export class AccountingRepository {
                j.entry_number, j.entry_date, j.reference, j.description, j.status, j.posted_by,
                j.posted_at, j.reversed_by, j.reversed_at, j.reversal_of_id, j.cancellation_reason,
                j.created_at, j.updated_at, j.deleted_at, COALESCE(p.name,'') AS accounting_period_name
-        FROM acc_journal_entries j
-        LEFT JOIN acc_accounting_periods p ON p.id=j.accounting_period_id
+        FROM accounts_journal_entries j
+        LEFT JOIN accounts_accounting_periods p ON p.id=j.accounting_period_id
         WHERE j.company_id=${scope.companyId} AND j.financial_year_id=${scope.financialYearId}
           AND j.deleted_at IS NULL AND j.source_type='journal'
           AND (${status} = 'all' OR j.status = ${status})
@@ -329,7 +329,7 @@ export class AccountingRepository {
       `.execute(database),
       sql<{ total: string | number }>`
         SELECT COUNT(*) AS total
-        FROM acc_journal_entries j
+        FROM accounts_journal_entries j
         WHERE j.company_id=${scope.companyId} AND j.financial_year_id=${scope.financialYearId}
           AND j.deleted_at IS NULL AND j.source_type='journal'
           AND (${status} = 'all' OR j.status = ${status})
@@ -357,8 +357,8 @@ export class AccountingRepository {
              j.entry_number, j.entry_date, j.reference, j.description, j.status, j.posted_by,
              j.posted_at, j.reversed_by, j.reversed_at, j.reversal_of_id, j.cancellation_reason,
              j.created_at, j.updated_at, j.deleted_at, COALESCE(p.name,'') AS accounting_period_name
-      FROM acc_journal_entries j
-      LEFT JOIN acc_accounting_periods p ON p.id=j.accounting_period_id
+      FROM accounts_journal_entries j
+      LEFT JOIN accounts_accounting_periods p ON p.id=j.accounting_period_id
       WHERE j.uuid=${uuid} AND j.company_id=${scope.companyId} AND j.financial_year_id=${scope.financialYearId}
         AND j.deleted_at IS NULL AND j.source_type='journal'
       LIMIT 1
@@ -375,7 +375,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const result = await sql<{ uuid: string }>`
-      SELECT uuid FROM acc_journal_entries
+      SELECT uuid FROM accounts_journal_entries
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND entry_number=${entryNumber} AND deleted_at IS NULL AND source_type='journal'
         ${excludeUuid ? sql`AND uuid <> ${excludeUuid}` : sql``}
@@ -389,7 +389,7 @@ export class AccountingRepository {
     const scope = currentAccountsScope();
     const result = await sql<{ next_number: number | string }>`
       SELECT COALESCE(MAX(CAST(SUBSTRING(entry_number, 4) AS UNSIGNED)), 0) + 1 AS next_number
-      FROM acc_journal_entries
+      FROM accounts_journal_entries
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND entry_number LIKE 'JV-%' AND deleted_at IS NULL AND source_type='journal'
     `.execute(database);
@@ -401,7 +401,7 @@ export class AccountingRepository {
     const scope = currentAccountsScope();
     const result = await sql<{ line_number: string | number }>`
       SELECT COALESCE(MAX(line_number), 0) + 1 AS line_number
-      FROM acc_journal_entries
+      FROM accounts_journal_entries
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     `.execute(database);
     return Number(result.rows[0]?.line_number ?? 1);
@@ -419,13 +419,13 @@ export class AccountingRepository {
         await database.transaction().execute(async (transaction) => {
           const lineResult = await sql<{ line_number: number | string }>`
             SELECT COALESCE(MAX(line_number), 0) + 1 AS line_number
-            FROM acc_journal_entries
+            FROM accounts_journal_entries
             WHERE company_id=${input.companyId} AND financial_year_id=${input.financialYearId}
             FOR UPDATE
           `.execute(transaction);
           const lineNumber = Number(lineResult.rows[0]?.line_number ?? 1);
           const inserted = await sql`
-        INSERT INTO acc_journal_entries
+        INSERT INTO accounts_journal_entries
           (uuid, company_id, financial_year_id, accounting_period_id, line_number, entry_number,
            entry_date, reference, description, status, created_by)
         VALUES
@@ -438,7 +438,7 @@ export class AccountingRepository {
         });
         return (await this.getJournal(databaseName, uuid))!;
       } catch (error) {
-        if (attempt < 4 && isDuplicateKey(error, "acc_journal_entries_line_unique")) continue;
+        if (attempt < 4 && isDuplicateKey(error, "accounts_journal_entries_line_unique")) continue;
         throw error;
       }
     }
@@ -454,7 +454,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     const existing = await sql<{ id: number; uuid: string }>`
-      SELECT id, uuid FROM acc_journal_entries
+      SELECT id, uuid FROM accounts_journal_entries
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL AND source_type='journal'
       LIMIT 1
@@ -463,13 +463,13 @@ export class AccountingRepository {
     if (!entry) return null;
     await database.transaction().execute(async (transaction) => {
       await sql`
-        UPDATE acc_journal_entries SET
+        UPDATE accounts_journal_entries SET
           accounting_period_id=${input.accountingPeriodId}, entry_date=${input.entryDate},
           reference=${input.reference ?? ""}, description=${input.description ?? ""},
            status=${input.status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}, updated_at=CURRENT_TIMESTAMP(3)
         WHERE id=${entry.id}
       `.execute(transaction);
-      await sql`DELETE FROM acc_journal_lines WHERE journal_entry_id=${entry.id}`.execute(
+      await sql`DELETE FROM accounts_journal_lines WHERE journal_entry_id=${entry.id}`.execute(
         transaction
       );
       await insertJournalLines(transaction, entry.id, lines);
@@ -492,7 +492,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_journal_entries SET
+      UPDATE accounts_journal_entries SET
         status=${status},
         posted_by=COALESCE(${patch.postedBy ?? null}, posted_by),
         posted_at=${patch.postedAt ? sql`CURRENT_TIMESTAMP(3)` : sql`posted_at`},
@@ -505,8 +505,8 @@ export class AccountingRepository {
     `.execute(database);
     if (status === "reversed") {
       await sql`
-        UPDATE acc_entries e
-        INNER JOIN acc_journal_entries j ON j.posted_entry_id=e.id
+        UPDATE accounts_entries e
+        INNER JOIN accounts_journal_entries j ON j.posted_entry_id=e.id
         SET e.status='reversed', e.updated_at=CURRENT_TIMESTAMP(3)
         WHERE j.uuid=${uuid} AND e.source_type='journal'
       `.execute(database);
@@ -517,9 +517,9 @@ export class AccountingRepository {
   async linkJournalReversal(databaseName: string, reversalUuid: string, originalUuid: string) {
     const database = await getAccountsDatabase(databaseName);
     await sql`
-      UPDATE acc_entries reversal
-      INNER JOIN acc_journal_entries reversal_source ON reversal_source.posted_entry_id=reversal.id
-      INNER JOIN acc_journal_entries original_source ON original_source.uuid=${originalUuid}
+      UPDATE accounts_entries reversal
+      INNER JOIN accounts_journal_entries reversal_source ON reversal_source.posted_entry_id=reversal.id
+      INNER JOIN accounts_journal_entries original_source ON original_source.uuid=${originalUuid}
       SET reversal.reversal_of_id=original_source.posted_entry_id
       WHERE reversal_source.uuid=${reversalUuid} AND reversal.source_type='journal'
     `.execute(database);
@@ -529,7 +529,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_journal_entries SET deleted_at=CURRENT_TIMESTAMP(3)
+      UPDATE accounts_journal_entries SET deleted_at=CURRENT_TIMESTAMP(3)
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND deleted_at IS NULL AND source_type='journal'
     `.execute(database);
@@ -540,8 +540,8 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const result = await sql<{ count: string | number }>`
       SELECT COUNT(*) AS count
-      FROM acc_entries e
-      INNER JOIN acc_journal_entries j ON j.uuid=e.source_uuid
+      FROM accounts_entries e
+      INNER JOIN accounts_journal_entries j ON j.uuid=e.source_uuid
       WHERE e.source_type='journal' AND j.id=${journalId}
     `.execute(database);
     return Number(result.rows[0]?.count ?? 0) > 0;
@@ -556,7 +556,7 @@ export class AccountingRepository {
     const scope = currentAccountsScope();
     const posted = await database.transaction().execute(async (transaction) => {
       const journalResult = await sql<{ id: number; uuid: string }>`
-        SELECT id, uuid FROM acc_journal_entries
+        SELECT id, uuid FROM accounts_journal_entries
         WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
           AND deleted_at IS NULL AND source_type='journal' AND status='ready_to_post'
         FOR UPDATE
@@ -564,32 +564,32 @@ export class AccountingRepository {
       const entry = journalResult.rows[0];
       if (!entry) return false;
       const linesResult = await sql<LineRow>`
-        SELECT id, account_id, debit, credit FROM acc_journal_lines
+        SELECT id, account_id, debit, credit FROM accounts_journal_lines
         WHERE journal_entry_id=${entry.id} ORDER BY line_number
       `.execute(transaction);
       if (linesResult.rows.length === 0) return false;
       const central = await sql`
-        INSERT INTO acc_entries
+        INSERT INTO accounts_entries
           (uuid, company_id, financial_year_id, accounting_period_id, source_type, source_uuid,
            entry_number, entry_date, reference, description, status, posted_by, posted_at, created_by)
         SELECT ${publicUuid()}, j.company_id, j.financial_year_id, j.accounting_period_id, 'journal',
                j.uuid, j.entry_number, j.entry_date, j.reference, j.description, 'posted', ${actor},
                CURRENT_TIMESTAMP(3), ${actor}
-        FROM acc_journal_entries j WHERE j.id=${entry.id}
+        FROM accounts_journal_entries j WHERE j.id=${entry.id}
       `.execute(transaction);
       const centralEntryId = Number(central.insertId);
       for (const [index, line] of linesResult.rows.entries()) {
         await sql`
-          INSERT INTO acc_entry_lines
+          INSERT INTO accounts_entry_lines
             (uuid, entry_id, line_number, account_id, debit, credit, base_debit, base_credit,
              currency_code, description, created_by)
           SELECT ${publicUuid()}, ${centralEntryId}, ${index + 1}, l.account_id, l.debit, l.credit,
                  l.base_debit, l.base_credit, l.currency_code, l.description, ${actor}
-          FROM acc_journal_lines l WHERE l.id=${line.id}
+          FROM accounts_journal_lines l WHERE l.id=${line.id}
         `.execute(transaction);
       }
       await sql`
-        UPDATE acc_journal_entries SET status='posted', posted_by=${actor},
+        UPDATE accounts_journal_entries SET status='posted', posted_by=${actor},
           posted_at=CURRENT_TIMESTAMP(3), posted_entry_id=${centralEntryId}, updated_by=${actor},
           updated_at=CURRENT_TIMESTAMP(3)
         WHERE id=${entry.id}
@@ -610,8 +610,8 @@ export class AccountingRepository {
              a.account_type, a.normal_balance, a.is_group, a.is_system, a.is_postable,
              a.opening_balance, a.currency_code, a.description, a.status, a.created_at, a.updated_at,
              a.deleted_at, COALESCE(g.name,'') AS group_name
-      FROM acc_accounts a
-      LEFT JOIN acc_account_groups g ON g.id=a.group_id
+      FROM accounts_accounts a
+      LEFT JOIN accounts_account_groups g ON g.id=a.group_id
       WHERE a.uuid=${accountUuid} AND a.company_id=${scope.companyId} AND a.financial_year_id=${scope.financialYearId}
         AND a.deleted_at IS NULL AND a.is_group=0
       LIMIT 1
@@ -622,9 +622,9 @@ export class AccountingRepository {
     const linesResult = await sql<LedgerRow>`
       SELECT l.id, l.uuid, l.account_id, e.entry_date, l.debit, l.credit,
              e.entry_number, e.source_uuid AS journal_uuid, a.code AS account_code, a.name AS account_name
-      FROM acc_entry_lines l
-      INNER JOIN acc_entries e ON e.id=l.entry_id
-      INNER JOIN acc_accounts a ON a.id=l.account_id
+      FROM accounts_entry_lines l
+      INNER JOIN accounts_entries e ON e.id=l.entry_id
+      INNER JOIN accounts_accounts a ON a.id=l.account_id
       WHERE e.company_id=${scope.companyId} AND e.financial_year_id=${scope.financialYearId}
         AND l.account_id=${account.id}
       ORDER BY e.entry_date, l.id
@@ -676,7 +676,7 @@ export class AccountingRepository {
     const result = await sql<PeriodRow>`
       SELECT id, uuid, company_id, financial_year_id, name, DATE_FORMAT(start_date,'%Y-%m-%d') AS start_date,
              DATE_FORMAT(end_date,'%Y-%m-%d') AS end_date, status, is_system, created_at, updated_at
-      FROM acc_accounting_periods
+      FROM accounts_accounting_periods
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
       ORDER BY start_date, name
     `.execute(database);
@@ -689,7 +689,7 @@ export class AccountingRepository {
     const result = await sql<PeriodRow>`
       SELECT id, uuid, company_id, financial_year_id, name, DATE_FORMAT(start_date,'%Y-%m-%d') AS start_date,
              DATE_FORMAT(end_date,'%Y-%m-%d') AS end_date, status, is_system, created_at, updated_at
-      FROM acc_accounting_periods
+      FROM accounts_accounting_periods
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
       LIMIT 1
     `.execute(database);
@@ -704,7 +704,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const uuid = publicUuid();
     await sql`
-      INSERT INTO acc_accounting_periods
+      INSERT INTO accounts_accounting_periods
         (uuid, company_id, financial_year_id, name, start_date, end_date, status, is_system, created_by)
       VALUES
         (${uuid}, ${input.companyId}, ${input.financialYearId}, ${input.name}, ${input.startDate},
@@ -721,7 +721,7 @@ export class AccountingRepository {
     const database = await getAccountsDatabase(databaseName);
     const scope = currentAccountsScope();
     await sql`
-      UPDATE acc_accounting_periods SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
+      UPDATE accounts_accounting_periods SET status=${status}, updated_by=${currentAccountsScope().actorEmail || "system:accounts"}
       WHERE uuid=${uuid} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     `.execute(database);
     return this.getPeriod(databaseName, uuid);
@@ -733,7 +733,7 @@ export class AccountingRepository {
     const result = await sql<PeriodRow>`
       SELECT id, uuid, company_id, financial_year_id, name, DATE_FORMAT(start_date,'%Y-%m-%d') AS start_date,
              DATE_FORMAT(end_date,'%Y-%m-%d') AS end_date, status, is_system, created_at, updated_at
-      FROM acc_accounting_periods
+      FROM accounts_accounting_periods
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND ${entryDate} BETWEEN start_date AND end_date AND status <> 'locked'
       LIMIT 1
@@ -747,7 +747,7 @@ export class AccountingRepository {
     const scope = currentAccountsScope();
     if (ids.length === 0) return new Set();
     const result = await sql<{ id: number }>`
-      SELECT id FROM acc_accounts
+      SELECT id FROM accounts_accounts
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND id IN (${sql.join(ids)}) AND status='active' AND deleted_at IS NULL AND is_group=0 AND is_postable=1
     `.execute(database);
@@ -762,7 +762,7 @@ export class AccountingRepository {
     const scope = currentAccountsScope();
     if (ids.length === 0) return new Map();
     const result = await sql<{ id: number; code: string; name: string }>`
-      SELECT id, code, name FROM acc_accounts
+      SELECT id, code, name FROM accounts_accounts
       WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
         AND id IN (${sql.join(ids)})
     `.execute(database);
@@ -778,8 +778,8 @@ export class AccountingRepository {
     const linesResult = await sql<LineRow>`
       SELECT l.id, l.uuid, l.journal_entry_id, l.line_number, l.account_id, l.debit, l.credit, l.description,
              a.code AS account_code, a.name AS account_name
-      FROM acc_journal_lines l
-      INNER JOIN acc_accounts a ON a.id=l.account_id
+      FROM accounts_journal_lines l
+      INNER JOIN accounts_accounts a ON a.id=l.account_id
       WHERE l.journal_entry_id IN (${sql.join(journalIds)})
       ORDER BY l.journal_entry_id, l.line_number
     `.execute(database);
@@ -832,7 +832,7 @@ async function insertJournalLines(
 ) {
   for (const [index, line] of lines.entries()) {
     await sql`
-      INSERT INTO acc_journal_lines
+      INSERT INTO accounts_journal_lines
         (uuid, journal_entry_id, line_number, account_id, debit, credit, base_debit, base_credit,
          currency_code, description)
       VALUES
@@ -1021,8 +1021,10 @@ function publicUuid() {
 
 function isDuplicateKey(error: unknown, constraint: string) {
   const value = error as { code?: string; sqlMessage?: string; message?: string };
+  const legacyConstraint = constraint.replace(/^accounts_/, "acc_");
+  const message = `${value.sqlMessage ?? ""} ${value.message ?? ""}`;
   return (
     value.code === "ER_DUP_ENTRY" &&
-    `${value.sqlMessage ?? ""} ${value.message ?? ""}`.includes(constraint)
+    (message.includes(constraint) || message.includes(legacyConstraint))
   );
 }

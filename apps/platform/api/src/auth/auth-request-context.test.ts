@@ -33,3 +33,10 @@ test("allows the exact session reset route to bypass broken tenant validation", 
   assert.equal(isPublicAuthenticationPath("/auth/session/reset"), true);
   assert.equal(isPublicAuthenticationPath("/auth/session/reset/other"), false);
 });
+
+test("keeps public application routes available when a stale session cookie is present", () => {
+  assert.equal(isPublicAuthenticationPath("/public/runtime-config"), true);
+  assert.equal(isPublicAuthenticationPath("/public/app-portal"), true);
+  assert.equal(isPublicAuthenticationPath("/public/blog/article"), true);
+  assert.equal(isPublicAuthenticationPath("/publicity"), false);
+});

@@ -298,8 +298,8 @@ export async function runAccountingE2e() {
       });
       const [cashPaymentLines] = await admin.query(
         `SELECT line.account_id,line.debit,line.credit
-         FROM \`${databaseName}\`.acc_entry_lines line
-         INNER JOIN \`${databaseName}\`.acc_cash_entries source
+         FROM \`${databaseName}\`.accounts_entry_lines line
+         INNER JOIN \`${databaseName}\`.accounts_cash_entries source
            ON source.posted_entry_id=line.entry_id
          WHERE source.uuid=? ORDER BY line.line_number`,
         [cashPayment.id]
@@ -367,14 +367,14 @@ export async function runAccountingE2e() {
 
       const [postingRows] = await admin.query(
         `SELECT
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_cash_entries) AS cash_entries,
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_cash_entry_lines) AS cash_entry_lines,
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_bank_entries) AS bank_entries,
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entries WHERE source_type='cash-book') AS cash_postings,
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entry_lines line
-             INNER JOIN \`${databaseName}\`.acc_entries entry ON entry.id=line.entry_id
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_cash_entries) AS cash_entries,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_cash_entry_lines) AS cash_entry_lines,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_bank_entries) AS bank_entries,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_entries WHERE source_type='cash-book') AS cash_postings,
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_entry_lines line
+             INNER JOIN \`${databaseName}\`.accounts_entries entry ON entry.id=line.entry_id
              WHERE entry.source_type='cash-book') AS cash_posting_lines,
-          (SELECT COUNT(*) FROM \`${databaseName}\`.acc_entries WHERE source_type='bank-book') AS bank_postings`
+          (SELECT COUNT(*) FROM \`${databaseName}\`.accounts_entries WHERE source_type='bank-book') AS bank_postings`
       );
       const postingCounts = (
         postingRows as Array<{

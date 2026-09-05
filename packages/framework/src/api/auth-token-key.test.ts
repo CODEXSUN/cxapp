@@ -10,11 +10,20 @@ test("derives isolated signing keys for platform and each tenant", () => {
   assert.equal(platformKeyId, "platform.v1");
   assert.equal(altexKeyId, "tenant.tenant-altex.v1");
   assert.equal(cottonKeyId, "tenant.tenant-cotton.v1");
-  assert.notDeepEqual(deriveAuthTokenKey("root-secret", altexKeyId), deriveAuthTokenKey("root-secret", cottonKeyId));
-  assert.notDeepEqual(deriveAuthTokenKey("root-secret", platformKeyId), deriveAuthTokenKey("root-secret", altexKeyId));
+  assert.notDeepEqual(
+    deriveAuthTokenKey("root-secret", altexKeyId),
+    deriveAuthTokenKey("root-secret", cottonKeyId)
+  );
+  assert.notDeepEqual(
+    deriveAuthTokenKey("root-secret", platformKeyId),
+    deriveAuthTokenKey("root-secret", altexKeyId)
+  );
 });
 
 test("derived tenant keys are deterministic for parallel sessions of one tenant", () => {
   const keyId = authTokenKeyId({ tenantId: "tenant-altex", userType: "tenant" });
-  assert.deepEqual(deriveAuthTokenKey("root-secret", keyId), deriveAuthTokenKey("root-secret", keyId));
+  assert.deepEqual(
+    deriveAuthTokenKey("root-secret", keyId),
+    deriveAuthTokenKey("root-secret", keyId)
+  );
 });

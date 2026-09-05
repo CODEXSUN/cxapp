@@ -17,7 +17,8 @@ import {
   BillingCompanyName,
   BillingDocumentHeader,
   useBillingDocumentTitle,
-  useBillingSettings
+  useBillingSettings,
+  resolveBillingPrintTerms
 } from "../settings";
 import { usePurchaseRecord } from "./purchase.hooks";
 import { formatDate, formatMoney } from "./purchase.services";
@@ -112,6 +113,7 @@ export function PurchasePrintDocument({
   const showSize = layout?.useSize ?? false;
   const showWorkOrder = layout?.useWorkOrder ?? true;
   const pages = paginateBillingPrintItems(purchase.items);
+  const terms = resolveBillingPrintTerms(billingSettings, "purchase", purchase.terms);
 
   return (
     <WorkspacePrintSheet className="billing-print-document">
@@ -132,6 +134,7 @@ export function PurchasePrintDocument({
           showPo={showPo}
           showSize={showSize}
           showWorkOrder={showWorkOrder}
+          terms={terms}
           purchase={purchase}
         />
       ))}
@@ -154,6 +157,7 @@ function PurchasePrintPage({
   showPo,
   showSize,
   showWorkOrder,
+  terms,
   purchase
 }: {
   copy: PurchasePrintCopy;
@@ -170,6 +174,7 @@ function PurchasePrintPage({
   showPo: boolean;
   showSize: boolean;
   showWorkOrder: boolean;
+  terms: string;
   purchase: Purchase;
 }) {
   const splitTax = purchase.taxType === "cgst-sgst";
@@ -334,14 +339,7 @@ function PurchasePrintPage({
               <div className="grid grid-cols-[1fr_12rem]">
                 <div className="border-r border-slate-300 px-1.5 py-0.5 text-[9px] leading-3">
                   <div className="font-medium">E&amp;OE</div>
-                  <div className="mt-0.5">
-                    We hereby certify that our registration under the GST Act 2017 is in force on
-                    the date on which purchase of goods specified in this document is made by us and
-                    the purchase is effected in the regular course of business.
-                  </div>
-                  <div className="mt-0.5 font-semibold">
-                    * Goods once sold will not be taken back unless agreed in writing.
-                  </div>
+                  <div className="mt-0.5 whitespace-pre-wrap">{terms}</div>
                   {bankAccount ? <PurchasePrintBankDetails bankAccount={bankAccount} /> : null}
                 </div>
                 <div className="text-[9px]">

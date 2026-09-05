@@ -29,7 +29,9 @@ const publicAuthPaths = new Set([
   "/auth/login",
   "/auth/development/tenant-login",
   "/auth/session/reset",
-  "/auth/tenant-context"
+  "/auth/tenant-context",
+  "/health",
+  "/sitemap.xml"
 ]);
 
 export function registerAuthRequestContext(app: FastifyInstance) {
@@ -119,7 +121,7 @@ export function registerAuthRequestContext(app: FastifyInstance) {
 }
 
 export function isPublicAuthenticationPath(path: string) {
-  return publicAuthPaths.has(path);
+  return path.startsWith("/public/") || publicAuthPaths.has(path);
 }
 
 export function requestHost(request: FastifyRequest) {

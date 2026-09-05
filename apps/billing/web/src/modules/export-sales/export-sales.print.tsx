@@ -11,7 +11,12 @@ import {
   getBillingPrintDummyLineCount,
   paginateBillingPrintItems
 } from "../../shared/document/print-pagination";
-import { BillingCompanyName, BillingDocumentHeader, useBillingSettings } from "../settings";
+import {
+  BillingCompanyName,
+  BillingDocumentHeader,
+  resolveBillingPrintTerms,
+  useBillingSettings
+} from "../settings";
 import { useExportSaleRecord } from "./export-sales.hooks";
 import {
   formatDate,
@@ -157,6 +162,7 @@ export function ExportSalePrintDocument({
     statesQuery.data ?? []
   );
   const pages = paginateBillingPrintItems(exportSale.items);
+  const terms = resolveBillingPrintTerms(billingSettings, "exportSales", exportSale.terms);
 
   return (
     <WorkspacePrintSheet className="billing-print-document">
@@ -176,6 +182,7 @@ export function ExportSalePrintDocument({
           showDc={showDc}
           showPo={showPo}
           showSize={showSize}
+          terms={terms}
           exportSale={exportSale}
         />
       ))}
@@ -197,6 +204,7 @@ function ExportSalePrintPage({
   showDc,
   showPo,
   showSize,
+  terms,
   exportSale
 }: {
   copy: ExportSalePrintCopy;
@@ -212,6 +220,7 @@ function ExportSalePrintPage({
   showDc: boolean;
   showPo: boolean;
   showSize: boolean;
+  terms: string;
   exportSale: ExportSale;
 }) {
   const splitTax = exportSale.taxType === "cgst-sgst";
@@ -375,14 +384,7 @@ function ExportSalePrintPage({
             <section className="grid grid-cols-[1fr_12rem] border-t border-slate-300">
               <div className="border-r border-slate-300 px-2 py-2 text-[9px] leading-4">
                 <div className="font-medium">E&amp;OE</div>
-                <div className="mt-1">
-                  We hereby certify that our registration under the GST Act 2017 is in force on the
-                  date on which export sale of goods specified in this invoice is made by us and the
-                  export sale is effected in the regular course of business.
-                </div>
-                <div className="mt-1 font-semibold">
-                  * Goods once sold will not be taken back unless agreed in writing.
-                </div>
+                <div className="mt-1 whitespace-pre-wrap">{terms}</div>
                 <div className="mt-5">
                   <div className="font-medium">Amount (in words)</div>
                   <div className="mt-1">{amountInWords(exportSale.amount)}</div>

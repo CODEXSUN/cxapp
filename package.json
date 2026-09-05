@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.68",
+  "version": "1.0.70",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -60,6 +60,7 @@
     "test:e2e:accounting": "tsx apps/accounts/api/src/modules/accounting/accounting.e2e.ts",
     "test:e2e:bootstrap": "tsx tools/e2e/platform-core-billing-bootstrap.e2e.ts",
     "test:e2e:composed-runtime": "tsx tools/e2e/composed-platform-runtime.e2e.ts",
+    "test:e2e:tenant-session": "tsx tools/e2e/tenant-session-access.e2e.ts",
     "test:e2e:devkit": "tsx tools/e2e/devkit-isolation.e2e.ts",
     "test:e2e:persistence": "tsx tools/e2e/organisation-billing-persistence.e2e.ts",
     "test:e2e:sales-compliance": "tsx tools/e2e/organisation-billing-persistence.e2e.ts --sales-compliance",

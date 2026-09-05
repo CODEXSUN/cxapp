@@ -1,8 +1,8 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { authTokenKeyId, deriveAuthTokenKey } from "@cxapp/framework/api";
 import { env } from "../env.js";
-import { authTokenKeyId, deriveAuthTokenKey } from "./auth-token-key.js";
 
-export { authTokenKeyId } from "./auth-token-key.js";
+export { authTokenKeyId } from "@cxapp/framework/api";
 
 export type AuthUserType = "super_admin" | "staff" | "tenant";
 export type TenantAccessMode = "custom_domain" | "platform" | "shared_domain";
