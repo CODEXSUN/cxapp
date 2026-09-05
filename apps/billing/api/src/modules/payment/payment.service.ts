@@ -24,7 +24,14 @@ export class PaymentService {
   }
   listPage(
     databaseName: string,
-    query: { page: number; pageSize: number; search: string; status: string }
+    query: {
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     return this.repository.listPage(databaseName, query);
   }

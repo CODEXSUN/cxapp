@@ -113,7 +113,15 @@ export function purchaseDatabase(databaseName: string) {
 
 export function selectPurchaseHeaders(
   uuid?: string,
-  page?: { customer: string; limit: number; offset: number; search: string; status: string }
+  page?: {
+    customer: string;
+    dateFrom: string;
+    dateTo: string;
+    limit: number;
+    offset: number;
+    search: string;
+    status: string;
+  }
 ) {
   const scope = currentBillingScope();
   return sql<PurchaseHeaderRow>`
@@ -155,6 +163,8 @@ export function selectPurchaseHeaders(
         page
           ? sql`AND (${page.status}='all' OR s.status=${page.status})
         AND (${page.customer}='all' OR LOWER(supplier.name)=${page.customer})
+        AND (${page.dateFrom}='' OR s.purchase_date >= ${page.dateFrom})
+        AND (${page.dateTo}='' OR s.purchase_date <= ${page.dateTo})
         AND (${page.search}='%%' OR s.purchase_number LIKE ${page.search}
           OR supplier.name LIKE ${page.search} OR s.supplier_bill_number LIKE ${page.search}
           OR COALESCE(work_order.code,'') LIKE ${page.search}

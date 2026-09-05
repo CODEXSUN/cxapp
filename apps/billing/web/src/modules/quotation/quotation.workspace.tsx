@@ -28,6 +28,10 @@ import { useQuotationPage } from "./quotation.hooks";
 import { QuotationForm } from "./quotation.form";
 import { canSelectQuotation, QuotationList } from "./quotation.list";
 import { getToken } from "../../shared/api/tenant-context";
+import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
 
 const statusFilters = [
   { id: "all", label: "All quotations" },
@@ -95,6 +99,9 @@ export function QuotationWorkspace() {
   const [view, setView] = useState<QuotationView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [selectedQuotationIds, setSelectedQuotationIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(quotationColumnCatalog.map((column) => [column.id, true]))
@@ -103,6 +110,8 @@ export function QuotationWorkspace() {
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const quotationsQuery = useQuotationPage({
     customer: "all",
+    dateFrom,
+    dateTo,
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -397,6 +406,22 @@ export function QuotationWorkspace() {
             Object.fromEntries(quotationColumnCatalog.map((column) => [column.id, true]))
           )
         }
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setCurrentPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setCurrentPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       {quotationsQuery.isError ? (
         <WorkspaceTablePanel>
@@ -410,6 +435,15 @@ export function QuotationWorkspace() {
       <QuotationList
         entries={pageEntries}
         loading={quotationsQuery.isLoading}
+        totalsRecords={pageEntries.map((quotation) => ({
+          amount: quotation.amount,
+          date: quotation.date,
+          documentNumber: quotation.quotationNumber,
+          partyName: quotation.customerName,
+          subtotal: quotation.subtotal,
+          taxAmount: quotation.taxAmount
+        }))}
+        totalsView={totalsView}
         onEdit={(quotation) => setView({ mode: "upsert", quotation, returnTo: "list" })}
         onSetStatus={(quotation, status) => statusMutation.mutate({ id: quotation.id, status })}
         onForceDelete={(quotation) => {

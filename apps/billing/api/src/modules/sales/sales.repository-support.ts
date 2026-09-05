@@ -152,6 +152,8 @@ export function selectSaleHeaders(uuid?: string) {
 export function selectSalePageHeaders(
   search: string,
   status: string,
+  dateFrom: string,
+  dateTo: string,
   limit: number,
   offset: number
 ) {
@@ -188,6 +190,8 @@ export function selectSalePageHeaders(
     WHERE s.deleted_at IS NULL
       AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
       AND (${status} = 'all' OR s.status = ${status})
+      AND (${dateFrom}='' OR s.issued_on >= ${dateFrom})
+      AND (${dateTo}='' OR s.issued_on <= ${dateTo})
       AND (
         ${search} = '%%' OR s.invoice_number LIKE ${search} OR customer.name LIKE ${search}
         OR COALESCE(work_order.code, '') LIKE ${search}

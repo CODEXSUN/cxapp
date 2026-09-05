@@ -111,7 +111,15 @@ export function quotationDatabase(databaseName: string) {
 
 export function selectQuotationHeaders(
   uuid?: string,
-  page?: { customer: string; limit: number; offset: number; search: string; status: string }
+  page?: {
+    customer: string;
+    dateFrom: string;
+    dateTo: string;
+    limit: number;
+    offset: number;
+    search: string;
+    status: string;
+  }
 ) {
   const scope = currentBillingScope();
   return sql<QuotationHeaderRow>`
@@ -155,6 +163,8 @@ export function selectQuotationHeaders(
         page
           ? sql`AND (${page.status}='all' OR s.status=${page.status})
         AND (${page.customer}='all' OR LOWER(customer.name)=${page.customer})
+        AND (${page.dateFrom}='' OR s.quotation_date >= ${page.dateFrom})
+        AND (${page.dateTo}='' OR s.quotation_date <= ${page.dateTo})
         AND (${page.search}='%%' OR s.quotation_number LIKE ${page.search}
           OR customer.name LIKE ${page.search} OR COALESCE(work_order.code,'') LIKE ${page.search}
           OR DATE_FORMAT(s.quotation_date,'%Y-%m-%d') LIKE ${page.search}

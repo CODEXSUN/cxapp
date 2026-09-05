@@ -29,6 +29,10 @@ import { usePurchasePage } from "./purchase.hooks";
 import { PurchaseForm } from "./purchase.form";
 import { canSelectPurchase, PurchaseList } from "./purchase.list";
 import { getToken } from "../../shared/api/tenant-context";
+import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
 
 const statusFilters = [
   { id: "all", label: "All purchase" },
@@ -97,6 +101,9 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   const [view, setView] = useState<PurchaseView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [selectedPurchaseIds, setSelectedPurchaseIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(purchaseColumnCatalog.map((column) => [column.id, true]))
@@ -105,6 +112,8 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const purchasesQuery = usePurchasePage({
     customer: "all",
+    dateFrom,
+    dateTo,
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -418,6 +427,22 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
             Object.fromEntries(purchaseColumnCatalog.map((column) => [column.id, true]))
           )
         }
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setCurrentPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setCurrentPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       {purchasesQuery.isError ? (
         <WorkspaceTablePanel>
@@ -431,6 +456,15 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
       <PurchaseList
         entries={pageEntries}
         loading={purchasesQuery.isLoading}
+        totalsRecords={pageEntries.map((purchase) => ({
+          amount: purchase.amount,
+          date: purchase.issuedOn,
+          documentNumber: purchase.invoiceNumber,
+          partyName: purchase.supplierName,
+          subtotal: purchase.subtotal,
+          taxAmount: purchase.taxAmount
+        }))}
+        totalsView={totalsView}
         onEdit={(purchase) => setView({ mode: "upsert", purchase, returnTo: "list" })}
         onSetStatus={(purchase, status) => statusMutation.mutate({ id: purchase.id, status })}
         onForceDelete={(purchase) => {

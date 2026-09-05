@@ -31,6 +31,10 @@ import { useExportSalesPage } from "./export-sales.hooks";
 import { ExportSalesForm } from "./export-sales.form";
 import { canSelectExportSale, ExportSalesList } from "./export-sales.list";
 import { getToken } from "../../shared/api/tenant-context";
+import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
 
 const statusFilters = [
   { id: "all", label: "All export sales" },
@@ -103,6 +107,9 @@ export function ExportSalesWorkspace({
   const [view, setView] = useState<ExportSaleView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [contactFilter, setContactFilter] = useState("all");
   const [selectedExportSaleIds, setSelectedExportSaleIds] = useState<Set<string>>(() => new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
@@ -112,6 +119,8 @@ export function ExportSalesWorkspace({
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const exportSalesQuery = useExportSalesPage({
     customer: contactFilter,
+    dateFrom,
+    dateTo,
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -370,6 +379,22 @@ export function ExportSalesWorkspace({
             Object.fromEntries(exportSaleColumnCatalog.map((column) => [column.id, true]))
           )
         }
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setCurrentPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setCurrentPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border/70 bg-card px-4 py-3 text-sm shadow-sm">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -421,6 +446,15 @@ export function ExportSalesWorkspace({
       <ExportSalesList
         entries={pageEntries}
         loading={exportSalesQuery.isLoading}
+        totalsRecords={pageEntries.map((exportSale) => ({
+          amount: exportSale.amount,
+          date: exportSale.issuedOn,
+          documentNumber: exportSale.invoiceNumber,
+          partyName: exportSale.customerName,
+          subtotal: exportSale.subtotal,
+          taxAmount: exportSale.taxAmount
+        }))}
+        totalsView={totalsView}
         onEdit={(exportSale) => setView({ mode: "upsert", exportSale, returnTo: "list" })}
         onSetStatus={(exportSale, status) => statusMutation.mutate({ id: exportSale.id, status })}
         onForceDelete={(exportSale) => {

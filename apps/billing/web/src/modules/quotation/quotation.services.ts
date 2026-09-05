@@ -122,6 +122,8 @@ export async function listQuotations() {
 export async function listQuotationsPage(
   query: {
     customer: string;
+    dateFrom: string;
+    dateTo: string;
     page: number;
     pageSize: number;
     search: string;
@@ -131,6 +133,8 @@ export async function listQuotationsPage(
 ) {
   const params = new URLSearchParams({
     customer: query.customer,
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,

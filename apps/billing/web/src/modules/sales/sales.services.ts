@@ -151,6 +151,8 @@ export async function listSales() {
 
 export async function listSalesPage(
   query: {
+    dateFrom: string;
+    dateTo: string;
     page: number;
     pageSize: number;
     search: string;
@@ -159,6 +161,8 @@ export async function listSalesPage(
   signal?: AbortSignal
 ) {
   const params = new URLSearchParams({
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,

@@ -20,6 +20,8 @@ import type {
 export const listPayments = () => billingApiGet<Payment[]>("/billing/payments");
 export const listPaymentsPage = (
   query: {
+    dateFrom: string;
+    dateTo: string;
     page: number;
     pageSize: number;
     search: string;
@@ -28,6 +30,8 @@ export const listPaymentsPage = (
   signal?: AbortSignal
 ) => {
   const params = new URLSearchParams({
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,

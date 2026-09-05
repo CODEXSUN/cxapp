@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/billing-web",
-  "version": "1.0.70",
+  "version": "1.0.71",
   "private": true,
   "type": "module",
   "exports": {
@@ -22,9 +22,9 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/core-web": "^1.0.70",
-    "@cxapp/ui": "^1.0.70",
-    "@cxapp/mail-web": "^1.0.70",
+    "@cxapp/core-web": "^1.0.71",
+    "@cxapp/ui": "^1.0.71",
+    "@cxapp/mail-web": "^1.0.71",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.31",
     "lucide-react": "^1.33.0",

@@ -15,6 +15,8 @@ export function usePaymentList() {
   return useQuery({ queryFn: listPayments, queryKey: paymentQueryKey });
 }
 export function usePaymentPage(query: {
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

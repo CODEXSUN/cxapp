@@ -36,7 +36,15 @@ export class QuotationService {
 
   listPage(
     databaseName: string,
-    query: { customer: string; page: number; pageSize: number; search: string; status: string }
+    query: {
+      customer: string;
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     return this.repository.listPage(databaseName, query);
   }

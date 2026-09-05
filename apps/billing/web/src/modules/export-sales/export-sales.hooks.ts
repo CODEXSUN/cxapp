@@ -16,6 +16,8 @@ export function useExportSalesList() {
 }
 export function useExportSalesPage(query: {
   customer: string;
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

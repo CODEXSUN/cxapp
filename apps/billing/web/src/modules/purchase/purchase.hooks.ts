@@ -16,6 +16,8 @@ export function usePurchaseList() {
 }
 export function usePurchasePage(query: {
   customer: string;
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

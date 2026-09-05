@@ -10,6 +10,10 @@ import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
+import {
   receiptQueryKey,
   useReceiptActivity,
   useReceiptContext,
@@ -42,9 +46,14 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
   const [view, setView] = useState<ReceiptView>({ mode: "list" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const receiptsQuery = useReceiptPage({
+    dateFrom,
+    dateTo,
     page,
     pageSize: rowsPerPage,
     search,
@@ -166,6 +175,22 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
         }}
         searchPlaceholder="Search receipt, customer, ledger, mode, or status"
         searchValue={search}
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       {receiptsQuery.isError ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -175,6 +200,15 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
       <ReceiptList
         entries={pageEntries}
         loading={receiptsQuery.isLoading}
+        totalsRecords={pageEntries.map((receipt) => ({
+          amount: receipt.totalAmount,
+          date: receipt.receiptDate,
+          documentNumber: receipt.receiptNumber,
+          partyName: receipt.customerName,
+          subtotal: receipt.totalAmount,
+          taxAmount: receipt.allocatedAmount
+        }))}
+        totalsView={totalsView}
         onView={(receipt) => setView({ mode: "show", receipt })}
         onEdit={(receipt) => setView({ mode: "upsert", receipt, returnTo: "list" })}
         onPost={(receipt) =>

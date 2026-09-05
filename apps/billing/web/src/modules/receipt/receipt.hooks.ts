@@ -15,6 +15,8 @@ export function useReceiptList() {
   return useQuery({ queryFn: listReceipts, queryKey: receiptQueryKey });
 }
 export function useReceiptPage(query: {
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

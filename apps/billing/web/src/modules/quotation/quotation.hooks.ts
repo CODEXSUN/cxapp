@@ -17,6 +17,8 @@ export function useQuotationList() {
 
 export function useQuotationPage(query: {
   customer: string;
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

@@ -62,13 +62,23 @@ export class ExportSalesRepository {
   }
   async listPage(
     databaseName: string,
-    options: { customer: string; page: number; pageSize: number; search: string; status: string }
+    options: {
+      customer: string;
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     const database = await exportSalesDatabase(databaseName);
     const search = `%${options.search.trim()}%`;
     const customer = options.customer.trim().toLowerCase();
     const page = {
       customer,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
       limit: options.pageSize,
       offset: (options.page - 1) * options.pageSize,
       search,
@@ -82,6 +92,8 @@ export class ExportSalesRepository {
         WHERE s.deleted_at IS NULL
           AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
           AND (${page.status}='all' OR s.status=${page.status})
+        AND (${options.dateFrom}='' OR s.issued_on >= ${options.dateFrom})
+        AND (${options.dateTo}='' OR s.issued_on <= ${options.dateTo})
         AND (${customer}='all' OR LOWER(customer.name)=${customer})
         AND (${search}='%%' OR s.invoice_number LIKE ${search} OR customer.name LIKE ${search}
           OR COALESCE(work_order.code,'') LIKE ${search} OR DATE_FORMAT(s.issued_on,'%Y-%m-%d') LIKE ${search}

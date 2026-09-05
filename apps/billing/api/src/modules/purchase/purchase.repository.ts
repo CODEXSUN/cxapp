@@ -39,13 +39,23 @@ export class PurchaseRepository {
 
   async listPage(
     databaseName: string,
-    options: { customer: string; page: number; pageSize: number; search: string; status: string }
+    options: {
+      customer: string;
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     const database = await purchaseDatabase(databaseName);
     const search = `%${options.search.trim()}%`;
     const customer = options.customer.trim().toLowerCase();
     const page = {
       customer,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
       limit: options.pageSize,
       offset: (options.page - 1) * options.pageSize,
       search,
@@ -61,6 +71,8 @@ export class PurchaseRepository {
         WHERE s.deleted_at IS NULL
           AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
           AND (${page.status}='all' OR s.status=${page.status})
+          AND (${options.dateFrom}='' OR s.purchase_date >= ${options.dateFrom})
+          AND (${options.dateTo}='' OR s.purchase_date <= ${options.dateTo})
           AND (${customer}='all' OR LOWER(supplier.name)=${customer})
           AND (${search}='%%' OR s.purchase_number LIKE ${search} OR supplier.name LIKE ${search}
             OR s.supplier_bill_number LIKE ${search} OR COALESCE(work_order.code,'') LIKE ${search}

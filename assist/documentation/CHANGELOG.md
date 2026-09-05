@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.70
+Current version: 1.0.71
 
-Release tag: v-1.0.70
+Release tag: v-1.0.71
 
-Changelog label: v 1.0.70
+Changelog label: v 1.0.71
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,24 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.71
+
+### [v 1.0.71] 2026-09-05 7:32 pm - Billing list date filters and totals views
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.71.
+- Added server-side From/To date filtering to quotation, sales, purchase, payment, receipt, and export sales list APIs.
+- Added a separate Date range filter control to each billing document list. The filter resets pagination and keeps existing search, status, company, and financial-year scope rules.
+- Added Bill-wise, Month-wise, and Year-wise table view controls to the same six lists.
+- Kept Bill-wise as the normal document table. Month-wise and Year-wise replace its rows with grouped taxable, GST, amount, and document-count totals.
+- Kept payment and receipt grouped columns aligned with their Amount and Allocated values.
+- Removed the expanded totals panel and its duplicate table so each page shows one list table at a time.
 
 ## v-1.0.70
 

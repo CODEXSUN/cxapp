@@ -10,6 +10,10 @@ import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
 import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
+import {
   usePaymentActivity,
   usePaymentContext,
   usePaymentPage,
@@ -42,9 +46,14 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
   const [view, setView] = useState<PaymentView>({ mode: "list" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const paymentsQuery = usePaymentPage({
+    dateFrom,
+    dateTo,
     page,
     pageSize: rowsPerPage,
     search,
@@ -166,6 +175,22 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
         }}
         searchPlaceholder="Search payment, supplier, ledger, mode, or status"
         searchValue={search}
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       {paymentsQuery.isError ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -175,6 +200,15 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
       <PaymentList
         entries={pageEntries}
         loading={paymentsQuery.isLoading}
+        totalsRecords={pageEntries.map((payment) => ({
+          amount: payment.totalAmount,
+          date: payment.paymentDate,
+          documentNumber: payment.paymentNumber,
+          partyName: payment.supplierName,
+          subtotal: payment.totalAmount,
+          taxAmount: payment.allocatedAmount
+        }))}
+        totalsView={totalsView}
         onView={(payment) => setView({ mode: "show", payment })}
         onEdit={(payment) => setView({ mode: "upsert", payment, returnTo: "list" })}
         onPost={(payment) =>

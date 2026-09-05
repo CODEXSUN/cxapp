@@ -133,6 +133,8 @@ export async function listExportSales() {
 export async function listExportSalesPage(
   query: {
     customer: string;
+    dateFrom: string;
+    dateTo: string;
     page: number;
     pageSize: number;
     search: string;
@@ -142,6 +144,8 @@ export async function listExportSalesPage(
 ) {
   const params = new URLSearchParams({
     customer: query.customer,
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,

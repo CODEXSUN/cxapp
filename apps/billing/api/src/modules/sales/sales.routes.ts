@@ -147,6 +147,8 @@ const contextSchema = z.object({
   financialYearName: z.string()
 });
 const pageQuerySchema = z.object({
+  dateFrom: z.union([z.iso.date(), z.literal("")]).default(""),
+  dateTo: z.union([z.iso.date(), z.literal("")]).default(""),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(10).max(500).default(100),
   search: z.string().default(""),

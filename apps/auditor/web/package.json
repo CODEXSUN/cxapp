@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/auditor-web",
-  "version": "1.0.70",
+  "version": "1.0.71",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,7 +13,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@cxapp/ui": "^1.0.70",
+    "@cxapp/ui": "^1.0.71",
     "lucide-react": "^1.33.0",
     "react": "^19.2.8"
   }

@@ -73,13 +73,22 @@ export class ReceiptRepository {
   }
   async listPage(
     databaseName: string,
-    options: { page: number; pageSize: number; search: string; status: string }
+    options: {
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     const database = await receiptDatabase(databaseName);
     const search = `%${options.search.trim()}%`;
     const page = {
       limit: options.pageSize,
       offset: (options.page - 1) * options.pageSize,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
       search,
       status: options.status
     };
@@ -91,6 +100,8 @@ export class ReceiptRepository {
         WHERE r.deleted_at IS NULL
         AND r.company_id=${scope.companyId} AND r.financial_year_id=${scope.financialYearId}
         AND (${page.status}='all' OR r.status=${page.status})
+        AND (${page.dateFrom}='' OR r.receipt_date >= ${page.dateFrom})
+        AND (${page.dateTo}='' OR r.receipt_date <= ${page.dateTo})
         AND (${search}='%%' OR r.receipt_number LIKE ${search} OR customer.name LIKE ${search}
           OR ledger.name LIKE ${search} OR r.receipt_mode LIKE ${search} OR r.status LIKE ${search}
           OR COALESCE(r.reference_no,'') LIKE ${search})`.execute(database)
@@ -464,7 +475,14 @@ type ReceiptTotals = { allocatedAmount: number; totalAmount: number; unallocated
 function selectHeaders(
   uuid?: string,
   includeDeleted = false,
-  page?: { limit: number; offset: number; search: string; status: string }
+  page?: {
+    dateFrom: string;
+    dateTo: string;
+    limit: number;
+    offset: number;
+    search: string;
+    status: string;
+  }
 ) {
   const scope = currentBillingScope();
   return sql<HeaderRow>`
@@ -482,6 +500,8 @@ function selectHeaders(
       ${
         page
           ? sql`AND (${page.status}='all' OR r.status=${page.status})
+        AND (${page.dateFrom}='' OR r.receipt_date >= ${page.dateFrom})
+        AND (${page.dateTo}='' OR r.receipt_date <= ${page.dateTo})
         AND (${page.search}='%%' OR r.receipt_number LIKE ${page.search} OR customer.name LIKE ${page.search}
           OR ledger.name LIKE ${page.search} OR r.receipt_mode LIKE ${page.search}
           OR r.status LIKE ${page.search} OR COALESCE(r.reference_no,'') LIKE ${page.search})`

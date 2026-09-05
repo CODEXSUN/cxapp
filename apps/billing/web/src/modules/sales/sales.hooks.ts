@@ -13,6 +13,8 @@ export function useSalesList() {
 export const useSaleList = useSalesList;
 
 export function useSalesPage(query: {
+  dateFrom: string;
+  dateTo: string;
   page: number;
   pageSize: number;
   search: string;

@@ -146,6 +146,8 @@ const contextSchema = z.object({
 });
 const pageQuerySchema = z.object({
   customer: z.string().default("all"),
+  dateFrom: z.union([z.iso.date(), z.literal("")]).default(""),
+  dateTo: z.union([z.iso.date(), z.literal("")]).default(""),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(10).max(500).default(100),
   search: z.string().default(""),

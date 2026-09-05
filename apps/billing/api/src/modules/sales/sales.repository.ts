@@ -66,7 +66,14 @@ export class SalesRepository {
 
   async listPage(
     databaseName: string,
-    options: { page: number; pageSize: number; search: string; status: string }
+    options: {
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     const database = await salesDatabase(databaseName);
     const search = `%${options.search.trim()}%`;
@@ -74,15 +81,24 @@ export class SalesRepository {
     const offset = (options.page - 1) * options.pageSize;
     const scope = currentBillingScope();
     const [result, countResult] = await Promise.all([
-      selectSalePageHeaders(search, status, options.pageSize, offset).execute(database),
+      selectSalePageHeaders(
+        search,
+        status,
+        options.dateFrom,
+        options.dateTo,
+        options.pageSize,
+        offset
+      ).execute(database),
       sql<{ total: string | number }>`
         SELECT COUNT(*) AS total
         FROM billing_sales s
         INNER JOIN core_contacts customer ON customer.id = s.customer_id
         LEFT JOIN core_work_orders work_order ON work_order.id = s.work_order_id
         WHERE s.deleted_at IS NULL
-          AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
-          AND (${status} = 'all' OR s.status = ${status})
+      AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
+      AND (${status} = 'all' OR s.status = ${status})
+      AND (${options.dateFrom}='' OR s.issued_on >= ${options.dateFrom})
+      AND (${options.dateTo}='' OR s.issued_on <= ${options.dateTo})
           AND (
             ${search} = '%%' OR s.invoice_number LIKE ${search} OR customer.name LIKE ${search}
             OR COALESCE(work_order.code, '') LIKE ${search}

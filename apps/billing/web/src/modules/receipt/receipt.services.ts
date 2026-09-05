@@ -20,6 +20,8 @@ import type {
 export const listReceipts = () => billingApiGet<Receipt[]>("/billing/receipts");
 export const listReceiptsPage = (
   query: {
+    dateFrom: string;
+    dateTo: string;
     page: number;
     pageSize: number;
     search: string;
@@ -28,6 +30,8 @@ export const listReceiptsPage = (
   signal?: AbortSignal
 ) => {
   const params = new URLSearchParams({
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
     page: String(query.page),
     pageSize: String(query.pageSize),
     search: query.search,

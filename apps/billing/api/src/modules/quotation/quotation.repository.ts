@@ -36,7 +36,15 @@ export class QuotationRepository {
 
   async listPage(
     databaseName: string,
-    options: { customer: string; page: number; pageSize: number; search: string; status: string }
+    options: {
+      customer: string;
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+    }
   ) {
     const database = await quotationDatabase(databaseName);
     const search = `%${options.search.trim()}%`;
@@ -46,6 +54,8 @@ export class QuotationRepository {
     const [result, count] = await Promise.all([
       selectQuotationHeaders(undefined, {
         customer,
+        dateFrom: options.dateFrom,
+        dateTo: options.dateTo,
         limit: options.pageSize,
         offset,
         search,
@@ -59,6 +69,8 @@ export class QuotationRepository {
           AND s.company_id=${scope.companyId}
           AND s.financial_year_id=${scope.financialYearId}
           AND (${options.status}='all' OR s.status=${options.status})
+          AND (${options.dateFrom}='' OR s.quotation_date >= ${options.dateFrom})
+          AND (${options.dateTo}='' OR s.quotation_date <= ${options.dateTo})
           AND (${customer}='all' OR LOWER(customer.name)=${customer})
           AND (${search}='%%' OR s.quotation_number LIKE ${search} OR customer.name LIKE ${search}
             OR COALESCE(work_order.code,'') LIKE ${search}

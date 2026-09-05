@@ -27,6 +27,10 @@ import { useSalesPage } from "./sales.hooks";
 import { SalesForm } from "./sales.form";
 import { SalesList } from "./sales.list";
 import { getToken } from "../../shared/api/tenant-context";
+import {
+  BillingDocumentListControls,
+  type BillingDocumentTotalsViewMode
+} from "../../shared/document/document-totals-report";
 
 const statusFilters = [
   { id: "all", label: "All sales" },
@@ -66,6 +70,9 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
   const [view, setView] = useState<SaleView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [totalsView, setTotalsView] = useState<BillingDocumentTotalsViewMode>("bill");
   const [pendingListPrintId, setPendingListPrintId] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(saleColumnCatalog.map((column) => [column.id, true]))
@@ -73,6 +80,8 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const salesQuery = useSalesPage({
+    dateFrom,
+    dateTo,
     page: currentPage,
     pageSize: rowsPerPage,
     search: searchValue,
@@ -308,6 +317,22 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
             Object.fromEntries(saleColumnCatalog.map((column) => [column.id, true]))
           )
         }
+        toolbarAction={
+          <BillingDocumentListControls
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(value) => {
+              setDateFrom(value);
+              setCurrentPage(1);
+            }}
+            onDateToChange={(value) => {
+              setDateTo(value);
+              setCurrentPage(1);
+            }}
+            onTotalsViewChange={setTotalsView}
+            totalsView={totalsView}
+          />
+        }
       />
       {salesQuery.isError ? (
         <WorkspaceTablePanel>
@@ -321,6 +346,15 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
       <SalesList
         entries={pageEntries}
         loading={salesQuery.isLoading}
+        totalsRecords={pageEntries.map((sale) => ({
+          amount: sale.amount,
+          date: sale.issuedOn,
+          documentNumber: sale.saleNumber,
+          partyName: sale.customerName,
+          subtotal: sale.subtotal,
+          taxAmount: sale.taxAmount
+        }))}
+        totalsView={totalsView}
         onEdit={(sale) => setView({ mode: "upsert", sale, returnTo: "list" })}
         onSetStatus={(sale, status) => statusMutation.mutate({ id: sale.id, status })}
         onForceDelete={(sale) => {
