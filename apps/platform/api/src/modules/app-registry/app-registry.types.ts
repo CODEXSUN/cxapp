@@ -5,7 +5,8 @@ export type PlatformAppId =
   | "devkit"
   | "mail"
   | "task-manager"
-  | "blog";
+  | "blog"
+  | "auditor";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -22,7 +23,8 @@ export type PlatformAppDefinition = {
     | "devkit"
     | "mail"
     | "platform-task-manager"
-    | "blog";
+    | "blog"
+    | "auditor";
   uuid: string;
 };
 

@@ -14,7 +14,8 @@ export type Tenant = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog";
+    | "blog"
+    | "auditor";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -45,7 +46,8 @@ export type TenantSavePayload = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog";
+    | "blog"
+    | "auditor";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -68,11 +70,11 @@ export type TenantRuntime = {
     defaultLanding: boolean;
     description: string;
     enabled: boolean;
-    id: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager" | "blog";
+    id: "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager" | "blog" | "auditor";
     label: string;
     moduleKey: string;
     stack:
-      "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager" | "blog";
+      "platform" | "billing" | "accounts" | "devkit" | "mail" | "platform-task-manager" | "blog" | "auditor";
   }>;
   defaultLandingApp:
     | "application"
@@ -81,6 +83,7 @@ export type TenantRuntime = {
     | "devkit"
     | "mail"
     | "task-manager"
-    | "blog";
+    | "blog"
+    | "auditor";
   tenant: Tenant | null;
 };

@@ -212,7 +212,7 @@ export function SalesList({
               </tbody>
             </>
           ) : (
-            <BillingDocumentTotalsTable records={totalsRecords} totalsView={totalsView} />
+            <BillingDocumentTotalsTable records={totalsRecords} />
           )}
         </table>
       </div>

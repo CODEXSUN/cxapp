@@ -14,7 +14,6 @@ import {
   Send,
   Settings2,
   Tag,
-  Trash2,
   UserRound,
   X
 } from "lucide-react";
@@ -54,7 +53,6 @@ export function SaleShowPage({
   onNext,
   onPrevious,
   onPrint,
-  onSuspend,
   sale
 }: {
   canEdit?: boolean;
@@ -64,7 +62,6 @@ export function SaleShowPage({
   onNext?: () => void;
   onPrevious?: () => void;
   onPrint: () => void;
-  onSuspend: () => void;
   sale: Sale;
 }) {
   const documentTitle = useBillingDocumentTitle("sales");
@@ -229,17 +226,6 @@ export function SaleShowPage({
                 <Pencil className="size-4" />
                 Edit
               </Button>
-              {sale.status !== "cancelled" ? (
-                <Button
-                  onClick={onSuspend}
-                  type="button"
-                  variant="destructive"
-                  className="rounded-xl"
-                >
-                  <Trash2 className="size-4" />
-                  Suspend
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>

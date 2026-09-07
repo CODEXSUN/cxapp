@@ -10,7 +10,8 @@ export const defaultTenantModuleKeys = [
   "billing.sales",
   "accounts.overview",
   "mail",
-  "platform.task-manager"
+  "platform.task-manager",
+  "auditor"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -90,6 +91,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Blog",
     moduleKey: "blog",
     stack: "blog",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant audit planning, evidence, findings, compliance review, and sign-off.",
+    appId: "auditor",
+    id: 0,
+    label: "Auditor",
+    moduleKey: "auditor",
+    stack: "auditor",
     uuid: ""
   }
 ];

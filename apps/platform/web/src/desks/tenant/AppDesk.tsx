@@ -4,8 +4,10 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
-  type ComponentType
+  type ComponentType,
+  type FormEvent
 } from "react";
 import {
   Building2Icon,
@@ -21,6 +23,15 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApplicationLayout } from "@cxapp/ui/layouts/application-layout";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@cxapp/ui/components/alert-dialog";
 import { Button } from "@cxapp/ui/components/button";
 import { Card } from "@cxapp/ui/components/card";
 import { GlobalLoader } from "@cxapp/ui/components/global-loader";
@@ -73,6 +84,9 @@ const loadBillingReportsModule = () => import("@cxapp/billing-web/modules/report
 const loadAccountsOverviewModule = () => import("@cxapp/accounts-web/modules/overview");
 const loadAccountingModule = () => import("@cxapp/accounts-web/modules/accounting");
 const loadBlogModule = () => import("@codexsun/blog/web");
+const AuditorOverviewWorkspace = lazyWorkspace(() =>
+  import("@cxapp/auditor-web/modules/overview").then((module) => module.AuditorOverviewWorkspace)
+);
 
 const billingWorkspacePreloaders = [
   loadBillingDashboardModule,
@@ -349,6 +363,7 @@ const TenantRolePermissionWorkspace = lazy(() =>
 );
 
 type AppPage =
+  | "auditor.overview"
   | "blog.overview"
   | "blog.articles"
   | "application.overview"
@@ -410,6 +425,10 @@ export function AppDesk() {
   const queryClient = useQueryClient();
   const signedInUser = signedInTenantUser();
   const [page, setPage] = useState<AppPage>(() => pageFromUrl(null));
+  const [workspaceResetKey, setWorkspaceResetKey] = useState(0);
+  const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false);
+  const [pendingListPage, setPendingListPage] = useState<AppPage | null>(null);
+  const workspaceContentRef = useRef<HTMLElement | null>(null);
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() => isAppRootPath());
   const runtimeQuery = useQuery({
     queryFn: getTenantRuntime,
@@ -480,7 +499,7 @@ export function AppDesk() {
           : (page.startsWith("billing") ||
                 (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
               !switchableApps.includes("billing")
-            ? pageForApp(landingApp)
+          ? pageForApp(landingApp)
             : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle = titleForPage(safePage);
@@ -583,6 +602,37 @@ export function AppDesk() {
     setPlatformDocumentTitle(titleForPage(allowedPage));
   }
 
+  function completeListNavigation(nextPage: AppPage) {
+    const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
+    setHasUnsavedFormChanges(false);
+    setPendingListPage(null);
+    startTransition(() => {
+      setPage(allowedPage);
+      setWorkspaceResetKey((current) => current + 1);
+    });
+    window.history.pushState({ page: allowedPage }, "", `/app/${allowedPage.replaceAll(".", "/")}`);
+    setPlatformDocumentTitle(titleForPage(allowedPage));
+  }
+
+  function requestListNavigation(nextPage: AppPage) {
+    const hasActiveDraftForm = Boolean(
+      workspaceContentRef.current?.querySelector("form, [data-cxapp-draft-form]")
+    );
+    if (hasUnsavedFormChanges && hasActiveDraftForm) {
+      setPendingListPage(nextPage);
+      return;
+    }
+    completeListNavigation(nextPage);
+  }
+
+  function markUnsavedFormChanges(event: FormEvent<HTMLElement>) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("form, [data-cxapp-draft-form]")) {
+      setHasUnsavedFormChanges(true);
+    }
+  }
+
   function selectBillingRecord(nextPage: AppPage, recordId: string) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
     startTransition(() => setPage(allowedPage));
@@ -625,12 +675,12 @@ export function AppDesk() {
   const menuItems = appMenuItemsFor(
     activeApp,
     safePage,
-    (nextPage) => selectPage(nextPage as AppPage),
+    (nextPage) => requestListNavigation(nextPage as AppPage),
     billingSettingsQuery.data?.features
   );
   const workspaceItems = appWorkspaceItems(switchableApps, activeApp).map((item) => ({
     ...item,
-    onSelect: () => selectPage(pageForApp(item.appId))
+    onSelect: () => requestListNavigation(pageForApp(item.appId))
   }));
 
   const contextError =
@@ -720,11 +770,19 @@ export function AppDesk() {
         versionLabel={`v ${__APP_VERSION__}`}
         workspaceItems={workspaceItems}
       >
-        <main className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5">
-          <Suspense fallback={<GlobalLoader className="min-h-[32rem]" fullScreen={false} />}>
+        <main
+          ref={workspaceContentRef}
+          className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5"
+          onChangeCapture={markUnsavedFormChanges}
+        >
+          <Suspense
+            key={`${safePage}:${workspaceResetKey}`}
+            fallback={<GlobalLoader className="min-h-[32rem]" fullScreen={false} />}
+          >
             {safePage === "blog.overview" || safePage === "blog.articles" ? (
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
+            {safePage === "auditor.overview" ? <AuditorOverviewWorkspace /> : null}
             {safePage === "application.overview" ? (
               <ApplicationOverview signedInUser={signedInUser} />
             ) : null}
@@ -816,6 +874,33 @@ export function AppDesk() {
             {safePage === "core.master.work-order" ? <WorkOrderWorkspace key={safePage} /> : null}
           </Suspense>
         </main>
+        <AlertDialog
+          open={pendingListPage !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingListPage(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your form changes have not been saved. Stay here to continue editing, or discard
+                them and open the list page.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Stay here</AlertDialogCancel>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (pendingListPage) completeListNavigation(pendingListPage);
+                }}
+              >
+                Discard and open list
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </ApplicationLayout>
     </AuthGate>
   );
@@ -854,6 +939,7 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
 
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
   if (
+    key === "auditor.overview" ||
     key === "blog.overview" ||
     key === "blog.articles" ||
     key === "application.overview" ||
@@ -1343,6 +1429,7 @@ function renderOwnedCommonMasterPage(page: AppPage) {
 
 function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
+    "auditor.overview": "Overview",
     "blog.overview": "Dashboard",
     "blog.articles": "Articles",
     "application.overview": "Overview",
@@ -1463,6 +1550,8 @@ function appFromPage(
   landingApp: PlatformAppId,
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
+  if (page.startsWith("auditor"))
+    return enabledApps.includes("auditor") ? "auditor" : landingApp;
   if (page.startsWith("blog")) return enabledApps.includes("blog") ? "blog" : landingApp;
   if (page.startsWith("core.organisation")) return "application";
   if (page.startsWith("billing") || page.startsWith("core"))

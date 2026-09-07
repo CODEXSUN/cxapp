@@ -258,7 +258,7 @@ export function ExportSalesList({
               </tbody>
             </>
           ) : (
-            <BillingDocumentTotalsTable records={totalsRecords} totalsView={totalsView} />
+            <BillingDocumentTotalsTable records={totalsRecords} />
           )}
         </table>
       </div>

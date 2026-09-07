@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.71
+Current version: 1.0.72
 
-Release tag: v-1.0.71
+Release tag: v-1.0.72
 
-Changelog label: v 1.0.71
+Changelog label: v 1.0.72
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,22 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.72
+
+### [v 1.0.72] 2026-09-07 8:19 am - Billing navigation and list controls
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.72.
+- Changed tenant sidebar and workspace switching to open each target list or default page with a fresh workspace state.
+- Added a discard-changes dialog before sidebar navigation leaves an edited form.
+- Removed Suspend from Quotation, Sales, Purchase, and Export Sales preview pages. Kept the existing Suspend action in each document list row menu.
+- Removed Year-wise totals from all billing document lists. Bill-wise and Month-wise remain available for quotation, sales, purchase, export sales, payment, and receipt.
 
 ## v-1.0.71
 

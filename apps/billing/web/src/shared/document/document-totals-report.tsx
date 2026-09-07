@@ -13,12 +13,11 @@ export type BillingDocumentReportRecord = {
   taxAmount?: number;
 };
 
-export type BillingDocumentTotalsViewMode = "bill" | "month" | "year";
+export type BillingDocumentTotalsViewMode = "bill" | "month";
 
 const totalsViewOptions: Array<{ label: string; value: BillingDocumentTotalsViewMode }> = [
   { label: "Bill-wise", value: "bill" },
-  { label: "Month-wise", value: "month" },
-  { label: "Year-wise", value: "year" }
+  { label: "Month-wise", value: "month" }
 ];
 
 export function BillingDocumentListControls({
@@ -122,27 +121,19 @@ export function BillingDocumentListControls({
 export function BillingDocumentTotalsTable({
   primaryLabel = "Taxable",
   records,
-  secondaryLabel = "GST",
-  totalsView
+  secondaryLabel = "GST"
 }: {
   primaryLabel?: string;
   records: BillingDocumentReportRecord[];
   secondaryLabel?: string;
-  totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">;
 }) {
-  const rows = buildRows(records, totalsView);
+  const rows = buildRows(records);
 
   return (
     <>
       <thead className="bg-muted/50">
         <tr>
-          {[
-            totalsView === "month" ? "Month" : "Year",
-            "Documents",
-            primaryLabel,
-            secondaryLabel,
-            "Total"
-          ].map((heading) => (
+          {["Month", "Documents", primaryLabel, secondaryLabel, "Total"].map((heading) => (
             <th
               className={cn(
                 "border-b border-border/70 px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
@@ -174,21 +165,18 @@ export function BillingDocumentTotalsTable({
   );
 }
 
-function buildRows(
-  records: BillingDocumentReportRecord[],
-  totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">
-) {
+function buildRows(records: BillingDocumentReportRecord[]) {
   const groups = new Map<
     string,
     { amount: number; count: number; label: string; subtotal: number; taxAmount: number }
   >();
 
   for (const record of records) {
-    const key = reportPeriodKey(record.date, totalsView);
+    const key = reportPeriodKey(record.date);
     const current = groups.get(key) ?? {
       amount: 0,
       count: 0,
-      label: reportPeriodLabel(key, totalsView),
+      label: reportPeriodLabel(key),
       subtotal: 0,
       taxAmount: 0
     };
@@ -204,19 +192,14 @@ function buildRows(
     .sort((left, right) => right.key.localeCompare(left.key));
 }
 
-function reportPeriodKey(date: string, totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">) {
+function reportPeriodKey(date: string) {
   const parsed = new Date(`${date}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return "Unknown date";
-  return totalsView === "month"
-    ? `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`
-    : String(parsed.getFullYear());
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function reportPeriodLabel(
-  key: string,
-  totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">
-) {
-  if (key === "Unknown date" || totalsView === "year") return key;
+function reportPeriodLabel(key: string) {
+  if (key === "Unknown date") return key;
   const [year, month] = key.split("-").map(Number);
   const parsedYear = year ?? Number.NaN;
   const parsedMonth = month ?? Number.NaN;

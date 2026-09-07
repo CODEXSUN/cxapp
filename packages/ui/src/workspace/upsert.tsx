@@ -94,6 +94,7 @@ export function WorkspaceFormSurface({
 }) {
   return (
     <div
+      data-cxapp-draft-form="true"
       className={cn(
         "overflow-hidden rounded-md border border-border/90 bg-card/95 shadow-[0_14px_34px_rgba(15,23,42,0.08),0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-emerald-200/45",
         className

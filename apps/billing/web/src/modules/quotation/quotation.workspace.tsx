@@ -301,7 +301,6 @@ export function QuotationWorkspace() {
         onNew={() => setView({ mode: "upsert", quotation: null, returnTo: "list" })}
         onPrint={() => window.print()}
         onConvert={() => convertMutation.mutate(freshQuotation.id)}
-        onSuspend={() => statusMutation.mutate({ id: freshQuotation.id, status: "cancelled" })}
         converting={convertMutation.isPending}
         canEdit={freshQuotation.status === "draft"}
         {...(previousQuotation

@@ -311,8 +311,19 @@ export function WorkspaceLookup({
               setIsOpen(true);
               setActiveIndex(0);
               onTextChange?.(nextQuery);
-              if (allowTextValue)
-                onValueChange(matchingOption?.value ?? nextQuery, matchingOption ?? null);
+              if (matchingOption) {
+                setSelectedFallbackOption(normalizeOption(matchingOption));
+                setSelectedDisplayValue(matchingOption.label);
+                if (allowTextValue) {
+                  onValueChange(matchingOption.value, matchingOption);
+                } else {
+                  // Commit exact typed values immediately. Blur is unreliable
+                  // for portal lists because focus can move to the list first.
+                  onValueChange(matchingOption.value, matchingOption);
+                }
+              } else if (allowTextValue) {
+                onValueChange(nextQuery, null);
+              }
             }}
             onFocus={() => {
               setIsOpen(true);

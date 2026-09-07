@@ -14,7 +14,6 @@ import {
   Send,
   Settings2,
   Tag,
-  Trash2,
   UserRound,
   X
 } from "lucide-react";
@@ -57,7 +56,6 @@ export function QuotationShowPage({
   onNext,
   onPrevious,
   onPrint,
-  onSuspend,
   quotation
 }: {
   canEdit?: boolean;
@@ -69,7 +67,6 @@ export function QuotationShowPage({
   onNext?: () => void;
   onPrevious?: () => void;
   onPrint: () => void;
-  onSuspend: () => void;
   quotation: Quotation;
 }) {
   const documentTitle = useBillingDocumentTitle("quotation");
@@ -234,17 +231,6 @@ export function QuotationShowPage({
                 <Pencil className="size-4" />
                 Edit
               </Button>
-              {quotation.status !== "cancelled" ? (
-                <Button
-                  onClick={onSuspend}
-                  type="button"
-                  variant="destructive"
-                  className="rounded-xl"
-                >
-                  <Trash2 className="size-4" />
-                  Suspend
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>

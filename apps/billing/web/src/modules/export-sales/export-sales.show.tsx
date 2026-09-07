@@ -14,7 +14,6 @@ import {
   Send,
   Settings2,
   Tag,
-  Trash2,
   UserRound,
   X
 } from "lucide-react";
@@ -54,7 +53,6 @@ export function ExportSaleShowPage({
   onNext,
   onPrevious,
   onPrint,
-  onSuspend,
   exportSale
 }: {
   canEdit?: boolean;
@@ -64,7 +62,6 @@ export function ExportSaleShowPage({
   onNext?: () => void;
   onPrevious?: () => void;
   onPrint: () => void;
-  onSuspend: () => void;
   exportSale: ExportSale;
 }) {
   const documentTitle = "Export Sales Invoice";
@@ -229,17 +226,6 @@ export function ExportSaleShowPage({
                 <Pencil className="size-4" />
                 Edit
               </Button>
-              {exportSale.status !== "cancelled" ? (
-                <Button
-                  onClick={onSuspend}
-                  type="button"
-                  variant="destructive"
-                  className="rounded-xl"
-                >
-                  <Trash2 className="size-4" />
-                  Suspend
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>

@@ -33,7 +33,8 @@ export type PlatformAppId =
   | "devkit"
   | "mail"
   | "task-manager"
-  | "blog";
+  | "blog"
+  | "auditor";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -41,7 +42,8 @@ export type PlatformAppRootPage =
   | "accounts.overview"
   | "mail.inbox"
   | "task-manager.overview"
-  | "blog.overview";
+  | "blog.overview"
+  | "auditor.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -64,7 +66,8 @@ export type PlatformAppDefinition = {
     | "devkit"
     | "mail"
     | "platform-task-manager"
-    | "blog";
+    | "blog"
+    | "auditor";
 };
 
 export const defaultTenantModuleKeys = [
@@ -72,7 +75,8 @@ export const defaultTenantModuleKeys = [
   "billing.sales",
   "accounts.overview",
   "mail",
-  "platform.task-manager"
+  "platform.task-manager",
+  "auditor"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -142,6 +146,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Blog",
     moduleKey: "blog",
     stack: "blog"
+  },
+  {
+    accentClass: "bg-indigo-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant audit planning, evidence, findings, compliance review, and sign-off.",
+    icon: ShieldCheckIcon,
+    id: "auditor",
+    label: "Auditor",
+    moduleKey: "auditor",
+    stack: "auditor"
   }
 ];
 
@@ -171,6 +186,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
   if (appId === "blog") return "blog.overview";
+  if (appId === "auditor") return "auditor.overview";
   if (appId === "task-manager") return "task-manager.overview";
   if (appId === "mail") return "mail.inbox";
   if (appId === "accounts") return "accounts.overview";
@@ -203,6 +219,20 @@ export function appMenuFor(
           title: "Articles",
           isActive: activePage === "blog.articles",
           onSelect: () => onSelect("blog.articles")
+        }
+      ]
+    };
+  }
+  if (appId === "auditor") {
+    return {
+      icon: ShieldCheckIcon,
+      isActive: activePage.startsWith("auditor"),
+      title: "Auditor",
+      items: [
+        {
+          title: "Overview",
+          isActive: activePage === "auditor.overview",
+          onSelect: () => onSelect("auditor.overview")
         }
       ]
     };
@@ -469,6 +499,16 @@ export function appMenuItemsFor(
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures
 ): SidemenuItem[] {
+  if (appId === "auditor") {
+    return [
+      {
+        icon: ShieldCheckIcon,
+        isActive: activePage === "auditor.overview",
+        onSelect: () => onSelect("auditor.overview"),
+        title: "Overview"
+      }
+    ];
+  }
   if (appId === "task-manager") {
     return [
       {

@@ -260,7 +260,7 @@ export function QuotationList({
               </tbody>
             </>
           ) : (
-            <BillingDocumentTotalsTable records={totalsRecords} totalsView={totalsView} />
+            <BillingDocumentTotalsTable records={totalsRecords} />
           )}
         </table>
       </div>

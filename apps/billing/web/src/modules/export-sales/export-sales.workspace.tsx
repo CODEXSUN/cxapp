@@ -289,7 +289,6 @@ export function ExportSalesWorkspace({
         onEdit={() => setView({ mode: "upsert", exportSale: freshExportSale, returnTo: "show" })}
         onNew={() => void openNewExportSale()}
         onPrint={() => window.print()}
-        onSuspend={() => statusMutation.mutate({ id: freshExportSale.id, status: "cancelled" })}
         canEdit={freshExportSale.status === "draft"}
         {...(previousExportSale
           ? { onPrevious: () => setView({ mode: "show", exportSale: previousExportSale }) }

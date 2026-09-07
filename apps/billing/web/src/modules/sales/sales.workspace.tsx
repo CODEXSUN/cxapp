@@ -229,7 +229,6 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
         onEdit={() => setView({ mode: "upsert", sale: freshSale, returnTo: "show" })}
         onNew={openNewSale}
         onPrint={() => window.print()}
-        onSuspend={() => statusMutation.mutate({ id: freshSale.id, status: "cancelled" })}
         canEdit={freshSale.status === "draft"}
         {...(previousSale
           ? { onPrevious: () => setView({ mode: "show", sale: previousSale }) }

@@ -321,7 +321,6 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
         onEdit={() => setView({ mode: "upsert", purchase: freshPurchase, returnTo: "show" })}
         onNew={() => setView({ mode: "upsert", purchase: null, returnTo: "list" })}
         onPrint={() => window.print()}
-        onSuspend={() => statusMutation.mutate({ id: freshPurchase.id, status: "cancelled" })}
         canEdit={freshPurchase.status === "draft"}
         {...(previousPurchase
           ? { onPrevious: () => setView({ mode: "show", purchase: previousPurchase }) }
