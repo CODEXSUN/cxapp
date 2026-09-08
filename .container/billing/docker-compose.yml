@@ -22,7 +22,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        mkdir -p /storage/app /storage/public /storage/tenants /storage/backups/database
+        mkdir -p /storage/app/public /storage/public /storage/tenants /storage/backups/database
         chown -R 1000:1000 /storage/app /storage/public /storage/tenants /storage/backups
     volumes:
       - billing-stack-data:/storage

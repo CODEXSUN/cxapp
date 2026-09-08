@@ -219,5 +219,6 @@ export function nextBillingDocumentNumber(
   const match = documentNumber
     .trim()
     .match(new RegExp(`^${escape(prefix)}(\\d+)${escape(suffix)}$`, "i"));
-  return Math.max(settings.nextNumber, match ? Number(match[1]) + 1 : settings.nextNumber);
+  const configuredNextNumber = Math.max(1, Number(settings.nextNumber) || 1);
+  return Math.max(configuredNextNumber, match ? Number(match[1]) + 1 : configuredNextNumber);
 }

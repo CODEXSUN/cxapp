@@ -252,6 +252,17 @@ rollback_application() {
   reason="$1"
   rollback_status=0
   echo "$reason" >&2
+  failure_log="$resolved_backup_dir/cxapp-api-failure-$timestamp.log"
+  {
+    echo "Reason: $reason"
+    echo "Timestamp: $timestamp"
+    echo "Container inspect:"
+    docker inspect cxapp-api 2>&1 || true
+    echo "Container logs:"
+    docker logs --timestamps cxapp-api 2>&1 || true
+  } >"$failure_log"
+  chmod 600 "$failure_log" 2>/dev/null || true
+  echo "API failure diagnostics: $failure_log" >&2
   echo "Restoring the previous API and Web images." >&2
   set +e
   docker image tag "$old_api_image" "$(stack_image api)" || rollback_status=$?
@@ -439,6 +450,14 @@ if ! bash "$SCRIPT_DIR/deploy.sh" billing migrate; then
 fi
 migration_result="completed"
 write_deployment_metadata "migrated" "$built_api_image" "$built_web_image"
+
+if ! stack_compose billing run --rm storage-init; then
+  migration_result="storage-init-failed"
+  write_deployment_metadata "storage-init-failed" "$built_api_image" "$built_web_image"
+  echo "Storage initialization failed; existing application containers remain in place." >&2
+  echo "Validated database backup: $backup_file" >&2
+  exit 70
+fi
 
 if ! stack_compose billing up -d \
   --no-build \

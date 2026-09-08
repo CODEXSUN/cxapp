@@ -25,6 +25,9 @@ COPY apps/mail/api ./apps/mail/api
 COPY apps/mail/web ./apps/mail/web
 COPY apps/devkit/api ./apps/devkit/api
 COPY apps/devkit/web ./apps/devkit/web
+COPY apps/accounts/api ./apps/accounts/api
+COPY apps/accounts/web ./apps/accounts/web
+COPY apps/auditor/web ./apps/auditor/web
 
 RUN rm -rf apps/platform/web/public/storage \
   && mkdir -p apps/platform/web/public/storage \
@@ -33,6 +36,8 @@ RUN rm -rf apps/platform/web/public/storage \
 ENV NODE_ENV=production
 
 RUN npm run build -w @cxapp/framework \
+  && npm run build -w @cxapp/accounts-web \
+  && npm run build -w @cxapp/auditor-web \
   && npm run build -w @cxapp/core-web \
   && npm run build -w @cxapp/billing-web \
   && npm run build -w @cxapp/mail-web \

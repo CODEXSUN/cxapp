@@ -27,9 +27,9 @@ test("Task Manager runtime persistence is owned by Platform MariaDB", () => {
   assert.match(routes, /tenantAccessContext/);
   assert.match(routes, /platform\.task-manager\.access/);
   assert.match(routes, /app_module_settings/);
-  assert.match(tenantApps, /migrateTaskManagerModule\(database\)/);
+  assert.match(tenantApps, /migrateTaskManagerTenantModule\(database as never\)/);
   assert.match(tenantApps, /seedTaskManagerModule\(database/);
-  assert.match(tenantApps, /rollbackTaskManagerModule\(database\)/);
+  assert.match(tenantApps, /rollbackTaskManagerTenantModule\(database as never\)/);
   assert.match(appRegistry, /moduleKey: "platform\.task-manager"/);
   assert.match(tenantDesk, /<TaskManagerWorkspace desk="tenant"/);
 });

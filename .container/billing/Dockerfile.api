@@ -12,6 +12,7 @@ COPY apps/core/api ./apps/core/api
 COPY apps/billing/api ./apps/billing/api
 COPY apps/mail/api ./apps/mail/api
 COPY apps/devkit/api ./apps/devkit/api
+COPY apps/accounts/api ./apps/accounts/api
 
 RUN npm ci \
   && npm run build -w @cxapp/framework \
@@ -19,6 +20,7 @@ RUN npm ci \
   && npm run build -w @cxapp/billing-api \
   && npm run build -w @cxapp/mail-api \
   && npm run build -w @cxapp/devkit-api \
+  && npm run build -w @cxapp/accounts-api \
   && npm run build -w @cxapp/platform-api \
   && npm run dependencies:check
 
@@ -58,10 +60,12 @@ COPY --from=build /app/apps/core/api/package.json ./apps/core/api/package.json
 COPY --from=build /app/apps/billing/api/package.json ./apps/billing/api/package.json
 COPY --from=build /app/apps/mail/api/package.json ./apps/mail/api/package.json
 COPY --from=build /app/apps/devkit/api/package.json ./apps/devkit/api/package.json
+COPY --from=build /app/apps/accounts/api/package.json ./apps/accounts/api/package.json
 COPY --from=build /app/dist/apps/core/api ./apps/core/api/dist
 COPY --from=build /app/dist/apps/billing/api ./apps/billing/api/dist
 COPY --from=build /app/dist/apps/mail/api ./apps/mail/api/dist
 COPY --from=build /app/dist/apps/devkit/api ./apps/devkit/api/dist
+COPY --from=build /app/dist/apps/accounts/api ./apps/accounts/api/dist
 COPY --from=build /app/dist ./dist
 COPY .container/scripts/api-entrypoint.sh /usr/local/bin/cxapp-api-entrypoint
 
@@ -70,6 +74,7 @@ RUN sed -i 's#\./src/index\.ts#./dist/index.js#g; s#\./src/modules/mail/index\.t
       /app/apps/billing/api/package.json \
       /app/apps/mail/api/package.json \
       /app/apps/devkit/api/package.json \
+      /app/apps/accounts/api/package.json \
   && chmod +x /usr/local/bin/cxapp-api-entrypoint
 ENV NODE_ENV=production
 USER node

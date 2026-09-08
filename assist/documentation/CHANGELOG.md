@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.72
+Current version: 1.0.74
 
-Release tag: v-1.0.72
+Release tag: v-1.0.74
 
-Changelog label: v 1.0.72
+Changelog label: v 1.0.74
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,40 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.74
+
+### [v 1.0.74] 2026-09-08 7:32 pm - Accounts and cloud deployment updates
+
+#### Database Changes
+
+- Database update: Yes (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.74.
+- Included Accounts API and Auditor web packages in the production API and web container builds.
+- Initialized `/storage/app/public` before application replacement so public tenant storage links resolve on cloud deployments.
+- Added guarded updater diagnostics for failed API replacement and storage initialization after successful migrations.
+- Preserved Accounts date-only and audit timestamp values as API strings with the MySQL `dateStrings` option.
+- Added the direct `ioredis` Platform API dependency and aligned the Task Manager persistence contract test with the tenant migration helper names.
+- Verified Accounting E2E, Platform persistence contract tests, Accounts and Platform API typechecks, dependency layout, version alignment, and whitespace checks.
+
+## v-1.0.73
+
+### [v 1.0.73] 2026-09-08 6:53 pm - Billing numbering and quotation conversion hardening
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.73.
+- Routed quotation-to-sales conversion through Sales-owned automatic invoice reservation instead of reusing a preformatted quotation-flow number.
+- Consolidated combined quotation lines only when item identity, rate, and description match; different lines remain separate and only matching quantities are added.
+- Normalized persisted Billing numbering settings and next-number calculations to start at 1, preventing negative automatic numbers across sales, quotation, purchase, export sales, payment, and receipt flows.
+- Verified Billing API typecheck, lint, version alignment, and whitespace checks.
 
 ## v-1.0.72
 

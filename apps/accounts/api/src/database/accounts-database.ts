@@ -314,6 +314,7 @@ function openAccountsDatabase(databaseName: string) {
         idleTimeout: 60_000,
         maxIdle: 1,
         queueLimit: 100,
+        dateStrings: true,
         timezone: "Z",
         user: tenantConnectionOptions.get(name)?.user ?? env.DB_USER,
         connectTimeout: 5_000

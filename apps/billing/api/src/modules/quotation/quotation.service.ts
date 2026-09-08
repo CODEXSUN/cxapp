@@ -168,10 +168,6 @@ export class QuotationService {
     const quotation = await this.repository.get(databaseName, id);
     if (!quotation) return null;
     this.assertConvertible(quotation);
-    const billingSettings = await this.settings.getBillingSettings(
-      databaseName,
-      quotation.companyId
-    );
     const sale = await this.sales.createSale(databaseName, {
       billingAddress: quotation.billingAddress,
       billingAddressId: quotation.billingAddressId,
@@ -183,7 +179,9 @@ export class QuotationService {
       customerName: quotation.customerName,
       customerPhone: quotation.customerPhone,
       financialYearId: quotation.financialYearId,
-      invoiceNumber: formatBillingDocumentNumber(billingSettings.numbering.sales),
+      // Let Sales own reservation and allocation so conversion cannot reuse a
+      // stale or manually entered number from the quotation flow.
+      invoiceNumber: "",
       issuedOn: new Date().toISOString().slice(0, 10),
       items: quotation.items.map(quotationItemToSaleItem),
       ledgerId: quotation.ledgerId,
@@ -219,7 +217,6 @@ export class QuotationService {
     if (quotations.some((quotation) => quotation.customerId !== first.customerId))
       throw AppError.conflict("Selected quotations must belong to the same contact.");
     quotations.forEach((quotation) => this.assertConvertible(quotation));
-    const billingSettings = await this.settings.getBillingSettings(databaseName, first.companyId);
     const sale = await this.sales.createSale(databaseName, {
       billingAddress: first.billingAddress,
       billingAddressId: first.billingAddressId,
@@ -231,7 +228,9 @@ export class QuotationService {
       customerName: first.customerName,
       customerPhone: first.customerPhone,
       financialYearId: first.financialYearId,
-      invoiceNumber: formatBillingDocumentNumber(billingSettings.numbering.sales),
+      // Let Sales own reservation and allocation so conversion cannot reuse a
+      // stale or manually entered number from the quotation flow.
+      invoiceNumber: "",
       issuedOn: new Date().toISOString().slice(0, 10),
       items: mergeQuotationItems(quotations),
       ledgerId: first.ledgerId,
@@ -497,17 +496,9 @@ function mergeQuotationItems(quotations: Quotation[]): SaleLineItemInput[] {
   for (const quotation of quotations) {
     for (const item of quotation.items) {
       const value = quotationItemToSaleItem(item);
-      const key = [
-        value.productId,
-        value.description,
-        value.hsnCodeId,
-        value.colourId,
-        value.sizeId,
-        value.unitId,
-        value.rate,
-        value.taxId,
-        value.taxRate
-      ].join("|");
+      const itemIdentity =
+        value.productId ?? `name:${(value.productName ?? "").trim().toLowerCase()}`;
+      const key = [itemIdentity, value.rate, value.description.trim()].join("|");
       const current = merged.get(key);
       merged.set(
         key,

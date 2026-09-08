@@ -220,12 +220,33 @@ function normalizeNumbering(
   value: Partial<BillingSettings["numbering"]> | undefined
 ): BillingSettings["numbering"] {
   return {
-    exportSales: { ...defaultBillingSettings.numbering.exportSales, ...(value?.exportSales ?? {}) },
-    payment: { ...defaultBillingSettings.numbering.payment, ...(value?.payment ?? {}) },
-    purchase: { ...defaultBillingSettings.numbering.purchase, ...(value?.purchase ?? {}) },
-    quotation: { ...defaultBillingSettings.numbering.quotation, ...(value?.quotation ?? {}) },
-    receipt: { ...defaultBillingSettings.numbering.receipt, ...(value?.receipt ?? {}) },
-    sales: { ...defaultBillingSettings.numbering.sales, ...(value?.sales ?? {}) }
+    exportSales: normalizeNumberingSequence(
+      defaultBillingSettings.numbering.exportSales,
+      value?.exportSales
+    ),
+    payment: normalizeNumberingSequence(defaultBillingSettings.numbering.payment, value?.payment),
+    purchase: normalizeNumberingSequence(
+      defaultBillingSettings.numbering.purchase,
+      value?.purchase
+    ),
+    quotation: normalizeNumberingSequence(
+      defaultBillingSettings.numbering.quotation,
+      value?.quotation
+    ),
+    receipt: normalizeNumberingSequence(defaultBillingSettings.numbering.receipt, value?.receipt),
+    sales: normalizeNumberingSequence(defaultBillingSettings.numbering.sales, value?.sales)
+  };
+}
+
+function normalizeNumberingSequence(
+  defaults: BillingSettings["numbering"]["sales"],
+  value: Partial<BillingSettings["numbering"]["sales"]> | undefined
+) {
+  const nextNumber = Number(value?.nextNumber ?? defaults.nextNumber);
+  return {
+    ...defaults,
+    ...(value ?? {}),
+    nextNumber: Number.isFinite(nextNumber) ? Math.max(1, Math.trunc(nextNumber)) : 1
   };
 }
 

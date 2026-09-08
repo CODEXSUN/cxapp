@@ -145,7 +145,14 @@ export function selectSaleHeaders(uuid?: string) {
     WHERE s.deleted_at IS NULL
       AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
       ${uuid ? sql`AND s.uuid = ${uuid}` : sql``}
-    ORDER BY s.line_number DESC, s.issued_on DESC, s.id DESC
+    ORDER BY
+      CASE WHEN TRIM(s.invoice_number) REGEXP '^-?[0-9]+$' THEN 0 ELSE 1 END,
+      CASE WHEN TRIM(s.invoice_number) REGEXP '^-?[0-9]+$'
+           THEN CAST(TRIM(s.invoice_number) AS SIGNED)
+           ELSE 0 END DESC,
+      s.invoice_number DESC,
+      s.issued_on DESC,
+      s.id DESC
   `;
 }
 
@@ -198,7 +205,14 @@ export function selectSalePageHeaders(
         OR DATE_FORMAT(s.issued_on, '%Y-%m-%d') LIKE ${search}
         OR s.status LIKE ${search} OR CAST(s.amount AS CHAR) LIKE ${search}
       )
-    ORDER BY s.line_number DESC, s.issued_on DESC, s.id DESC
+    ORDER BY
+      CASE WHEN TRIM(s.invoice_number) REGEXP '^-?[0-9]+$' THEN 0 ELSE 1 END,
+      CASE WHEN TRIM(s.invoice_number) REGEXP '^-?[0-9]+$'
+           THEN CAST(TRIM(s.invoice_number) AS SIGNED)
+           ELSE 0 END DESC,
+      s.invoice_number DESC,
+      s.issued_on DESC,
+      s.id DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
 }
