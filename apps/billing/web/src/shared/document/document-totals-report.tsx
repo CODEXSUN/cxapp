@@ -13,11 +13,12 @@ export type BillingDocumentReportRecord = {
   taxAmount?: number;
 };
 
-export type BillingDocumentTotalsViewMode = "bill" | "month";
+export type BillingDocumentTotalsViewMode = "bill" | "month" | "party";
 
 const totalsViewOptions: Array<{ label: string; value: BillingDocumentTotalsViewMode }> = [
   { label: "Bill-wise", value: "bill" },
-  { label: "Month-wise", value: "month" }
+  { label: "Month-wise", value: "month" },
+  { label: "Party-wise", value: "party" }
 ];
 
 export function BillingDocumentListControls({
@@ -121,19 +122,27 @@ export function BillingDocumentListControls({
 export function BillingDocumentTotalsTable({
   primaryLabel = "Taxable",
   records,
-  secondaryLabel = "GST"
+  secondaryLabel = "GST",
+  totalsView
 }: {
   primaryLabel?: string;
   records: BillingDocumentReportRecord[];
   secondaryLabel?: string;
+  totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">;
 }) {
-  const rows = buildRows(records);
+  const rows = buildRows(records, totalsView);
 
   return (
     <>
       <thead className="bg-muted/50">
         <tr>
-          {["Month", "Documents", primaryLabel, secondaryLabel, "Total"].map((heading) => (
+          {[
+            totalsView === "party" ? "Party" : "Month",
+            "Documents",
+            primaryLabel,
+            secondaryLabel,
+            "Total"
+          ].map((heading) => (
             <th
               className={cn(
                 "border-b border-border/70 px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
@@ -165,18 +174,21 @@ export function BillingDocumentTotalsTable({
   );
 }
 
-function buildRows(records: BillingDocumentReportRecord[]) {
+function buildRows(
+  records: BillingDocumentReportRecord[],
+  totalsView: Exclude<BillingDocumentTotalsViewMode, "bill">
+) {
   const groups = new Map<
     string,
     { amount: number; count: number; label: string; subtotal: number; taxAmount: number }
   >();
 
   for (const record of records) {
-    const key = reportPeriodKey(record.date);
+    const key = totalsView === "party" ? partyKey(record.partyName) : reportPeriodKey(record.date);
     const current = groups.get(key) ?? {
       amount: 0,
       count: 0,
-      label: reportPeriodLabel(key),
+      label: totalsView === "party" ? key : reportPeriodLabel(key),
       subtotal: 0,
       taxAmount: 0
     };
@@ -189,7 +201,16 @@ function buildRows(records: BillingDocumentReportRecord[]) {
 
   return [...groups.entries()]
     .map(([key, row]) => ({ ...row, key }))
-    .sort((left, right) => right.key.localeCompare(left.key));
+    .sort((left, right) =>
+      totalsView === "party"
+        ? left.label.localeCompare(right.label, undefined, { sensitivity: "base" })
+        : right.key.localeCompare(left.key)
+    );
+}
+
+function partyKey(partyName: string) {
+  const normalized = partyName.trim();
+  return normalized || "Unknown party";
 }
 
 function reportPeriodKey(date: string) {

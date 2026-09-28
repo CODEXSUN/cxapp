@@ -282,8 +282,14 @@ const BillingDashboardWorkspace = lazyWorkspace(() =>
 const CustomerStatementWorkspace = lazyWorkspace(() =>
   loadBillingReportsModule().then((module) => module.CustomerStatementWorkspace)
 );
+const CustomerSummaryWorkspace = lazyWorkspace(() =>
+  loadBillingReportsModule().then((module) => module.CustomerSummaryWorkspace)
+);
 const SupplierStatementWorkspace = lazyWorkspace(() =>
   loadBillingReportsModule().then((module) => module.SupplierStatementWorkspace)
+);
+const SupplierSummaryWorkspace = lazyWorkspace(() =>
+  loadBillingReportsModule().then((module) => module.SupplierSummaryWorkspace)
 );
 const StockStatementWorkspace = lazyWorkspace(() =>
   loadBillingReportsModule().then((module) => module.StockStatementWorkspace)
@@ -387,7 +393,9 @@ type AppPage =
   | "billing.payment"
   | "billing.receipt"
   | "billing.reports.customer-statement"
+  | "billing.reports.customer-summary"
   | "billing.reports.supplier-statement"
+  | "billing.reports.supplier-summary"
   | "billing.reports.stock-statement"
   | "billing.reports.gst-statement"
   | "billing.settings"
@@ -495,12 +503,12 @@ export function AppDesk() {
     : page.startsWith("blog") && !switchableApps.includes("blog")
       ? pageForApp(landingApp)
       : page.startsWith("accounts") && !switchableApps.includes("accounts")
+        ? pageForApp(landingApp)
+        : (page.startsWith("billing") ||
+              (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
+            !switchableApps.includes("billing")
           ? pageForApp(landingApp)
-          : (page.startsWith("billing") ||
-                (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
-              !switchableApps.includes("billing")
-          ? pageForApp(landingApp)
-            : page;
+          : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle = titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
@@ -829,9 +837,11 @@ export function AppDesk() {
             {safePage === "billing.reports.customer-statement" ? (
               <CustomerStatementWorkspace />
             ) : null}
+            {safePage === "billing.reports.customer-summary" ? <CustomerSummaryWorkspace /> : null}
             {safePage === "billing.reports.supplier-statement" ? (
               <SupplierStatementWorkspace />
             ) : null}
+            {safePage === "billing.reports.supplier-summary" ? <SupplierSummaryWorkspace /> : null}
             {safePage === "billing.reports.stock-statement" ? <StockStatementWorkspace /> : null}
             {safePage === "billing.reports.gst-statement" ? <GstStatementWorkspace /> : null}
             {safePage === "billing.settings" ? <BillingSettingsWorkspace /> : null}
@@ -964,7 +974,9 @@ function pageFromUrl(landingApp: PlatformAppId | null): AppPage {
     key === "billing.payment" ||
     key === "billing.receipt" ||
     key === "billing.reports.customer-statement" ||
+    key === "billing.reports.customer-summary" ||
     key === "billing.reports.supplier-statement" ||
+    key === "billing.reports.supplier-summary" ||
     key === "billing.reports.stock-statement" ||
     key === "billing.reports.gst-statement" ||
     key === "billing.settings" ||
@@ -1449,7 +1461,9 @@ function titleForPage(page: AppPage) {
     "billing.payment": "Payment",
     "billing.receipt": "Receipt",
     "billing.reports.customer-statement": "Customer Statement",
+    "billing.reports.customer-summary": "Customer Summary",
     "billing.reports.supplier-statement": "Supplier Statement",
+    "billing.reports.supplier-summary": "Supplier Summary",
     "billing.reports.stock-statement": "Stock Statement",
     "billing.reports.gst-statement": "GST Statement",
     "billing.settings": "Billing Settings",
@@ -1550,8 +1564,7 @@ function appFromPage(
   landingApp: PlatformAppId,
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
-  if (page.startsWith("auditor"))
-    return enabledApps.includes("auditor") ? "auditor" : landingApp;
+  if (page.startsWith("auditor")) return enabledApps.includes("auditor") ? "auditor" : landingApp;
   if (page.startsWith("blog")) return enabledApps.includes("blog") ? "blog" : landingApp;
   if (page.startsWith("core.organisation")) return "application";
   if (page.startsWith("billing") || page.startsWith("core"))

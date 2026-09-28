@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.74
+Current version: 1.0.75
 
-Release tag: v-1.0.74
+Release tag: v-1.0.75
 
-Changelog label: v 1.0.74
+Changelog label: v 1.0.75
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,27 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.75
+
+### [v 1.0.75] 2026-09-28 4:59 pm - Billing outstanding summary reports
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.75.
+- Added Customer Summary and Supplier Summary reports under Billing Reports.
+- Added tenant-scoped summary routes that return one non-zero outstanding balance per customer or supplier.
+- Customer Summary combines opening balance, confirmed sales, confirmed export sales, and posted receipts.
+- Supplier Summary combines opening balance, confirmed purchases, and posted payments.
+- Added search, debit, credit, and balance totals to both summary pages.
+- Added Customer Summary and Supplier Summary to the tenant desk route map and Reports navigation.
+- Added Party-wise totals to quotation, sales, purchase, export sales, receipt, and payment lists.
+- Updated the Billing Reports E2E check to establish the active company and financial-year scope before calling report services.
+- Verified the new summary pages against the active tenant database and confirmed the report route contract.
 
 ## v-1.0.74
 

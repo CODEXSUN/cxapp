@@ -27,14 +27,7 @@ import {
 import type { SidemenuItem } from "@cxapp/ui/blocks/menu/sidemenu/sub/sidemenu-section";
 
 export type PlatformAppId =
-  | "application"
-  | "billing"
-  | "accounts"
-  | "devkit"
-  | "mail"
-  | "task-manager"
-  | "blog"
-  | "auditor";
+  "application" | "billing" | "accounts" | "devkit" | "mail" | "task-manager" | "blog" | "auditor";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -676,9 +669,19 @@ export function appMenuItemsFor(
             onSelect: () => onSelect("billing.reports.customer-statement")
           },
           {
+            title: "Customer Summary",
+            isActive: activePage === "billing.reports.customer-summary",
+            onSelect: () => onSelect("billing.reports.customer-summary")
+          },
+          {
             title: "Supplier Statement",
             isActive: activePage === "billing.reports.supplier-statement",
             onSelect: () => onSelect("billing.reports.supplier-statement")
+          },
+          {
+            title: "Supplier Summary",
+            isActive: activePage === "billing.reports.supplier-summary",
+            onSelect: () => onSelect("billing.reports.supplier-summary")
           },
           {
             title: "Stock Statement",

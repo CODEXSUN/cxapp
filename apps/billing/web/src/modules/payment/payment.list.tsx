@@ -136,6 +136,7 @@ export function PaymentList({
               primaryLabel="Amount"
               records={totalsRecords}
               secondaryLabel="Allocated"
+              totalsView={totalsView}
             />
           )}
         </table>

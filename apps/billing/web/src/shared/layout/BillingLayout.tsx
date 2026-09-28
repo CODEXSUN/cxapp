@@ -152,9 +152,19 @@ export function BillingLayout({
           url: "/billing/reports/customer-statement"
         },
         {
+          isActive: currentPath === "/billing/reports/customer-summary",
+          title: "Customer Summary",
+          url: "/billing/reports/customer-summary"
+        },
+        {
           isActive: currentPath === "/billing/reports/supplier-statement",
           title: "Supplier Statement",
           url: "/billing/reports/supplier-statement"
+        },
+        {
+          isActive: currentPath === "/billing/reports/supplier-summary",
+          title: "Supplier Summary",
+          url: "/billing/reports/supplier-summary"
         },
         {
           isActive: currentPath === "/billing/reports/stock-statement",

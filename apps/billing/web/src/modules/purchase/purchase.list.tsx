@@ -261,7 +261,7 @@ export function PurchaseList({
               </tbody>
             </>
           ) : (
-            <BillingDocumentTotalsTable records={totalsRecords} />
+            <BillingDocumentTotalsTable records={totalsRecords} totalsView={totalsView} />
           )}
         </table>
       </div>
