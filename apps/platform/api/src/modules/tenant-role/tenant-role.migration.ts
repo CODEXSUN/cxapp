@@ -1,6 +1,9 @@
 import { sql, type Kysely } from "kysely";
 import type { TenantDatabase } from "../../database/schema.js";
 export const tenantRoleMigration = { key: "platform.tenant-role.foundation-v1" } as const;
+export const tenantRoleAdminLabelMigration = {
+  key: "platform.tenant-role.admin-label-v1"
+} as const;
 export async function migrateTenantRoleModule(database: Kysely<TenantDatabase>) {
   await sql
     .raw(
@@ -17,6 +20,14 @@ export async function migrateTenantRoleModule(database: Kysely<TenantDatabase>) 
         .raw(`ALTER TABLE app_roles ADD COLUMN \`${column}\` ${definition}`)
         .execute(database);
   }
+}
+
+export async function migrateTenantRoleAdminLabel(database: Kysely<TenantDatabase>) {
+  await sql`
+    UPDATE app_roles
+    SET label='Admin'
+    WHERE \`key\`='admin' AND label='Tenant Administrator'
+  `.execute(database);
 }
 async function exists(database: Kysely<TenantDatabase>, column: string) {
   const r = await sql<{

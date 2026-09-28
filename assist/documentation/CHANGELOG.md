@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.75
+Current version: 1.0.76
 
-Release tag: v-1.0.75
+Release tag: v-1.0.76
 
-Changelog label: v 1.0.75
+Changelog label: v 1.0.76
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,25 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.76
+
+### [v 1.0.76] 2026-09-28 5:46 pm - Billing Admin entry access
+
+#### Database Changes
+
+- Database update: Yes (manual).
+- Added an idempotent tenant-role migration that changes the legacy Admin label from `Tenant Administrator` to `Admin`.
+- Seeded missing Admin and Super Admin Billing permissions and legacy role assignments without replacing existing role records.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.76.
+- Added one tenant-scoped Billing access contract for all Billing document modules.
+- Allowed Admin and Super Admin users to edit draft, confirmed, and suspended Billing entries when they have the assigned role.
+- Applied the access decision to quotation, sales, purchase, export sales, payment, and receipt list and document views.
+- Returned the Billing access result in the standard API envelope so the web client displays Edit actions correctly.
+- Verified live Admin access, update permission, and non-destructive delete authorization for all six Billing document modules.
 
 ## v-1.0.75
 

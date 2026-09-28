@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { assertBillingEntryEditable } from "../../auth/billing-scope.js";
 import { billingDashboardProjection } from "../dashboard/index.js";
 import {
   BillingSettingsRepository,
@@ -92,9 +93,13 @@ export class ExportSalesService {
   async updateExportSale(databaseName: string, id: string, input: ExportSaleSavePayload) {
     const current = await this.repository.get(databaseName, id);
     if (!current) return null;
-    if (current.status !== "draft")
-      throw AppError.conflict("Only draft export sales can be edited.");
-    const normalized = normalizeExportSaleInput(input);
+    assertBillingEntryEditable(current.status, "export sales");
+    const normalized = normalizeExportSaleInput({
+      ...input,
+      einvoice: current.einvoice,
+      eway: current.eway,
+      status: current.status
+    });
     await this.validateReferences(databaseName, normalized);
     const duplicateId = await this.repository.findByInvoiceNumber(
       databaseName,

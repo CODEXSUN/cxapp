@@ -26,7 +26,7 @@ import {
 import { useSalesPage } from "./sales.hooks";
 import { SalesForm } from "./sales.form";
 import { SalesList } from "./sales.list";
-import { getToken } from "../../shared/api/tenant-context";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -50,23 +50,15 @@ const saleColumnCatalog = [
   { id: "action", label: "Action" }
 ] as const;
 
-function isAdminSession() {
-  const token = getToken("tenant");
-  if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { userType?: string };
-    return payload.userType === "staff" || payload.userType === "super_admin";
-  } catch {
-    return false;
-  }
-}
-
 export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string | undefined }) {
   const queryClient = useQueryClient();
   const settingsQuery = useSalesSettings();
   const settings = settingsQuery.data ?? defaultBillingSettings;
   const saleLayout = settings.layout;
-  const canAdminRevoke = isAdminSession();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
+  const canAdminRevoke = canEditFinalizedEntries;
   const [view, setView] = useState<SaleView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -229,7 +221,7 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
         onEdit={() => setView({ mode: "upsert", sale: freshSale, returnTo: "show" })}
         onNew={openNewSale}
         onPrint={() => window.print()}
-        canEdit={freshSale.status === "draft"}
+        canEdit={canEditBillingEntry(freshSale.status, canEditEntries, canEditFinalizedEntries)}
         {...(previousSale
           ? { onPrevious: () => setView({ mode: "show", sale: previousSale }) }
           : {})}
@@ -366,6 +358,8 @@ export function SalesWorkspace({ initialRecordId }: { initialRecordId?: string |
           setView({ mode: "show", sale });
         }}
         canAdminRevoke={canAdminRevoke}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         onView={(sale) => setView({ mode: "show", sale })}
         visibleColumns={visibleColumns}
       />

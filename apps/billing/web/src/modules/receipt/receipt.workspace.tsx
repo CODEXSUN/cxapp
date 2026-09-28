@@ -9,6 +9,7 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -43,6 +44,9 @@ const statusFilters = [
 export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string | undefined }) {
   const queryClient = useQueryClient();
   const contextQuery = useReceiptContext();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
   const [view, setView] = useState<ReceiptView>({ mode: "list" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -137,6 +141,8 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
         onEdit={() => setView({ mode: "upsert", receipt: view.receipt, returnTo: "show" })}
         onPost={() => lifecycle.mutate({ action: "post", id: view.receipt.id })}
         onCancel={() => lifecycle.mutate({ action: "cancel", id: view.receipt.id })}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
       />
     );
   return (
@@ -199,6 +205,8 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
       ) : null}
       <ReceiptList
         entries={pageEntries}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         loading={receiptsQuery.isLoading}
         totalsRecords={pageEntries.map((receipt) => ({
           amount: receipt.totalAmount,
@@ -245,12 +253,16 @@ export function ReceiptWorkspace({ initialRecordId }: { initialRecordId?: string
 }
 
 function ReceiptShow({
+  canEditEntries,
+  canEditFinalizedEntries,
   receipt,
   onBack,
   onCancel,
   onEdit,
   onPost
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   receipt: Receipt;
   onBack: () => void;
   onCancel: () => void;
@@ -262,15 +274,13 @@ function ReceiptShow({
     <WorkspacePage
       action={
         <div className="flex gap-2">
-          {receipt.status === "draft" ? (
+          {canEditBillingEntry(receipt.status, canEditEntries, canEditFinalizedEntries) ? (
             <>
               <Button onClick={onEdit} type="button" variant="outline">
                 <Pencil className="size-4" />
                 Edit
               </Button>
-              <Button onClick={onPost} type="button">
-                Post
-              </Button>
+              {receipt.status === "draft" ? <Button onClick={onPost} type="button">Post</Button> : null}
             </>
           ) : null}
           {receipt.status === "posted" ? (

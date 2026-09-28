@@ -17,6 +17,8 @@ import { formatDate, formatMoney, totalQuotationQuantity } from "./quotation.ser
 import type { Quotation } from "./quotation.types";
 
 export function QuotationList({
+  canEditEntries,
+  canEditFinalizedEntries,
   canAdminRevoke,
   entries,
   loading,
@@ -37,6 +39,8 @@ export function QuotationList({
   totalsView,
   visibleColumns
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   canAdminRevoke: boolean;
   entries: Quotation[];
   loading: boolean;
@@ -141,16 +145,18 @@ export function QuotationList({
                         <button
                           className={cn(
                             "font-medium underline-offset-4",
-                            quotation.status === "draft"
+                            canEditEntries &&
+                            (quotation.status === "draft" || canEditFinalizedEntries)
                               ? "hover:underline"
                               : "cursor-not-allowed text-muted-foreground"
                           )}
-                          disabled={quotation.status !== "draft"}
+                          disabled={!canEditEntries || (quotation.status !== "draft" && !canEditFinalizedEntries)}
                           onClick={() => onEdit(quotation)}
                           title={
-                            quotation.status === "draft"
+                            canEditEntries &&
+                            (quotation.status === "draft" || canEditFinalizedEntries)
                               ? "Edit quotation"
-                              : "Submitted quotations cannot be edited"
+                              : "Only an Admin or Super Admin can edit this quotation"
                           }
                           type="button"
                         >
@@ -247,7 +253,8 @@ export function QuotationList({
                                 ]
                               : [])
                           ]}
-                          {...(quotation.status === "draft"
+                          {...(canEditEntries &&
+                          (quotation.status === "draft" || canEditFinalizedEntries)
                             ? { onEdit: () => onEdit(quotation) }
                             : {})}
                           onView={() => onView(quotation)}

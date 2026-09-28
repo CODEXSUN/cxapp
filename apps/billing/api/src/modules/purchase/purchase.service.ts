@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { assertBillingEntryEditable } from "../../auth/billing-scope.js";
 import { billingDashboardProjection } from "../dashboard/index.js";
 import type { EventPublisher } from "@cxapp/framework/events";
 import type { QueueAdapter } from "@cxapp/framework/queue";
@@ -98,8 +99,8 @@ export class PurchaseService {
   async update(databaseName: string, id: string, input: PurchaseSavePayload) {
     const current = await this.repository.get(databaseName, id);
     if (!current) return null;
-    if (current.status !== "draft") throw AppError.conflict("Only draft purchases can be updated.");
-    const normalized = normalizePurchaseInput(input);
+    assertBillingEntryEditable(current.status, "purchases");
+    const normalized = normalizePurchaseInput({ ...input, status: current.status });
     await this.validateReferences(databaseName, normalized);
     const duplicateId = await this.repository.findByPurchaseNumber(
       databaseName,

@@ -17,6 +17,8 @@ import { formatDate, formatMoney, totalSaleQuantity } from "./sales.services";
 import type { Sale } from "./sales.types";
 
 export function SalesList({
+  canEditEntries,
+  canEditFinalizedEntries,
   canAdminRevoke,
   entries,
   loading,
@@ -30,6 +32,8 @@ export function SalesList({
   totalsView,
   visibleColumns
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   canAdminRevoke: boolean;
   entries: Sale[];
   loading: boolean;
@@ -103,16 +107,18 @@ export function SalesList({
                         <button
                           className={cn(
                             "font-medium underline-offset-4",
-                            sale.status === "draft"
+                            canEditEntries &&
+                            (sale.status === "draft" || canEditFinalizedEntries)
                               ? "hover:underline"
                               : "cursor-not-allowed text-muted-foreground"
                           )}
-                          disabled={sale.status !== "draft"}
+                          disabled={!canEditEntries || (sale.status !== "draft" && !canEditFinalizedEntries)}
                           onClick={() => onEdit(sale)}
                           title={
-                            sale.status === "draft"
+                            canEditEntries &&
+                            (sale.status === "draft" || canEditFinalizedEntries)
                               ? "Edit sale"
-                              : "Submitted sales cannot be edited"
+                              : "Only an Admin or Super Admin can edit this sale"
                           }
                           type="button"
                         >
@@ -201,7 +207,9 @@ export function SalesList({
                                 ]
                               : [])
                           ]}
-                          {...(sale.status === "draft" ? { onEdit: () => onEdit(sale) } : {})}
+                          {...(canEditEntries && (sale.status === "draft" || canEditFinalizedEntries)
+                            ? { onEdit: () => onEdit(sale) }
+                            : {})}
                           onView={() => onView(sale)}
                           title={sale.saleNumber}
                         />

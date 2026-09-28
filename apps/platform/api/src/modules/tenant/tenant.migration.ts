@@ -16,7 +16,12 @@ import {
   migrateTenantRolePermissionModule,
   tenantRolePermissionMigration
 } from "../tenant-role-permission/index.js";
-import { migrateTenantRoleModule, tenantRoleMigration } from "../tenant-role/index.js";
+import {
+  migrateTenantRoleAdminLabel,
+  migrateTenantRoleModule,
+  tenantRoleAdminLabelMigration,
+  tenantRoleMigration
+} from "../tenant-role/index.js";
 import { migrateTenantUserRoleModule, tenantUserRoleMigration } from "../tenant-user-role/index.js";
 import { migrateTenantUserModule, tenantUserMigration } from "../tenant-user/index.js";
 
@@ -47,6 +52,11 @@ export const tenantRuntimeMigrations = [
     description: "Tenant roles and lifecycle state.",
     name: tenantRoleMigration.key,
     statements: ["RUN platform.tenant-role migration"]
+  },
+  {
+    description: "Rename the protected tenant administrator role to Admin.",
+    name: tenantRoleAdminLabelMigration.key,
+    statements: ["RUN platform.tenant-role admin-label migration"]
   },
   {
     description: "Tenant permission catalog.",
@@ -122,6 +132,13 @@ export const tenantRuntimeMigrationBatch: MigrationBatch<TenantDatabase> = {
       description: "Tenant roles and lifecycle state.",
       name: tenantRoleMigration.key,
       up: migrateTenantRoleModule,
+      version: 1
+    },
+    {
+      checksum: `${tenantRoleAdminLabelMigration.key}:v1`,
+      description: "Rename the protected tenant administrator role to Admin.",
+      name: tenantRoleAdminLabelMigration.key,
+      up: migrateTenantRoleAdminLabel,
       version: 1
     },
     {

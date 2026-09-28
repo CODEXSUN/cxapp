@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { assertBillingEntryEditable } from "../../auth/billing-scope.js";
 import type { EventPublisher } from "@cxapp/framework/events";
 import type { QueueAdapter } from "@cxapp/framework/queue";
 import { SalesService } from "../sales/index.js";
@@ -98,9 +99,8 @@ export class QuotationService {
   async update(databaseName: string, id: string, input: QuotationSavePayload) {
     const current = await this.repository.get(databaseName, id);
     if (!current) return null;
-    if (current.status !== "draft")
-      throw AppError.conflict("Only draft quotations can be updated.");
-    const normalized = normalizeQuotationInput(input);
+    assertBillingEntryEditable(current.status, "quotations");
+    const normalized = normalizeQuotationInput({ ...input, status: current.status });
     await this.validateReferences(databaseName, normalized);
     const duplicateId = await this.repository.findByQuotationNumber(
       databaseName,

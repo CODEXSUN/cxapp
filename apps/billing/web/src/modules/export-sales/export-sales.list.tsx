@@ -17,6 +17,8 @@ import { formatDate, formatMoney, totalExportSaleQuantity } from "./export-sales
 import type { ExportSale } from "./export-sales.types";
 
 export function ExportSalesList({
+  canEditEntries,
+  canEditFinalizedEntries,
   canAdminRevoke,
   entries,
   loading,
@@ -37,6 +39,8 @@ export function ExportSalesList({
   totalsView,
   visibleColumns
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   canAdminRevoke: boolean;
   entries: ExportSale[];
   loading: boolean;
@@ -140,16 +144,21 @@ export function ExportSalesList({
                         <button
                           className={cn(
                             "font-medium underline-offset-4",
-                            exportSale.status === "draft"
+                            canEditEntries &&
+                            (exportSale.status === "draft" || canEditFinalizedEntries)
                               ? "hover:underline"
                               : "cursor-not-allowed text-muted-foreground"
                           )}
-                          disabled={exportSale.status !== "draft"}
+                          disabled={
+                            !canEditEntries ||
+                            (exportSale.status !== "draft" && !canEditFinalizedEntries)
+                          }
                           onClick={() => onEdit(exportSale)}
                           title={
-                            exportSale.status === "draft"
+                            canEditEntries &&
+                            (exportSale.status === "draft" || canEditFinalizedEntries)
                               ? "Edit export sale"
-                              : "Submitted export sales cannot be edited"
+                              : "Only an Admin or Super Admin can edit this export sale"
                           }
                           type="button"
                         >
@@ -245,7 +254,8 @@ export function ExportSalesList({
                                 ]
                               : [])
                           ]}
-                          {...(exportSale.status === "draft"
+                          {...(canEditEntries &&
+                          (exportSale.status === "draft" || canEditFinalizedEntries)
                             ? { onEdit: () => onEdit(exportSale) }
                             : {})}
                           onView={() => onView(exportSale)}

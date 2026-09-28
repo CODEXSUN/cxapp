@@ -27,7 +27,7 @@ import {
 import { useQuotationPage } from "./quotation.hooks";
 import { QuotationForm } from "./quotation.form";
 import { canSelectQuotation, QuotationList } from "./quotation.list";
-import { getToken } from "../../shared/api/tenant-context";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -50,17 +50,6 @@ const quotationColumnCatalog = [
   { id: "invoice", label: "Invoice" },
   { id: "action", label: "Action" }
 ] as const;
-
-function isAdminSession() {
-  const token = getToken("tenant");
-  if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { userType?: string };
-    return payload.userType === "staff" || payload.userType === "super_admin";
-  } catch {
-    return false;
-  }
-}
 
 function printQuotationFromList(quotationId: string) {
   const frame = document.createElement("iframe");
@@ -95,7 +84,10 @@ export function QuotationWorkspace() {
   const settingsQuery = useSalesSettings();
   const settings = settingsQuery.data ?? defaultBillingSettings;
   const quotationLayout = settings.layout;
-  const canAdminRevoke = isAdminSession();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
+  const canAdminRevoke = canEditFinalizedEntries;
   const [view, setView] = useState<QuotationView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -302,7 +294,7 @@ export function QuotationWorkspace() {
         onPrint={() => window.print()}
         onConvert={() => convertMutation.mutate(freshQuotation.id)}
         converting={convertMutation.isPending}
-        canEdit={freshQuotation.status === "draft"}
+        canEdit={canEditBillingEntry(freshQuotation.status, canEditEntries, canEditFinalizedEntries)}
         {...(previousQuotation
           ? { onPrevious: () => setView({ mode: "show", quotation: previousQuotation }) }
           : {})}
@@ -452,6 +444,8 @@ export function QuotationWorkspace() {
         onRevoke={(quotation) => revokeMutation.mutate(quotation.id)}
         onPrint={(quotation) => printQuotationFromList(quotation.id)}
         canAdminRevoke={canAdminRevoke}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         onView={(quotation) => setView({ mode: "show", quotation })}
         page={currentPage}
         rowsPerPage={rowsPerPage}

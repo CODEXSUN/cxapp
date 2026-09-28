@@ -15,6 +15,8 @@ import { formatReceiptDate, formatReceiptMoney } from "./receipt.services";
 import type { Receipt } from "./receipt.types";
 
 export function ReceiptList({
+  canEditEntries,
+  canEditFinalizedEntries,
   entries,
   loading,
   onCancel,
@@ -25,6 +27,8 @@ export function ReceiptList({
   totalsRecords,
   totalsView
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   entries: Receipt[];
   loading: boolean;
   onCancel: (receipt: Receipt) => void;
@@ -89,7 +93,8 @@ export function ReceiptList({
                             label: "View",
                             onSelect: () => onView(receipt)
                           },
-                          ...(receipt.status === "draft"
+                          ...(canEditEntries &&
+                          (receipt.status === "draft" || canEditFinalizedEntries)
                             ? [
                                 {
                                   id: "edit",
@@ -97,19 +102,23 @@ export function ReceiptList({
                                   label: "Edit",
                                   onSelect: () => onEdit(receipt)
                                 },
-                                {
-                                  id: "post",
-                                  icon: <Send className="size-4" />,
-                                  label: "Post",
-                                  onSelect: () => onPost(receipt)
-                                },
-                                {
-                                  id: "delete",
-                                  icon: <Trash2 className="size-4" />,
-                                  label: "Delete draft",
-                                  tone: "destructive" as const,
-                                  onSelect: () => onDelete(receipt)
-                                }
+                                ...(receipt.status === "draft"
+                                  ? [
+                                      {
+                                        id: "post",
+                                        icon: <Send className="size-4" />,
+                                        label: "Post",
+                                        onSelect: () => onPost(receipt)
+                                      },
+                                      {
+                                        id: "delete",
+                                        icon: <Trash2 className="size-4" />,
+                                        label: "Delete draft",
+                                        tone: "destructive" as const,
+                                        onSelect: () => onDelete(receipt)
+                                      }
+                                    ]
+                                  : [])
                               ]
                             : []),
                           ...(receipt.status === "posted"

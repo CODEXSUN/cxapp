@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 import { AppError } from "@cxapp/framework/errors";
 
 export type BillingScope = {
+  canEditFinalizedEntries?: boolean;
   companyId: number;
   financialYearId: number;
 };
@@ -37,6 +38,19 @@ export function assertBillingScope(companyId: number, financialYearId: number) {
     );
   }
   return scope;
+}
+
+/**
+ * Finalised documents remain read-only for standard users. The request authorizer
+ * sets this flag only after it has verified an active tenant admin role.
+ */
+export function setBillingFinalizedEntryEditAccess(allowed: boolean) {
+  currentBillingScope().canEditFinalizedEntries = allowed;
+}
+
+export function assertBillingEntryEditable(status: string, label: string) {
+  if (status === "draft" || currentBillingScope().canEditFinalizedEntries) return;
+  throw AppError.conflict(`Only draft ${label} can be edited.`);
 }
 
 export function readBillingScope(request: FastifyRequest): BillingScope {

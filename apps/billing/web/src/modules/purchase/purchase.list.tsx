@@ -17,6 +17,8 @@ import { formatDate, formatMoney, totalPurchaseQuantity } from "./purchase.servi
 import type { Purchase } from "./purchase.types";
 
 export function PurchaseList({
+  canEditEntries,
+  canEditFinalizedEntries,
   canAdminRevoke,
   entries,
   loading,
@@ -37,6 +39,8 @@ export function PurchaseList({
   totalsView,
   visibleColumns
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   canAdminRevoke: boolean;
   entries: Purchase[];
   loading: boolean;
@@ -145,16 +149,18 @@ export function PurchaseList({
                         <button
                           className={cn(
                             "font-medium underline-offset-4",
-                            purchase.status === "draft"
+                            canEditEntries &&
+                            (purchase.status === "draft" || canEditFinalizedEntries)
                               ? "hover:underline"
                               : "cursor-not-allowed text-muted-foreground"
                           )}
-                          disabled={purchase.status !== "draft"}
+                          disabled={!canEditEntries || (purchase.status !== "draft" && !canEditFinalizedEntries)}
                           onClick={() => onEdit(purchase)}
                           title={
-                            purchase.status === "draft"
+                            canEditEntries &&
+                            (purchase.status === "draft" || canEditFinalizedEntries)
                               ? "Edit purchase"
-                              : "Submitted purchases cannot be edited"
+                              : "Only an Admin or Super Admin can edit this purchase"
                           }
                           type="button"
                         >
@@ -248,7 +254,8 @@ export function PurchaseList({
                                 ]
                               : [])
                           ]}
-                          {...(purchase.status === "draft"
+                          {...(canEditEntries &&
+                          (purchase.status === "draft" || canEditFinalizedEntries)
                             ? { onEdit: () => onEdit(purchase) }
                             : {})}
                           onView={() => onView(purchase)}

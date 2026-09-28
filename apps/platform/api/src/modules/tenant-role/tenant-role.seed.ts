@@ -5,8 +5,14 @@ export async function seedTenantRoleModule(database: Kysely<TenantDatabase>) {
   for (const role of [
     {
       key: "admin",
-      label: "Tenant Administrator",
+      label: "Admin",
       description: "Full tenant administration access.",
+      protected: true
+    },
+    {
+      key: "super-admin",
+      label: "Super Admin",
+      description: "Full tenant administration access with super-user approval.",
       protected: true
     },
     {
@@ -32,12 +38,7 @@ export async function seedTenantRoleModule(database: Kysely<TenantDatabase>) {
         status: "active",
         uuid: stable(`tenant-role:${role.key}`)
       })
-      .onDuplicateKeyUpdate({
-        description: role.description,
-        is_protected: role.protected,
-        label: role.label,
-        status: "active"
-      })
+      .ignore()
       .execute();
 }
 function stable(v: string) {

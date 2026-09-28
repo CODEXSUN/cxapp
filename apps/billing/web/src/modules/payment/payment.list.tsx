@@ -15,6 +15,8 @@ import { formatPaymentDate, formatPaymentMoney } from "./payment.services";
 import type { Payment } from "./payment.types";
 
 export function PaymentList({
+  canEditEntries,
+  canEditFinalizedEntries,
   entries,
   loading,
   onCancel,
@@ -25,6 +27,8 @@ export function PaymentList({
   totalsRecords,
   totalsView
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   entries: Payment[];
   loading: boolean;
   onCancel: (payment: Payment) => void;
@@ -89,7 +93,8 @@ export function PaymentList({
                             label: "View",
                             onSelect: () => onView(payment)
                           },
-                          ...(payment.status === "draft"
+                          ...(canEditEntries &&
+                          (payment.status === "draft" || canEditFinalizedEntries)
                             ? [
                                 {
                                   id: "edit",
@@ -97,19 +102,23 @@ export function PaymentList({
                                   label: "Edit",
                                   onSelect: () => onEdit(payment)
                                 },
-                                {
-                                  id: "post",
-                                  icon: <Send className="size-4" />,
-                                  label: "Post",
-                                  onSelect: () => onPost(payment)
-                                },
-                                {
-                                  id: "delete",
-                                  icon: <Trash2 className="size-4" />,
-                                  label: "Delete draft",
-                                  tone: "destructive" as const,
-                                  onSelect: () => onDelete(payment)
-                                }
+                                ...(payment.status === "draft"
+                                  ? [
+                                      {
+                                        id: "post",
+                                        icon: <Send className="size-4" />,
+                                        label: "Post",
+                                        onSelect: () => onPost(payment)
+                                      },
+                                      {
+                                        id: "delete",
+                                        icon: <Trash2 className="size-4" />,
+                                        label: "Delete draft",
+                                        tone: "destructive" as const,
+                                        onSelect: () => onDelete(payment)
+                                      }
+                                    ]
+                                  : [])
                               ]
                             : []),
                           ...(payment.status === "posted"

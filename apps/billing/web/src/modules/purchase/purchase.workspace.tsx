@@ -28,7 +28,7 @@ import {
 import { usePurchasePage } from "./purchase.hooks";
 import { PurchaseForm } from "./purchase.form";
 import { canSelectPurchase, PurchaseList } from "./purchase.list";
-import { getToken } from "../../shared/api/tenant-context";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -52,17 +52,6 @@ const purchaseColumnCatalog = [
   { id: "invoice", label: "Invoice" },
   { id: "action", label: "Action" }
 ] as const;
-
-function isAdminSession() {
-  const token = getToken("tenant");
-  if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { userType?: string };
-    return payload.userType === "staff" || payload.userType === "super_admin";
-  } catch {
-    return false;
-  }
-}
 
 function printPurchaseFromList(purchaseId: string) {
   const frame = document.createElement("iframe");
@@ -97,7 +86,10 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
   const settingsQuery = useBillingSettings();
   const settings = settingsQuery.data ?? defaultBillingSettings;
   const purchaseLayout = settings.layout;
-  const canAdminRevoke = isAdminSession();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
+  const canAdminRevoke = canEditFinalizedEntries;
   const [view, setView] = useState<PurchaseView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -321,7 +313,7 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
         onEdit={() => setView({ mode: "upsert", purchase: freshPurchase, returnTo: "show" })}
         onNew={() => setView({ mode: "upsert", purchase: null, returnTo: "list" })}
         onPrint={() => window.print()}
-        canEdit={freshPurchase.status === "draft"}
+        canEdit={canEditBillingEntry(freshPurchase.status, canEditEntries, canEditFinalizedEntries)}
         {...(previousPurchase
           ? { onPrevious: () => setView({ mode: "show", purchase: previousPurchase }) }
           : {})}
@@ -473,6 +465,8 @@ export function PurchaseWorkspace({ initialRecordId }: { initialRecordId?: strin
         onRevoke={(purchase) => revokeMutation.mutate(purchase.id)}
         onPrint={(purchase) => printPurchaseFromList(purchase.id)}
         canAdminRevoke={canAdminRevoke}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         onView={(purchase) => setView({ mode: "show", purchase })}
         page={currentPage}
         rowsPerPage={rowsPerPage}

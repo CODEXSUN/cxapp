@@ -30,7 +30,7 @@ import {
 import { useExportSalesPage } from "./export-sales.hooks";
 import { ExportSalesForm } from "./export-sales.form";
 import { canSelectExportSale, ExportSalesList } from "./export-sales.list";
-import { getToken } from "../../shared/api/tenant-context";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -54,17 +54,6 @@ const exportSaleColumnCatalog = [
   { id: "invoice", label: "Invoice" },
   { id: "action", label: "Action" }
 ] as const;
-
-function isAdminSession() {
-  const token = getToken("tenant");
-  if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { userType?: string };
-    return payload.userType === "staff" || payload.userType === "super_admin";
-  } catch {
-    return false;
-  }
-}
 
 function printExportSaleFromList(exportSaleId: string) {
   const frame = document.createElement("iframe");
@@ -103,7 +92,10 @@ export function ExportSalesWorkspace({
   const settingsQuery = useBillingSettings();
   const settings = settingsQuery.data ?? defaultBillingSettings;
   const exportSaleLayout = settings.layout;
-  const canAdminRevoke = isAdminSession();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
+  const canAdminRevoke = canEditFinalizedEntries;
   const [view, setView] = useState<ExportSaleView>({ mode: "list" });
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -289,7 +281,7 @@ export function ExportSalesWorkspace({
         onEdit={() => setView({ mode: "upsert", exportSale: freshExportSale, returnTo: "show" })}
         onNew={() => void openNewExportSale()}
         onPrint={() => window.print()}
-        canEdit={freshExportSale.status === "draft"}
+        canEdit={canEditBillingEntry(freshExportSale.status, canEditEntries, canEditFinalizedEntries)}
         {...(previousExportSale
           ? { onPrevious: () => setView({ mode: "show", exportSale: previousExportSale }) }
           : {})}
@@ -463,6 +455,8 @@ export function ExportSalesWorkspace({
         onRevoke={(exportSale) => revokeMutation.mutate(exportSale.id)}
         onPrint={(exportSale) => printExportSaleFromList(exportSale.id)}
         canAdminRevoke={canAdminRevoke}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         onView={(exportSale) => setView({ mode: "show", exportSale })}
         page={currentPage}
         rowsPerPage={rowsPerPage}

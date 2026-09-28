@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { assertBillingEntryEditable } from "../../auth/billing-scope.js";
 import type { EventPublisher } from "@cxapp/framework/events";
 import type { QueueAdapter } from "@cxapp/framework/queue";
 import { billingDashboardProjection } from "../dashboard/index.js";
@@ -119,7 +120,7 @@ export class PaymentService {
   async update(databaseName: string, id: string, payload: PaymentSavePayload) {
     const current = await this.repository.get(databaseName, id);
     if (!current) return null;
-    this.assertDraft(current.status);
+    assertBillingEntryEditable(current.status, "payments");
     const input = await this.prepare(databaseName, payload, id);
     if (
       await this.repository.findByNumber(

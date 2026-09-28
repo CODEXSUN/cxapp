@@ -9,6 +9,7 @@ import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { WorkspacePagination } from "@cxapp/ui/workspace/pagination";
 import { WorkspaceShowCard } from "@cxapp/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxapp/ui/workspace/status";
+import { canEditBillingEntry, useBillingAccess } from "../../shared/auth/billing-access";
 import {
   BillingDocumentListControls,
   type BillingDocumentTotalsViewMode
@@ -43,6 +44,9 @@ const statusFilters = [
 export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string | undefined }) {
   const queryClient = useQueryClient();
   const contextQuery = usePaymentContext();
+  const accessQuery = useBillingAccess();
+  const canEditEntries = accessQuery.data?.canEditEntries ?? false;
+  const canEditFinalizedEntries = accessQuery.data?.canEditFinalizedEntries ?? false;
   const [view, setView] = useState<PaymentView>({ mode: "list" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -137,6 +141,8 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
         onEdit={() => setView({ mode: "upsert", payment: view.payment, returnTo: "show" })}
         onPost={() => lifecycle.mutate({ action: "post", id: view.payment.id })}
         onCancel={() => lifecycle.mutate({ action: "cancel", id: view.payment.id })}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
       />
     );
   return (
@@ -199,6 +205,8 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
       ) : null}
       <PaymentList
         entries={pageEntries}
+        canEditEntries={canEditEntries}
+        canEditFinalizedEntries={canEditFinalizedEntries}
         loading={paymentsQuery.isLoading}
         totalsRecords={pageEntries.map((payment) => ({
           amount: payment.totalAmount,
@@ -245,12 +253,16 @@ export function PaymentWorkspace({ initialRecordId }: { initialRecordId?: string
 }
 
 function PaymentShow({
+  canEditEntries,
+  canEditFinalizedEntries,
   payment,
   onBack,
   onCancel,
   onEdit,
   onPost
 }: {
+  canEditEntries: boolean;
+  canEditFinalizedEntries: boolean;
   payment: Payment;
   onBack: () => void;
   onCancel: () => void;
@@ -262,15 +274,13 @@ function PaymentShow({
     <WorkspacePage
       action={
         <div className="flex gap-2">
-          {payment.status === "draft" ? (
+          {canEditBillingEntry(payment.status, canEditEntries, canEditFinalizedEntries) ? (
             <>
               <Button onClick={onEdit} type="button" variant="outline">
                 <Pencil className="size-4" />
                 Edit
               </Button>
-              <Button onClick={onPost} type="button">
-                Post
-              </Button>
+              {payment.status === "draft" ? <Button onClick={onPost} type="button">Post</Button> : null}
             </>
           ) : null}
           {payment.status === "posted" ? (

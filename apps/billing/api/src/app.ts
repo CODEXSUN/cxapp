@@ -1,7 +1,12 @@
 import { requireTenantAccess } from "@cxapp/framework/api";
+import { ok } from "@cxapp/framework/http";
 import type { FastifyInstance } from "fastify";
 import { authorizeBillingRequest } from "./auth/tenant-permission.js";
-import { runWithBillingScope } from "./auth/billing-scope.js";
+import {
+  currentBillingScope,
+  runWithBillingScope,
+  setBillingFinalizedEntryEditAccess
+} from "./auth/billing-scope.js";
 import { resolveBillingDatabaseName } from "./database/billing-database.js";
 import { env } from "./env.js";
 import { exportSalesModule } from "./modules/export-sales/index.js";
@@ -42,7 +47,23 @@ export async function registerBillingApi(app: FastifyInstance) {
         tenantDatabase,
         tenantId: request.headers["x-tenant-id"]
       });
-      await authorizeBillingRequest(request, tenantDatabase, claims.email ?? "");
+      const access = await authorizeBillingRequest(request, tenantDatabase, claims.email ?? "");
+      setBillingFinalizedEntryEditAccess(access.canEditFinalizedEntries);
+    });
+    billingApp.get("/billing/access", async (request) => {
+      const canEditEntries = Boolean(currentBillingScope().canEditFinalizedEntries);
+
+      return ok(
+        {
+          canEditEntries,
+          canEditFinalizedEntries: canEditEntries
+        },
+        {
+          requestId: request.id,
+          ...(request.correlationId ? { correlationId: request.correlationId } : {}),
+          ...(request.tenantId ? { tenantId: request.tenantId } : {})
+        }
+      );
     });
     await salesModule.register(billingApp);
     await purchaseModule.register(billingApp);
