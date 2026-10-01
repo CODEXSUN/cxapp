@@ -338,8 +338,18 @@ function QuotationPrintPage({
                   <PrintTotal label="Taxable Value" value={money(quotation.subtotal)} />
                   {splitTax ? (
                     <>
-                      <PrintTotal label="Total CGST" value={money(quotation.taxAmount / 2)} />
-                      <PrintTotal label="Total SGST" value={money(quotation.taxAmount / 2)} />
+                      <PrintTotal
+                        label="Total CGST"
+                        value={money(
+                          quotation.items.reduce((sum, item) => sum + item.cgstAmount, 0)
+                        )}
+                      />
+                      <PrintTotal
+                        label="Total SGST"
+                        value={money(
+                          quotation.items.reduce((sum, item) => sum + item.sgstAmount, 0)
+                        )}
+                      />
                     </>
                   ) : (
                     <PrintTotal label="Total IGST" value={money(quotation.taxAmount)} />

@@ -67,11 +67,13 @@ export function computeExportSaleLine(
   item: ExportSaleSavePayload["items"][number],
   taxType: ExportSaleTaxType
 ) {
-  const taxableAmount = exportSaleDecimalValue(item.quantity) * exportSaleDecimalValue(item.rate);
-  const taxAmount = (taxableAmount * exportSaleDecimalValue(item.taxRate)) / 100;
+  const taxableAmount =
+    Math.round(exportSaleDecimalValue(item.quantity) * exportSaleDecimalValue(item.rate) * 100) /
+    100;
+  const taxAmount = Math.round(taxableAmount * exportSaleDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
-  const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
-  const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
+  const cgstAmount = taxType === "cgst-sgst" ? Math.round(taxAmount * 50) / 100 : 0;
+  const sgstAmount = taxType === "cgst-sgst" ? Math.round((taxAmount - cgstAmount) * 100) / 100 : 0;
   return {
     amount: taxableAmount + taxAmount,
     cgstAmount,

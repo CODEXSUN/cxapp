@@ -1,4 +1,7 @@
 import { sql, type Kysely } from "kysely";
+import { runBillingTransaction } from "../../database/billing-database.js";
+import { assertSaleHasNoAllocations } from "./sales.allocation-guard.js";
+import { assertLinkedSaleIdentity } from "./sales.quotation-link-guard.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   defaultEinvoice,
@@ -58,6 +61,36 @@ type SaleEwayRow = {
 };
 
 export class SalesRepository {
+  async quotationLinkCandidates(
+    databaseName: string,
+    customerId: number,
+    currencyId: number,
+    search: string
+  ) {
+    const database = await salesDatabase(databaseName);
+    const scope = currentBillingScope();
+    const result = await sql<{ id: string; invoiceNumber: string; amount: string | number }>`
+      SELECT uuid AS id, invoice_number AS invoiceNumber, amount FROM billing_sales
+      WHERE company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
+        AND customer_id=${customerId} AND currency_id=${currencyId}
+        AND status <> 'cancelled' AND deleted_at IS NULL
+        AND invoice_number LIKE ${`%${search}%`}
+      ORDER BY billing_sales.id DESC LIMIT 50
+    `.execute(database);
+    return result.rows.map((row) => ({ ...row, amount: Number(row.amount) }));
+  }
+
+  async lockForQuotationLink(databaseName: string, uuid: string) {
+    const database = await salesDatabase(databaseName);
+    if (!database.isTransaction) throw new Error("Invoice linking requires a transaction.");
+    const scope = currentBillingScope();
+    await sql`
+      SELECT id FROM billing_sales WHERE uuid=${uuid}
+        AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
+        AND deleted_at IS NULL FOR UPDATE
+    `.execute(database);
+    return this.get(databaseName, uuid);
+  }
   async list(databaseName: string) {
     const database = await salesDatabase(databaseName);
     const result = await selectSaleHeaders().execute(database);
@@ -368,7 +401,7 @@ export class SalesRepository {
     const uuid = publicUuid();
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
-        await database.transaction().execute(async (transaction) => {
+        await runBillingTransaction(database, async (transaction) => {
           const lineResult = await sql<{ line_number: number }>`
             SELECT COALESCE(MAX(line_number), 0) + 1 AS line_number
             FROM billing_sales
@@ -416,7 +449,9 @@ export class SalesRepository {
     const existing = await internalSale(database, uuid);
     if (!existing) return null;
     try {
-      await database.transaction().execute(async (transaction) => {
+      await runBillingTransaction(database, async (transaction) => {
+        await assertSaleHasNoAllocations(transaction, existing.id);
+        await assertLinkedSaleIdentity(transaction, existing.id, input);
         await sql`
         UPDATE billing_sales SET
           company_id = ${input.companyId}, financial_year_id = ${input.financialYearId},
@@ -457,7 +492,8 @@ export class SalesRepository {
     const database = await salesDatabase(databaseName);
     const existing = await internalSale(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
+      if (status !== "confirmed") await assertSaleHasNoAllocations(transaction, existing.id);
       await sql`
         UPDATE billing_sales SET status = ${status},
           confirmed_at = ${status === "confirmed" ? sql`CURRENT_TIMESTAMP(3)` : null},
@@ -474,7 +510,9 @@ export class SalesRepository {
     const database = await salesDatabase(databaseName);
     const existing = await internalSale(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
+      await assertSaleHasNoAllocations(transaction, existing.id);
+      await assertLinkedSaleIdentity(transaction, existing.id);
       await insertActivity(
         transaction,
         existing.id,
@@ -499,7 +537,7 @@ export class SalesRepository {
     const database = await salesDatabase(databaseName);
     const existing = await internalSale(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
       if (patch.einvoice) await upsertEinvoice(transaction, existing.id, patch.einvoice);
       if (patch.eway) await upsertEway(transaction, existing.id, patch.eway);
       await sql`UPDATE billing_sales SET updated_at = CURRENT_TIMESTAMP(3) WHERE id = ${existing.id}`.execute(

@@ -401,7 +401,7 @@ export function buildExportSaleTotals(
     const taxableAmount = roundMoney(item.quantity * item.rate);
     const taxAmount = roundMoney((taxableAmount * item.taxRate) / 100);
     const cgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
-    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
+    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount - cgstAmount);
     const igstAmount = input.taxType === "igst" ? taxAmount : 0;
     return {
       ...item,

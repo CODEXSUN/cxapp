@@ -186,6 +186,18 @@ export function convertQuotationToSale(id: string) {
   );
 }
 
+export function listExistingQuotationInvoices(id: string, search: string) {
+  return billingApiGet<Array<{ id: string; invoiceNumber: string; amount: number }>>(
+    `/billing/quotations/${id}/existing-invoices?search=${encodeURIComponent(search)}`
+  );
+}
+
+export function linkQuotationToExistingInvoice(id: string, invoiceId: string) {
+  return billingApiPut<Quotation>(`/billing/quotations/${id}/link-invoice`, { invoiceId }).then(
+    fromApiQuotation
+  );
+}
+
 export function convertQuotationsToSale(quotationIds: string[]) {
   return billingApiPost<{ quotations: Quotation[]; sale: { invoiceNumber: string } }>(
     "/billing/quotations/convert-to-sale",

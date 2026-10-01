@@ -52,7 +52,7 @@ export class SupplierSummaryRepository {
             WHERE payment.company_id=${companyId} AND payment.financial_year_id=${financialYearId}
               AND payment.supplier_id=contact.id AND payment.status='posted' AND payment.deleted_at IS NULL), 0) AS balance
       FROM core_contacts contact
-      WHERE contact.status='active' AND contact.deleted_at IS NULL
+      WHERE contact.deleted_at IS NULL
         AND (LOWER(COALESCE(contact.type_name, '')) LIKE '%supplier%'
           OR EXISTS (SELECT 1 FROM billing_purchases purchase WHERE purchase.supplier_id=contact.id
             AND purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId} AND purchase.deleted_at IS NULL)
@@ -60,7 +60,6 @@ export class SupplierSummaryRepository {
             AND payment.company_id=${companyId} AND payment.financial_year_id=${financialYearId} AND payment.deleted_at IS NULL))
       HAVING ABS(balance) > 0.004
       ORDER BY contact.name, contact.id
-      LIMIT 500
     `.execute(database);
     return result.rows.map((row) => ({
       balance: money(row.balance),

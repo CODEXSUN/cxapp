@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/devkit-api",
-  "version": "1.0.76",
+  "version": "1.0.77",
   "private": true,
   "type": "module",
   "exports": {
@@ -14,7 +14,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@cxapp/framework": "^1.0.76",
+    "@cxapp/framework": "^1.0.77",
     "fastify": "^5.12.1",
     "kysely": "^0.29.5",
     "zod": "^4.4.3"

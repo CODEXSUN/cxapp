@@ -394,8 +394,18 @@ function ExportSalePrintPage({
                 <PrintTotal label="Taxable Value" value={money(exportSale.subtotal)} />
                 {splitTax ? (
                   <>
-                    <PrintTotal label="Total CGST" value={money(exportSale.taxAmount / 2)} />
-                    <PrintTotal label="Total SGST" value={money(exportSale.taxAmount / 2)} />
+                    <PrintTotal
+                      label="Total CGST"
+                      value={money(
+                        exportSale.items.reduce((sum, item) => sum + item.cgstAmount, 0)
+                      )}
+                    />
+                    <PrintTotal
+                      label="Total SGST"
+                      value={money(
+                        exportSale.items.reduce((sum, item) => sum + item.sgstAmount, 0)
+                      )}
+                    />
                   </>
                 ) : (
                   <PrintTotal label="Total IGST" value={money(exportSale.taxAmount)} />

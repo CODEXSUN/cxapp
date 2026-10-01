@@ -1,9 +1,10 @@
 import { AppError } from "@cxapp/framework/errors";
+import { hasBillingTransaction, withBillingTransaction } from "../../database/billing-database.js";
 import { assertBillingEntryEditable } from "../../auth/billing-scope.js";
 import type { EventPublisher } from "@cxapp/framework/events";
 import type { QueueAdapter } from "@cxapp/framework/queue";
 import { SalesService } from "../sales/index.js";
-import type { SaleLineItemInput } from "../sales/index.js";
+import type { Sale, SaleLineItemInput } from "../sales/index.js";
 import { BillingSettingsRepository } from "../settings/settings.repository.js";
 import {
   formatBillingDocumentNumber,
@@ -23,6 +24,51 @@ import {
 } from "../runtime-persistence/runtime-persistence.repository.js";
 
 export class QuotationService {
+  async existingInvoiceCandidates(databaseName: string, id: string, search: string) {
+    const quotation = await this.repository.get(databaseName, id);
+    if (!quotation) throw AppError.notFound("Quotation was not found.");
+    return this.sales.quotationLinkCandidates(
+      databaseName,
+      quotation.customerId,
+      quotation.currencyId,
+      search.trim()
+    );
+  }
+
+  async linkExistingInvoice(databaseName: string, id: string, invoiceId: string) {
+    return withBillingTransaction(databaseName, async () => {
+      await this.repository.lockForConversion(databaseName, [id]);
+      const quotation = await this.repository.get(databaseName, id);
+      if (!quotation) throw AppError.notFound("Quotation was not found.");
+      assertBillingEntryEditable(quotation.status, "quotations");
+      const sale = await this.sales.lockForQuotationLink(databaseName, invoiceId);
+      if (!sale)
+        throw AppError.notFound("Sales invoice was not found in this company and financial year.");
+      if (quotation.generatedSalesInvoiceNo === sale.invoiceNumber) return quotation;
+      this.assertConvertible(quotation);
+      if (sale.status === "cancelled")
+        throw AppError.conflict("A cancelled invoice cannot be linked.");
+      if (
+        quotation.companyId !== sale.companyId ||
+        quotation.financialYearId !== sale.financialYearId ||
+        quotation.customerId !== sale.customerId ||
+        quotation.currencyId !== sale.currencyId
+      ) {
+        throw AppError.conflict(
+          "Quotation and invoice must have the same company, financial year, customer, and currency."
+        );
+      }
+      const linked = await this.repository.setGeneratedSalesInvoice(
+        databaseName,
+        id,
+        sale.invoiceNumber,
+        "link-existing-invoice"
+      );
+      if (!linked) throw AppError.notFound("Quotation was not found.");
+      await this.publish("converted", linked, databaseName, sale.invoiceNumber);
+      return linked;
+    });
+  }
   constructor(
     private readonly repository = new QuotationRepository(),
     private readonly settings = new BillingSettingsRepository(),
@@ -100,6 +146,8 @@ export class QuotationService {
     const current = await this.repository.get(databaseName, id);
     if (!current) return null;
     assertBillingEntryEditable(current.status, "quotations");
+    if (current.generatedSalesInvoiceNo)
+      throw AppError.conflict("This quotation is linked to an invoice and cannot be changed.");
     const normalized = normalizeQuotationInput({ ...input, status: current.status });
     await this.validateReferences(databaseName, normalized);
     const duplicateId = await this.repository.findByQuotationNumber(
@@ -164,7 +212,16 @@ export class QuotationService {
     return current;
   }
 
-  async convertToSale(databaseName: string, id: string) {
+  async convertToSale(
+    databaseName: string,
+    id: string
+  ): Promise<{ quotation: Quotation; sale: Sale } | null> {
+    if (!hasBillingTransaction(databaseName)) {
+      return withBillingTransaction(databaseName, async () => {
+        await this.repository.lockForConversion(databaseName, [id]);
+        return this.convertToSale(databaseName, id);
+      });
+    }
     const quotation = await this.repository.get(databaseName, id);
     if (!quotation) return null;
     this.assertConvertible(quotation);
@@ -206,7 +263,10 @@ export class QuotationService {
     return { quotation: converted, sale };
   }
 
-  async convertManyToSale(databaseName: string, ids: string[]) {
+  async convertManyToSale(
+    databaseName: string,
+    ids: string[]
+  ): Promise<{ quotations: Quotation[]; sale: Sale }> {
     const uniqueIds = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
     if (!uniqueIds.length) throw AppError.validation("Select at least one quotation.");
     const records = await Promise.all(uniqueIds.map((id) => this.repository.get(databaseName, id)));
@@ -216,7 +276,37 @@ export class QuotationService {
     const first = quotations[0]!;
     if (quotations.some((quotation) => quotation.customerId !== first.customerId))
       throw AppError.conflict("Selected quotations must belong to the same contact.");
+    const invoiceFields = [
+      "companyId",
+      "financialYearId",
+      "currencyId",
+      "currencyCode",
+      "taxType",
+      "billingAddressId",
+      "billingAddress",
+      "shippingAddressId",
+      "shippingAddress",
+      "ledgerId",
+      "salesLedger",
+      "terms",
+      "workOrderId",
+      "workOrderNo"
+    ] as const;
+    if (
+      quotations.some((quotation) =>
+        invoiceFields.some((field) => quotation[field] !== first[field])
+      )
+    )
+      throw AppError.conflict(
+        "Selected quotations must have matching company, financial year, currency, tax type, addresses, ledger, terms, and work order. Convert differing quotations separately."
+      );
     quotations.forEach((quotation) => this.assertConvertible(quotation));
+    if (!hasBillingTransaction(databaseName)) {
+      return withBillingTransaction(databaseName, async () => {
+        await this.repository.lockForConversion(databaseName, uniqueIds);
+        return this.convertManyToSale(databaseName, uniqueIds);
+      });
+    }
     const sale = await this.sales.createSale(databaseName, {
       billingAddress: first.billingAddress,
       billingAddressId: first.billingAddressId,
@@ -449,7 +539,7 @@ export function buildQuotationTotals(
     const taxableAmount = roundMoney(item.quantity * item.rate);
     const taxAmount = roundMoney((taxableAmount * item.taxRate) / 100);
     const cgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
-    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
+    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount - cgstAmount);
     const igstAmount = input.taxType === "igst" ? taxAmount : 0;
     return {
       ...item,

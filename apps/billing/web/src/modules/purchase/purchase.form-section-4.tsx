@@ -315,11 +315,12 @@ export function computePurchaseLine(
   item: PurchaseSavePayload["items"][number],
   taxType: PurchaseTaxType
 ) {
-  const taxableAmount = purchaseDecimalValue(item.quantity) * purchaseDecimalValue(item.rate);
-  const taxAmount = (taxableAmount * purchaseDecimalValue(item.taxRate)) / 100;
+  const taxableAmount =
+    Math.round(purchaseDecimalValue(item.quantity) * purchaseDecimalValue(item.rate) * 100) / 100;
+  const taxAmount = Math.round(taxableAmount * purchaseDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
-  const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
-  const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
+  const cgstAmount = taxType === "cgst-sgst" ? Math.round(taxAmount * 50) / 100 : 0;
+  const sgstAmount = taxType === "cgst-sgst" ? Math.round((taxAmount - cgstAmount) * 100) / 100 : 0;
   return {
     amount: taxableAmount + taxAmount,
     cgstAmount,

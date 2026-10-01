@@ -58,7 +58,7 @@ export class CustomerSummaryRepository {
             WHERE receipt.company_id=${companyId} AND receipt.financial_year_id=${financialYearId}
               AND receipt.customer_id=contact.id AND receipt.status='posted' AND receipt.deleted_at IS NULL), 0) AS balance
       FROM core_contacts contact
-      WHERE contact.status='active' AND contact.deleted_at IS NULL
+      WHERE contact.deleted_at IS NULL
         AND (LOWER(COALESCE(contact.type_name, '')) LIKE '%customer%'
           OR EXISTS (SELECT 1 FROM billing_sales sale WHERE sale.customer_id=contact.id
             AND sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId} AND sale.deleted_at IS NULL)
@@ -68,7 +68,6 @@ export class CustomerSummaryRepository {
             AND receipt.company_id=${companyId} AND receipt.financial_year_id=${financialYearId} AND receipt.deleted_at IS NULL))
       HAVING ABS(balance) > 0.004
       ORDER BY contact.name, contact.id
-      LIMIT 500
     `.execute(database);
     return result.rows.map((row) => ({
       balance: money(row.balance),

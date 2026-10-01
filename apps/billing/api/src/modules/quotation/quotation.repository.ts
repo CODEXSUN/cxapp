@@ -1,4 +1,6 @@
 import { sql, type Kysely } from "kysely";
+import { runBillingTransaction } from "../../database/billing-database.js";
+import { assertQuotationMutable } from "./quotation.lifecycle-guard.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   QuotationDatabase,
@@ -28,6 +30,20 @@ import type {
 } from "./quotation.types.js";
 
 export class QuotationRepository {
+  async lockForConversion(databaseName: string, ids: string[]) {
+    const database = await quotationDatabase(databaseName);
+    if (!database.isTransaction) throw new Error("Quotation conversion requires a transaction.");
+    const scope = currentBillingScope();
+    // Sort locks so overlapping batch conversions use the same order.
+    for (const uuid of [...new Set(ids)].sort()) {
+      await sql`
+        SELECT id FROM billing_quotations
+        WHERE uuid = ${uuid} AND company_id = ${scope.companyId}
+          AND financial_year_id = ${scope.financialYearId} AND deleted_at IS NULL
+        FOR UPDATE
+      `.execute(database);
+    }
+  }
   async list(databaseName: string) {
     const database = await quotationDatabase(databaseName);
     const result = await selectQuotationHeaders().execute(database);
@@ -340,7 +356,7 @@ export class QuotationRepository {
     const uuid = publicUuid();
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
-        await database.transaction().execute(async (transaction) => {
+        await runBillingTransaction(database, async (transaction) => {
           const lineResult = await sql<{ line_number: number }>`
         SELECT COALESCE(MAX(line_number), 0) + 1 AS line_number
         FROM billing_quotations
@@ -382,7 +398,8 @@ export class QuotationRepository {
     const database = await quotationDatabase(databaseName);
     const existing = await internalQuotation(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
+      await assertQuotationMutable(transaction, existing.id, existing.status);
       await sql`
         UPDATE billing_quotations SET
           company_id = ${input.companyId}, financial_year_id = ${input.financialYearId},
@@ -415,7 +432,8 @@ export class QuotationRepository {
     const database = await quotationDatabase(databaseName);
     const existing = await internalQuotation(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
+      await assertQuotationMutable(transaction, existing.id, existing.status);
       await sql`
         UPDATE billing_quotations SET status = ${status},
           confirmed_at = ${status === "confirmed" ? sql`CURRENT_TIMESTAMP(3)` : null},
@@ -428,11 +446,16 @@ export class QuotationRepository {
     return this.get(databaseName, uuid);
   }
 
-  async setGeneratedSalesInvoice(databaseName: string, uuid: string, invoiceNumber: string) {
+  async setGeneratedSalesInvoice(
+    databaseName: string,
+    uuid: string,
+    invoiceNumber: string,
+    action = "convert-to-sale"
+  ) {
     const database = await quotationDatabase(databaseName);
     const existing = await internalQuotation(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
       await sql`
         UPDATE billing_quotations
         SET generated_sales_invoice_no = ${invoiceNumber}, updated_at = CURRENT_TIMESTAMP(3)
@@ -442,7 +465,7 @@ export class QuotationRepository {
         transaction,
         existing.id,
         "converted",
-        "convert-to-sale",
+        action,
         existing.status,
         existing.status
       );
@@ -454,7 +477,8 @@ export class QuotationRepository {
     const database = await quotationDatabase(databaseName);
     const existing = await internalQuotation(database, uuid);
     if (!existing) return null;
-    await database.transaction().execute(async (transaction) => {
+    await runBillingTransaction(database, async (transaction) => {
+      await assertQuotationMutable(transaction, existing.id, existing.status);
       await insertActivity(
         transaction,
         existing.id,

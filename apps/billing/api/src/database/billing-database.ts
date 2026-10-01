@@ -4,7 +4,8 @@ import {
   runMigrationBatch,
   type MigrationBatch
 } from "@cxapp/framework/db";
-import { Kysely, MysqlDialect, type Generated } from "kysely";
+import { Kysely, MysqlDialect, type Generated, type Transaction } from "kysely";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
 import { AppError } from "@cxapp/framework/errors";
@@ -289,8 +290,40 @@ export function resolveBillingDatabaseName(value: unknown) {
   return name;
 }
 
-export async function getBillingDatabase(databaseName: string) {
+const transactionContext = new AsyncLocalStorage<{
+  databaseName: string;
+  transaction: Transaction<BillingDatabase>;
+}>();
+
+export function hasBillingTransaction(databaseName: string) {
+  return transactionContext.getStore()?.databaseName === assertDatabaseName(databaseName);
+}
+
+export async function withBillingTransaction<T>(databaseName: string, action: () => Promise<T>) {
+  const database = await getBillingDatabase(databaseName);
+  if (database.isTransaction) return action();
+  return database
+    .transaction()
+    .execute((transaction) => transactionContext.run({ databaseName, transaction }, action));
+}
+
+export async function runBillingTransaction<Database, T>(
+  database: Kysely<Database>,
+  action: (transaction: Transaction<Database>) => Promise<T>
+) {
+  if (database.isTransaction) return action(database as Transaction<Database>);
+  return database.transaction().execute(action);
+}
+
+export async function getBillingDatabase(databaseName: string): Promise<Kysely<BillingDatabase>> {
   const name = assertDatabaseName(databaseName);
+  const context = transactionContext.getStore();
+  if (context) {
+    if (context.databaseName !== name) {
+      throw AppError.conflict("A Billing transaction cannot cross tenant databases.");
+    }
+    return context.transaction;
+  }
   await bootstrapBillingDatabase(name);
   return openBillingDatabase(name);
 }

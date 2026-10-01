@@ -346,8 +346,18 @@ function PurchasePrintPage({
                   <PrintTotal label="Taxable Value" value={money(purchase.subtotal)} />
                   {splitTax ? (
                     <>
-                      <PrintTotal label="Total CGST" value={money(purchase.taxAmount / 2)} />
-                      <PrintTotal label="Total SGST" value={money(purchase.taxAmount / 2)} />
+                      <PrintTotal
+                        label="Total CGST"
+                        value={money(
+                          purchase.items.reduce((sum, item) => sum + item.cgstAmount, 0)
+                        )}
+                      />
+                      <PrintTotal
+                        label="Total SGST"
+                        value={money(
+                          purchase.items.reduce((sum, item) => sum + item.sgstAmount, 0)
+                        )}
+                      />
                     </>
                   ) : (
                     <PrintTotal label="Total IGST" value={money(purchase.taxAmount)} />

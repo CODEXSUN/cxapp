@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { assertPurchaseHasNoAllocations } from "./purchase.allocation-guard.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   PurchaseDatabase,
@@ -390,6 +391,7 @@ export class PurchaseRepository {
     const existing = await internalPurchase(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertPurchaseHasNoAllocations(transaction, existing.id);
       await sql`
         UPDATE billing_purchases SET
           company_id = ${input.companyId}, financial_year_id = ${input.financialYearId},
@@ -427,6 +429,7 @@ export class PurchaseRepository {
     const existing = await internalPurchase(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      if (status !== "confirmed") await assertPurchaseHasNoAllocations(transaction, existing.id);
       await sql`
         UPDATE billing_purchases SET status = ${status},
           confirmed_at = ${status === "confirmed" ? sql`CURRENT_TIMESTAMP(3)` : null},
@@ -466,6 +469,7 @@ export class PurchaseRepository {
     const existing = await internalPurchase(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertPurchaseHasNoAllocations(transaction, existing.id);
       await insertActivity(
         transaction,
         existing.id,

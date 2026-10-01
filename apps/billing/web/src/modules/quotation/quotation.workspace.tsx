@@ -184,6 +184,7 @@ export function QuotationWorkspace() {
     mutationFn: (id: string) => convertQuotationToSale(id),
     onSuccess: async ({ quotation, sale }) => {
       await queryClient.invalidateQueries({ queryKey: ["billing", "quotations"] });
+      await queryClient.invalidateQueries({ queryKey: ["billing", "sales"] });
       toast.success("Quotation converted", {
         description: `${quotation.quotationNumber} created sales invoice ${sale.invoiceNumber}.`
       });
@@ -200,6 +201,7 @@ export function QuotationWorkspace() {
     mutationFn: (ids: string[]) => convertQuotationsToSale(ids),
     onSuccess: async ({ sale }) => {
       await queryClient.invalidateQueries({ queryKey: ["billing", "quotations"] });
+      await queryClient.invalidateQueries({ queryKey: ["billing", "sales"] });
       setSelectedQuotationIds(new Set());
       toast.success("Draft sales invoice generated", { description: sale.invoiceNumber });
     },
@@ -293,8 +295,12 @@ export function QuotationWorkspace() {
         onNew={() => setView({ mode: "upsert", quotation: null, returnTo: "list" })}
         onPrint={() => window.print()}
         onConvert={() => convertMutation.mutate(freshQuotation.id)}
+        onLinked={(quotation) => setView({ mode: "show", quotation })}
         converting={convertMutation.isPending}
-        canEdit={canEditBillingEntry(freshQuotation.status, canEditEntries, canEditFinalizedEntries)}
+        canEdit={
+          !freshQuotation.generatedSalesInvoiceNo &&
+          canEditBillingEntry(freshQuotation.status, canEditEntries, canEditFinalizedEntries)
+        }
         {...(previousQuotation
           ? { onPrevious: () => setView({ mode: "show", quotation: previousQuotation }) }
           : {})}

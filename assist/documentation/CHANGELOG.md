@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.76
+Current version: 1.0.77
 
-Release tag: v-1.0.76
+Release tag: v-1.0.77
 
-Changelog label: v 1.0.76
+Changelog label: v 1.0.77
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,32 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.77
+
+### [v 1.0.77] 2026-10-01 2:08 pm - Billing conversion and outstanding safeguards
+
+#### Database Changes
+
+- Database update: No (manual).
+- No schema migration or data backfill is required. Existing invoice items and amounts are not rewritten.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.77.
+- Added manual quotation linking to an existing Sales invoice. This action changes only the quotation link, not invoice items or amounts.
+- Restricted invoice selection to the same company, financial year, customer, and currency. Rejected cancelled invoices and conflicting links.
+- Made single and batch automatic conversion atomic with quotation locks, shared transactions, and rollback on failure.
+- Rejected batch conversion when quotation addresses, tax type, currency, ledger, terms, or work order differ.
+- Protected linked quotations from edits, suspension, and deletion. Protected linked invoice identity fields and deletion.
+- Blocked Sales and Purchase changes while active receipt or payment allocations exist, including draft reservations.
+- Reconciled CGST and SGST rounding in quotation, sales, purchase, and export sales forms, API totals, and print views.
+- Included inactive contacts with outstanding balances and removed the 500-contact limit from customer and supplier summaries.
+- Verified local browser linking to `SAL-0007`. Invoice header and item data remained identical before and after linking.
+- Verified repeat-link safety, wrong-customer rejection, missing-invoice rejection, concurrent automatic conversion, and rollback.
+- Added money, conversion, allocation, and lifecycle regression tests.
+- Passed repository-wide typecheck, lint, module boundaries, add-on compatibility, version alignment, and dependency-layout checks.
+- The isolated quotation E2E fixture remains blocked by its parent-table foreign key setup. Full migration and tenancy certification remain unverified.
 
 ## v-1.0.76
 
@@ -33,6 +59,12 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 #### App Codebase Changes
 
 - Bumped workspace version to 1.0.76.
+- Fixed quotation conversion by allowing Sales to allocate an automatic invoice number before requiring a final number.
+- Kept the required-number validation for manual numbering and invoice edits.
+- Refreshed the Sales query cache after single and batch quotation conversions.
+- Verified a local live API conversion to `SAL-0003`, persisted invoice data, and duplicate-conversion rejection.
+- Verified two local audit quotations consolidate into draft invoice `SAL-0004` with matching totals and links.
+- Billing build, lint, boundary, and dependency checks passed. The isolated quotation E2E fixture failed its parent-table foreign key setup.
 - Added one tenant-scoped Billing access contract for all Billing document modules.
 - Allowed Admin and Super Admin users to edit draft, confirmed, and suspended Billing entries when they have the assigned role.
 - Applied the access decision to quotation, sales, purchase, export sales, payment, and receipt list and document views.

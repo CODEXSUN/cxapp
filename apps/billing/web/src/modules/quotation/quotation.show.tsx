@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Button } from "@cxapp/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@cxapp/ui/components/card";
 import { Input } from "@cxapp/ui/components/input";
+import { QuotationLinkInvoice } from "./quotation.link-invoice";
 import { WorkspacePage } from "@cxapp/ui/workspace/page";
 import { cn } from "@cxapp/ui/lib/utils";
 import { queueBillingDocumentEmail } from "@cxapp/mail-web/modules/mail";
@@ -51,6 +52,7 @@ export function QuotationShowPage({
   converting,
   onBack,
   onConvert,
+  onLinked,
   onEdit,
   onNew,
   onNext,
@@ -62,6 +64,7 @@ export function QuotationShowPage({
   converting: boolean;
   onBack: () => void;
   onConvert: () => void;
+  onLinked: (quotation: Quotation) => void;
   onEdit: () => void;
   onNew: () => void;
   onNext?: () => void;
@@ -222,7 +225,13 @@ export function QuotationShowPage({
               </Button>
               <Button
                 disabled={!canEdit}
-                title={canEdit ? "Edit quotation" : "Submitted quotations cannot be edited"}
+                title={
+                  canEdit
+                    ? "Edit quotation"
+                    : quotation.generatedSalesInvoiceNo
+                      ? "Linked quotations cannot be edited"
+                      : "You cannot edit this quotation"
+                }
                 type="button"
                 variant="outline"
                 className="rounded-xl"
@@ -256,6 +265,13 @@ export function QuotationShowPage({
                 <Send className="size-4" />
                 Convert to sale
               </Button>
+            ) : null}
+            {!quotation.generatedSalesInvoiceNo && quotation.status !== "cancelled" ? (
+              <QuotationLinkInvoice
+                quotation={quotation}
+                disabled={!canEdit || converting}
+                onLinked={onLinked}
+              />
             ) : null}
             <Card className="rounded-md border-border/70 shadow-sm print:hidden">
               <CardHeader className="border-b border-border/70 px-4 py-3">

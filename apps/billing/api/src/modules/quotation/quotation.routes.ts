@@ -158,6 +158,34 @@ const quotationPageSchema = z.object({
 export async function registerQuotationRoutes(app: FastifyInstance) {
   registerContractRoute(app, {
     method: "GET",
+    url: "/billing/quotations/:id/existing-invoices",
+    schemas: {
+      params: idSchema,
+      querystring: z.object({ search: z.string().max(100).default("") }),
+      response: z.array(
+        z.object({
+          id: z.string().regex(/^[0-9a-f]{8}$/),
+          invoiceNumber: z.string(),
+          amount: z.number()
+        })
+      )
+    },
+    handler: ({ params, query, request }) =>
+      service.existingInvoiceCandidates(databaseName(request), params.id, query?.search ?? "")
+  });
+  registerContractRoute(app, {
+    method: "PUT",
+    url: "/billing/quotations/:id/link-invoice",
+    schemas: {
+      params: idSchema,
+      body: z.object({ invoiceId: z.string().regex(/^[0-9a-f]{8}$/) }),
+      response: quotationSchema
+    },
+    handler: ({ params, body, request }) =>
+      service.linkExistingInvoice(databaseName(request), params.id, body.invoiceId)
+  });
+  registerContractRoute(app, {
+    method: "GET",
     url: "/billing/quotations/page",
     schemas: { querystring: pageQuerySchema, response: quotationPageSchema },
     handler: ({ query, request }) => service.listPage(databaseName(request), query)

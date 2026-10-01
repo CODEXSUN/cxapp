@@ -315,11 +315,12 @@ export function computeQuotationLine(
   item: QuotationSavePayload["items"][number],
   taxType: QuotationTaxType
 ) {
-  const taxableAmount = quotationDecimalValue(item.quantity) * quotationDecimalValue(item.rate);
-  const taxAmount = (taxableAmount * quotationDecimalValue(item.taxRate)) / 100;
+  const taxableAmount =
+    Math.round(quotationDecimalValue(item.quantity) * quotationDecimalValue(item.rate) * 100) / 100;
+  const taxAmount = Math.round(taxableAmount * quotationDecimalValue(item.taxRate)) / 100;
   const igstAmount = taxType === "igst" ? taxAmount : 0;
-  const cgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
-  const sgstAmount = taxType === "cgst-sgst" ? taxAmount / 2 : 0;
+  const cgstAmount = taxType === "cgst-sgst" ? Math.round(taxAmount * 50) / 100 : 0;
+  const sgstAmount = taxType === "cgst-sgst" ? Math.round((taxAmount - cgstAmount) * 100) / 100 : 0;
   return {
     amount: taxableAmount + taxAmount,
     cgstAmount,

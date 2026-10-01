@@ -18,6 +18,18 @@ import type {
 import { generateSaleEinvoice, generateSaleEway } from "./whitebooks.client.js";
 
 export class SalesService {
+  quotationLinkCandidates(
+    databaseName: string,
+    customerId: number,
+    currencyId: number,
+    search: string
+  ) {
+    return this.repository.quotationLinkCandidates(databaseName, customerId, currencyId, search);
+  }
+
+  lockForQuotationLink(databaseName: string, id: string) {
+    return this.repository.lockForQuotationLink(databaseName, id);
+  }
   constructor(
     private readonly repository = new SalesRepository(),
     private readonly settings = new BillingSettingsRepository()
@@ -57,7 +69,8 @@ export class SalesService {
 
   async createSale(databaseName: string, input: SaleSavePayload) {
     const normalized = normalizeSaleInput(
-      await this.repository.resolveMissingReferences(databaseName, input)
+      await this.repository.resolveMissingReferences(databaseName, input),
+      { allowAutomaticNumber: true }
     );
     await this.validateReferences(databaseName, normalized);
     const billingSettings = await this.settings.getBillingSettings(
@@ -304,7 +317,10 @@ export class SalesService {
   }
 }
 
-export function normalizeSaleInput(input: SaleSavePayload): SaleSavePayload {
+export function normalizeSaleInput(
+  input: SaleSavePayload,
+  options: { allowAutomaticNumber?: boolean } = {}
+): SaleSavePayload {
   const items = input.items
     .map(normalizeSaleLineItem)
     .filter((item) => (item.productId || (item.productName?.length ?? 0) > 0) && item.quantity > 0);
@@ -320,7 +336,8 @@ export function normalizeSaleInput(input: SaleSavePayload): SaleSavePayload {
     throw AppError.validation("Select a persisted shipping address.");
   if (!Number.isInteger(input.currencyId) || input.currencyId <= 0)
     throw AppError.validation("Select a persisted currency.");
-  if (!input.invoiceNumber.trim()) throw AppError.validation("Invoice number is required.");
+  if (!input.invoiceNumber.trim() && !options.allowAutomaticNumber)
+    throw AppError.validation("Invoice number is required.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.issuedOn.trim()))
     throw AppError.validation("Invoice date is required.");
   if (input.status !== "draft" && items.length === 0)
@@ -413,6 +430,8 @@ async function resolveNextSaleNumber(
   excludeId?: string
 ) {
   const enteredNumber = input.invoiceNumber.trim();
+  if (!enteredNumber && !numbering.automatic)
+    throw AppError.validation("Invoice number is required when automatic numbering is disabled.");
   const configuredNumber = formatBillingDocumentNumber(numbering);
   const generated =
     numbering.automatic &&
@@ -463,7 +482,7 @@ export function buildSaleTotals(
     const taxableAmount = roundMoney(item.quantity * item.rate);
     const taxAmount = roundMoney((taxableAmount * item.taxRate) / 100);
     const cgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
-    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount / 2);
+    const sgstAmount = input.taxType === "igst" ? 0 : roundMoney(taxAmount - cgstAmount);
     const igstAmount = input.taxType === "igst" ? taxAmount : 0;
     return {
       ...item,

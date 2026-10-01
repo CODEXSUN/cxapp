@@ -146,17 +146,25 @@ export function QuotationList({
                           className={cn(
                             "font-medium underline-offset-4",
                             canEditEntries &&
-                            (quotation.status === "draft" || canEditFinalizedEntries)
+                              !quotation.generatedSalesInvoiceNo &&
+                              (quotation.status === "draft" || canEditFinalizedEntries)
                               ? "hover:underline"
                               : "cursor-not-allowed text-muted-foreground"
                           )}
-                          disabled={!canEditEntries || (quotation.status !== "draft" && !canEditFinalizedEntries)}
+                          disabled={
+                            Boolean(quotation.generatedSalesInvoiceNo) ||
+                            !canEditEntries ||
+                            (quotation.status !== "draft" && !canEditFinalizedEntries)
+                          }
                           onClick={() => onEdit(quotation)}
                           title={
                             canEditEntries &&
+                            !quotation.generatedSalesInvoiceNo &&
                             (quotation.status === "draft" || canEditFinalizedEntries)
                               ? "Edit quotation"
-                              : "Only an Admin or Super Admin can edit this quotation"
+                              : quotation.generatedSalesInvoiceNo
+                                ? "Linked quotations cannot be edited"
+                                : "Only an Admin or Super Admin can edit this quotation"
                           }
                           type="button"
                         >
@@ -254,6 +262,7 @@ export function QuotationList({
                               : [])
                           ]}
                           {...(canEditEntries &&
+                          !quotation.generatedSalesInvoiceNo &&
                           (quotation.status === "draft" || canEditFinalizedEntries)
                             ? { onEdit: () => onEdit(quotation) }
                             : {})}
