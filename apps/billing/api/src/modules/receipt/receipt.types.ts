@@ -12,6 +12,7 @@ export type ReceiptContext = {
 };
 
 export type ReceiptAllocationInput = {
+  documentKind?: "sale" | "export-sale" | undefined;
   allocatedAmount: number;
   saleId: string;
 };
@@ -77,6 +78,9 @@ export type ReceiptSavePayload = {
 };
 
 export type ReceiptAllocationCandidate = {
+  currencyCode?: string | undefined;
+  documentKind?: "sale" | "export-sale" | undefined;
+  currencyId: number;
   customerId: number;
   documentDate: string;
   documentNo: string;

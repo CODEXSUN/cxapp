@@ -230,6 +230,7 @@ export class PaymentRepository {
           AND r.deleted_at IS NULL
         WHERE s.uuid = ${allocation.purchaseId}
           AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
+          AND s.currency_id=${input.currencyId}
           AND s.status = 'confirmed' AND s.deleted_at IS NULL
         GROUP BY s.id, s.supplier_id, s.amount
       `.execute(database);
@@ -259,6 +260,7 @@ export class PaymentRepository {
     const database = await paymentDatabase(databaseName);
     const scope = currentBillingScope();
     const result = await sql<{
+      currency_id: number;
       supplier_id: number;
       document_date: string;
       document_no: string;
@@ -266,7 +268,7 @@ export class PaymentRepository {
       outstanding_amount: string | number;
       purchase_id: string;
     }>`
-      SELECT s.uuid AS purchase_id, s.supplier_id, s.purchase_number AS document_no,
+      SELECT s.uuid AS purchase_id, s.supplier_id, s.currency_id, s.purchase_number AS document_no,
              s.purchase_date AS document_date, s.amount AS document_total,
              GREATEST(s.amount - COALESCE(SUM(CASE WHEN r.status <> 'cancelled' THEN a.allocated_amount ELSE 0 END), 0), 0) AS outstanding_amount
       FROM billing_purchases s
@@ -277,11 +279,12 @@ export class PaymentRepository {
       WHERE s.supplier_id = ${supplierId}
         AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
         AND s.status = 'confirmed' AND s.deleted_at IS NULL
-      GROUP BY s.id, s.uuid, s.supplier_id, s.purchase_number, s.purchase_date, s.amount
+      GROUP BY s.id, s.uuid, s.supplier_id, s.currency_id, s.purchase_number, s.purchase_date, s.amount
       HAVING outstanding_amount > 0
       ORDER BY s.purchase_date, s.line_number
     `.execute(database);
     return result.rows.map((row) => ({
+      currencyId: row.currency_id,
       supplierId: row.supplier_id,
       documentDate: dateValue(row.document_date),
       documentNo: row.document_no,
@@ -525,6 +528,7 @@ async function assertPaymentAllocationsAvailable(
       SELECT id, supplier_id, amount FROM billing_purchases
       WHERE uuid=${allocation.purchaseId}
         AND company_id=${input.companyId} AND financial_year_id=${input.financialYearId}
+        AND currency_id=${input.currencyId}
         AND status='confirmed' AND deleted_at IS NULL
       FOR UPDATE
     `.execute(transaction);

@@ -14,6 +14,7 @@ import { WorkspaceSwitchCard } from "@cxapp/ui/workspace/status";
 import { saveBillingSettings } from "./settings.services";
 import { billingSettingsQueryKey, useBillingSettings } from "./settings.hooks";
 import { BillingDocumentHeader } from "./settings.document-header";
+import { OpeningBalanceWorkspace } from "../opening-balance/index";
 import {
   defaultBillingSettings,
   type BillingDocumentKind,
@@ -351,6 +352,11 @@ export function BillingSettingsWorkspace() {
             </SettingsField>
           </SettingsPanel>
         )
+      },
+      {
+        label: "Opening balances",
+        value: "openings",
+        content: <OpeningBalanceWorkspace />
       },
       {
         label: "Features",

@@ -8,6 +8,14 @@ import {
 import { env } from "../../env.js";
 import { withBillingScope } from "../../auth/billing-scope.js";
 import { QuotationService } from "./quotation.service.js";
+import { SalesService } from "../sales/index.js";
+import { ReceiptService, assertExportInvoiceUnallocated } from "../receipt/index.js";
+import { OpeningBalanceService, readOpeningBalanceOverrides } from "../opening-balance/index.js";
+import {
+  getBillingDatabase,
+  migrateBillingTenantDatabase,
+  type BillingDatabase
+} from "../../database/billing-database.js";
 
 export async function runQuotationE2e() {
   const databaseName = `cxapp_quotation_e2e_${Date.now()}`;
@@ -29,7 +37,7 @@ export async function runQuotationE2e() {
       port: env.DB_PORT,
       user: env.DB_USER
     });
-    for (const statement of parentSchema) await admin.query(statement);
+    for (const statement of parentSchema) await admin.query(`${statement} ENGINE=InnoDB`);
     for (const statement of parentRecords) await admin.query(statement);
     const [parentTableRows] = await admin.query<Array<RowDataPacket & { count: number }>>(
       "SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()"
@@ -38,7 +46,7 @@ export async function runQuotationE2e() {
 
     await bootstrapBillingDatabase(databaseName);
     const service = new QuotationService();
-    return withBillingScope({ companyId: 1, financialYearId: 1 }, async () => {
+    return await withBillingScope({ companyId: 1, financialYearId: 1 }, async () => {
       const context = await service.getContext(databaseName);
       assert.equal(context.companyId, 1);
       assert.equal(context.currencyCode, "INR");
@@ -130,6 +138,204 @@ export async function runQuotationE2e() {
       assert.ok(conversion);
       assert.match(conversion.sale.id, /^[0-9a-f]{8}$/);
       assert.equal(conversion.quotation.generatedSalesInvoiceNo, conversion.sale.invoiceNumber);
+      await assert.rejects(service.convertToSale(databaseName, convertible.id), /already invoiced/);
+      const [salesBefore] = await admin.query<Array<RowDataPacket & { count: number }>>(
+        "SELECT COUNT(*) AS count FROM billing_sales"
+      );
+      const invoiceBefore = await new SalesService().getSale(databaseName, conversion.sale.id);
+      const manual = await service.create(databaseName, {
+        ...payload,
+        quotationNumber: "QT-MANUAL-LINK",
+        items: payload.items.map((item) => ({ ...item, quantity: 7, rate: 50 }))
+      });
+      const linked = await service.linkExistingInvoice(databaseName, manual.id, conversion.sale.id);
+      assert.equal(linked.generatedSalesInvoiceNo, conversion.sale.invoiceNumber);
+      assert.equal(
+        (await service.linkExistingInvoice(databaseName, manual.id, conversion.sale.id)).id,
+        manual.id
+      );
+      const invoiceAfter = await new SalesService().getSale(databaseName, conversion.sale.id);
+      assert.deepEqual(
+        invoiceAfter,
+        invoiceBefore,
+        "Manual linking must not modify any invoice field or item."
+      );
+      const [salesAfter] = await admin.query<Array<RowDataPacket & { count: number }>>(
+        "SELECT COUNT(*) AS count FROM billing_sales"
+      );
+      assert.equal(
+        salesAfter[0]?.count,
+        salesBefore[0]?.count,
+        "Manual linking must not create an invoice."
+      );
+      const concurrent = await service.create(databaseName, {
+        ...payload,
+        quotationNumber: "QT-CONCURRENT"
+      });
+      const attempts = await Promise.allSettled([
+        service.convertToSale(databaseName, concurrent.id),
+        service.convertToSale(databaseName, concurrent.id)
+      ]);
+      assert.equal(attempts.filter((attempt) => attempt.status === "fulfilled").length, 1);
+      assert.equal(attempts.filter((attempt) => attempt.status === "rejected").length, 1);
+      const [salesConcurrent] = await admin.query<Array<RowDataPacket & { count: number }>>(
+        "SELECT COUNT(*) AS count FROM billing_sales"
+      );
+      assert.equal(Number(salesConcurrent[0]?.count), Number(salesAfter[0]?.count) + 1);
+      await new SalesService().confirmSale(databaseName, conversion.sale.id);
+      await admin.query("INSERT INTO core_currencies (id,name,status) VALUES (2,'USD','active')");
+      const receipts = new ReceiptService();
+      const receiptPayload = {
+        allocations: [{ saleId: conversion.sale.id, allocatedAmount: 25 }],
+        amount: 25,
+        companyId: 1,
+        currencyId: 1,
+        customerId: 1,
+        discountAmount: 0,
+        financialYearId: 1,
+        ledgerId: 1,
+        notes: "Isolated allocation proof",
+        receiptDate: "2026-10-01",
+        receiptMode: "cash" as const,
+        receiptNumber: "RCP-QA-1",
+        referenceDate: "",
+        referenceNo: "",
+        roundOff: 0,
+        tdsAmount: 0
+      };
+      await assert.rejects(
+        receipts.create(databaseName, { ...receiptPayload, currencyId: 2 }),
+        /allocations are invalid/
+      );
+      await assert.rejects(
+        receipts.create(databaseName, {
+          ...receiptPayload,
+          allocations: [...receiptPayload.allocations, ...receiptPayload.allocations],
+          amount: 50
+        }),
+        /only be allocated once/
+      );
+      const receipt = await receipts.create(databaseName, receiptPayload);
+      assert.equal(receipt.allocatedAmount, 25);
+      const candidates = await receipts.allocationCandidates(databaseName, 1);
+      const candidate = candidates.find((item) => item.saleId === conversion.sale.id);
+      assert.equal(candidate?.currencyId, 1);
+      assert.equal(candidate?.outstandingAmount, conversion.sale.amount - 25);
+      await assert.rejects(
+        receipts.create(databaseName, {
+          ...receiptPayload,
+          receiptNumber: "RCP-OVER-ALLOC",
+          amount: conversion.sale.amount,
+          allocations: [{ saleId: conversion.sale.id, allocatedAmount: conversion.sale.amount }]
+        }),
+        /allocations are invalid/
+      );
+      await receipts.post(databaseName, receipt.id);
+      await receipts.cancel(databaseName, receipt.id);
+      const released = (await receipts.allocationCandidates(databaseName, 1)).find(
+        (item) => item.saleId === conversion.sale.id
+      );
+      assert.equal(released?.outstandingAmount, conversion.sale.amount);
+
+      await admin.query(`INSERT INTO billing_export_sales
+        (uuid, company_id, financial_year_id, line_number, invoice_number, customer_id,
+         billing_address_id, shipping_address_id, currency_id, issued_on, amount, status)
+        VALUES ('eeff0011',1,1,1,'EXP-QA-1',1,1,1,1,'2026-10-01',100,'confirmed')`);
+      const exportCandidate = (await receipts.allocationCandidates(databaseName, 1)).find(
+        (item) => item.documentKind === "export-sale" && item.saleId === "eeff0011"
+      );
+      assert.equal(exportCandidate?.outstandingAmount, 100);
+      const mixedPayload = {
+        ...receiptPayload,
+        receiptNumber: "RCP-MIXED",
+        amount: 50,
+        allocations: [
+          { saleId: conversion.sale.id, allocatedAmount: 20 },
+          { documentKind: "export-sale" as const, saleId: "eeff0011", allocatedAmount: 30 }
+        ]
+      };
+      const mixed = await receipts.create(databaseName, mixedPayload);
+      assert.equal(mixed.allocations.length, 2);
+      assert.equal(
+        mixed.allocations.find((item) => item.documentKind === "export-sale")?.allocatedAmount,
+        30
+      );
+      const database = await getBillingDatabase(databaseName);
+      const [exportRows] = await admin.query<Array<RowDataPacket & { id: number }>>(
+        "SELECT id FROM billing_export_sales WHERE uuid='eeff0011'"
+      );
+      await assert.rejects(
+        database
+          .transaction()
+          .execute((transaction) =>
+            assertExportInvoiceUnallocated<BillingDatabase>(transaction, exportRows[0]!.id)
+          ),
+        /active receipt allocations/
+      );
+      await assert.rejects(
+        receipts.create(databaseName, {
+          ...mixedPayload,
+          receiptNumber: "RCP-EXPORT-OVER",
+          amount: 100,
+          allocations: [{ documentKind: "export-sale", saleId: "eeff0011", allocatedAmount: 100 }]
+        }),
+        /allocations are invalid/
+      );
+      await receipts.post(databaseName, mixed.id);
+      await receipts.cancel(databaseName, mixed.id);
+      assert.equal(
+        (await receipts.allocationCandidates(databaseName, 1)).find(
+          (item) => item.documentKind === "export-sale" && item.saleId === "eeff0011"
+        )?.outstandingAmount,
+        100
+      );
+      await migrateBillingTenantDatabase(databaseName);
+      assert.equal((await receipts.get(databaseName, mixed.id))?.allocations.length, 2);
+
+      await admin.query(
+        "ALTER TABLE core_contacts ADD COLUMN opening_balance DECIMAL(18,2) NOT NULL DEFAULT 0, ADD COLUMN deleted_at DATETIME NULL"
+      );
+      await admin.query("UPDATE core_contacts SET opening_balance=125 WHERE id=1");
+      const openings = new OpeningBalanceService();
+      const openingPayload = {
+        contactId: 1,
+        currencyId: 1,
+        partyRole: "customer" as const,
+        amount: 125,
+        reason: "Reviewed legacy amount",
+        assignLegacy: true
+      };
+      await assert.rejects(
+        async () => openings.save(databaseName, openingPayload, "test:operator"),
+        /Only Admin/
+      );
+      await withBillingScope(
+        { companyId: 1, financialYearId: 1, canEditFinalizedEntries: true },
+        async () => {
+          await openings.save(databaseName, openingPayload, "test:operator");
+          await openings.save(
+            databaseName,
+            { ...openingPayload, amount: 0, reason: "Reviewed zero correction" },
+            "test:operator"
+          );
+          assert.equal((await readOpeningBalanceOverrides(databaseName, "customer")).get(1), 0);
+          assert.equal((await openings.list(databaseName)).items.length, 1);
+        }
+      );
+      await withBillingScope(
+        { companyId: 2, financialYearId: 1, canEditFinalizedEntries: true },
+        async () => {
+          assert.equal((await readOpeningBalanceOverrides(databaseName, "customer")).get(1), 0);
+        }
+      );
+      const [legacyRows] = await admin.query<Array<RowDataPacket & { opening_balance: number }>>(
+        "SELECT opening_balance FROM core_contacts WHERE id=1"
+      );
+      assert.equal(Number(legacyRows[0]?.opening_balance), 125);
+      const [auditRows] = await admin.query<Array<RowDataPacket & { count: number }>>(
+        "SELECT COUNT(*) AS count FROM billing_opening_balance_activities"
+      );
+      assert.equal(Number(auditRows[0]?.count), 2);
 
       const [activityRows] = await admin.query<Array<RowDataPacket & { count: number }>>(
         "SELECT COUNT(*) AS count FROM billing_quotation_activities"
@@ -180,6 +386,7 @@ export async function runQuotationE2e() {
         port: env.DB_PORT,
         user: env.DB_USER
       });
+      assert.match(databaseName, /^cxapp_quotation_e2e_\d+$/);
       await cleanup.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
       await cleanup.end();
     }

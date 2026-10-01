@@ -20,6 +20,7 @@ import {
   WorkspaceFormPanel
 } from "@cxapp/ui/workspace/upsert";
 import { usePaymentFormLookups } from "./payment.hooks";
+import { availablePaymentCandidates } from "./payment.allocation";
 import { emptyPaymentContact, PaymentContactDialog } from "./payment.contact-dialog";
 import { validatePayment, type PaymentFormErrors } from "./payment.schema";
 import { createPaymentContact, formatPaymentMoney } from "./payment.services";
@@ -27,7 +28,6 @@ import {
   emptyPayment,
   paymentToPayload,
   type Payment,
-  type PaymentAllocationCandidate,
   type PaymentContext,
   type PaymentLookupOption,
   type PaymentMode,
@@ -68,8 +68,14 @@ export function PaymentForm({
   const [tab, setTab] = useState("details");
   const lookups = usePaymentFormLookups(form.supplierId);
   const candidates = useMemo(
-    () => mergeCandidates(lookups.allocations.data ?? [], payment),
-    [lookups.allocations.data, payment]
+    () =>
+      availablePaymentCandidates(
+        lookups.allocations.data ?? [],
+        form.supplierId,
+        form.currencyId,
+        payment
+      ),
+    [lookups.allocations.data, payment, form.supplierId, form.currencyId]
   );
   const total =
     decimalValue(form.amount) +
@@ -360,20 +366,6 @@ export function PaymentForm({
   );
 }
 
-function mergeCandidates(candidates: PaymentAllocationCandidate[], payment?: Payment | null) {
-  const merged = new Map(candidates.map((item) => [item.purchaseId, item]));
-  for (const item of payment?.allocations ?? [])
-    if (!merged.has(item.purchaseId))
-      merged.set(item.purchaseId, {
-        supplierId: payment!.supplierId,
-        documentDate: item.documentDate,
-        documentNo: item.documentNo,
-        documentTotal: item.documentTotal,
-        outstandingAmount: item.previousBalance,
-        purchaseId: item.purchaseId
-      });
-  return [...merged.values()];
-}
 function invalidClass(error?: string) {
   return error ? "border-destructive focus-visible:ring-destructive" : undefined;
 }

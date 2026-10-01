@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.78",
+  "version": "1.0.79",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -11,6 +11,7 @@
     "tools/*"
   ],
   "scripts": {
+    "test:billing": "npm run build -w @cxapp/framework && node tools/billing-test-suite.mjs",
     "dev": "node tools/dev-stack.mjs",
     "dev:api": "node tools/preflight.mjs platform-api",
     "dev:web": "node tools/preflight.mjs platform-web",

@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 import { currentBillingScope } from "../../../auth/billing-scope.js";
 import { getBillingDatabase } from "../../../database/billing-database.js";
+import { readOpeningBalanceOverrides } from "../../opening-balance/index.js";
 import type { SupplierSummaryItem } from "./supplier-summary.types.js";
 
 type ContextRow = {
@@ -11,6 +12,7 @@ type ContextRow = {
 };
 
 type SummaryRow = SupplierSummaryItem & {
+  legacy: string | number;
   balance: string | number;
   credit: string | number;
   debit: string | number;
@@ -36,7 +38,7 @@ export class SupplierSummaryRepository {
     const database = await getBillingDatabase(databaseName);
     const { financialYearId } = currentBillingScope();
     const result = await sql<SummaryRow>`
-      SELECT contact.id, contact.code, contact.name,
+      SELECT contact.id, contact.code, contact.name, COALESCE(contact.opening_balance,0) AS legacy,
         COALESCE((SELECT SUM(payment.total_amount) FROM billing_payments payment
           WHERE payment.company_id=${companyId} AND payment.financial_year_id=${financialYearId}
             AND payment.supplier_id=contact.id AND payment.status='posted' AND payment.deleted_at IS NULL), 0) AS debit,
@@ -54,21 +56,28 @@ export class SupplierSummaryRepository {
       FROM core_contacts contact
       WHERE contact.deleted_at IS NULL
         AND (LOWER(COALESCE(contact.type_name, '')) LIKE '%supplier%'
+          OR EXISTS (SELECT 1 FROM billing_opening_balances opening WHERE opening.contact_id=contact.id
+            AND opening.company_id=${companyId} AND opening.financial_year_id=${financialYearId} AND opening.party_role='supplier')
           OR EXISTS (SELECT 1 FROM billing_purchases purchase WHERE purchase.supplier_id=contact.id
             AND purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId} AND purchase.deleted_at IS NULL)
           OR EXISTS (SELECT 1 FROM billing_payments payment WHERE payment.supplier_id=contact.id
             AND payment.company_id=${companyId} AND payment.financial_year_id=${financialYearId} AND payment.deleted_at IS NULL))
-      HAVING ABS(balance) > 0.004
       ORDER BY contact.name, contact.id
     `.execute(database);
-    return result.rows.map((row) => ({
-      balance: money(row.balance),
-      code: row.code,
-      credit: money(row.credit),
-      debit: money(row.debit),
-      id: Number(row.id),
-      name: row.name
-    }));
+    const overrides = await readOpeningBalanceOverrides(databaseName, "supplier");
+    return result.rows
+      .map((row) => {
+        const opening = overrides.get(Number(row.id)) ?? Number(row.legacy);
+        return {
+          balance: money(Number(row.balance) + opening - Number(row.legacy)),
+          code: row.code,
+          credit: money(Number(row.credit) - Number(row.legacy) + Math.max(opening,0)),
+          debit: money(Number(row.debit) + Math.max(-opening,0)),
+          id: Number(row.id),
+          name: row.name
+        };
+      })
+      .filter((row) => Math.abs(row.balance) > 0.004);
   }
 }
 

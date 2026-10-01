@@ -6,6 +6,7 @@ import {
 } from "@cxapp/ui/workspace/table";
 import {
   formatCustomerStatementDate,
+  formatCustomerStatementAge,
   formatCustomerStatementMoney
 } from "./customer-statement.services";
 import type { CustomerStatementLine } from "./customer-statement.types";
@@ -23,10 +24,10 @@ export function CustomerStatementList({
         <table className="w-full min-w-[920px] border-collapse text-sm">
           <thead className="bg-muted/50">
             <tr>
-              {["Date", "Voucher", "Type", "Narration", "Debit", "Credit", "Balance"].map(
+              {["Date", "Voucher", "Type", "Narration", "Debit", "Credit", "Balance", "Age"].map(
                 (heading) => (
                   <th
-                    className={`border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${["Debit", "Credit", "Balance"].includes(heading) ? "text-right" : "text-left"}`}
+                    className={`border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${["Debit", "Credit", "Balance", "Age"].includes(heading) ? "text-right" : "text-left"}`}
                     key={heading}
                   >
                     {heading}
@@ -66,6 +67,11 @@ export function CustomerStatementList({
                 </td>
                 <td className="px-4 py-3 text-right font-semibold">
                   {formatCustomerStatementMoney(entry.balance)}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right" title="Days since bill date">
+                  {entry.kind === "receipt"
+                    ? "—"
+                    : `${formatCustomerStatementAge(entry.date)} d`}
                 </td>
               </tr>
             ))}

@@ -18,6 +18,7 @@ import { receiptModule } from "./modules/receipt/index.js";
 import { billingSettingsModule } from "./modules/settings/index.js";
 import { dashboardModule } from "./modules/dashboard/index.js";
 import { billingReportsModule } from "./modules/reports/index.js";
+import { openingBalanceModule } from "./modules/opening-balance/index.js";
 
 export const billingApiModuleKeys = [
   salesModule.key,
@@ -28,7 +29,8 @@ export const billingApiModuleKeys = [
   receiptModule.key,
   billingSettingsModule.key,
   dashboardModule.key,
-  billingReportsModule.key
+  billingReportsModule.key,
+  openingBalanceModule.key
 ];
 
 export async function registerBillingApi(app: FastifyInstance) {
@@ -49,6 +51,7 @@ export async function registerBillingApi(app: FastifyInstance) {
       });
       const access = await authorizeBillingRequest(request, tenantDatabase, claims.email ?? "");
       setBillingFinalizedEntryEditAccess(access.canEditFinalizedEntries);
+      currentBillingScope().actorEmail = claims.email ?? "";
     });
     billingApp.get("/billing/access", async (request) => {
       const canEditEntries = Boolean(currentBillingScope().canEditFinalizedEntries);
@@ -74,5 +77,6 @@ export async function registerBillingApi(app: FastifyInstance) {
     await billingSettingsModule.register(billingApp);
     await dashboardModule.register(billingApp);
     await billingReportsModule.register(billingApp);
+    await openingBalanceModule.register(billingApp);
   });
 }

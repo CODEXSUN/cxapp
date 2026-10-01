@@ -21,6 +21,7 @@ const lookupBodySchema = coreLookupMutationSchema;
 const modeSchema = z.enum(["cash", "bank", "upi", "transfer"]);
 const statusSchema = z.enum(["draft", "posted", "cancelled"]);
 const allocationInputSchema = z.object({
+  documentKind: z.enum(["sale", "export-sale"]).optional(),
   allocatedAmount: z.coerce.number().finite().positive(),
   saleId: z.string().regex(/^[0-9a-f]{8}$/)
 });
@@ -91,6 +92,9 @@ const contextSchema = z.object({
   suggestedReceiptNumber: z.string()
 });
 const candidateSchema = z.object({
+  currencyCode: z.string().optional(),
+  documentKind: z.enum(["sale", "export-sale"]).optional(),
+  currencyId: z.number().int().positive(),
   customerId: z.number().int().positive(),
   documentDate: z.string(),
   documentNo: z.string(),

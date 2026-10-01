@@ -3,6 +3,7 @@ import { AppError } from "@cxapp/framework/errors";
 import { buildCustomerStatementAgeing } from "./customer-statement.ageing.js";
 import { getBillingDatabase } from "../../../database/billing-database.js";
 import { currentBillingScope } from "../../../auth/billing-scope.js";
+import { readOpeningBalanceOverrides } from "../../opening-balance/index.js";
 import type {
   CustomerStatementContact,
   CustomerStatementLine
@@ -49,7 +50,12 @@ export class CustomerStatementRepository {
  WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
  AND sale.customer_id=${contactId} AND sale.status='confirmed' AND sale.deleted_at IS NULL
  AND sale.issued_on<=${to}
- UNION ALL SELECT DATE_FORMAT(sale.issued_on,'%Y-%m-%d'), sale.amount, 0
+ UNION ALL SELECT DATE_FORMAT(sale.issued_on,'%Y-%m-%d'), sale.amount,
+ COALESCE((SELECT SUM(allocation.allocated_amount)
+ FROM billing_receipt_export_allocations allocation JOIN billing_receipts receipt ON receipt.id=allocation.receipt_id
+ WHERE allocation.export_sales_id=sale.id AND receipt.status='posted' AND receipt.deleted_at IS NULL
+ AND receipt.company_id=${companyId} AND receipt.financial_year_id=${financialYearId}
+ AND receipt.customer_id=${contactId} AND receipt.receipt_date<=${to}),0)
  FROM billing_export_sales sale WHERE sale.company_id=${companyId}
  AND sale.financial_year_id=${financialYearId} AND sale.customer_id=${contactId}
  AND sale.status='confirmed' AND sale.deleted_at IS NULL AND sale.issued_on<=${to}
@@ -133,8 +139,8 @@ export class CustomerStatementRepository {
   async openingBalance(databaseName: string, companyId: number, contactId: number, from: string) {
     const database = await getBillingDatabase(databaseName);
     const { financialYearId } = currentBillingScope();
-    const result = await sql<{ balance: string | number }>`
-      SELECT COALESCE(contact.opening_balance,0)
+    const result = await sql<{ balance: string | number; legacy: string | number }>`
+      SELECT COALESCE(contact.opening_balance,0) AS legacy, COALESCE(contact.opening_balance,0)
         + COALESCE((SELECT SUM(sale.amount) FROM billing_sales sale
           WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId} AND sale.customer_id=${contactId}
             AND sale.status='confirmed' AND sale.deleted_at IS NULL AND sale.issued_on<${from}),0)
@@ -147,7 +153,12 @@ export class CustomerStatementRepository {
             AND receipt.receipt_date<${from}),0) AS balance
       FROM core_contacts contact WHERE contact.id=${contactId} LIMIT 1
     `.execute(database);
-    return money(result.rows[0]?.balance);
+    const overrides = await readOpeningBalanceOverrides(databaseName, "customer");
+    const row = result.rows[0];
+    return money(
+      Number(row?.balance ?? 0) +
+        (overrides.has(contactId) ? overrides.get(contactId)! - Number(row?.legacy ?? 0) : 0)
+    );
   }
 
   async summary(

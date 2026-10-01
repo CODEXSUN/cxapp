@@ -37,5 +37,66 @@ Customer live-data checks passed for three contacts, including reconciliation an
 Supplier calculation tests passed. The local fixture has no supplier contacts, so live supplier coverage remains pending.
 Billing API/web builds, lint, boundary checks, and ageing boundary tests passed.
 Browser print verification is blocked by an unresponsive in-app browser tab.
-Opening migration, export settlement, collection tools, and full release audit remain pending.
+Opening migration and export settlement are implemented locally. Collection tools and the full release audit remain pending.
+The export-settlement preparation audit found missing currency checks in domestic receipt/payment allocations.
+Validation and locked save queries now require matching invoice currency. Existing allocations are not rewritten.
+Live cross-currency rejection and export allocation coverage remain pending.
+Receipt and Payment candidate responses now include currency. Forms limit candidates to the selected party and entry currency.
+Edit forms add back only their own active reservation. Cancelled entries do not add a reservation.
+Party changes no longer restore the original party's allocations in the candidate list.
+Owner tests cover currency, party changes, partial reservations, fully reserved invoices, and cancelled entries.
 Statement ageing is included in version 1.0.78. Deployment and browser print verification are not included.
+
+## Repeatable test suite
+
+Run `npm run test:billing` for calculation, conversion validation, and allocation candidate unit tests.
+Run `npm run test:billing -- --database` to add isolated MariaDB allocation and quotation workflow tests.
+Database tests use root environment connection settings. They create disposable databases and remove only their own databases.
+They do not use or certify production customer data. Browser and physical print checks are separate.
+
+## Audit results, October 1, 2026
+
+- Passed 13 unit tests, including 600 deterministic ageing scenarios and exact bucket boundaries.
+- Passed isolated MariaDB allocation guards, transaction rollback, and linked-invoice identity protection.
+- Passed quotation creation, address reactivity, automatic conversion, retry rejection, and concurrent duplicate prevention.
+- Passed manual existing-invoice linking and repeat linking without creating an invoice or changing invoice fields/items.
+- Passed receipt currency rejection, duplicate allocation rejection, draft reservation, over-allocation rejection, and cancellation release.
+- Passed company/FY isolation in the quotation fixture. Two-tenant database and browser isolation proof remains pending.
+- Fixed the quotation test harness: await the scoped workflow before database cleanup. No application schema migration changed.
+- Export allocation persistence and scoped opening balances are implemented locally. Due dates and audited adjustments remain unimplemented.
+- Full reserved/settled reporting, restart persistence, and complete browser print verification remain incomplete.
+- Currency allocation checks pass, but statement totals still require a separate multi-currency reporting audit.
+- Workspace checks and eight migration-contract tests passed. These do not certify a restored production-data migration.
+- The full root production build passed on a sequential rerun after a concurrent `dist` cleanup collision.
+
+The implemented regression suite passes. The full task plan is not complete and is not certified for production.
+
+Cancelled Receipt and Payment edit forms now use only current allocation candidates.
+They no longer restore fully settled invoices as zero-balance candidates from old allocations.
+Regression checks cover this case. The 13 unit tests and both isolated database stages passed again.
+No cloud database migration was run.
+
+## Export settlement and scoped openings implementation
+
+Receipt now supports domestic and export invoice allocations, including mixed receipts in the same currency.
+Separate additive tables preserve domestic allocation rows. Active reservations protect export invoices from edits and cancellation.
+Receipt writes lock the current status to reject stale concurrent transitions.
+
+Billing Settings includes an Opening balances tab in both settings entry points.
+Admin can save a signed opening for a contact, party role, company, and financial year, with a required reason.
+Each save records an audit activity. Reviewed legacy assignment records ownership without changing the contact value.
+Assigned legacy amounts are not reused in other scopes. Explicit zero openings override legacy amounts.
+Opening balances currently support INR only; foreign-currency reporting requires a separate design and reconciliation audit.
+The opening-balance leaf uses a reduced configuration lifecycle: no deletion, queue, worker, or sync capability.
+
+The billing suite passed again with 13 unit tests and both isolated database stages after these changes.
+Database coverage includes mixed export allocation hydration, over-allocation rejection, cancellation release,
+migration rerun preservation, Admin-only opening writes, explicit zero overrides, and unchanged legacy contact values.
+Browser verification is incomplete: the local server on port 7020 is not running.
+Restored-production upgrade, cross-tenant runtime, full export concurrency, and browser printing remain release gates.
+Version 1.0.79 records this implementation. No production migration or deployment is included.
+
+Statement tables and prints show bill age as elapsed calendar days from the bill date to today, formatted as `62 d`.
+Receipt and Payment movements show a dash instead of bill age. Future bill dates show zero days.
+Print layouts use centered headings and no longer show the separate outstanding ageing summary block.
+The backend ageing calculation remains unchanged. Chrome verified the customer rows at 62 and 44 days on October 1, 2026.

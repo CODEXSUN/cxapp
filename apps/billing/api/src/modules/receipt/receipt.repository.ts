@@ -3,6 +3,7 @@ import { sql, type Kysely, type Transaction } from "kysely";
 import { AppError } from "@cxapp/framework/errors";
 import { getBillingDatabase } from "../../database/billing-database.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
+import { ReceiptExportAllocationRepository } from "./receipt.export-allocation.repository.js";
 import type {
   Receipt,
   ReceiptActivity,
@@ -48,6 +49,7 @@ type HeaderRow = {
 };
 
 type AllocationRow = {
+  document_kind: "sale" | "export-sale";
   allocated_amount: string | number;
   document_date: string;
   document_no: string;
@@ -220,6 +222,14 @@ export class ReceiptRepository {
     `.execute(database);
     const allocations = await Promise.all(
       input.allocations.map(async (allocation) => {
+        if (allocation.documentKind === "export-sale")
+          return new ReceiptExportAllocationRepository().validate(
+            database,
+            input,
+            allocation.saleId,
+            allocation.allocatedAmount,
+            excludeUuid
+          );
         const result = await sql<{ customer_id: number; outstanding_amount: string | number }>`
         SELECT s.customer_id,
           GREATEST(s.amount - COALESCE(SUM(CASE WHEN r.status <> 'cancelled' ${excludeUuid ? sql`AND r.uuid <> ${excludeUuid}` : sql``} THEN a.allocated_amount ELSE 0 END), 0), 0) AS outstanding_amount
@@ -230,6 +240,7 @@ export class ReceiptRepository {
           AND r.deleted_at IS NULL
         WHERE s.uuid = ${allocation.saleId}
           AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
+          AND s.currency_id=${input.currencyId}
           AND s.status = 'confirmed' AND s.deleted_at IS NULL
         GROUP BY s.id, s.customer_id, s.amount
       `.execute(database);
@@ -259,6 +270,7 @@ export class ReceiptRepository {
     const database = await receiptDatabase(databaseName);
     const scope = currentBillingScope();
     const result = await sql<{
+      currency_id: number;
       customer_id: number;
       document_date: string;
       document_no: string;
@@ -266,7 +278,7 @@ export class ReceiptRepository {
       outstanding_amount: string | number;
       sale_id: string;
     }>`
-      SELECT s.uuid AS sale_id, s.customer_id, s.invoice_number AS document_no,
+      SELECT s.uuid AS sale_id, s.customer_id, s.currency_id, s.invoice_number AS document_no,
              s.issued_on AS document_date, s.amount AS document_total,
              GREATEST(s.amount - COALESCE(SUM(CASE WHEN r.status <> 'cancelled' THEN a.allocated_amount ELSE 0 END), 0), 0) AS outstanding_amount
       FROM billing_sales s
@@ -277,11 +289,13 @@ export class ReceiptRepository {
       WHERE s.customer_id = ${customerId}
         AND s.company_id=${scope.companyId} AND s.financial_year_id=${scope.financialYearId}
         AND s.status = 'confirmed' AND s.deleted_at IS NULL
-      GROUP BY s.id, s.uuid, s.customer_id, s.invoice_number, s.issued_on, s.amount
+      GROUP BY s.id, s.uuid, s.customer_id, s.currency_id, s.invoice_number, s.issued_on, s.amount
       HAVING outstanding_amount > 0
       ORDER BY s.issued_on, s.line_number
     `.execute(database);
-    return result.rows.map((row) => ({
+    const domestic: ReceiptAllocationCandidate[] = result.rows.map((row) => ({
+      documentKind: "sale",
+      currencyId: row.currency_id,
       customerId: row.customer_id,
       documentDate: dateValue(row.document_date),
       documentNo: row.document_no,
@@ -289,6 +303,10 @@ export class ReceiptRepository {
       outstandingAmount: Number(row.outstanding_amount),
       saleId: row.sale_id
     }));
+    return [
+      ...domestic,
+      ...(await new ReceiptExportAllocationRepository().candidates(database, customerId))
+    ];
   }
 
   async create(databaseName: string, input: ReceiptSavePayload & ReceiptTotals) {
@@ -337,6 +355,7 @@ export class ReceiptRepository {
     const internal = await internalReceipt(database, uuid);
     if (!internal) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertReceiptUnchanged(transaction, internal.id, internal.status);
       await assertReceiptAllocationsAvailable(transaction, input, internal.id);
       await sql`
         UPDATE billing_receipts SET company_id=${input.companyId}, financial_year_id=${input.financialYearId},
@@ -351,8 +370,11 @@ export class ReceiptRepository {
       await sql`DELETE FROM billing_receipt_allocations WHERE receipt_id=${internal.id}`.execute(
         transaction
       );
+      await sql`DELETE FROM billing_receipt_export_allocations WHERE receipt_id=${internal.id}`.execute(
+        transaction
+      );
       await replaceAllocations(transaction, internal.id, input.allocations);
-      await addActivity(transaction, internal.id, "updated", "Receipt updated.", "draft", "draft");
+      await addActivity(transaction, internal.id, "updated", "Receipt updated.", internal.status, internal.status);
     });
     return this.get(databaseName, uuid);
   }
@@ -362,6 +384,9 @@ export class ReceiptRepository {
     const current = await internalReceipt(database, uuid);
     if (!current) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertReceiptUnchanged(transaction, current.id, current.status);
+      if ((status === "posted" && current.status !== "draft") || (status === "cancelled" && current.status !== "posted"))
+        throw AppError.conflict("Receipt status changed. Refresh and try again.");
       await sql`
         UPDATE billing_receipts SET status=${status},
           posted_at=${status === "posted" ? sql`CURRENT_TIMESTAMP(3)` : sql`posted_at`},
@@ -384,9 +409,11 @@ export class ReceiptRepository {
     const database = await receiptDatabase(databaseName);
     const current = await internalReceipt(database, uuid);
     if (!current) return null;
-    await sql`UPDATE billing_receipts SET deleted_at=CURRENT_TIMESTAMP(3) WHERE id=${current.id}`.execute(
-      database
-    );
+    await database.transaction().execute(async transaction => {
+      await assertReceiptUnchanged(transaction, current.id, "draft");
+      await sql`UPDATE billing_receipts SET deleted_at=CURRENT_TIMESTAMP(3) WHERE id=${current.id}`.execute(transaction);
+      await addActivity(transaction,current.id,"deleted","Draft receipt deleted.","draft",null);
+    });
     return this.getIncludingDeleted(database, uuid);
   }
 
@@ -406,16 +433,23 @@ export class ReceiptRepository {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
     const result = await sql<AllocationRow>`
-      SELECT a.receipt_id, a.uuid, s.uuid AS sale_id, s.invoice_number AS document_no,
+      SELECT 'sale' AS document_kind, a.receipt_id, a.uuid, s.uuid AS sale_id, s.invoice_number AS document_no,
              s.issued_on AS document_date,
              s.amount AS document_total, s.amount AS previous_balance, a.allocated_amount
       FROM billing_receipt_allocations a INNER JOIN billing_sales s ON s.id=a.sales_id
-      WHERE a.receipt_id IN (${sql.join(ids)}) ORDER BY a.receipt_id, a.line_number
+      WHERE a.receipt_id IN (${sql.join(ids)})
+      UNION ALL
+      SELECT 'export-sale' AS document_kind, a.receipt_id, a.uuid, s.uuid AS sale_id,
+        s.invoice_number AS document_no, s.issued_on AS document_date,
+        s.amount AS document_total, s.amount AS previous_balance, a.allocated_amount
+      FROM billing_receipt_export_allocations a INNER JOIN billing_export_sales s ON s.id=a.export_sales_id
+      WHERE a.receipt_id IN (${sql.join(ids)}) ORDER BY receipt_id, document_kind, uuid
     `.execute(database);
     const allocationsByReceipt = new Map<number, ReceiptAllocation[]>();
     for (const item of result.rows) {
       const allocations = allocationsByReceipt.get(item.receipt_id) ?? [];
       allocations.push({
+        documentKind: item.document_kind,
         allocatedAmount: Number(item.allocated_amount),
         documentDate: dateValue(item.document_date),
         documentNo: item.document_no,
@@ -518,13 +552,26 @@ async function assertReceiptAllocationsAvailable(
   excludeReceiptId?: number
 ) {
   const allocations = [...input.allocations].sort((left, right) =>
-    left.saleId.localeCompare(right.saleId)
+    `${left.documentKind ?? "sale"}:${left.saleId}`.localeCompare(
+      `${right.documentKind ?? "sale"}:${right.saleId}`
+    )
   );
   for (const allocation of allocations) {
+    if (allocation.documentKind === "export-sale") {
+      await new ReceiptExportAllocationRepository().assertAvailable(
+        transaction,
+        input,
+        allocation.saleId,
+        allocation.allocatedAmount,
+        excludeReceiptId
+      );
+      continue;
+    }
     const saleResult = await sql<{ amount: string | number; customer_id: number; id: number }>`
       SELECT id, customer_id, amount FROM billing_sales
       WHERE uuid=${allocation.saleId}
         AND company_id=${input.companyId} AND financial_year_id=${input.financialYearId}
+        AND currency_id=${input.currencyId}
         AND status='confirmed' AND deleted_at IS NULL
       FOR UPDATE
     `.execute(transaction);
@@ -555,6 +602,16 @@ async function replaceAllocations(
   allocations: ReceiptSavePayload["allocations"]
 ) {
   for (const [index, allocation] of allocations.entries()) {
+    if (allocation.documentKind === "export-sale") {
+      await new ReceiptExportAllocationRepository().insert(
+        transaction,
+        receiptId,
+        allocation.saleId,
+        allocation.allocatedAmount,
+        index + 1
+      );
+      continue;
+    }
     await sql`
       INSERT INTO billing_receipt_allocations (uuid, receipt_id, sales_id, line_number, allocated_amount)
       SELECT ${publicId()}, ${receiptId}, id, ${index + 1}, ${allocation.allocatedAmount}
@@ -588,6 +645,15 @@ async function internalReceipt(database: Kysely<ReceiptDatabase>, uuid: string) 
     AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
     AND deleted_at IS NULL LIMIT 1`.execute(database);
   return result.rows[0] ?? null;
+}
+
+async function assertReceiptUnchanged(transaction: ReceiptTransaction, id: number, status: ReceiptStatus) {
+  const scope = currentBillingScope();
+  const result = await sql<{status: ReceiptStatus}>`SELECT status FROM billing_receipts
+    WHERE id=${id} AND company_id=${scope.companyId} AND financial_year_id=${scope.financialYearId}
+      AND deleted_at IS NULL FOR UPDATE`.execute(transaction);
+  if (result.rows[0]?.status !== status)
+    throw AppError.conflict("Receipt status changed. Refresh and try again.");
 }
 
 function receiptDatabase(databaseName: string) {

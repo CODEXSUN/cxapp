@@ -20,6 +20,7 @@ import {
   WorkspaceFormPanel
 } from "@cxapp/ui/workspace/upsert";
 import { useReceiptFormLookups } from "./receipt.hooks";
+import { availableReceiptCandidates, receiptAllocationKey } from "./receipt.allocation";
 import { emptyReceiptContact, ReceiptContactDialog } from "./receipt.contact-dialog";
 import { validateReceipt, type ReceiptFormErrors } from "./receipt.schema";
 import { createReceiptContact, formatReceiptMoney } from "./receipt.services";
@@ -67,9 +68,21 @@ export function ReceiptForm({
   const [errors, setErrors] = useState<ReceiptFormErrors>({});
   const [tab, setTab] = useState("details");
   const lookups = useReceiptFormLookups(form.customerId);
+  const currencies = new Map<number, string>();
+  if (context) currencies.set(context.currencyId, context.currencyCode);
+  if (receipt) currencies.set(receipt.currencyId, receipt.currencyCode);
+  for (const candidate of lookups.allocations.data ?? []) {
+    if (candidate.currencyCode) currencies.set(candidate.currencyId, candidate.currencyCode);
+  }
   const candidates = useMemo(
-    () => mergeCandidates(lookups.allocations.data ?? [], receipt),
-    [lookups.allocations.data, receipt]
+    () =>
+      availableReceiptCandidates(
+        lookups.allocations.data ?? [],
+        form.customerId,
+        form.currencyId,
+        receipt
+      ),
+    [lookups.allocations.data, receipt, form.customerId, form.currencyId]
   );
   const total =
     decimalValue(form.amount) +
@@ -86,19 +99,31 @@ export function ReceiptForm({
     patch("customerId", Number(option?.record.id ?? value ?? 0));
     patch("allocations", []);
   }
-  function allocationAmount(saleId: string) {
-    return form.allocations.find((item) => item.saleId === saleId)?.allocatedAmount ?? "";
+  function allocationAmount(candidate: ReceiptAllocationCandidate) {
+    return (
+      form.allocations.find(
+        (item) => receiptAllocationKey(item) === receiptAllocationKey(candidate)
+      )?.allocatedAmount ?? ""
+    );
   }
-  function setAllocation(saleId: string, amount: string) {
+  function setAllocation(candidate: ReceiptAllocationCandidate, amount: string) {
     setForm((current) => ({
       ...current,
       allocations:
         amount.trim() !== ""
           ? [
-              ...current.allocations.filter((item) => item.saleId !== saleId),
-              { saleId, allocatedAmount: amount }
+              ...current.allocations.filter(
+                (item) => receiptAllocationKey(item) !== receiptAllocationKey(candidate)
+              ),
+              {
+                saleId: candidate.saleId,
+                documentKind: candidate.documentKind,
+                allocatedAmount: amount
+              }
             ]
-          : current.allocations.filter((item) => item.saleId !== saleId)
+          : current.allocations.filter(
+              (item) => receiptAllocationKey(item) !== receiptAllocationKey(candidate)
+            )
     }));
   }
   const details = (
@@ -144,6 +169,15 @@ export function ReceiptForm({
         <Input
           value={form.receiptNumber}
           onChange={(event) => patch("receiptNumber", event.target.value)}
+        />
+      </WorkspaceFormField>
+      <WorkspaceFormField label="Currency" required>
+        <WorkspaceSelect
+          value={String(form.currencyId)}
+          options={[...currencies].map(([id, label]) => ({ value: String(id), label }))}
+          onValueChange={(value) => {
+            setForm((current) => ({ ...current, currencyId: Number(value), allocations: [] }));
+          }}
         />
       </WorkspaceFormField>
       <WorkspaceFormField label="Amount" required>
@@ -271,7 +305,7 @@ export function ReceiptForm({
             </thead>
             <tbody>
               {candidates.map((candidate) => (
-                <tr className="border-b last:border-0" key={candidate.saleId}>
+                <tr className="border-b last:border-0" key={receiptAllocationKey(candidate)}>
                   <td className="px-4 py-3 font-medium">{candidate.documentNo}</td>
                   <td className="px-4 py-3">{candidate.documentDate}</td>
                   <td className="px-4 py-3">{formatReceiptMoney(candidate.documentTotal)}</td>
@@ -281,8 +315,8 @@ export function ReceiptForm({
                       className="w-36"
                       inputMode="decimal"
                       type="text"
-                      value={allocationAmount(candidate.saleId)}
-                      onChange={(event) => setAllocation(candidate.saleId, event.target.value)}
+                      value={allocationAmount(candidate)}
+                      onChange={(event) => setAllocation(candidate, event.target.value)}
                     />
                   </td>
                 </tr>
@@ -360,20 +394,6 @@ export function ReceiptForm({
   );
 }
 
-function mergeCandidates(candidates: ReceiptAllocationCandidate[], receipt?: Receipt | null) {
-  const merged = new Map(candidates.map((item) => [item.saleId, item]));
-  for (const item of receipt?.allocations ?? [])
-    if (!merged.has(item.saleId))
-      merged.set(item.saleId, {
-        customerId: receipt!.customerId,
-        documentDate: item.documentDate,
-        documentNo: item.documentNo,
-        documentTotal: item.documentTotal,
-        outstandingAmount: item.previousBalance,
-        saleId: item.saleId
-      });
-  return [...merged.values()];
-}
 function invalidClass(error?: string) {
   return error ? "border-destructive focus-visible:ring-destructive" : undefined;
 }

@@ -91,6 +91,7 @@ const contextSchema = z.object({
   suggestedPaymentNumber: z.string()
 });
 const candidateSchema = z.object({
+  currencyId: z.number().int().positive(),
   supplierId: z.number().int().positive(),
   documentDate: z.string(),
   documentNo: z.string(),

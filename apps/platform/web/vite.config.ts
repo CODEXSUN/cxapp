@@ -42,6 +42,12 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [tailwindcss(), react()],
     resolve: {
+      alias: {
+        "@cxapp/billing-web/modules/reports": resolve(
+          configDir,
+          "../../billing/web/src/modules/reports/index.ts"
+        )
+      },
       preserveSymlinks: true
     },
     ...(command === "serve" ? { server: platformDevelopmentServer(runtimeEnv) } : {})

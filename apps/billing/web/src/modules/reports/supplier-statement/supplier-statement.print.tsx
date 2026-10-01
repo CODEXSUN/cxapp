@@ -2,6 +2,7 @@ import { WorkspacePrintSheet } from "@cxapp/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import {
   formatSupplierStatementDate,
+  formatSupplierStatementAge,
   formatSupplierStatementMoney
 } from "./supplier-statement.services";
 import type { SupplierStatement } from "./supplier-statement.types";
@@ -45,10 +46,10 @@ export function SupplierStatementPrint({ statement }: { statement: SupplierState
         <table className="w-full border-collapse border-x border-b border-slate-500">
           <thead>
             <tr>
-              {["Date", "Voucher", "Type", "Narration", "Debit", "Credit", "Balance"].map(
+              {["Date", "Voucher", "Type", "Narration", "Debit", "Credit", "Balance", "Age"].map(
                 (heading) => (
                   <th
-                    className="border-b border-r border-slate-500 px-2 py-2 text-left last:border-r-0"
+                    className="border-b border-r border-slate-500 px-2 py-2 text-center align-middle last:border-r-0"
                     key={heading}
                   >
                     {heading}
@@ -78,36 +79,16 @@ export function SupplierStatementPrint({ statement }: { statement: SupplierState
                 <td className="border-b border-r border-slate-300 px-2 py-1.5 text-right">
                   {entry.credit ? formatSupplierStatementMoney(entry.credit) : "-"}
                 </td>
-                <td className="border-b border-slate-300 px-2 py-1.5 text-right font-semibold">
+                <td className="border-b border-r border-slate-300 px-2 py-1.5 text-right font-semibold">
                   {formatSupplierStatementMoney(entry.balance)}
+                </td>
+                <td className="whitespace-nowrap border-b border-slate-300 px-2 py-1.5 text-right">
+                  {entry.kind === "payment" ? "—" : `${formatSupplierStatementAge(entry.date)} d`}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <section className="break-inside-avoid border-x border-b border-slate-500 px-3 py-3">
-          <h2 className="font-bold">
-            Outstanding ageing as of {formatSupplierStatementDate(statement.to)}
-          </h2>
-          <p className="mt-1 text-[9px]">
-            Invoice-date ageing, not overdue ageing. Posted allocations settle their invoices first.
-            Remaining credits reduce undated openings, then oldest invoices for this report only.
-          </p>
-          <div className="mt-2 grid grid-cols-4 border border-slate-500">
-            {statement.ageing.buckets.map((bucket) => (
-              <PrintTotal key={bucket.label} label={bucket.label} value={bucket.amount} />
-            ))}
-          </div>
-          <div className="mt-2 grid grid-cols-4 border border-slate-500">
-            <PrintTotal label="Undated opening" value={statement.ageing.undatedOpening} />
-            <PrintTotal label="Credit / advance" value={statement.ageing.creditBalance} />
-            <PrintTotal
-              label="Draft reserved (not settled)"
-              value={statement.ageing.reservedAmount}
-            />
-            <PrintTotal label="Net outstanding" value={statement.ageing.total} strong />
-          </div>
-        </section>
         <footer className="flex justify-between border-x border-b border-slate-500 px-3 py-3">
           <span>Generated {new Date().toLocaleString("en-IN")}</span>
           <span className="font-semibold">For {statement.companyName}</span>

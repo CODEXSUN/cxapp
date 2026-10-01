@@ -1,6 +1,6 @@
 {
   "name": "@cxapp/platform-api",
-  "version": "1.0.78",
+  "version": "1.0.79",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,12 +11,12 @@
   "dependencies": {
     "@codexsun/blog": "1.0.16",
     "@codexsun/file-manager": "1.1.5",
-    "@cxapp/accounts-api": "^1.0.78",
-    "@cxapp/billing-api": "^1.0.78",
-    "@cxapp/core-api": "^1.0.78",
-    "@cxapp/devkit-api": "^1.0.78",
-    "@cxapp/framework": "^1.0.78",
-    "@cxapp/mail-api": "^1.0.78",
+    "@cxapp/accounts-api": "^1.0.79",
+    "@cxapp/billing-api": "^1.0.79",
+    "@cxapp/core-api": "^1.0.79",
+    "@cxapp/devkit-api": "^1.0.79",
+    "@cxapp/framework": "^1.0.79",
+    "@cxapp/mail-api": "^1.0.79",
     "bullmq": "^6.1.2",
     "fastify": "^5.12.1",
     "ioredis": "^5.11.1",

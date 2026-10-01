@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.78
+Current version: 1.0.79
 
-Release tag: v-1.0.78
+Release tag: v-1.0.79
 
-Changelog label: v 1.0.78
+Changelog label: v 1.0.79
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,31 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.79
+
+### [v 1.0.79] 2026-10-01 6:20 pm - Billing export settlement, scoped openings, and statement age
+
+#### Database Changes
+
+- Database update: Yes (manual).
+- Added separate Receipt export allocations without rewriting domestic allocation records.
+- Added company/year opening balances, save activities, and explicit legacy assignment records.
+- Appended new migration steps after existing migrations. Legacy contact openings remain unchanged.
+- No cloud migration or production deployment was run. Restored-production upgrade verification remains pending.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.79.
+- Added mixed domestic/export Receipt allocations with currency checks, locked balance validation, and invoice edit protection.
+- Added Admin-only opening balance controls to Billing Settings and scoped opening reads to statements and summaries.
+- Fixed Receipt and Payment candidate restoration across party, currency, and cancelled-entry changes.
+- Added the repeatable Billing regression suite and fixed premature quotation fixture database cleanup.
+- Added Age after Balance in customer and supplier tables and prints, using days since bill date in the `62 d` format.
+- Removed the printed ageing summary block and centered printed table headings.
+- Resolved stale report updates by mapping the public report package entry to its workspace source in Vite.
+- Verified Customer Statement ages in Chrome. Full export settlement, saved opening persistence, and physical print browser checks remain pending.
+- Passed workspace checks, production build, dependency layout, version alignment, 13 Billing unit tests, both isolated database stages, and eight migration-contract tests.
 
 ## v-1.0.78
 

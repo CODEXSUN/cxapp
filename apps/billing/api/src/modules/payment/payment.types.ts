@@ -77,6 +77,7 @@ export type PaymentSavePayload = {
 };
 
 export type PaymentAllocationCandidate = {
+  currencyId: number;
   supplierId: number;
   documentDate: string;
   documentNo: string;

@@ -167,11 +167,15 @@ export class ReceiptService {
     const settings = await this.settings.getBillingSettings(databaseName, payload.companyId);
     const receiptNumber =
       payload.receiptNumber.trim() || formatBillingDocumentNumber(settings.numbering.receipt);
-    const allocations = payload.allocations.map((item) => ({
+    const allocations: ReceiptSavePayload["allocations"] = payload.allocations.map((item) => ({
+      documentKind: item.documentKind ?? "sale",
       saleId: item.saleId.trim(),
       allocatedAmount: money(item.allocatedAmount)
     }));
-    if (new Set(allocations.map((item) => item.saleId)).size !== allocations.length)
+    if (
+      new Set(allocations.map((item) => `${item.documentKind}:${item.saleId}`)).size !==
+      allocations.length
+    )
       throw AppError.validation("A sales invoice can only be allocated once in a receipt.");
     const totalAmount = money(
       payload.amount + payload.tdsAmount - payload.discountAmount + payload.roundOff

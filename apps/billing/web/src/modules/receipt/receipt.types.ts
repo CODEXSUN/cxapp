@@ -11,6 +11,7 @@ export type ReceiptContext = {
   suggestedReceiptNumber: string;
 };
 export type ReceiptAllocationInput = {
+  documentKind?: "sale" | "export-sale" | undefined;
   allocatedAmount: ReceiptDecimalInput;
   saleId: string;
 };
@@ -73,6 +74,9 @@ export type ReceiptSavePayload = {
   tdsAmount: ReceiptDecimalInput;
 };
 export type ReceiptAllocationCandidate = {
+  currencyCode?: string | undefined;
+  documentKind?: "sale" | "export-sale" | undefined;
+  currencyId: number;
   customerId: number;
   documentDate: string;
   documentNo: string;
@@ -177,7 +181,8 @@ export function emptyReceipt(context?: ReceiptContext | null): ReceiptSavePayloa
 
 export function receiptToPayload(receipt: Receipt): ReceiptSavePayload {
   return {
-    allocations: receipt.allocations.map(({ allocatedAmount, saleId }) => ({
+    allocations: receipt.allocations.map(({ allocatedAmount, saleId, documentKind }) => ({
+      documentKind,
       allocatedAmount: String(allocatedAmount),
       saleId
     })),

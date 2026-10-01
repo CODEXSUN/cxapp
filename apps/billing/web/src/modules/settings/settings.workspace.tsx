@@ -15,6 +15,7 @@ import { PageTitle } from "../../shared/document/PageTitle";
 import { BillingLayout } from "../../shared/layout/BillingLayout";
 import { saveBillingSettings } from "./settings.services";
 import { useBillingSettings } from "./settings.hooks";
+import { OpeningBalanceWorkspace } from "../opening-balance/index";
 import {
   defaultBillingSettings,
   type BillingDocumentLayoutSettings,
@@ -204,6 +205,11 @@ function SettingsWorkspaceContent() {
             note="GST API, E-invoice, and E-way settings are controlled from the active billing layout."
           />
         )
+      },
+      {
+        value: "openings",
+        label: "Opening balances",
+        content: <OpeningBalanceWorkspace />
       },
       {
         value: "features",

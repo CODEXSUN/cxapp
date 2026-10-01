@@ -56,7 +56,10 @@ const reducedBackendRoles = [
 ];
 const shellOnlyBackendModules = new Set();
 const shellOnlyBackendRoles = ["module", "routes", "types"];
-const capabilityBackendRoles = new Map([["devkit-api/platform-registry", reducedBackendRoles]]);
+const capabilityBackendRoles = new Map([
+  ["devkit-api/platform-registry", reducedBackendRoles],
+  ["billing-api/opening-balance", reducedBackendRoles]
+]);
 
 const webModuleRoots = [
   {

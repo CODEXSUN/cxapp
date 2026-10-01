@@ -5,3 +5,5 @@ export * from "./receipt.seed.js";
 export * from "./receipt.sync.js";
 export * from "./receipt.types.js";
 export * from "./receipt.worker.js";
+export { ReceiptService } from "./receipt.service.js";
+export { assertExportInvoiceUnallocated } from "./receipt.export-allocation.guard.js";

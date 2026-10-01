@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { assertExportInvoiceUnallocated } from "../receipt/index.js";
 import { currentBillingScope } from "../../auth/billing-scope.js";
 import {
   defaultEinvoice,
@@ -404,6 +405,7 @@ export class ExportSalesRepository {
     const existing = await internalExportSale(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertExportInvoiceUnallocated(transaction, existing.id);
       await sql`
         UPDATE billing_export_sales SET
           company_id = ${input.companyId}, financial_year_id = ${input.financialYearId},
@@ -437,6 +439,7 @@ export class ExportSalesRepository {
     const existing = await internalExportSale(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      if (status !== "confirmed") await assertExportInvoiceUnallocated(transaction, existing.id);
       await sql`
         UPDATE billing_export_sales SET status = ${status},
           confirmed_at = ${status === "confirmed" ? sql`CURRENT_TIMESTAMP(3)` : null},
@@ -454,6 +457,7 @@ export class ExportSalesRepository {
     const existing = await internalExportSale(database, uuid);
     if (!existing) return null;
     await database.transaction().execute(async (transaction) => {
+      await assertExportInvoiceUnallocated(transaction, existing.id);
       await insertActivity(
         transaction,
         existing.id,

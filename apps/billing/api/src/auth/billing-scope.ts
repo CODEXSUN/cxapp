@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 import { AppError } from "@cxapp/framework/errors";
 
 export type BillingScope = {
+  actorEmail?: string;
   canEditFinalizedEntries?: boolean;
   companyId: number;
   financialYearId: number;

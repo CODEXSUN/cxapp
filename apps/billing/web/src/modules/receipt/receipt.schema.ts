@@ -13,7 +13,8 @@ export const receiptSchema = z.object({
       allocatedAmount: decimalInput.refine((value) => Number(value) > 0, {
         message: "Allocation must be greater than zero."
       }),
-      saleId: z.string().regex(/^[0-9a-f]{8}$/)
+      saleId: z.string().regex(/^[0-9a-f]{8}$/),
+      documentKind: z.enum(["sale", "export-sale"]).optional()
     })
   ),
   amount: decimalInput.refine((value) => Number(value) >= 0, {

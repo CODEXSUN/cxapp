@@ -3,6 +3,7 @@ import { AppError } from "@cxapp/framework/errors";
 import { buildSupplierStatementAgeing } from "./supplier-statement.ageing.js";
 import { getBillingDatabase } from "../../../database/billing-database.js";
 import { currentBillingScope } from "../../../auth/billing-scope.js";
+import { readOpeningBalanceOverrides } from "../../opening-balance/index.js";
 import type {
   SupplierStatementContact,
   SupplierStatementLine
@@ -127,8 +128,8 @@ export class SupplierStatementRepository {
   async openingBalance(databaseName: string, companyId: number, contactId: number, from: string) {
     const database = await getBillingDatabase(databaseName);
     const { financialYearId } = currentBillingScope();
-    const result = await sql<{ balance: string | number }>`
-      SELECT COALESCE(contact.opening_balance,0)
+    const result = await sql<{ balance: string | number; legacy: string | number }>`
+      SELECT COALESCE(contact.opening_balance,0) AS legacy, COALESCE(contact.opening_balance,0)
         + COALESCE((SELECT SUM(purchase.amount) FROM billing_purchases purchase
           WHERE purchase.company_id=${companyId} AND purchase.financial_year_id=${financialYearId} AND purchase.supplier_id=${contactId}
             AND purchase.status='confirmed' AND purchase.deleted_at IS NULL
@@ -139,7 +140,12 @@ export class SupplierStatementRepository {
             AND payment.payment_date<${from}),0) AS balance
       FROM core_contacts contact WHERE contact.id=${contactId} LIMIT 1
     `.execute(database);
-    return money(result.rows[0]?.balance);
+    const overrides = await readOpeningBalanceOverrides(databaseName, "supplier");
+    const row = result.rows[0];
+    return money(
+      Number(row?.balance ?? 0) +
+        (overrides.has(contactId) ? overrides.get(contactId)! - Number(row?.legacy ?? 0) : 0)
+    );
   }
 
   async summary(

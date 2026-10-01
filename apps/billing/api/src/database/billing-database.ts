@@ -36,6 +36,15 @@ import {
 } from "../modules/sales/sales.migration.js";
 import { migrateReceiptModule, receiptMigration } from "../modules/receipt/receipt.migration.js";
 import { seedReceiptModule } from "../modules/receipt/receipt.seed.js";
+import {
+  migrateOpeningBalances,
+  openingBalanceMigration
+} from "../modules/opening-balance/opening-balance.migration.js";
+import { seedOpeningBalances } from "../modules/opening-balance/opening-balance.seed.js";
+import {
+  migrateReceiptExportAllocations,
+  receiptExportAllocationMigration
+} from "../modules/receipt/receipt.export-allocation.migration.js";
 import { seedSalesModule } from "../modules/sales/sales.seed.js";
 import {
   billingSettingsMigration,
@@ -260,6 +269,20 @@ export const billingMigrationBatch: MigrationBatch<BillingDatabase> = {
       name: "billing.uuid-defaults-v2",
       up: (database) => ensureStandardTableColumns(database, billingTableNames),
       version: 2
+    },
+    {
+      checksum: `${receiptExportAllocationMigration.key}:v1`,
+      description: receiptExportAllocationMigration.description,
+      name: receiptExportAllocationMigration.key,
+      up: migrateReceiptExportAllocations,
+      version: 1
+    },
+    {
+      checksum: `${openingBalanceMigration.key}:v1`,
+      description: openingBalanceMigration.description,
+      name: openingBalanceMigration.key,
+      up: migrateOpeningBalances,
+      version: 1
     }
   ]
 };
@@ -276,6 +299,14 @@ export const billingTenantMigrations = [
   {
     description: "Add database-generated UUID defaults for repeatable Billing writes.",
     name: "billing.uuid-defaults-v2"
+  },
+  {
+    description: receiptExportAllocationMigration.description,
+    name: receiptExportAllocationMigration.key
+  },
+  {
+    description: openingBalanceMigration.description,
+    name: openingBalanceMigration.key
   }
 ] as const;
 
@@ -425,6 +456,7 @@ async function seedBillingModules(database: Kysely<BillingDatabase>, databaseNam
   await seedQuotationModule();
   await seedPaymentModule(database);
   await seedReceiptModule(database);
+  await seedOpeningBalances();
   await seedDashboardModule(databaseName);
 }
 
