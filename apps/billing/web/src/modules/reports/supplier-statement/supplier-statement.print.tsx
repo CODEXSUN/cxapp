@@ -85,6 +85,29 @@ export function SupplierStatementPrint({ statement }: { statement: SupplierState
             ))}
           </tbody>
         </table>
+        <section className="break-inside-avoid border-x border-b border-slate-500 px-3 py-3">
+          <h2 className="font-bold">
+            Outstanding ageing as of {formatSupplierStatementDate(statement.to)}
+          </h2>
+          <p className="mt-1 text-[9px]">
+            Invoice-date ageing, not overdue ageing. Posted allocations settle their invoices first.
+            Remaining credits reduce undated openings, then oldest invoices for this report only.
+          </p>
+          <div className="mt-2 grid grid-cols-4 border border-slate-500">
+            {statement.ageing.buckets.map((bucket) => (
+              <PrintTotal key={bucket.label} label={bucket.label} value={bucket.amount} />
+            ))}
+          </div>
+          <div className="mt-2 grid grid-cols-4 border border-slate-500">
+            <PrintTotal label="Undated opening" value={statement.ageing.undatedOpening} />
+            <PrintTotal label="Credit / advance" value={statement.ageing.creditBalance} />
+            <PrintTotal
+              label="Draft reserved (not settled)"
+              value={statement.ageing.reservedAmount}
+            />
+            <PrintTotal label="Net outstanding" value={statement.ageing.total} strong />
+          </div>
+        </section>
         <footer className="flex justify-between border-x border-b border-slate-500 px-3 py-3">
           <span>Generated {new Date().toLocaleString("en-IN")}</span>
           <span className="font-semibold">For {statement.companyName}</span>

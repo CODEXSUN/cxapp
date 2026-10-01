@@ -19,6 +19,13 @@ export type SupplierStatementLine = {
 };
 
 export type SupplierStatement = {
+  ageing: {
+    buckets: { label: string; amount: number }[];
+    undatedOpening: number;
+    creditBalance: number;
+    reservedAmount: number;
+    total: number;
+  };
   closingBalance: number;
   companyId: number;
   companyName: string;

@@ -1,4 +1,5 @@
 import { AppError } from "@cxapp/framework/errors";
+import { buildSupplierStatementAgeing } from "./supplier-statement.ageing.js";
 import { SupplierStatementRepository } from "./supplier-statement.repository.js";
 import type {
   SupplierStatementQuery,
@@ -19,10 +20,13 @@ export class SupplierStatementService {
     const to = query.to || context.financial_year_end;
     validateDates(from, to, context.financial_year_start, context.financial_year_end);
     const contacts = await this.repository.contacts(databaseName, context.company_id);
+    if (query.contactId && !contacts.some((contact) => contact.id === query.contactId))
+      throw AppError.notFound("The selected supplier is not available in this statement scope.");
     const selectedContact =
       contacts.find((contact) => contact.id === query.contactId) ?? contacts[0] ?? null;
     if (!selectedContact) {
       return {
+        ageing: buildSupplierStatementAgeing([], 0, 0, 0, to),
         closingBalance: 0,
         companyId: context.company_id,
         companyName: context.company_name,
@@ -66,7 +70,20 @@ export class SupplierStatementService {
       },
       openingBalance
     );
+    const ageing = await this.repository.ageing(
+      databaseName,
+      context.company_id,
+      selectedContact.id,
+      to,
+      context.financial_year_start
+    );
+    const closingBalance = money(openingBalance + summary.credit - summary.debit);
+    if (Math.abs(ageing.total - closingBalance) > 0.01)
+      throw AppError.conflict(
+        "Statement balances changed or allocations do not reconcile. Refresh and review allocations before printing."
+      );
     return {
+      ageing,
       closingBalance: money(openingBalance + summary.credit - summary.debit),
       companyId: context.company_id,
       companyName: context.company_name,

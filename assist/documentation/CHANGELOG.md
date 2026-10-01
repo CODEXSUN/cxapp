@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.77
+Current version: 1.0.78
 
-Release tag: v-1.0.77
+Release tag: v-1.0.78
 
-Changelog label: v 1.0.77
+Changelog label: v 1.0.78
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,7 +20,40 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.78
+
+### [v 1.0.78] 2026-10-01 2:24 pm - Billing statement ageing and task plan
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.78.
+- Added customer and supplier statement ageing at the end of printed statements, with invoice-date buckets and separate draft reservations.
+- Reconciled ageing against closing balances and rejected inconsistent allocation totals or invalid contact selections.
+- Saved the outstanding implementation plan in `apps/billing/README.md`; legacy opening balances remain unchanged.
+- Passed workspace type checks, lint, addon and module-boundary checks. Calculation tests and three local customer statements passed; browser print and live supplier-data checks remain pending.
+
 ## v-1.0.77
+
+### [v 1.0.77] 2026-10-01 2:21 pm - Statement ageing and outstanding task plan
+
+#### Database Changes
+
+- Database update: No. Legacy contact openings remain unchanged pending explicit company/FY assignment.
+
+#### App Codebase Changes
+
+- Saved the Billing outstanding task plan and acceptance checks in `apps/billing/README.md`.
+- Added invoice-date ageing to customer and supplier statement responses and the end of their print layouts.
+- Honored posted invoice allocations before applying remaining credits to undated opening balances and oldest invoices for reporting only.
+- Showed 0–30, 31–60, 61–90, and 91+ day buckets, undated openings, credit balances, and separate draft reservations.
+- Rejected invalid contact selections instead of silently selecting a different contact.
+- Included inactive contacts and removed the 500-contact cap from statement lookups.
+- Passed Billing API/web builds, lint, module boundaries, and two ageing calculation tests.
+- Verified three local customer statements reconcile independently of page and From date. Live supplier-data and browser print verification remain pending.
 
 ### [v 1.0.77] 2026-10-01 2:08 pm - Billing conversion and outstanding safeguards
 

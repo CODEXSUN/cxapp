@@ -18,6 +18,13 @@ const querySchema = z.object({
   to: z.iso.date().optional()
 });
 const responseSchema = z.object({
+  ageing: z.object({
+    buckets: z.array(z.object({ label: z.string(), amount: z.number() })),
+    undatedOpening: z.number(),
+    creditBalance: z.number(),
+    reservedAmount: z.number(),
+    total: z.number()
+  }),
   closingBalance: z.number(),
   companyId: z.number().int().positive(),
   companyName: z.string(),

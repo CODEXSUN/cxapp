@@ -1,6 +1,6 @@
 [package]
 name = "cxapp-windows"
-version = "1.0.77"
+version = "1.0.78"
 description = "CXApp Windows desktop host"
 authors = ["CODEXSUN"]
 edition = "2024"

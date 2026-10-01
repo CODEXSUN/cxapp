@@ -1,4 +1,6 @@
 import { sql } from "kysely";
+import { AppError } from "@cxapp/framework/errors";
+import { buildCustomerStatementAgeing } from "./customer-statement.ageing.js";
 import { getBillingDatabase } from "../../../database/billing-database.js";
 import { currentBillingScope } from "../../../auth/billing-scope.js";
 import type {
@@ -27,6 +29,59 @@ type MovementRow = {
 };
 
 export class CustomerStatementRepository {
+  async ageing(
+    databaseName: string,
+    companyId: number,
+    contactId: number,
+    to: string,
+    yearStart: string
+  ) {
+    const database = await getBillingDatabase(databaseName);
+    const { financialYearId } = currentBillingScope();
+    const invoices = await sql<{ date: string; amount: string | number; settled: string | number }>`
+      SELECT DATE_FORMAT(sale.issued_on,'%Y-%m-%d') AS date, sale.amount,
+ COALESCE((SELECT SUM(allocation.allocated_amount)
+ FROM billing_receipt_allocations allocation JOIN billing_receipts receipt ON receipt.id=allocation.receipt_id
+ WHERE allocation.sales_id=sale.id AND receipt.status='posted' AND receipt.deleted_at IS NULL
+ AND receipt.company_id=${companyId} AND receipt.financial_year_id=${financialYearId}
+ AND receipt.customer_id=${contactId} AND receipt.receipt_date<=${to}),0) AS settled
+ FROM billing_sales sale
+ WHERE sale.company_id=${companyId} AND sale.financial_year_id=${financialYearId}
+ AND sale.customer_id=${contactId} AND sale.status='confirmed' AND sale.deleted_at IS NULL
+ AND sale.issued_on<=${to}
+ UNION ALL SELECT DATE_FORMAT(sale.issued_on,'%Y-%m-%d'), sale.amount, 0
+ FROM billing_export_sales sale WHERE sale.company_id=${companyId}
+ AND sale.financial_year_id=${financialYearId} AND sale.customer_id=${contactId}
+ AND sale.status='confirmed' AND sale.deleted_at IS NULL AND sale.issued_on<=${to}
+      ORDER BY date
+    `.execute(database);
+    const settlements = await sql<{ total: string | number; reserved: string | number }>`
+      SELECT COALESCE(SUM(CASE WHEN status='posted' THEN total_amount ELSE 0 END),0) AS total,
+      COALESCE(SUM(CASE WHEN status='draft' THEN allocated_amount ELSE 0 END),0) AS reserved
+      FROM billing_receipts WHERE company_id=${companyId} AND financial_year_id=${financialYearId}
+      AND customer_id=${contactId} AND deleted_at IS NULL AND receipt_date<=${to}
+    `.execute(database);
+    const opening = await this.openingBalance(databaseName, companyId, contactId, yearStart);
+    const applied = invoices.rows.reduce((sum, row) => sum + Number(row.settled), 0);
+    if (
+      invoices.rows.some((row) => Number(row.settled) - Number(row.amount) > 0.005) ||
+      applied - Number(settlements.rows[0]?.total ?? 0) > 0.005
+    )
+      throw AppError.conflict(
+        "Posted allocations exceed invoice or settlement amounts. Review allocations before printing."
+      );
+    return buildCustomerStatementAgeing(
+      invoices.rows.map((row) => ({
+        date: row.date,
+        amount: Number(row.amount) - Number(row.settled)
+      })),
+      opening,
+      Number(settlements.rows[0]?.total ?? 0) - applied,
+      Number(settlements.rows[0]?.reserved ?? 0),
+      to
+    );
+  }
+
   async context(databaseName: string, companyId?: number) {
     const database = await getBillingDatabase(databaseName);
     const scope = currentBillingScope();
@@ -55,7 +110,7 @@ export class CustomerStatementRepository {
     }>`
       SELECT contact.id, contact.code, contact.name, contact.gstin
       FROM core_contacts contact
-      WHERE contact.status='active' AND contact.deleted_at IS NULL
+      WHERE contact.deleted_at IS NULL
         AND (
           LOWER(COALESCE(contact.type_name,'')) LIKE '%customer%'
           OR EXISTS (SELECT 1 FROM billing_sales sale WHERE sale.customer_id=contact.id
@@ -66,7 +121,6 @@ export class CustomerStatementRepository {
             AND receipt.company_id=${companyId} AND receipt.financial_year_id=${financialYearId} AND receipt.deleted_at IS NULL)
         )
       ORDER BY contact.name, contact.id
-      LIMIT 500
     `.execute(database);
     return result.rows.map((row) => ({
       code: row.code,
