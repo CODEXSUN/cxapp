@@ -18,7 +18,7 @@ export function useQueueRuntimeQuery() {
     queryFn: getQueueRuntimeSettings,
     queryKey: [...queueManagementQueryKey, "settings"],
     meta: { suppressGlobalLoader: true },
-    refetchInterval: 10_000
+    refetchInterval: 2_000
   });
 }
 
@@ -28,7 +28,7 @@ export function useQueueJobsQuery(filters: QueueJobFilters) {
     queryFn: () => listQueueJobs(parsed),
     queryKey: [...queueManagementQueryKey, "jobs", parsed],
     meta: { suppressGlobalLoader: true },
-    refetchInterval: 10_000
+    refetchInterval: 2_000
   });
 }
 
