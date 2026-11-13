@@ -27,7 +27,13 @@ export class QueueManagerRepository {
   }
 
   async settings(): Promise<QueueRuntimeSettings> {
-    const jobs = await this.list();
+    const totals = await getPlatformDatabase()
+      .selectFrom("queue_jobs")
+      .select(["status", sql<number>`COUNT(*)`.as("count")])
+      .groupBy("status")
+      .execute();
+    const count = (status: QueueJobStatus) =>
+      Number(totals.find((row) => row.status === status)?.count ?? 0);
     const selected = await getPlatformDatabase()
       .selectFrom("queue_runtime_settings")
       .selectAll()
@@ -39,18 +45,23 @@ export class QueueManagerRepository {
       backend,
       backendLabel: backend === "bullmq-redis" ? "BullMQ + Redis" : "Database queue",
       canRunInline: backend !== "bullmq-redis",
-      completed: jobs.filter((job) => job.status === "completed").length,
-      failed: jobs.filter((job) => job.status === "failed").length,
-      pending: jobs.filter((job) => job.status === "pending").length,
+      completed: count("completed"),
+      failed: count("failed"),
+      pending: count("pending"),
       redisConfigured: Boolean(env.CXAPP_REDIS_URL.trim()),
-      running: jobs.filter((job) => job.status === "running").length,
+      running: count("running"),
       updatedAt: selected?.updated_at ? new Date(selected.updated_at).toISOString() : null,
       updatedBy: selected?.updated_by ?? "environment"
     };
   }
 
   async backend() {
-    return (await this.settings()).backend;
+    const selected = await getPlatformDatabase()
+      .selectFrom("queue_runtime_settings")
+      .select("backend")
+      .where("singleton_key", "=", 1)
+      .executeTakeFirst();
+    return normalizeBackend(selected?.backend ?? env.CXAPP_QUEUE_BACKEND);
   }
 
   async setBackend(backend: QueueBackend, actorEmail: string) {

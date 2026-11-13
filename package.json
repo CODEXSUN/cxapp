@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -90,7 +90,8 @@
     "desktop:package": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 package",
     "desktop:install": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 install",
     "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall",
-    "test:backups": "tsx --test tools/backup-policy.test.ts tools/backup-local-files.test.ts tools/backup-routes.test.ts tools/backup-local-roundtrip.test.ts"
+    "test:backups": "tsx --test tools/backup-policy.test.ts tools/backup-local-files.test.ts tools/backup-routes.test.ts tools/backup-local-roundtrip.test.ts",
+    "test:queue-runtime": "node tools/run-queue-regression.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

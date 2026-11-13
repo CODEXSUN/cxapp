@@ -20,6 +20,10 @@ const envSchema = z
     CXAPP_DB_RESET_CONFIRM: z.string(),
     CXAPP_ALLOW_PRODUCTION_DB_RESET: z.enum(["0", "1"]),
     CXAPP_BACKUP_DIR: z.string().min(1),
+    CXAPP_BULLMQ_PREFIX: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/)
+      .default("cxapp"),
     CXAPP_QUEUE_BACKEND: z.preprocess(
       (value) => (value === "memory" ? "database" : value),
       z.enum(["database", "bullmq-redis"])

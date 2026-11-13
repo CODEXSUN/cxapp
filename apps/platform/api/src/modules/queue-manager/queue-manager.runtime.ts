@@ -11,22 +11,18 @@ export function startQueueManagerWorker(app: FastifyInstance, service = new Queu
   }
   let running = false;
   let cleanupTicks = 0;
-  queueWorkerTimer = setInterval(() => {
+  const tick = () => {
     if (running) return;
     running = true;
     void service
       .currentBackend()
       .then(async (backend) => {
         if (backend === "bullmq-redis") {
-          startBullMqWorker("maintenance", (queueJobId) =>
-            service.runJob(queueJobId, { fromWorker: true })
-          );
-          startBullMqWorker("mail", (queueJobId) =>
-            service.runJob(queueJobId, { fromWorker: true })
-          );
-          startBullMqWorker("system", (queueJobId) =>
-            service.runJob(queueJobId, { fromWorker: true })
-          );
+          for (const queueName of ["maintenance", "mail", "system", "reports"]) {
+            startBullMqWorker(queueName, (queueJobId) =>
+              service.runJob(queueJobId, { fromWorker: true })
+            );
+          }
           return null;
         }
         await closeBullMq();
@@ -43,7 +39,9 @@ export function startQueueManagerWorker(app: FastifyInstance, service = new Queu
       .finally(() => {
         running = false;
       });
-  }, env.CXAPP_QUEUE_WORKER_INTERVAL_MS);
+  };
+  queueWorkerTimer = setInterval(tick, env.CXAPP_QUEUE_WORKER_INTERVAL_MS);
+  tick();
   queueWorkerTimer.unref();
   app.addHook("onClose", async () => {
     if (queueWorkerTimer) {

@@ -39,7 +39,7 @@ export function startBullMqWorker(
       }
       return run(queueJobId);
     },
-    { connection: redisConnectionOptions() }
+    { connection: redisConnectionOptions(), prefix: env.CXAPP_BULLMQ_PREFIX }
   );
   workers.set(queueName, worker);
   return worker;
@@ -47,7 +47,8 @@ export function startBullMqWorker(
 
 export async function probeBullMq() {
   const queue = new Queue(`cxapp-probe-${process.pid}`, {
-    connection: redisConnectionOptions()
+    connection: redisConnectionOptions(),
+    prefix: env.CXAPP_BULLMQ_PREFIX
   });
   let timer: NodeJS.Timeout | undefined;
   try {
@@ -74,7 +75,10 @@ export async function closeBullMq() {
 function queueFor(queueName: string) {
   const existing = queues.get(queueName);
   if (existing) return existing;
-  const queue = new Queue(queueName, { connection: redisConnectionOptions() });
+  const queue = new Queue(queueName, {
+    connection: redisConnectionOptions(),
+    prefix: env.CXAPP_BULLMQ_PREFIX
+  });
   queues.set(queueName, queue);
   return queue;
 }

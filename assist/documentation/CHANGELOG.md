@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.81
+Current version: 1.0.82
 
-Release tag: v-1.0.81
+Release tag: v-1.0.82
 
-Changelog label: v 1.0.81
+Changelog label: v 1.0.82
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,23 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.82
+
+### [v 1.0.82] 2026-11-13 7:20 pm - Repair live report queue workers and isolate BullMQ delivery
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.82.
+- Registered the missing reports worker and started queue consumers immediately rather than after the first polling interval.
+- Isolated CXApp BullMQ producers, workers and probes under the dedicated cxapp Redis prefix. Legacy/unrelated Redis queues are not flushed or consumed.
+- Changed backend polling to a single settings query and aggregate counters to cover every queue record, beyond the latest-100 list.
+- Backed up and removed 33 stale live master queue records and their exact matching Redis jobs, preserving tenant business tables and unrelated Redis data.
+- Verified all four queue types, report preparation, immediate startup, total counts above 100, and namespace isolation through an isolated Redis/MariaDB regression.
 
 ## v-1.0.81
 
