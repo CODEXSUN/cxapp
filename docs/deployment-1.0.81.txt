@@ -1,0 +1,34 @@
+CXAPP 1.0.81 PRODUCTION DEPLOYMENT
+13 November 2026 — Hostinger VPS 69.62.81.166
+
+Result: successful. Release source: 705d3f4a422f47d50370f28a17bc9aac0e59d9d3.
+Active release directory: /home/cxapp-releases/1.0.81-705d3f4
+API image: cxapp/billing-stack-api:1.0.81
+Web image: cxapp/billing-stack-web:1.0.81
+Migration image: cxapp/billing-stack-migrations:1.0.81
+The migration-image environment placeholder fix was committed and pushed before building.
+
+BACKUP
+Requested destination was used exactly, including the 2023 folder name:
+D:\workspace\backups\13-11-2023\pre-cxapp-1.0.81-20261113T131139Z
+All 31 non-system MariaDB databases were backed up, covering both app registries and all their populated tenant database mappings, plus additional existing databases. Native per-database SQL backups total 174,342,368 bytes. Each dump has a SHA-256 checksum in the private manifest.
+
+All backups were restored and verified on isolated MariaDB 11.8.8: 6,074 table schemas and 149,358 serialized records matched. TECHMEDIA: 310 tables and 47,667 rows. RAINBOW: 310 tables and 4,264 rows. Sequential per-database snapshots were taken while existing services remained online.
+
+The persistent archive includes cxapp storage, shared media, codexsun storage and previous cxapp deployment configuration/hotfix. Archive listing verified 340 entries; 164 regular files were restored locally and checksum-checked. Symlinks were not followed during the local extraction test.
+
+An additional near-cutover all-database SQL backup was taken by the guarded production updater and copied to cutover-all-databases.sql in the same local folder. Its 149,436,772 bytes matched SHA-256 e4ce6715f29c907f32518c2e3f691b71b21fa9bdb631193cb8222655d9e31111. Backup contents, deployment secrets, and raw logs are not committed to Git.
+
+STAGING
+Built exact API, web and migration images on the VPS without replacing live services. Restored all 31 backups into an isolated MariaDB instance using the same 11.8.8 engine. Tested forward migrations for cxapp only, using stage-only credentials and registry connections. API/web health checks and all 12 cxapp tenants passed 48 authenticated API checks and 12 tenant isolation checks. Retired DevKit returned 404 and super-admin Task Manager returned 403 as intended.
+
+PRODUCTION
+Guarded .container/update.sh --yes completed with exit 0, an additional verified SQL backup, successful forward database migrations, healthy API/web replacements and the full built-in container smoke test. Default tenant seeding, database fresh/reset operations and backup-center restores were disabled for this rollout. Existing infrastructure, production credentials, volumes and storage were retained. The previous application images remain available for rollback.
+
+Only original container IDs cxapp-api and cxapp-web changed. Original codexsun API/web/shop/chat/worker, MariaDB, Redis, media, enquiry relay and Cloudflare containers retained their IDs. Codexsun master/v2 databases, techmedia_db and rainbow_db were backed up and tested in isolation; no codexsun schema migration or container upgrade was performed.
+
+Live cxapp passed all 12 tenant checks again: runtime, industries, companies and scoped sales pages, plus resistance to cross-tenant headers. Public app root, /api/platform/health and /sa/tenant-backups returned HTTP 200. The public app served the newly built index-b3HhuZTT.js bundle. These are API and availability checks using internal signed verification tokens, not an exhaustive manual browser/password or outbound-integration test.
+
+Temporary upgrade-test containers were removed. Their isolated database files/logs remain in the release's protected staging backup directory. The original /home/cxapp checkout and previous deployment configuration were preserved; operators should use the active release directory above for this deployment.
+
+Private evidence in the local backup folder: manifest.json, restore-verification.json, persistent-restore-verification.json, deployment-metadata.json, production-verification.json, cxapp-api-verification.json, production-upgrade.log, SUMMARY.txt.

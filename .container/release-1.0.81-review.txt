@@ -1,3 +1,5 @@
+DEPLOYMENT UPDATE: Release 1.0.81 was deployed successfully on 13 November 2026 from commit 705d3f4. Exact Docker images and forward migrations passed isolated MariaDB 11.8 staging. All 31 live database backups and persistent files were verified. See docs/deployment-1.0.81.txt. The review below is the historical pre-deployment assessment.
+
 RELEASE 1.0.81 — DOCKER UPGRADE REVIEW
 13 November 2026 (Asia/Calcutta)
 
