@@ -1,0 +1,31 @@
+{
+  "name": "cxapp-enquiry",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "assets": {
+    "directory": "../../../dist/apps/platform/web",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "ratelimits": [
+    {
+      "name": "ENQUIRY_RATE_LIMIT",
+      "namespace_id": "1094738265",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ]
+}

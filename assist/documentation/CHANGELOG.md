@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.79
+Current version: 1.0.81
 
-Release tag: v-1.0.79
+Release tag: v-1.0.81
 
-Changelog label: v 1.0.79
+Changelog label: v 1.0.81
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,43 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.81
+
+### [v 1.0.81] 2026-11-13 6:28 pm - Tenant backup recovery and verified local VPS testing
+
+#### Database Changes
+
+- Database update: No new migration definitions. Fresh master/tenant snapshots were restored locally, verified table-by-table, and rehearsed through the current migration runner. Production schema and data were not changed.
+
+#### App Codebase Changes
+
+- Bumped all workspace packages, deployment image references and Windows manifests to 1.0.81.
+- Added separate Master Backups and tenant-list/drill-down backup pages with tenant-bound sources, uploads and restore targets.
+- Added named storage locations, backup download/upload, tenant folder saving and new/fresh/incremental MariaDB restore modes.
+- Added explicit restore target gates, pre-restore safety copies, transactional primary-key merges, foreign-key row ordering and tenant-isolation checks.
+- Corrected SQL parsing, large-number/binary/text serialization, generated-column handling and checksum labelling.
+- Added native VPS-to-local backup, restore verification and schema/migration audit tooling; kept credentials and database dumps out of Git and Docker contexts.
+- Restored and verified one master and 12 tenant databases locally (1,219 tables / 31,672 rows); connected the local test app with queue workers, outgoing mail and default seeding disabled.
+- Verified all 12 tenants through authenticated local API and isolation checks. No VPS changes were made.
+- Compared all restored schemas to fresh source backups with zero drift and passed migrations on 13 additional isolated pristine restores.
+- Retained the 1.0.80 DevKit/gallery retirement and tenant-only Task Manager changes; retained their database records and documented breaking-route compatibility risks.
+- See .container/release-1.0.81-review.txt for validation and remaining deployment gates.
+
+## v-1.0.80
+
+### [v 1.0.80] 2026-11-13 2:25 pm - Retire super admin workspaces and prepare deployment
+
+#### Database Changes
+
+- Database update: No (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.80.
+- Retired the super-admin DevKit and component gallery screens and disabled DevKit API registration.
+- Restricted Task Manager to tenant sessions while retaining existing super-admin data.
+- Added deployment and retirement guidance, updated runtime expectations, and included deployment tooling and database backup work.
 
 ## v-1.0.79
 

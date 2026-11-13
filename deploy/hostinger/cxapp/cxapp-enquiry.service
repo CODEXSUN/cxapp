@@ -1,0 +1,20 @@
+[Unit]
+Description=CXApp CXApp enquiry relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+WorkingDirectory=/opt/cxapp-enquiry
+EnvironmentFile=/etc/cxapp-enquiry.env
+ExecStart=/usr/bin/node /opt/cxapp-enquiry/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

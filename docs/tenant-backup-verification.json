@@ -1,0 +1,615 @@
+{
+  "reports": [
+    {
+      "tenantCode": "CODEXSUN",
+      "sourceDatabase": "codexsun_db",
+      "backupId": "dfff2e6c-d1f0-4408-95de-3c8222dcc279",
+      "createdSourceBackup": true,
+      "localTarget": "cxrestore_tenant_d8812127cad8",
+      "verifiedTables": 96,
+      "verifiedRows": 560,
+      "fresh": {
+        "databaseName": "cxrestore_tenant_d8812127cad8",
+        "mode": "fresh",
+        "tableCount": 96,
+        "inserted": 0,
+        "updated": 0,
+        "safetyBackupId": "904b79e7-d921-4848-89bc-76f8f5af7629",
+        "restoredAt": "2026-11-13T12:16:51.724Z"
+      },
+      "incremental": {
+        "databaseName": "cxrestore_tenant_d8812127cad8",
+        "mode": "incremental",
+        "tableCount": 96,
+        "inserted": 0,
+        "updated": 560,
+        "safetyBackupId": "de7fc7cb-7773-437c-8e18-6601dfb37343",
+        "restoredAt": "2026-11-13T12:16:52.214Z"
+      },
+      "tables": [
+        {
+          "table": "app_module_settings",
+          "rows": 6,
+          "dataHash": "0ae137f27ab1bf53fe1eccfe3af8e12982c30ca8ccaafc35c95e789bbb4e0591",
+          "schemaHash": "385b844f7de1188a172e3a196fb2674eac510342738e082e62d994d4bdf99b12"
+        },
+        {
+          "table": "app_permissions",
+          "rows": 36,
+          "dataHash": "08ce9a9e78bed5a9323252c6fd94e2116d210185ca31661376e746d315371040",
+          "schemaHash": "d258ff0120e828b1532b377e8e3eda0056e22e8a2a31887694abf929a77a35c9"
+        },
+        {
+          "table": "app_roles",
+          "rows": 4,
+          "dataHash": "dd035d7c33ea24014db56a0fa39c87a1580f824cc2b06464fce55e94703fedb9",
+          "schemaHash": "090f5f3e1b1ef4bbbd229455c0653cf79397e67d5c2bea0d22ac8251c088a6ec"
+        },
+        {
+          "table": "app_role_permissions",
+          "rows": 42,
+          "dataHash": "d6bc5997eb8971d0dcba5f034a2a113b796c5b2e4829c680f05fff355ef9b30a",
+          "schemaHash": "df61d9ce0f38beeef1975956c50b4eb392b7114d5719f3c1534fb932d25da103"
+        },
+        {
+          "table": "app_users",
+          "rows": 1,
+          "dataHash": "01c445478954847d7804ddbef00393a4c51a07064cdc875736b9e1d0fa0042a6",
+          "schemaHash": "e55e72efb882930e96657eae89ca438516105cacd77ab11d64b5da9a9622cd28"
+        },
+        {
+          "table": "app_user_roles",
+          "rows": 1,
+          "dataHash": "1f19e52e841a5c8dc83a2d1be479251a158896f608e43eb0badb2ccd96938433",
+          "schemaHash": "dce31d311509ce7672725df28b14cab8c4b19f874b2625949f47bf405c409f57"
+        },
+        {
+          "table": "billing_company_settings",
+          "rows": 1,
+          "dataHash": "34800d12a944e845d6dd9dff99bc549cb2004d3fa03cbd1236fe61454ce59626",
+          "schemaHash": "cc100c33cf44d0c2bfe5ed8a2dc821ca39f1b8f5d6c482167fbea168f2b8a86d"
+        },
+        {
+          "table": "billing_dashboard_snapshots",
+          "rows": 1,
+          "dataHash": "ffc8b35a949a1fe3a29b1538537ded938786bceec9f6640164668ada5657945a",
+          "schemaHash": "3459609c22a4e4858bec8e22e214f16aa13f9b5cb1f1087732265242ab2a3914"
+        },
+        {
+          "table": "billing_domain_events",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "9d9e7941982e1f6b81e03c0d2d59e620aab3e1b4da284d3a012ae084cecec3c6"
+        },
+        {
+          "table": "billing_export_sales",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "955b3ad9a09bafd77239b4adab1653e08c827f684e4f30077d131e55b48a31bc"
+        },
+        {
+          "table": "billing_export_sales_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "ecd31b65e52e28ed3405ba085613e80fec5f372fa8b47095fc848c747d8c8828"
+        },
+        {
+          "table": "billing_export_sales_comments",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "bfee53a4682f39b01d2d099d774e585aa7a4483c2fb3f8abe211b41a75062c74"
+        },
+        {
+          "table": "billing_export_sales_einvoices",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "70ab526d65e2ce366d16cbe9aca5d99a7841dbca0e4a362b57470226090ef540"
+        },
+        {
+          "table": "billing_export_sales_entry_tools",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "7f3e9c0525d7951bd3c906d6c48c9659c3fc7157548bc2308708cf6341fb2792"
+        },
+        {
+          "table": "billing_export_sales_eway_bills",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "3dad1e1fcd7f7e43cdcf8385d2c5c4c5d9890c1cb4250f2d6d4923d5b6a861e4"
+        },
+        {
+          "table": "billing_export_sales_items",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "95027f783bede9d66e2ad1c3e643901e38aadafb6c465fb5e07e8ee7abbf2966"
+        },
+        {
+          "table": "billing_gst_filings",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "5b808765686b8e47618899ea9306ded927812cab871d309c14b3fb644c00ad5d"
+        },
+        {
+          "table": "billing_opening_balances",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "eed6a185860383165f95b697908eb74fbe5230b764a25d800d4884a762424ad1"
+        },
+        {
+          "table": "billing_opening_balance_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "b944a3c82eba56cd8c90034aebf77df75f607c505c69455df98fe4ba4ef15886"
+        },
+        {
+          "table": "billing_opening_balance_legacy_assignments",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "aff1c14c7c7fff469d44ea2f7cd062048ba9d2028e7e2dd51c5b6103c4fce81f"
+        },
+        {
+          "table": "billing_outbox_jobs",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "7b7c0b179e6ebc1b1023e53ac485eba7574fa1c16e727687a6f2a872c9cb0f40"
+        },
+        {
+          "table": "billing_payments",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "dd202983c24609426f3f02fa0d3d411bfe86b2f53c10dd82624ad16806c26da4"
+        },
+        {
+          "table": "billing_payment_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "55bd860f50981331a30825b85dd4da50e3213144278a42182f91c9e01dd52874"
+        },
+        {
+          "table": "billing_payment_allocations",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "5afaae65409c5cdc3863dc368711b169ae9a1e3a06d1db240ebfa0fda3e046d8"
+        },
+        {
+          "table": "billing_purchases",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "d69ce806dcbfa2b2588c58e3032b05f81ebb89b3216530eb6f4f5d185e5e463e"
+        },
+        {
+          "table": "billing_purchase_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "66ccfb3bb43c7e7a38d279240e69a8d2edeefac680284184b11d8c357ea00144"
+        },
+        {
+          "table": "billing_purchase_items",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "403cf85f8148b8b8e570b5a86a1add88bd794fe505a16ffd19eb4ab74e804d47"
+        },
+        {
+          "table": "billing_quotations",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "a33b5426b11522a7382ad7563a2aa40adba2c4990b6d6cf3540eb97717c11b37"
+        },
+        {
+          "table": "billing_quotation_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "de52eecf092d445f42bbc738d5d187ed9caab78870fc0c9cb4c7611019672593"
+        },
+        {
+          "table": "billing_quotation_items",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "9aa06e51a6cc0a8ec56f269f971e5fb3940c10a7a65560d7a174cf4e90d822e8"
+        },
+        {
+          "table": "billing_receipts",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "80f3289d79d9f73b24b6a138b601cb7542c9dced6269e71f3cfc80d7c8ad3ff8"
+        },
+        {
+          "table": "billing_receipt_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "b76e2ba205b1b4a67bdfeec0f87ec5b521241db677a08f1061199b09cd0113a6"
+        },
+        {
+          "table": "billing_receipt_allocations",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "1bd6d4285b7439f3db94e2ea78da2ce1b2b69eb3751b61c637bb11463966f430"
+        },
+        {
+          "table": "billing_receipt_export_allocations",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "092b660910004390135a47f3c47be8f6e09542b55f1441ee15706a9026fbf2c6"
+        },
+        {
+          "table": "billing_sales",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "6a384f8b03fed16e03221852e5eddef68563ca169c0cd0d59536e154ee7cbbbd"
+        },
+        {
+          "table": "billing_sales_activities",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "550c0b3c3fb60552c0c6705167ed2937c9d939abc3d54356d3874979376034c5"
+        },
+        {
+          "table": "billing_sales_comments",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "b27e29e01a12f3a738b1bbf721f3fec84e41e3df24029362bf77847cc65047b1"
+        },
+        {
+          "table": "billing_sales_einvoices",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "cf621d657b691c852ce4ff8b670ce750b9d575327cb6300d41bda080d4d281e8"
+        },
+        {
+          "table": "billing_sales_entry_tools",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "76b6fde53dc59c3d8b20ee6b2342b54504e3d8d145e3f5675dd67f8155961b95"
+        },
+        {
+          "table": "billing_sales_eway_bills",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "dee9b28039cfb1a6a85c04e34a6626f046cf1b9bdca401c7e8489178316e8e62"
+        },
+        {
+          "table": "billing_sales_items",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "7a896c0c5ec5131c60003f7971fd2aee6b8b1534339f8492c0590685046d47d5"
+        },
+        {
+          "table": "billing_settings",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "b067ac311e036fa92bf239b37ebda390f5d9c6cccb11b5b51fb51984503dd536"
+        },
+        {
+          "table": "core_address_types",
+          "rows": 4,
+          "dataHash": "8ce3a91c288042ca37d9d1dd26cfefe7fd4dc04b2ecc225b1c997ffd07d08c60",
+          "schemaHash": "ee6bbf974137c369ce2c9b2c0b8608c3aa2006a7bb7e46d3f288fc49c8c6c2e4"
+        },
+        {
+          "table": "core_bank_names",
+          "rows": 158,
+          "dataHash": "216cc8c5627776fac364f53dad996303530b7763c9beac9c914254c9fad1786b",
+          "schemaHash": "63140cd279915c12ba4f86faaea56639cc930687a1df8f542f8325fc7d3460c7"
+        },
+        {
+          "table": "core_brands",
+          "rows": 2,
+          "dataHash": "6f7c941157faf998143367ad0ac2a7aac7fd3f0df318bc2effc04332a39d50c7",
+          "schemaHash": "123d39a52118bf1ca1ed751d61e41bceed79e93d92e36af5693c757a07307057"
+        },
+        {
+          "table": "core_cities",
+          "rows": 23,
+          "dataHash": "07ef108cb0b13643993c01e83f78855174e74c64cf5132bd5e5f05b3df3930c0",
+          "schemaHash": "3f8782f90692e06ade364c6ab7b6a890caeb9d66861a1183919abef62a82b1e5"
+        },
+        {
+          "table": "core_colours",
+          "rows": 4,
+          "dataHash": "e78d12faef0c8deb4d29a216fae00f30edf1a9e337cadd2020d8ed56f9d5541e",
+          "schemaHash": "cbcf9d5b4ab69209b9ed74f65a5f1000fcb46bbcc728f8d3a6da1be703fbb8eb"
+        },
+        {
+          "table": "core_companies",
+          "rows": 1,
+          "dataHash": "612ebc95c38264a79d1f96a755973d3b6be848a86e2282b207e68db4af76baf7",
+          "schemaHash": "09bb82102855c3d3f6e1a54190f3fa523cde12d2308f2ca239a54245f014d6a3"
+        },
+        {
+          "table": "core_companies_addresses",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "3d562715fa63708ae395c6e64704ebb9666886a4de7e5f8f07acef8b1fa4c479"
+        },
+        {
+          "table": "core_companies_bank_accounts",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "ec675bb5fadbf99d1d7496d90505bd4a8ae06cfa39bbee9eee08b5557334d197"
+        },
+        {
+          "table": "core_companies_emails",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "db20aef431f31351cbc641ebb9b24eec5d47f760d680370f3ebcf91c62305cbf"
+        },
+        {
+          "table": "core_companies_phones",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "9c2ba964592af261b7b338ca7b180d8a1f5cf7fedf5de6782b526670d185f096"
+        },
+        {
+          "table": "core_companies_social_links",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "d636b094f23c5abe7678e168d9c11d2242373dd3cef703231f2eb93d227c6868"
+        },
+        {
+          "table": "core_contacts",
+          "rows": 1,
+          "dataHash": "521900687f66fad997411f18cdc97b402f0d80009aa063b5b700c65471d4f3e0",
+          "schemaHash": "9da21566ec9df930697b9cbc44ddacc7ff0a16aa855be76b4feb9bb088757c1c"
+        },
+        {
+          "table": "core_contacts_addresses",
+          "rows": 1,
+          "dataHash": "676da6e7dd40eaa91ed85c1d54257ee0201e91860650fbb87a2bbd8b3ca06edc",
+          "schemaHash": "051c1c94a41b0dcb6593dcf3f27a697c99e07cae88ddfbd8a8123148339c66d5"
+        },
+        {
+          "table": "core_contacts_bank_accounts",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "f262b641d9ff7990e5b98eb7291470ba386e949edf24ede9d9f25d9fcdca411e"
+        },
+        {
+          "table": "core_contacts_emails",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "28c87cffe8f8cc88b316d3b58d1a7589402ff99a6e6b3e115085318e9ae3c976"
+        },
+        {
+          "table": "core_contacts_phones",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "9cd51fdfd2ced6087ea0e0b8601d5b367b59533d1d118539821346358529f26d"
+        },
+        {
+          "table": "core_contacts_social_links",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "8b0547555379266315155c773a00553e594428dd212dc225afe5169ee4217d5a"
+        },
+        {
+          "table": "core_contact_groups",
+          "rows": 3,
+          "dataHash": "70ccffd5875944d6ec5b228ebf5dc2006360749eb7bd7ec9be31a17531e3c47e",
+          "schemaHash": "2e9b8479f4ba7506d2a1232bd576ed3d637070e0dc05610b6a6e70880053670e"
+        },
+        {
+          "table": "core_contact_types",
+          "rows": 6,
+          "dataHash": "ced5c07051b986998afb72583e04515db5ce9aa37c47801d78306a5179186695",
+          "schemaHash": "624c60dea1bf506b648441b8eef4abd9f6e82d73c722c15b2f15d64577f799b7"
+        },
+        {
+          "table": "core_countries",
+          "rows": 6,
+          "dataHash": "cab94cc291635353e5a331c8289b2ff0d06e4887ce5afe6fa16592a7206193b8",
+          "schemaHash": "38da8921fb6a4e3315eae31c381dd6ede0f23eb84249ed05bc5cfde9aebf97c4"
+        },
+        {
+          "table": "core_currencies",
+          "rows": 3,
+          "dataHash": "7ecf500eeed44d1cd00a1999894bb6157db5feb8a2146350b4e0ba5718f72279",
+          "schemaHash": "a0f8cf6006588ee3a695b3d94a336bce9455ff77ddb7d10d6712add921c00f86"
+        },
+        {
+          "table": "core_default_company_settings",
+          "rows": 1,
+          "dataHash": "49201b142f4d0d29d85f01f4d2a85088beeeab25bcf78c9a51a26ffade1746c2",
+          "schemaHash": "a6c03e8b4c9e060f0395570426b13640ce77143ba22fa7d55243c10726d1b00b"
+        },
+        {
+          "table": "core_destinations",
+          "rows": 2,
+          "dataHash": "a16792cf926861026de101bb4a5a6bffd7fd0c602e9184d858ec0f684c0be05f",
+          "schemaHash": "17283783882d0a18910816a93f56b9e9f2c8fc8d7c221206bf61e4cba09abecb"
+        },
+        {
+          "table": "core_districts",
+          "rows": 39,
+          "dataHash": "edc018c5b50b171a08145d296910ace99edc17701809e7093be83aa4f7d769c3",
+          "schemaHash": "98e8d6d547bd5b796f479d0c87122f8bc27c44c417b82859f3b9ed574c35d66b"
+        },
+        {
+          "table": "core_financial_years",
+          "rows": 1,
+          "dataHash": "9a14242638012d3f94df94bded53aec89994dce1d11d5fdc3520799516243231",
+          "schemaHash": "a12aa337bf601cf166c05d530ed9ad28417d914c7b21e0b82103c3ced1d5acbc"
+        },
+        {
+          "table": "core_hsn_codes",
+          "rows": 2,
+          "dataHash": "4b4b72f55befdc6fafabfe3000863d58d3b69ddec32deff4d792b3b1c3cc850a",
+          "schemaHash": "7bbf0d2cf4d738d64fc899af4853dcc6bbe2cb53193339c0189fad5f79879a05"
+        },
+        {
+          "table": "core_ledgers",
+          "rows": 2,
+          "dataHash": "6397a4c08a7e65f7747e9360cf8702fb500af37ed8059eade7f84b7ad62e3ead",
+          "schemaHash": "2ea3960a05c318f4b433865179fded6667d1faab1167f31745412be09003f716"
+        },
+        {
+          "table": "core_ledger_groups",
+          "rows": 2,
+          "dataHash": "27739668798333ba5e193f2c5ea79635897aa5b6a3ad3ba79e11429656e6a7f0",
+          "schemaHash": "03eb8cbcbf859664b124b667bf24618feb5e2a67feb48c49040c2ac4c4733e6b"
+        },
+        {
+          "table": "core_months",
+          "rows": 13,
+          "dataHash": "b72cc83e9c3db8799102ec05bc75fe11d46f774c5541898310cf21d62d2b8f3c",
+          "schemaHash": "f2ff0219e442c39b58b30036a2cebfc64ec5cc6bd9c2decfcd25c598fbf25976"
+        },
+        {
+          "table": "core_payment_terms",
+          "rows": 4,
+          "dataHash": "947a0ca9ca673dd099f3d0c0cdbb601ca1c86dfbae5ebbbadf82ba21ebcc51a8",
+          "schemaHash": "77c5ae408e92733be84e26960d70e2763e8edc12cc7153df9315bba35debc87d"
+        },
+        {
+          "table": "core_pincodes",
+          "rows": 28,
+          "dataHash": "6079731670bf19ab05fc3611146a8684a345c61b5f4a2fbf955e9c7885a9830d",
+          "schemaHash": "623aa51ff759a160a5c359c99727146736942bce578d80819ea614fca69e469a"
+        },
+        {
+          "table": "core_priorities",
+          "rows": 4,
+          "dataHash": "50ce052b6268d0fa8f9e61e95a0291c060fcc1acc5b57d666f21294286a4f05b",
+          "schemaHash": "5e52d5c1a8e56adb2211800d970456f7f1ba52300433a28bece75081a9d60950"
+        },
+        {
+          "table": "core_products",
+          "rows": 1,
+          "dataHash": "806893ace25ab4476dba924cb1dc808e850d73df1f98c7643de7bb0131566d5f",
+          "schemaHash": "3ea0b314a46bcd8c48fedebdef83ee334271de428ef2cc3a4ec10ea3d6afe886"
+        },
+        {
+          "table": "core_product_categories",
+          "rows": 2,
+          "dataHash": "d4c4de494e7b86f18f38a5a8e4622405b4793cd59e951aef514a3f78eac6d044",
+          "schemaHash": "9097351a4d2272580b5e79b11d9cdc43f6baa58dead28e47f6e86565c7fed1b3"
+        },
+        {
+          "table": "core_product_groups",
+          "rows": 2,
+          "dataHash": "45fb167f2340b93fa1dea7b7a9307e6e1e1ed80fa9c8ed7b40dab37bdfb9a6fd",
+          "schemaHash": "726333be31064044f24d28650bd6be7431d2fe8003da2dbdb48c19efaaadc3c0"
+        },
+        {
+          "table": "core_product_types",
+          "rows": 3,
+          "dataHash": "0360d1405ebf9e69a50df4ea104e3749b47182516ab713ec37101d3030ae1e46",
+          "schemaHash": "67bbffac4189ab458c22a36d04c03496b2b854521f360cc5c1ec7013ea176a63"
+        },
+        {
+          "table": "core_sales_types",
+          "rows": 3,
+          "dataHash": "225560fb3c7a76e84bed3789516a398cb2039d24af174e45cb7cb88342d5bbf8",
+          "schemaHash": "ea6d09ebfe105a5b8172ab4b8104a0e2d1624d875f29e02fa97a849594a9f42a"
+        },
+        {
+          "table": "core_sizes",
+          "rows": 2,
+          "dataHash": "80ed9a9f78ca7940af04f41ea581d77668a0793a50b581e88b917979762facb5",
+          "schemaHash": "2f5e43a0632fe1022d67aa7f232281dcf502a81028a5d3b5287bf1bc7ff70f43"
+        },
+        {
+          "table": "core_states",
+          "rows": 38,
+          "dataHash": "b2eb515ea73cede3d57fe5eebf8603bc70a8aa6c34213c565c08470c9fc6ece0",
+          "schemaHash": "a17096b640236c937ae6966b738115c032a6d2f0f55fd18402abeef937e377e5"
+        },
+        {
+          "table": "core_stock_rejection_types",
+          "rows": 3,
+          "dataHash": "862218d2494bd91c61d661959648786cf69772c7527a0975f6b1004840f10253",
+          "schemaHash": "3d775ff38605cd751035bc20f924a8c8ac72b736738ef84802d1a54957854651"
+        },
+        {
+          "table": "core_styles",
+          "rows": 2,
+          "dataHash": "0a652ea71efec7c935f5e04e0c45cb93de040030bc3204b7a252fad982b3a68c",
+          "schemaHash": "4986a669255303d81cbcc7642099e1dc14a618c59c413abd68f80536cd1dc131"
+        },
+        {
+          "table": "core_taxes",
+          "rows": 5,
+          "dataHash": "8e1f7f6d7fcc7f3053033c1091846ce1f9a68ee9ab8839a827b372bbbc95cb52",
+          "schemaHash": "185d7928cca9bddde2c137bec99cf3047415299cb9b85c794d26605847ec743d"
+        },
+        {
+          "table": "core_transports",
+          "rows": 2,
+          "dataHash": "ed72b4be3fe755e4219cce4fa8d3e788ed2f79111f5212017e9ea7e75d329325",
+          "schemaHash": "6f8dbcfc9969b80f9103da3903e7a3f34ada5b6216fca7da2cff46698138f7c6"
+        },
+        {
+          "table": "core_units",
+          "rows": 5,
+          "dataHash": "7d46c33b1e4a277796ac138564de795a2f124bd55e783bcc78353fea0ef4968f",
+          "schemaHash": "ac3c06a11ebc38372b95be6e6ce94db16431c7e0326672154a4eaee2992f6f58"
+        },
+        {
+          "table": "core_warehouses",
+          "rows": 2,
+          "dataHash": "0f4cd28760f62dbb93183040f20f044a65d74923b3edc75d9284eca2ff797f43",
+          "schemaHash": "7cdf2e85437c7b2cdb9ae25235dc312fd71c5a7410d33f4da0144f66f9ec0d1b"
+        },
+        {
+          "table": "core_work_orders",
+          "rows": 1,
+          "dataHash": "245dca09ab44c0ba7c36cee3adba6ed24a8f4aafa220b3964470ee7f00fa742a",
+          "schemaHash": "d83b26208deb7b075070c4e04d30f72d17312f49f6ce7042b018771ac76cc261"
+        },
+        {
+          "table": "core_work_order_types",
+          "rows": 2,
+          "dataHash": "1dad4bfb998f7f3557a607ac90ea8579869323127672bc0f536358d18dfbe179",
+          "schemaHash": "9e7d7ee64758a4def1d01616e2823429133bf0d347f354afb402e0bda7424077"
+        },
+        {
+          "table": "mail_attachments",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "08c0e4ff35e2186ec8bc76097dcd4588ee98004038b7fe2e6ffae9baa6151d53"
+        },
+        {
+          "table": "mail_events",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "e862cd07f0d6979a526155dd68829d181aad0b55a1b757934bc33cef17cbd360"
+        },
+        {
+          "table": "mail_messages",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "18c42f08801e0441eeaa5e677436622240a6a2db8f682a2e26036cdfa4fbb8b7"
+        },
+        {
+          "table": "mail_settings",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "3f02d0d4a6566e765c8ef0c40ea5c58478b3464e5494f22d3878ca26eeddc525"
+        },
+        {
+          "table": "migration_schema",
+          "rows": 71,
+          "dataHash": "1d5937f0f6f8bdc3ee2df03a52ebbe97410b55c2f1baba81f0035c5066751a65",
+          "schemaHash": "02f2c266ac5af65599b2307632a15369d18ecb3219a7ad8cb2e43c6ea4405c1e"
+        },
+        {
+          "table": "task_manager_lookups",
+          "rows": 14,
+          "dataHash": "341bacc039c4313b2f77656d3b792a0b74889253037210ed93d58cee80f8fb7a",
+          "schemaHash": "2748f9d64440ff7468130bf5a78408b51f0e8aa83b3cd8dff5af83ecb2d739e4"
+        },
+        {
+          "table": "task_manager_todos",
+          "rows": 0,
+          "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "schemaHash": "3a563f254da9c2fee0076c1ae24f96e00d006ecedd24dfb9c087a33e51e0451c"
+        }
+      ],
+      "cloudAccess": false
+    }
+  ],
+  "verifiedAt": "2026-11-13T12:16:52.239Z",
+  "sourceTenantDatabasesModified": false,
+  "temporaryTargetsRemoved": true,
+  "cloudAccess": false,
+  "temporarySafetyBackupsRemoved": true
+}

@@ -1,0 +1,301 @@
+{
+  "masterDatabase": "cxvps_20261113_124552_master",
+  "localApi": "http://127.0.0.1:7010",
+  "localWeb": "http://127.0.0.1:7020",
+  "tenants": [
+    {
+      "tenant": "CODEXSUN",
+      "database": "cxvps_20261113_124552_codexsun",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "SUKRAA",
+      "database": "cxvps_20261113_124552_sukraa",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "COTTONKNIT",
+      "database": "cxvps_20261113_124552_cottonknit",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "GANAPATHI",
+      "database": "cxvps_20261113_124552_ganapathi",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "THETIRUPUR",
+      "database": "cxvps_20261113_124552_thetirupur",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "ALTEX",
+      "database": "cxvps_20261113_124552_altex",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "AARAN",
+      "database": "cxvps_20261113_124552_aaran",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "MATHAN",
+      "database": "cxvps_20261113_124552_mathan",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "ASKNITS",
+      "database": "cxvps_20261113_124552_asknits",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "SUNLIGHT",
+      "database": "cxvps_20261113_124552_sunlight",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "THIRUMURUGAN",
+      "database": "cxvps_20261113_124552_thirumurugan",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    },
+    {
+      "tenant": "SMSUPVC",
+      "database": "cxvps_20261113_124552_smsupvc",
+      "checks": [
+        {
+          "path": "/tenant/runtime",
+          "status": 200
+        },
+        {
+          "path": "/tenant/industries",
+          "status": 200
+        },
+        {
+          "path": "/core/organisation/companies",
+          "status": 200
+        },
+        {
+          "path": "/billing/sales/page?page=1&pageSize=10",
+          "status": 200
+        }
+      ],
+      "isolation": "passed",
+      "passed": true
+    }
+  ],
+  "queueWorkerEnabled": false,
+  "outgoingMailEnabled": false,
+  "defaultSeedEnabled": false,
+  "webStatus": 200,
+  "verificationMethod": "Live local HTTP API requests authenticated with short-lived internal test tokens for existing tenant administrators; no passwords reset or exposed.",
+  "vpsAccess": false
+}

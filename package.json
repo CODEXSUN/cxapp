@@ -1,6 +1,6 @@
 {
   "name": "cxapp",
-  "version": "1.0.79",
+  "version": "1.0.81",
   "private": true,
   "packageManager": "npm@12.0.2",
   "description": "CODEXSUN",
@@ -89,7 +89,8 @@
     "desktop:assets": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/generate-assets.ps1",
     "desktop:package": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 package",
     "desktop:install": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 install",
-    "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall"
+    "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall",
+    "test:backups": "tsx --test tools/backup-policy.test.ts tools/backup-local-files.test.ts tools/backup-routes.test.ts tools/backup-local-roundtrip.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -111,7 +112,7 @@
     "turbo": "^2.10.11",
     "typescript": "^7.0.2",
     "typescript-eslint-compiler": "npm:typescript@6.0.3",
-    "vite": "^8.2.2"
+    "vite": "8.3.3"
   },
   "engines": {
     "node": ">=26.5.0",

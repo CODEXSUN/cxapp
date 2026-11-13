@@ -1,3 +1,4 @@
+import { registerBackupCenterRoutes } from "./backup-center.routes.js";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { AppError } from "@cxapp/framework/errors";
@@ -27,6 +28,7 @@ const databaseRunSchema = z.object({
 });
 
 export async function registerDatabaseMaintenanceRoutes(app: FastifyInstance) {
+  await registerBackupCenterRoutes(app);
   registerTenantInstallRoute(app, "setup");
   registerTenantInstallRoute(app, "reinstall");
   app.get("/admin/database/master", { preHandler: requireSuperAdmin }, async (request) =>

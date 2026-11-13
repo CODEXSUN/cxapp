@@ -21,8 +21,8 @@ try {
   );
   assert.ok(modules.includes("mail"), "Mail package was not composed into Platform API.");
   assert.ok(
-    modules.includes("devkit.platform-registry"),
-    "DevKit package was not composed into Platform API."
+    !modules.includes("devkit.platform-registry"),
+    "DevKit remains composed into Platform API."
   );
 
   const corsResponse = await app.inject({
@@ -86,11 +86,7 @@ try {
     method: "GET",
     url: "/devkit/admin/platform-registry/result"
   });
-  assert.equal(
-    devkitResponse.statusCode,
-    403,
-    "DevKit route is not protected by the host authentication adapter."
-  );
+  assert.equal(devkitResponse.statusCode, 404, "Retired DevKit route remains registered.");
 
   const applicationHost = new URL(process.env.PLATFORM_WEB_ORIGIN ?? "http://app.codexsun.test");
   const sharedContextResponse = await app.inject({
@@ -148,12 +144,12 @@ try {
   });
   assert.equal(
     missingCustomDomainCorporateIdResponse.statusCode,
-    400,
+    401,
     missingCustomDomainCorporateIdResponse.body
   );
   assert.equal(
     missingCustomDomainCorporateIdResponse.json().error?.code,
-    "AUTH_CORPORATE_ID_REQUIRED"
+    "AUTH_INVALID_CREDENTIALS"
   );
 
   const loginResponse = await app.inject({
@@ -229,8 +225,8 @@ try {
   });
   assert.equal(
     authenticatedDevkitResponse.statusCode,
-    403,
-    "A tenant session was allowed to access the Super Admin-only DevKit API."
+    404,
+    "Retired DevKit route remains registered for tenant sessions."
   );
   for (const retiredPath of [
     "/devkit/admin/project-manager/result",
@@ -297,20 +293,21 @@ try {
     method: "GET",
     url: "/devkit/admin/platform-registry/result"
   });
-  assert.equal(masterDevkitResponse.statusCode, 200, masterDevkitResponse.body);
-  const masterDevkit = masterDevkitResponse.json() as {
-    data?: { summary?: { totalModules?: number } };
-    success?: boolean;
-  };
-  assert.equal(masterDevkit.success, true);
-  assert.ok(
-    (masterDevkit.data?.summary?.totalModules ?? 0) > 0,
-    "DevKit returned no master registry modules for Super Admin."
-  );
+  assert.equal(masterDevkitResponse.statusCode, 404, masterDevkitResponse.body);
+  const superAdminTasks = await app.inject({
+    headers: {
+      cookie: superAdminCookies,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    },
+    method: "GET",
+    url: "/task-manager/lookups"
+  });
+  assert.equal(superAdminTasks.statusCode, 403, superAdminTasks.body);
 
   console.log("Composed Platform runtime E2E passed", {
     apiPort: 7010,
-    composedPackages: ["core", "billing", "mail", "devkit"],
+    composedPackages: ["core", "billing", "mail"],
     corsOrigin: "http://127.0.0.1:7020",
     webPort: 7020
   });

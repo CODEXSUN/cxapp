@@ -4,13 +4,11 @@ import { z } from "zod";
 import { AppError } from "@cxapp/framework/errors";
 import { ok } from "@cxapp/framework/http";
 import { tenantAccessContext } from "../../auth/tenant-access-context.js";
-import { getPlatformDatabase } from "../../database/platform-database.js";
 import type { TaskManagerDatabase } from "./task-manager.migration.js";
 import { TaskManagerRepository } from "./task-manager.repository.js";
 import { TaskManagerService } from "./task-manager.service.js";
 import type { TodoInput } from "./task-manager.types.js";
 
-const superAdminScope = "super-admin";
 const lookupKindSchema = z.enum(["category", "group", "status", "priority"]);
 const todoFieldsSchema = z.object({
   category: z.string().trim().min(1).max(80).optional(),
@@ -119,16 +117,8 @@ async function taskManagerRequestContext(
   const payload = request.authContext?.payload;
   if (!payload) throw AppError.unauthorized("Sign in to access Task Manager.");
 
-  if (payload.userType === "super_admin") {
-    return {
-      actorEmail: payload.email,
-      database: getPlatformDatabase() as unknown as Kysely<TaskManagerDatabase>,
-      scopeKey: superAdminScope
-    };
-  }
-
   if (payload.userType !== "tenant") {
-    throw AppError.forbidden("Task Manager is available to tenants and Super Admin.");
+    throw AppError.forbidden("Task Manager is available to tenants only.");
   }
 
   const context = tenantAccessContext(request);

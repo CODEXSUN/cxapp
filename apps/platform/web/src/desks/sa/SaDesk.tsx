@@ -5,9 +5,6 @@ import {
   CircleGaugeIcon,
   CreditCardIcon,
   DatabaseIcon,
-  FolderKanbanIcon,
-  ListChecksIcon,
-  PaletteIcon,
   ShieldCheckIcon,
   UsersIcon,
   WorkflowIcon
@@ -19,15 +16,11 @@ import { AppOperationsStrip, useAppOperationsQuery } from "../../modules/app-orc
 import type { OrchestratedAppId } from "../../modules/app-orchestration";
 import { logout } from "../../shared/api/platform-api";
 import { AuthGate } from "../../shared/auth/AuthGate";
-import { DevkitWorkspaceHost } from "@cxapp/devkit-web";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
 }
 
-const DesignSystemGallery = lazyWorkspace(() =>
-  import("../../modules/design-system").then((module) => module.DesignSystemGallery)
-);
 const TenantList = lazyWorkspace(() =>
   import("../../modules/tenant").then((module) => module.TenantList)
 );
@@ -76,20 +69,26 @@ const QueueManagementWorkspace = lazyWorkspace(() =>
 const StorageManagerWorkspace = lazyWorkspace(() =>
   import("../../modules/storage-manager").then((module) => module.StorageManagerWorkspace)
 );
-const TaskManagerWorkspace = lazyWorkspace(() =>
-  import("../../modules/task-manager").then((module) => module.TaskManagerWorkspace)
-);
 const AppOrchestrationWorkspace = lazyWorkspace(() =>
   import("../../modules/app-orchestration/app-orchestration.workspace").then(
     (module) => module.AppOrchestrationWorkspace
   )
 );
 
+const MasterBackupsWorkspace = lazyWorkspace(() =>
+  import("../../modules/database-backups/database-backups.workspace").then(
+    (m) => m.MasterBackupsWorkspace
+  )
+);
+const TenantBackupsWorkspace = lazyWorkspace(() =>
+  import("../../modules/database-backups/database-backups.workspace").then(
+    (m) => m.TenantBackupsWorkspace
+  )
+);
+
 type SaPage =
   | "overview"
   | "app-operations"
-  | "task-manager"
-  | "devkit-registry"
   | "tenants"
   | "domains"
   | "plans"
@@ -100,13 +99,14 @@ type SaPage =
   | "tenant-access"
   | "tenant-users"
   | "industries"
+  | "master-backups"
+  | "tenant-backups"
   | "master-database"
   | "tenant-database"
   | "queue-management"
   | "storage-manager"
   | "access"
-  | "activity"
-  | "design-system";
+  | "activity";
 
 export function SaDesk() {
   const [page, setPage] = useState<SaPage>(pageFromUrl());
@@ -142,24 +142,6 @@ export function SaDesk() {
       icon: CircleGaugeIcon,
       isActive: page === "overview",
       onSelect: () => selectPage("overview")
-    },
-    {
-      title: "Task Manager",
-      icon: ListChecksIcon,
-      isActive: page === "task-manager",
-      onSelect: () => selectPage("task-manager")
-    },
-    {
-      title: "DevKit",
-      icon: FolderKanbanIcon,
-      isActive: page.startsWith("devkit-"),
-      items: [
-        {
-          title: "Platform Registry",
-          isActive: page === "devkit-registry",
-          onSelect: () => selectPage("devkit-registry")
-        }
-      ]
     },
     {
       title: "Operations",
@@ -250,7 +232,11 @@ export function SaDesk() {
       title: "Database",
       icon: DatabaseIcon,
       isActive:
-        page === "master-database" || page === "tenant-database" || page === "storage-manager",
+        page === "master-backups" ||
+        page === "tenant-backups" ||
+        page === "master-database" ||
+        page === "tenant-database" ||
+        page === "storage-manager",
       items: [
         {
           title: "Master Database",
@@ -263,21 +249,19 @@ export function SaDesk() {
           onSelect: () => selectPage("tenant-database")
         },
         {
+          title: "Master Backups",
+          isActive: page === "master-backups",
+          onSelect: () => selectPage("master-backups")
+        },
+        {
+          title: "Tenant Backups",
+          isActive: page === "tenant-backups",
+          onSelect: () => selectPage("tenant-backups")
+        },
+        {
           title: "Storage Manager",
           isActive: page === "storage-manager",
           onSelect: () => selectPage("storage-manager")
-        }
-      ]
-    },
-    {
-      title: "Design System",
-      icon: PaletteIcon,
-      isActive: page === "design-system",
-      items: [
-        {
-          title: "Components",
-          isActive: page === "design-system",
-          onSelect: () => selectPage("design-system")
         }
       ]
     }
@@ -290,7 +274,7 @@ export function SaDesk() {
         menuItems={menuItems}
         onLogout={handleLogout}
         versionLabel={`v ${__APP_VERSION__}`}
-        workspace={page === "task-manager" ? "task-manager" : "platform"}
+        workspace="platform"
       >
         <Suspense fallback={<GlobalLoader className="min-h-[24rem]" fullScreen={false} />}>
           {page === "overview" ? <SaOverview onOpenApp={openAppOperations} /> : null}
@@ -299,10 +283,6 @@ export function SaDesk() {
               appId={selectedAppId}
               onBack={() => selectPage("overview")}
             />
-          ) : null}
-          {page === "task-manager" ? <TaskManagerWorkspace /> : null}
-          {page.startsWith("devkit-") ? (
-            <DevkitWorkspaceHost workspaceId={page.slice("devkit-".length)} />
           ) : null}
           {page === "tenants" ? <TenantList onBack={() => selectPage("overview")} /> : null}
           {page === "domains" ? <TenantDomainList /> : null}
@@ -314,13 +294,14 @@ export function SaDesk() {
           {page === "tenant-access" ? <TenantAccessWorkspace /> : null}
           {page === "tenant-users" ? <TenantUserWorkspace mode="super-admin" /> : null}
           {page === "industries" ? <IndustryWorkspace /> : null}
+          {page === "master-backups" ? <MasterBackupsWorkspace /> : null}
+          {page === "tenant-backups" ? <TenantBackupsWorkspace /> : null}
           {page === "master-database" ? <MasterDatabaseWorkspace /> : null}
           {page === "tenant-database" ? <TenantDatabaseWorkspace /> : null}
           {page === "queue-management" ? <QueueManagementWorkspace /> : null}
           {page === "storage-manager" ? <StorageManagerWorkspace /> : null}
           {page === "access" ? <AccessControlWorkspace /> : null}
           {page === "activity" ? <PlatformActivityWorkspace /> : null}
-          {page === "design-system" ? <DesignSystemGallery /> : null}
         </Suspense>
       </SuperLayout>
     </AuthGate>
@@ -330,8 +311,6 @@ export function SaDesk() {
 function pageFromUrl(): SaPage {
   const page = window.location.pathname.split("/")[2];
   return page === "app-operations" ||
-    page === "task-manager" ||
-    page === "devkit-registry" ||
     page === "tenants" ||
     page === "domains" ||
     page === "plans" ||
@@ -342,13 +321,14 @@ function pageFromUrl(): SaPage {
     page === "tenant-access" ||
     page === "tenant-users" ||
     page === "industries" ||
+    page === "master-backups" ||
+    page === "tenant-backups" ||
     page === "master-database" ||
     page === "tenant-database" ||
     page === "queue-management" ||
     page === "storage-manager" ||
     page === "access" ||
-    page === "activity" ||
-    page === "design-system"
+    page === "activity"
     ? page
     : "overview";
 }

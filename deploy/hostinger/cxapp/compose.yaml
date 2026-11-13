@@ -1,0 +1,18 @@
+services:
+  enquiry:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - /etc/cxapp-enquiry.env
+    environment:
+      BIND_ADDRESS: 0.0.0.0
+      PORT: "3110"
+    ports:
+      - "127.0.0.1:3110:3110"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    mem_limit: 128m

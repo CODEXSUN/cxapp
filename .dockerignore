@@ -14,3 +14,9 @@ apps/*/*/node_modules
 apps/*/*/dist
 packages/*/node_modules
 *.tsbuildinfo
+
+# Private API backup data and deployment caches
+apps/platform/api/storage
+**/*.cxbackup
+**/.wrangler
+deploy/**/tmp

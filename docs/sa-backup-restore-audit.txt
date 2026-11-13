@@ -1,0 +1,48 @@
+CURRENT UPDATE: See sa-existing-database-restore-audit.txt for fresh/incremental existing-database modes and current profile gates. The new-database-only descriptions below document the initial implementation and are superseded by that update. Master Backups no longer offers the folder picker; Tenant Backups still does.
+
+SA BACKUP / RESTORE AUDIT AND SETUP
+13 November 2026 — local repository changes only
+
+REVIEW RESULTS
+Existing /sa/master-database and /sa/tenant-database pages already offered backup and restore actions, backed by SA-only maintenance endpoints and queue jobs. These were not dedicated transfer pages. CLI dump:create/dump:download only described external tooling; restore:test probed the sandbox rather than importing a dump. backup:verify accepted an operator marker, not proof of a successful restore.
+
+The existing dump serializer backed up base-table DDL and rows into memory. The restore parser could skip the first DROP statement when it was grouped with header comments and mishandle escaped strings. Backups were labelled verifiedAt after calculating a checksum. There was no dedicated file download/upload and named-connection workflow for cloud/local transfers.
+
+IMPLEMENTED LOCALLY
+/sa/master-backups and /sa/tenant-backups are separate SA menu pages. They share the backup center service but keep master/tenant inventories separate. Tenant backups are scoped by tenant code; restore rejects a different tenant or scope.
+
+Select a source connection, tenant where applicable, and named server folder. Create a .cxbackup artifact containing SQL, source metadata and SHA-256. Download saves a copy on the browser computer. Upload validates format, checksum and supported SQL. A restore creates a NEW cxrestore_* database on an explicitly enabled destination. The built-in application connection is always read only. No existing database is overwritten and tenant database routing is not changed.
+
+The exporter now uses a read-only consistent snapshot, preserves large numbers and dates, excludes generated columns from row inserts, and encodes text/binary values safely. The legacy parser uses the corrected statement splitter too. A checksum timestamp is no longer called verification.
+
+CONFIGURATION — API HOST ENVIRONMENT
+No live .env or VPS configuration was changed. Configure these on the local API host when ready:
+
+CXAPP_BACKUP_LOCATIONS=[{"id":"local","label":"Local backup folder","path":"D:/cxapp-backups"},{"id":"archive","label":"External drive","path":"F:/cxapp-backups"}]
+
+CXAPP_BACKUP_CONNECTIONS=[{"id":"local-mariadb","label":"Local MariaDB","host":"127.0.0.1","port":3306,"user":"YOUR_LOCAL_DB_USER","passwordEnv":"LOCAL_MARIADB_PASSWORD","masterDatabase":"YOUR_LOCAL_MASTER_DATABASE","tenantDatabases":{"CODEXSUN":"YOUR_LOCAL_TENANT_DATABASE"},"allowRestore":true},{"id":"cloud-read","label":"VPS database (read only)","host":"127.0.0.1","port":13307,"user":"YOUR_EXISTING_CLOUD_DB_USER","passwordEnv":"CLOUD_MARIADB_PASSWORD","masterDatabase":"cxapp_master_db","tenantDatabases":{"CODEXSUN":"codexsun_db","SUKRAA":"sukraa_db"},"allowRestore":false}]
+
+Set the named password environment variables privately. Never put real secrets in this document or committed files. Add explicit tenant code/database mappings for each extra connection; mappings are not guessed.
+
+CXAPP_BACKUP_RESTORE_ENABLED=1 enables restore only for additional profiles with allowRestore:true. Keep the VPS profile allowRestore:false throughout this read-only session. All profiles are read-only destinations when the global switch is 0. Restore needs CREATE DATABASE privileges; use a dedicated database account constrained to the intended restore databases.
+
+For cloud reads from a local API, an existing SSH identity can open a loopback tunnel without changing server files:
+ssh -N -o StrictHostKeyChecking=yes -L 127.0.0.1:13307:127.0.0.1:3307 codexsun-hostinger
+This is a setup example, not a command executed in this session. Use an existing authorized database account; no cloud user or grant was created. Loopback 13307 is a tunnel to cloud data, not a local restore destination.
+
+LOCAL / CLOUD DIRECTIONS
+Cloud to local: export from cloud-read, choose a local backup folder, then restore that artifact through local-mariadb into a new cxrestore_* database. Download is optional for another copy.
+Local to cloud: export from local-mariadb and download the artifact. A future, separately authorized cloud restore can use an explicitly enabled destination profile and the same upload/restore flow. No cloud restore was enabled or performed here. Existing production databases cannot be overwritten through these new pages.
+
+When the API itself runs on a remote server, its backup folders and 127.0.0.1 refer to that server. A browser cannot directly restore into a laptop MariaDB. Run the API locally or use an intentionally configured connection. A downloaded master database includes original tenant connection metadata; inspect and map it to local databases before starting an app against the clone.
+
+LIMITS
+This interactive format supports InnoDB base-table schema and literal rows. Views, stored routines, triggers, events, grants, users and external media files are not included. Use native MariaDB dump/restore plus storage backups for full disaster recovery. The 32 MiB SQL export and 40 MiB upload limits suit smaller interactive transfers; the exporter still buffers rows in memory. Large databases require native streaming tools.
+
+DDL restore is not transactional. A failed import can leave a partial new database; it is retained for inspection and retry requires another new name. SHA-256 checks integrity, not authenticity or recoverability. A successful restore and table count still require application/data checks. Backup files contain sensitive data; directories/files are created with restrictive Unix modes, and Windows ACLs must be managed by the operator. No retention scheduler, encryption-at-rest system or native SQL file import was added. Existing maintenance endpoints remain; their live-restore workflow has separate operator gates and should be reviewed before production use.
+
+VALIDATION
+API and web TypeScript checks passed. ESLint passed on the changed feature files. Seven tests passed: SQL parsing/restore policy, SA endpoint access guards, and a real local MariaDB 12.3 round trip on 127.0.0.1:3306. The round trip checked export, list, download, upload, checksum rejection, read-only guard, scope/tenant guard, explicit confirmation, existing-database refusal, generated columns, Unicode, binary values, decimal precision and large IDs. Unique temporary local test databases and files were removed after verification. No VPS access or changes were needed for these tests.
+
+LOCAL FOLDER PICKER UPDATE
+Open folder selects a writable folder on the browser computer (Chrome/Edge on HTTPS or localhost). The location switches to My computer. Create backup requests a direct artifact response and writes the .cxbackup file into that folder without storing a backup file on the API/database server. Folder selection lasts while the page is open; browsers show the folder name rather than exposing its absolute path. If permission is lost after export, the completed artifact falls back to a browser download. Cloud connections remain read-only sources. Uploaded local files can still be restored through an explicitly enabled destination.

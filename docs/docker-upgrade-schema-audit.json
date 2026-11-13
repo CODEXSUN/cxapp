@@ -1,0 +1,281 @@
+{
+  "release": "1.0.81",
+  "sourceVpsVersion": "1.0.79",
+  "comparisonSource": "Fresh native VPS backups captured 13 November 2026; no new VPS access during audit.",
+  "comparisons": [
+    {
+      "scope": "master",
+      "tenant": "MASTER",
+      "source": "cxapp_master_db",
+      "local": "cxvps_20261113_124552_master",
+      "tables": 27,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "CODEXSUN",
+      "source": "codexsun_db",
+      "local": "cxvps_20261113_124552_codexsun",
+      "tables": 123,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "SUKRAA",
+      "source": "sukraa_db",
+      "local": "cxvps_20261113_124552_sukraa",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "COTTONKNIT",
+      "source": "cottonknit_db",
+      "local": "cxvps_20261113_124552_cottonknit",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "GANAPATHI",
+      "source": "ganapathi_db",
+      "local": "cxvps_20261113_124552_ganapathi",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "THETIRUPUR",
+      "source": "thetirupur_db",
+      "local": "cxvps_20261113_124552_thetirupur",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "ALTEX",
+      "source": "altex_db",
+      "local": "cxvps_20261113_124552_altex",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "AARAN",
+      "source": "aaran_db",
+      "local": "cxvps_20261113_124552_aaran",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "MATHAN",
+      "source": "mathan_db",
+      "local": "cxvps_20261113_124552_mathan",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "ASKNITS",
+      "source": "asknits_db",
+      "local": "cxvps_20261113_124552_asknits",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "SUNLIGHT",
+      "source": "sunlight_db",
+      "local": "cxvps_20261113_124552_sunlight",
+      "tables": 109,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "THIRUMURUGAN",
+      "source": "thirumurugan_db",
+      "local": "cxvps_20261113_124552_thirumurugan",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    },
+    {
+      "scope": "tenant",
+      "tenant": "SMSUPVC",
+      "source": "smsupvc_db",
+      "local": "cxvps_20261113_124552_smsupvc",
+      "tables": 96,
+      "added": [],
+      "missing": [],
+      "changed": []
+    }
+  ],
+  "tenantSchemaVariation": [
+    {
+      "tenant": "CODEXSUN",
+      "tables": 123,
+      "extraAgainstCommon96": [
+        "accounts_account_groups",
+        "accounts_accounting_periods",
+        "accounts_accounting_rules",
+        "accounts_accounts",
+        "accounts_bank_entries",
+        "accounts_cash_entries",
+        "accounts_cash_entry_lines",
+        "accounts_core_ledger_links",
+        "accounts_entries",
+        "accounts_entry_lines",
+        "accounts_journal_entries",
+        "accounts_journal_lines",
+        "accounts_ledger",
+        "blogs_article_templates",
+        "blogs_articles",
+        "blogs_authors",
+        "blogs_discussions",
+        "blogs_engagement",
+        "blogs_media",
+        "blogs_redirects",
+        "blogs_revisions",
+        "blogs_settings",
+        "blogs_taxonomy",
+        "devkit_platform_registry_activity",
+        "devkit_platform_registry_groups",
+        "devkit_platform_registry_modules",
+        "devkit_platform_registry_platforms"
+      ],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "SUKRAA",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "COTTONKNIT",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "GANAPATHI",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "THETIRUPUR",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "ALTEX",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "AARAN",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "MATHAN",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "ASKNITS",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "SUNLIGHT",
+      "tables": 109,
+      "extraAgainstCommon96": [
+        "accounts_account_groups",
+        "accounts_accounting_periods",
+        "accounts_accounting_rules",
+        "accounts_accounts",
+        "accounts_bank_entries",
+        "accounts_cash_entries",
+        "accounts_cash_entry_lines",
+        "accounts_core_ledger_links",
+        "accounts_entries",
+        "accounts_entry_lines",
+        "accounts_journal_entries",
+        "accounts_journal_lines",
+        "accounts_ledger"
+      ],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "THIRUMURUGAN",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    },
+    {
+      "tenant": "SMSUPVC",
+      "tables": 96,
+      "extraAgainstCommon96": [],
+      "missingAgainstCommon96": []
+    }
+  ],
+  "migrationRehearsal": {
+    "exitCode": 0,
+    "passed": true,
+    "localOnly": true,
+    "databases": 13,
+    "error": null
+  },
+  "vpsChanges": false,
+  "validation": {
+    "workspaceCheck": "passed",
+    "productionBuild": "passed",
+    "productionArtifactSmoke": "passed",
+    "isolatedComposedRuntime": "passed",
+    "backupTests": 9,
+    "deploymentEnvironmentTests": 5,
+    "migrationContractTests": 8,
+    "versionAlignment": "1.0.81"
+  },
+  "readiness": {
+    "schemaBlocker": false,
+    "productionReady": false,
+    "pending": [
+      "Build and smoke-test exact Docker API/web/migration images on target MariaDB 11.8; local rehearsal used MariaDB 12.3.",
+      "Verify persistent storage/media backups and restoration; database-only copy does not include files.",
+      "Confirm external consumers accept retired DevKit API and super-admin Task Manager access.",
+      "Prepare production deploy.env for 1.0.81, image digests and rollback; do not copy local clone database names or local restore profiles."
+    ]
+  }
+}

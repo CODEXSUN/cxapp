@@ -1,3 +1,4 @@
+import { statements } from "./backup-policy.js";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -41,7 +42,7 @@ export async function executeDatabaseBackup(input: {
     filePath: backup.filePath,
     sizeBytes: file.size,
     storage: "local-sql",
-    verifiedAt: new Date().toISOString()
+    checksumAt: new Date().toISOString()
   };
 }
 
@@ -124,9 +125,12 @@ function restoreSandboxName(sourceDatabaseName: string) {
   );
 }
 
-async function createSqlDump(target: DatabaseExecutionTarget) {
+export async function createSqlDump(target: DatabaseExecutionTarget) {
   const databaseName = assertDatabaseName(target.databaseName);
   const connection = await createConnection({
+    supportBigNumbers: true,
+    bigNumberStrings: true,
+    dateStrings: true,
     database: databaseName,
     host: target.host,
     password: target.password,
@@ -136,6 +140,8 @@ async function createSqlDump(target: DatabaseExecutionTarget) {
   });
 
   try {
+    await connection.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    await connection.query("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY");
     const [tableRows] = await connection.query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
     const tableNames = Array.isArray(tableRows)
       ? tableRows
@@ -161,7 +167,17 @@ async function createSqlDump(target: DatabaseExecutionTarget) {
       );
       chunks.push(`DROP TABLE IF EXISTS ${quoteIdentifier(safeTableName)};`, `${createSql};`);
 
-      const [rows] = await connection.query(`SELECT * FROM ${quoteIdentifier(safeTableName)}`);
+      const [columnRows] = await connection.query(
+        `SHOW COLUMNS FROM ${quoteIdentifier(safeTableName)}`
+      );
+      const selectedColumns = (columnRows as Array<{ Field: string; Extra: string }>)
+        .filter((c) => !/VIRTUAL GENERATED|STORED GENERATED/i.test(c.Extra))
+        .map((c) => quoteIdentifier(c.Field))
+        .join(", ");
+      if (!selectedColumns) continue;
+      const [rows] = await connection.query(
+        `SELECT ${selectedColumns} FROM ${quoteIdentifier(safeTableName)}`
+      );
       if (Array.isArray(rows) && rows.length > 0) {
         const columns = Object.keys(rows[0] as Record<string, unknown>)
           .map(quoteIdentifier)
@@ -176,6 +192,7 @@ async function createSqlDump(target: DatabaseExecutionTarget) {
     }
 
     chunks.push("SET FOREIGN_KEY_CHECKS=1;", "");
+    await connection.commit();
     return chunks.join("\n");
   } finally {
     await connection.end();
@@ -189,32 +206,14 @@ function sqlValue(value: unknown) {
   if (value instanceof Date)
     return `'${escapeSql(value.toISOString().slice(0, 19).replace("T", " "))}'`;
   if (Buffer.isBuffer(value)) return `X'${value.toString("hex")}'`;
-  return `'${escapeSql(String(value))}'`;
+  const text = typeof value === "object" ? JSON.stringify(value) : String(value);
+  return "X'" + Buffer.from(text, "utf8").toString("hex") + "'";
 }
 
 function escapeSql(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "''");
 }
 
-function splitSqlStatements(sql: string) {
-  const statements: string[] = [];
-  let current = "";
-  let inString = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const char = sql[index];
-    const next = sql[index + 1];
-    current += char;
-    if (char === "'" && next !== "'") inString = !inString;
-    if (char === "'" && next === "'") {
-      current += next;
-      index += 1;
-      continue;
-    }
-    if (char === ";" && !inString) {
-      statements.push(current);
-      current = "";
-    }
-  }
-  if (current.trim()) statements.push(current);
-  return statements;
+export function splitSqlStatements(sql: string) {
+  return statements(sql);
 }

@@ -1,0 +1,7 @@
+CXApp audit — 13 November 2026
+
+Hostinger API and SSH verified: VPS 914719, 69.62.81.166; checkout /home/cxapp; version 1.0.79; commit 85c3ad2. All five cxapp containers healthy. Disk 11% used. Cloudflare OAuth verified and codexsun-tunnel healthy.
+
+Copied folders renamed to cxapp; SMTP identity and recipient require environment configuration. Optional Worker has no domain routes. Existing .container tooling remains the production deployment path. Optional relay not installed by this refactor. Tool caches ignored.
+
+Backup restoration, host firewall rules and dependency vulnerabilities were not fully audited. No production service, DNS or database changes.

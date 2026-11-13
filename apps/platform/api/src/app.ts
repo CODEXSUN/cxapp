@@ -41,8 +41,6 @@ import { bootstrapPlatformDatabase, closePlatformDatabase } from "./database/pla
 import { closeAllTenantDatabases } from "./database/tenant-database.js";
 import { registerAuthRequestContext } from "./auth/auth-request-context.js";
 import { TenantDomainRepository } from "./modules/tenant-domain/tenant-domain.repository.js";
-import { registerDevkitHost } from "./devkit-host.js";
-import { devkitApiModuleKeys } from "@cxapp/devkit-api";
 import {
   addonApiModuleKeys,
   activePlatformAddons,
@@ -85,8 +83,6 @@ export async function createApp() {
   });
   const queueService = new QueueManagerService();
   registerAuthRequestContext(app);
-  await registerDevkitHost(app);
-  console.info("[platform.routes] DevKit package ready");
   const mailModule = createMailModule({
     enqueue: (payload) => queueService.enqueue(payload),
     resolveContext: mailContext,
@@ -102,7 +98,6 @@ export async function createApp() {
             ...coreApiModuleKeys,
             ...billingApiModuleKeys,
             ...accountsApiModuleKeys,
-            ...devkitApiModuleKeys,
             ...addonApiModuleKeys,
             appRegistryModule.key,
             tenantModule.key,

@@ -1,0 +1,30 @@
+EXISTING DATABASE RESTORE AUDIT — 13 November 2026
+
+Finding: the previous saved-backup workflow only created a new cxrestore_* database. It deliberately refused existing targets. Fresh and incremental restoration into existing databases were absent.
+
+Implemented locally:
+- Master Backups no longer shows Open folder or My computer folder selection. Server locations and Download remain available. Tenant Backups keeps its folder picker.
+- New database mode retains the existing non-overwrite behavior.
+- Fresh mode requires an existing target and replaces all its base tables with the selected saved backup. Tables absent from the backup are removed.
+- Incremental mode updates rows by primary key and inserts missing rows. Rows/tables absent from the backup are retained. Saved backup values win on matching primary keys. This is snapshot row merging, not binary-log incremental recovery or a timestamp-based merge.
+- Both existing modes create a pre-restore .cxbackup file in the selected server backup location before changing destination data. Failure to save this copy prevents the restore.
+- Incremental changes run in one transaction with foreign-key checks enabled and parent-table ordering. A unique-key conflict rolls back the row changes rather than overwriting a different primary key. Schema differences (except AUTO_INCREMENT counters), missing tables, missing primary keys and cyclic foreign keys are refused before the first data write.
+- Existing targets with non-InnoDB tables, views, triggers, routines or events require native MariaDB tooling instead. This table-only format cannot safely recreate those objects.
+
+Configuration:
+The built-in configured application connection stays read only. Additional profiles still require allowRestore:true and CXAPP_BACKUP_RESTORE_ENABLED=1. Existing restores additionally require allowExistingRestore:true on that profile. Only the profile's masterDatabase (master scope) or matching tenantDatabases entry (tenant scope) is accepted, plus any scope-specific restoreTargets allowlist. System databases are refused.
+
+Example additional profile fields, merged with the existing connection definition:
+{"allowRestore":true,"allowExistingRestore":true,"restoreTargets":{"master":["local_master_copy"],"CODEXSUN":["local_codexsun_copy"]}}
+
+Fresh confirmation: FRESH RESTORE database_name
+Incremental confirmation: MERGE RESTORE database_name
+New confirmation: RESTORE cxrestore_database_name
+
+Take the target app offline for restoration and avoid concurrent schema/data changes. Fresh DDL cannot roll back atomically: a failure can leave a partially restored target. The failure includes the pre-restore backup ID. Incremental data changes roll back on errors; the pre-restore copy also remains in Saved backups. This feature does not change tenant routing. Connection accounts should be limited to intended destination databases. No cloud profile was enabled for writes, and no VPS data or configuration was changed in this session.
+
+Verification:
+A real local MariaDB test used unique temporary databases on 127.0.0.1:3306. It verified fresh replacement including extra-table removal; incremental insertion/update and preservation of extra rows; pre-restore backup IDs; wrong confirmation and disabled-profile rejection; schema mismatch rejection; transaction rollback on a secondary unique-key conflict; foreign-key parent ordering; and the earlier download/upload/checksum/precision tests. Temporary test databases and files were cleaned up. API/web type checks and changed-file lint passed.
+
+CURRENT SAVED BACKUP VERIFIED
+Local MariaDB destination enabled in the ignored local .env using the existing DB_PASSWORD environment reference. No cloud profile was enabled for writes. Backup 1c351270-63c9-45ac-b84f-6c9b50e6ef9a (cxsun_master_db, created 13 November 2026 at 14:37 IST) was restored into unique temporary local databases. Fresh and incremental modes each matched all 27 backed-up tables and 159 rows using deterministic SHA-256 comparison of table rows. Fresh removed an extra probe table; incremental restored an intentionally changed tenant name and preserved the extra probe table. Both created pre-restore backups. Self-referencing foreign keys are now supported by retrying rows whose referenced parents have not yet been inserted, with FK checks enabled. Unresolvable row cycles fail and roll back. Active application database and original saved backup were not restored over or modified.

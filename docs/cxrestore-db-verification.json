@@ -1,0 +1,199 @@
+{
+  "target": "cxrestore_db",
+  "host": "127.0.0.1:3306",
+  "backupId": "1c351270-63c9-45ac-b84f-6c9b50e6ef9a",
+  "sourceDatabase": "cxsun_master_db",
+  "sourceSqlBytes": 1112568,
+  "before": {
+    "tables": 27,
+    "rows": 159
+  },
+  "fresh": {
+    "passed": true,
+    "databaseName": "cxrestore_db",
+    "mode": "fresh",
+    "tableCount": 27,
+    "inserted": 0,
+    "updated": 0,
+    "safetyBackupId": "b2746a12-dd4c-4d4a-bf8a-de8e2317a464",
+    "restoredAt": "2026-11-13T12:11:58.219Z"
+  },
+  "incremental": {
+    "passed": true,
+    "databaseName": "cxrestore_db",
+    "mode": "incremental",
+    "tableCount": 27,
+    "inserted": 0,
+    "updated": 159,
+    "safetyBackupId": "1a818970-b8a6-4128-854a-f0515a59e3e2",
+    "restoredAt": "2026-11-13T12:11:58.448Z"
+  },
+  "verifiedTables": 27,
+  "verifiedRows": 159,
+  "preFreshBackupSqlBytes": 1112559,
+  "tables": [
+    {
+      "table": "access_permissions",
+      "rows": 4,
+      "dataHash": "465d74470cfd8ee2f39d028b6a0de7dabdb89be4fd732fe3383900fa0963b00c",
+      "schemaHash": "0460d85091bf032d0d16f6c51a129e6e062aa229193b71ec5731cf97d08d84af"
+    },
+    {
+      "table": "access_roles",
+      "rows": 1,
+      "dataHash": "b8e1b11aa0ba728311c8ec7a08dbda292fd54c5b9d7ca414c8b044ac92973163",
+      "schemaHash": "bb5be092d39089ae4b66c3f1599f4d21d7f4ef495fc9f0bef63ad68b080387fd"
+    },
+    {
+      "table": "access_users",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "1eb6cc05de9121b406a61aacd1b737ed0031d5aa644c801117c4075fa39395d8"
+    },
+    {
+      "table": "auth_login_attempts",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "d6d5d8bca718eb10034ffc88ba64ef2461baac8740892a18eba8d5d0f2d08810"
+    },
+    {
+      "table": "auth_sessions",
+      "rows": 2,
+      "dataHash": "c76ce6517a4931450e902cab62b713a4f8a1b725f4668def8b1e27dda65f429d",
+      "schemaHash": "ca86ed15ef248ad65ba5af9a7f41022a53a658c8990ab2a6dd8c5d27a9fac2b0"
+    },
+    {
+      "table": "database_maintenance_runs",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "ebd357840390965a3e57c3cdd225ca746eae3be7a9480b610ac612bd66ab43d6"
+    },
+    {
+      "table": "devkit_platform_registry_activity",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "6f7dd2b1afcb1812d91ee889994bc8b1cae301ce181a2a421aa919b8e07f28ec"
+    },
+    {
+      "table": "devkit_platform_registry_groups",
+      "rows": 9,
+      "dataHash": "39369b3dfcd94e0a9922cb79977d7fdf70f011a3b3f840cd8ffc0376b06d45dd",
+      "schemaHash": "01ffc611e2910a2b31d5b907151b5c9d028a0b311832b648279232bfe1895a16"
+    },
+    {
+      "table": "devkit_platform_registry_modules",
+      "rows": 76,
+      "dataHash": "e1376380b52ed2c505a95f6ca198163e2e3c24b8576a6f4aa9f5f5af10f2c148",
+      "schemaHash": "31fd5ca0c3a13acf080dafa557d88e54d886f21e2a91df762afc92355dad6a1d"
+    },
+    {
+      "table": "devkit_platform_registry_platforms",
+      "rows": 3,
+      "dataHash": "22720321507be1a11c2046f01fccb606d09ac20a2c828709e252038efcdd2b39",
+      "schemaHash": "eb6376e6c1e75b3b9839e1dd519e85491c186c27c3efb3e4e67230a4b593fb2f"
+    },
+    {
+      "table": "entitlements",
+      "rows": 2,
+      "dataHash": "bd365724efb11deafef3725c6da066a22f3f8286ce8b3de52feb90c42ef32272",
+      "schemaHash": "fa49f094c111d0e7bf2df060c4bd9504b810f871a3533b7b9a4352e8db35dd70"
+    },
+    {
+      "table": "industries",
+      "rows": 2,
+      "dataHash": "621ec5f5dac2ec88f9c06d304d73832428c948549ba91f2e316ecdb9223aa710",
+      "schemaHash": "d88dd7d1a3fe36f654b48769d0ddf8c73246b44194055908e2febce9a1821c5f"
+    },
+    {
+      "table": "migration_schema",
+      "rows": 25,
+      "dataHash": "d8f6f7a7ffa4f6c36202d2d4c5c9015488df88ef64cc1240d5a526436089a430",
+      "schemaHash": "02f2c266ac5af65599b2307632a15369d18ecb3219a7ad8cb2e43c6ea4405c1e"
+    },
+    {
+      "table": "password_reset_requests",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "c0deece4f353a66ed65883002f4e5c7e444ac214b829b6f8f08cd64c3c8b0799"
+    },
+    {
+      "table": "plans",
+      "rows": 2,
+      "dataHash": "0d145918a9724b7c5726d5bc122503d3cf7a4dfefc2c43513b4a7e68e3c37fec",
+      "schemaHash": "d99260267b68d0c2243414658dcc57e682a89d54ae0d1913cde2e42f757f03e6"
+    },
+    {
+      "table": "platform_activity",
+      "rows": 1,
+      "dataHash": "a2b44e0a18cbb66b004a13f1ead4f20453e39e3d8efc49279aaad9f2efd00877",
+      "schemaHash": "8928514f592c0ffdface0039e891700fbd6e740b365841d7eb7da8099eba89e3"
+    },
+    {
+      "table": "platform_apps",
+      "rows": 8,
+      "dataHash": "ddae918ca00584692421f6f7d531fcfa2e99b2332a6c1ae92f9e8df27841c0b1",
+      "schemaHash": "2e835a8e62027ef294119ddb04020e675e94657d25c11a60a30a7bae6967c8d9"
+    },
+    {
+      "table": "platform_auth_users",
+      "rows": 2,
+      "dataHash": "4249f7cfed8696f0e0f636ad5250e093d9096e982161d692e747f2a25a9d1285",
+      "schemaHash": "6b4f58d68acf93a96c63289e32d0a4ee70848ebecaee542fd348b9964e324537"
+    },
+    {
+      "table": "queue_jobs",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "0233624b2a181574992f19a05454491773b1c80077afff4c114b502fab389cf7"
+    },
+    {
+      "table": "queue_runtime_settings",
+      "rows": 1,
+      "dataHash": "356f3d0b01a0bb5acf5474236db7f3a1249d7b59790d2a8c16b674d1141ed338",
+      "schemaHash": "41ddca5b19313d4e9cc1e5688c1b2c5cb8156e8993ccd7389edbe5647af0c69c"
+    },
+    {
+      "table": "storage_objects",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "006618fe382ba6cfc4065b6752e21a73e62b47811ae7cc6452cfb241786b3691"
+    },
+    {
+      "table": "subscriptions",
+      "rows": 1,
+      "dataHash": "1f749df80e99b3a1e17235b5ef4930f551298f3d77db59f44c96f7ab42165629",
+      "schemaHash": "a6818354ffc6e24666bee2d11532d27ca7427c5349f2a41442e14dfd2658bb73"
+    },
+    {
+      "table": "task_manager_lookups",
+      "rows": 14,
+      "dataHash": "ae4488713c1e1a177e15625c1f7f01a71d392c8e78a291f710f0531d58b0a51e",
+      "schemaHash": "2748f9d64440ff7468130bf5a78408b51f0e8aa83b3cd8dff5af83ecb2d739e4"
+    },
+    {
+      "table": "task_manager_todos",
+      "rows": 1,
+      "dataHash": "3ea5673558cdda61590b83d3fb8c087e28c831103586a573a6f98b01c79e4a47",
+      "schemaHash": "3a563f254da9c2fee0076c1ae24f96e00d006ecedd24dfb9c087a33e51e0451c"
+    },
+    {
+      "table": "tenants",
+      "rows": 1,
+      "dataHash": "2d49157b7df50483aff6fbe2af9591f13179eadc556fb280ab1e01b88dbea5b6",
+      "schemaHash": "084f4d6e23e2dc6171df5dce22560e6da5ec3705c551ed3a9f7f17f802d197f7"
+    },
+    {
+      "table": "tenant_audit_events",
+      "rows": 4,
+      "dataHash": "04598d8cb9b3be6c8f8158786e5eff93790e5c0941af33046f567176c0ebfd26",
+      "schemaHash": "bd9627d7dd441fe16998144a5b442b74ef3b74119779e55d3cbca27508c3d2ba"
+    },
+    {
+      "table": "tenant_domains",
+      "rows": 0,
+      "dataHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaHash": "b3b4a1e0ae853cf02ccb7efd7550da8ee8e43267af3742b86d949c10105ea88a"
+    }
+  ],
+  "cloudAccess": false
+}

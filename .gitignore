@@ -172,3 +172,11 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 /.idea/
+
+# Deployment tool caches
+/deploy/**/.wrangler/
+/deploy/**/tmp/
+
+# Private database backup artifacts and API runtime storage
+/apps/platform/api/storage/
+*.cxbackup

@@ -1,0 +1,29 @@
+RELEASE 1.0.81 — DOCKER UPGRADE REVIEW
+13 November 2026 (Asia/Calcutta)
+
+Schema result: no blocking conflict found in the tested source snapshots.
+Production status: deployment gates remain; no Docker/VPS upgrade performed.
+
+DATABASE COMPARISON
+Compared all 13 local restored database schemas with the fresh Hostinger native backup schemas. Zero added, removed or changed table definitions; AUTO_INCREMENT counters excluded from structural hashes. All 1,219 tables are accounted for. The cloned master has local tenant connection values, intentionally distinct from production data, while its table schema matches the backup.
+
+Master has 27 tables. Ten tenants share a 96-table baseline. SUNLIGHT has 109 tables, including 13 additional Accounts tables. CODEXSUN has 123 tables, including those Accounts tables, 10 Blog tables and four DevKit tables. These are existing module differences, not contradictory versions of the common schema. No missing baseline tables were found. Do not flatten all tenant schemas or delete optional/retired tables during an application container update.
+
+MIGRATION REHEARSAL
+Restored all 13 original SQL backups again into unique isolated local databases. Remapped only that rehearsal master's tenant connections to its isolated copies. Ran the current release's db:migrations:run successfully (exit 0). Removed the rehearsal databases afterwards. The running local testing app and original snapshots were preserved. This rehearsal used local MariaDB 12.3; target VPS MariaDB is 11.8. Exact-target container rehearsal remains required.
+
+VALIDATION
+Workspace module/add-on checks, type checks, lint and full production build passed. Version alignment passed for 1.0.81. Nine backup tests passed, including a real local MariaDB round trip, both existing restore modes and transaction rollback. Five deployment environment checks and eight migration-contract tests passed. Production built-artifact API smoke passed. The composed-runtime test passed against a freshly seeded isolated local environment after correcting its stale expectation for unknown-domain login rejection. Earlier live local API checks passed for all 12 restored tenants and tenant isolation.
+
+REMAINING DEPLOYMENT GATES
+1. Build and smoke-test the exact 1.0.81 API, web and migration Docker images with target MariaDB 11.8 and actual Compose settings. A native local build and MariaDB 12.3 rehearsal do not prove the image build/target-engine path. No local Docker daemon was used.
+2. Back up and test restore of persistent files/media plus production configuration. The completed source database backups do not include file volumes or external object storage.
+3. Confirm API consumers accept retirement of DevKit routes and super-admin Task Manager access. These are deliberate behavior changes, not schema drops. Existing records are retained. Blog and File Manager retirement remains design-only; their packages remain installed.
+4. Prepare production deploy.env, matching release tags, image digests and rollback instructions. Keep the previous application images and verified backups. Do not copy the local .env, cxvps_* database names, local password references or local restore profiles into production. Keep backup-center restore disabled unless explicitly configured.
+
+Source version advances from deployed 1.0.79 through the unreleased 1.0.80 cleanup to 1.0.81. No new schema migration definition was added by the backup feature. Do not set migration compatibility flags as a substitute for the required target-engine rehearsal. Do not rebuild or recreate the MariaDB data volume as part of this application update.
+
+DATABASE/SECRET HANDLING
+Native SQL files, .cxbackup artifacts, local .env files, connection rollback settings and runtime backup storage are ignored by Git and excluded from Docker contexts. Committed verification reports contain metadata and checksums, not record contents or credentials. All upgrade audits and rehearsals were local; no VPS database, service or configuration changed.
+
+Detailed comparison: docs/docker-upgrade-schema-audit.json
