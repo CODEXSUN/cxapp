@@ -1,6 +1,6 @@
 # CXApp deployment
 
-Installed production app: https://app.codexsun.com, Hostinger VPS 914719 (69.62.81.166), active production checkout /home/cxapp-releases/1.0.81-705d3f4, version 1.0.81 deployed 13 November 2026. The original /home/cxapp checkout and its configuration remain available for rollback/reference.
+Installed production app: https://app.codexsun.com, Hostinger VPS 914719 (69.62.81.166), active production checkout /home/cxapp-releases/1.0.82-dc73dda, version 1.0.82 deployed 13 November 2026. The original /home/cxapp checkout and its configuration remain available for rollback/reference.
 
 Run node deploy/hostinger/connection/status.mjs for a read-only SSH connection check. The actual app deployment uses .container/billing/docker-compose.yml and the private .container/deploy.env.
 
