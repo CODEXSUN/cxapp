@@ -31,6 +31,7 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 #### App Codebase Changes
 
 - Bumped all workspace packages, deployment image references and Windows manifests to 1.0.81.
+- Preserved the production migration-image fix that supplies an empty environment-file placeholder while reading deployment secrets from runtime variables.
 - Added separate Master Backups and tenant-list/drill-down backup pages with tenant-bound sources, uploads and restore targets.
 - Added named storage locations, backup download/upload, tenant folder saving and new/fresh/incremental MariaDB restore modes.
 - Added explicit restore target gates, pre-restore safety copies, transactional primary-key merges, foreign-key row ordering and tenant-isolation checks.

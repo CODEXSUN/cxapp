@@ -25,6 +25,7 @@ RUN npm ci \
   && npm run dependencies:check
 
 FROM build AS migrations
+RUN touch /app/.env
 ARG CXAPP_VERSION
 LABEL org.opencontainers.image.title="CODEXSUN Billing Stack Migrations" \
       org.opencontainers.image.version="$CXAPP_VERSION"
